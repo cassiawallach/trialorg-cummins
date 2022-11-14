@@ -1,0 +1,107 @@
+<aura:component implements="flexipage:availableForRecordHome,flexipage:availableForAllPageTypes,force:hasRecordId,lightning:actionOverride,lightning:isUrlAddressable" 
+                    access="global" controller="FSLAddCustPartsCls">
+      
+    <!--Init handler which is call doInit js function on component Load-->  
+    <lightning:navigation aura:id="navService"/> <!-- Anvesh Added as part of CT3-11 Story -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+	 <aura:attribute name="isOpen" type="Boolean" default="true"/>
+    <!--Event handler for Add and Delete Row Event which is fire from Child Component-->    
+    <aura:handler name="DeleteRowEvt" event="c:FSLDeleteRowEvt" action="{!c.removeDeletedRow}"/>
+    <aura:handler name="AddRowEvt" event="c:FSLAddNewRowEvt" action="{!c.addNewRow}"/>
+    <aura:registerEvent name="ReloadCustPartsEvt" type="c:FSLReloadCustParts"/> 
+    
+    <!--Aura Attribute for store Contact Object List as Array-->    
+    <aura:attribute name="contactList" type="Contact[]"/> 
+    <aura:attribute name="cssPartsList" type="FSL_Custom_Part__c[]"/> 
+    <aura:attribute name="reloadedPartsList" type="FSL_Custom_Part__c[]"/> 
+    <aura:attribute name="cssPartsToDel" type="FSL_Custom_Part__c[]"/> 
+    <aura:attribute name="listSize" type="Integer"/>
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="repRsnLOVs" type="list" />
+    <aura:attribute name="saveInProgress" type="Boolean" default="false"/>
+    <!--Starts added by vinod yelala 5-2-->
+    <!--aura:attribute name="selectedRowOnParent" type="Integer"/>
+    <aura:attribute name="currentRow" type="Integer"/-->
+    <!--Ends added by vinod yelala 5-2-->
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <!--<aura:handler name="change" value="{!v.currentRow}" action="{!c.refreshScreenData}"/>-->
+    <!--<c:FSLSpinner showSpinner="{!v.showSpinner}"/> -->
+    <div class="slds-m-around_xx-large">
+         <!--###### MODAL BOX Start######--> 
+        <aura:if isTrue="{!v.isOpen}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container"  
+                     style= "margin-left: 15% !important;width: 90% !important;max-width: 70% !important; min-width: 20rem !important;">
+                    <!-- ###### MODAL BOX HEADER Start ######-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModel }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">User Requested Parts</h2>
+                    </header>
+                    <!--###### MODAL BOX BODY Part Start######-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <!--Table Part-->           
+                        <table class="slds-table slds-table_bordered slds-table_cell-buffer"> 
+                            <thead>
+                                <tr class="slds-text-title_caps">                                    
+                                    <th scope="col">
+                                        <div class="slds-truncate">{!$Label.c.css_Quantity}</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate">{!$Label.c.CSS_Part_Number}</div>
+                                    </th>
+                                    <th scope="col" >
+                                        <div class="slds-truncate" >
+                                            {!$Label.c.CSS_Part_Name}
+                                            <abbr class="slds-required" title="required" style="font-size: 1rem;">* </abbr>
+                                        </div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate">
+                                            <!-- REPLACEMENT / REPAIR<br/> REASON -->
+                                            {!$Label.c.CSS_Replacement_Repair_Reason}</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate">{!$Label.c.css_Notes}</div>
+                                    </th>
+                                    <th scope="col">                                        
+                                        <a onclick="{!c.addNewRow}">
+                                            <lightning:icon iconName="utility:add" id="parentAdd" class="slds-icon slds-icon_small" size="small" alternativeText="add"/>
+                                            <span class="slds-assistive-text">Add Icon</span>
+                                        </a>    
+                                    </th>
+                                </tr>
+                            </thead>   
+                            <tbody>
+                                <!--Iterate the child Component for display Table rows 
+                               with pass the List Item Index for track the Every child Component 
+                               and pass each List Contact Instance -->         
+                                <aura:iteration items="{!v.cssPartsList}" var="item" indexVar="index">
+                                    <c:FSLAddCustrParts cssPartInst="{!item}" rowIndex="{!index}" repRsnLOVs="{!v.repRsnLOVs}" 
+                                                        listSize="{!v.listSize}"/>
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                        <br/>
+                        <!--Save Button which is call Save js function on click --> 
+                        <!--<button class="slds-button slds-button_brand" onclick="{!c.Save}">Save</button>-->
+                    </div>
+                    <!--###### MODAL BOX FOOTER Part Start ######-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral" 
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.closeModel }"/>
+                        <lightning:button variant="brand" 
+                                          label="Save and Close"
+                                          title="Save and Close"
+                                          onclick="{! c.Save }"/>
+                    </footer>
+                </div>
+            </section><div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+    </div>
+</aura:component>

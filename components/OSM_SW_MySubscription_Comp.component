@@ -1,0 +1,380 @@
+<apex:component >
+<script>
+        CCRZ.uiProperties.mySubscriptionSummaryNewView.desktop.tmpl = 'MyAccount-MySubscriptions-Desktop-New1';
+        CCRZ.uiProperties.mySubscriptionSummaryNewView.phone.tmpl = 'MyAccount-MySubscriptions-Desktop-New1';   
+    </script>
+    
+<script id="MyAccount-MySubscriptions-Desktop-New1" type="text/template">
+   <div class="panel panel-default cc_panel cc_myaccount_mysubscriptions">
+    {{log 'my subscription data'}}
+    {{log this}}
+    <!--Added as part of MAR-2028-->
+    {{sortByNameFunction this}}
+    
+    <div class="panel-heading cc_heading">
+     <h3 class="panel-title cc_title">{{pageLabelMap 'MyAccount_MySubscriptions'}}</h3>
+    </div>
+    <div class="panel-body cc_body cc_myaccount_content" style="width:88%">
+     <div class="messagingSection-subscription-Error" style="display: none"></div>
+     <div class="messagingSection-subscription-Info" role="alert" style="display: none">
+      <button type="button" class="close cc_close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&#215;</span></button>
+     </div>
+     <div class="orderPaginationSec" />
+     <div class="table-responsive ">
+     {{#if this.subscriptionList}}
+     {{#ifHasPermission 'isInternalOrTrainingAccount'}}
+      <table id="subscriptionTable" class="table table-hover cc_table cc_mysubscriptions_table">
+       <tr class="cc_table_header_row" style="background-color:black; color:white">
+        <th class="cc_table_header">
+            <span class="cc_table_header_subscription_id">{{pageLabelMap 'MyAccount_MySubscription_Id'}}</span>
+        </th>
+        <!-- <th class="cc_table_header">
+         <span class="cc_table_header_subscription_prod_name">{{pageLabelMap 'MyAccount_MySubscription_Product'}}</span>
+        </th> -->
+        <th class="cc_table_header">
+         <span class="cc_table_header_subscription_recurring_price">{{pageLabelMap 'MyAccount_MySubscription_Type'}}</span>
+        </th>
+        <th class="cc_table_header">
+         <span class="cc_table_header_subscription_recurring_price">Active Subscription Quantity</span><!--{{pageLabelMap 'MyAccount_MySubscription_Quantity'}}-->
+        </th>
+        <!-- <th class="cc_table_header">
+         <span class="cc_table_header_subscription_recurring_price">{{pageLabelMap 'MyAccount_MySubscription_RecurringPrice'}}</span>
+        </th> -->
+        <!--MAR-629 Code commented Start
+        <th class="cc_table_header">
+         <span class="cc_table_header_subscription_recurring_price">{{pageLabelMap 'MyAccount_MySubscription_Unit_Price'}}</span>
+        </th> 
+        MAR-629 Code commented End-->
+        <th class="cc_table_header">
+         <span class="cc_table_header_subscription_recurring_price">{{pageLabelMap 'MyAccount_MySubscription_Expiration_Date'}}</span>
+        </th>
+        <th class="cc_table_header">
+         <span class="cc_table_header_subscription_status">{{pageLabelMap 'MyAccount_MySubscription_Status'}}</span>
+        </th>
+        <th class="cc_table_header">
+         <span class="cc_table_header_subscription_status">{{pageLabelMap 'Purchased For'}}</span>
+        </th>
+        <th class="cc_table_header">
+         <span class="cc_table_header_subscription_status">{{pageLabelMap 'MyAccount_MySubscription_Actions'}}</span>
+        </th>
+        <!--
+          {{#ifDisplay 'shact.subs'}}
+        <th class="cc_table_header">
+         <span class="cc_table_header_subscription_actions">{{pageLabelMap 'MyAccount_MySubscription_Actions'}}</span>
+        </th>
+        {{/ifDisplay}}
+        -->
+       </tr>
+       {{#each this.subscriptionList}}
+        <tr class="myAccOrderRows cc_table_row">
+         <td class="cc_table_col">
+         {{#if freeTrial }}
+          <span class="cc_col_subscription_prod_name"><a href="#" data-id="{{sfid}}" class="gotoSubscriptionDetails cc_goto_subscription_details">{{productName}} </a></span>
+           {{else}}        
+           <span class="cc_col_subscription_prod_name"><a href="#" data-id="{{sfid}}"  onclick="SubscriptionCancel(this)">{{productName}} </a></span>
+            {{#if isRenewed}}
+                <p><i>Renewed until {{date renewEndDate}}</i></p>
+            {{/if}}
+     {{/if}}    
+         </td>
+         <!-- <td class="cc_table_col">
+          <span class="cc_col_subscription_prod_name">
+           {{productLink subProduct 'cc_prod_link'}}
+          </span>
+         </td> -->
+         <!-- <td class="cc_table_col">
+          <span class="cc_col_subscription_recurring_price"><a href="#" data-id="{{sfid}}" class="gotoSubscriptionDetails cc_goto_subscription_details">{{price topRecurringPrice currencyIsoCode}}</a></span>
+         </td> -->
+         <td class="cc_table_col">
+         {{#if freeTrial }}
+         <span class="cc_col_subscription_prod_name">
+           {{pageLabelMap 'MyAccount_MySubscriptions_Free'}}
+          </span>
+         {{else}}
+          <span class="cc_col_subscription_prod_name">
+           {{pageLabelMap 'MyAccount_MySubscriptions_Premium'}}
+          </span>
+         {{/if}}
+         </td>
+         <td class="cc_table_col" style="text-align: center; padding-right: 3.5%;">
+          <span class="cc_col_subscription_prod_name">
+           {{quantity}}
+          </span>
+         </td>
+        <!-- MAR-629 Code commented Start
+         <td class="cc_table_col">
+        {{#if billingFreq }}
+         <span class="cc_col_subscription_recurring_price">{{currecnyCode}}{{topRecurringPrice}} {{#ifNotEquals billingFreq 'One Time'}} {{billingFreq}} {{/ifNotEquals}}</span>
+         {{else}}
+            <span class="cc_col_subscription_recurring_price">{{currecnyCode}}{{topRecurringPrice}}</span>
+        {{/if}}
+         </td> 
+         MAR-629 Code commented End-->
+         <td class="cc_table_col">
+          <span class="cc_col_subscription_recurring_price">{{date endDate}}</span>
+         </td>
+         <td class="cc_table_col">
+          <span class="cc_col_subscription_status">{{pageLabelPrefixMap 'SUBSST_' status}}</span>
+         </td>
+         <td class="cc_table_col">
+          <span class="cc_col_subscription_status">{{poNumber}}</span>
+         </td>
+         <td class="cc_table_col" nowrap="true">
+             
+          {{#if canManageSubsc }}
+            
+           <!--span class="cc_col_subscription_prod_name"><a href="#" data-id="{{sfid}}" onClick="SubscriptionCancel(this)" class=" ">{{pageLabelMap 'Manage Subscription'}}  </a></span>&#160;-->
+           {{#ifEquals billingCountry 'United States'}}
+              <a href="#" class="CMI-link-icons" data-id="{{sfid}}" onclick="SubscriptionCancel(this)" ><span class="CMI-text-icons" style="font-size: 100%;">&#9881;</span>{{pageLabelMap 'Manage Subscription'}}</a>
+              {{else}}
+                 {{#ifHasPermission 'isOnBehalf'}}
+                          <a href="#" class="CMI-link-icons" data-id="{{sfid}}" onclick="SubscriptionCancel(this)" ><span class="CMI-text-icons" style="font-size: 100%;">&#9881;</span>{{pageLabelMap 'Manage Subscription'}}</a>
+                         {{else}}
+                        <span class="CMI-text-icons" style="font-size: 100%;">&#9881;</span>{{pageLabelMap 'Manage Subscription'}}
+                {{/ifHasPermission}}
+           {{/ifEquals}}
+           
+           <!-- <input type="button" class="btn btn-default btn-sm" data-id="{{sfid}}"  value="{{pageLabelMap 'Manage Subscription'}}" onclick="SubscriptionCancel(this)"/> 
+            
+           
+           <input type="button" class="btn btn-default btn-sm cc_col_prompt_cancel" data-id="{{sfid}}" value="{{pageLabelMap 'MyAccount_MySubscriptions_Cancel'}}" onclick=" return SubscriptionCancel(this)">&#160; -->
+           
+          {{/if}}
+         </td>
+         <!--
+         {{#ifDisplay 'shact.subs'}}
+         <td class="cc_table_col" nowrap="true">
+          {{#if canCancel }}
+           <input type="button" class="promptCancel btn btn-default btn-sm cc_prompt_cancel" data-id="{{@index}}" data-mode="Cancel" value="{{pageLabelMap 'MyAccount_MySubscriptions_Cancel'}}"/>&#160;
+          {{/if}}
+         </td>
+         {{/ifDisplay}}
+         -->
+        </tr>
+       {{/each}}
+      </table>
+      {{else}}
+        <table id="subscriptionTable" class="table table-hover cc_table cc_mysubscriptions_table">
+       <tr class="cc_table_header_row" style="background-color:black; color:white">
+        <th class="cc_table_header">
+            <span class="cc_table_header_subscription_id">{{pageLabelMap 'MyAccount_MySubscription_Id'}}</span>
+        </th>
+        <!-- <th class="cc_table_header">
+         <span class="cc_table_header_subscription_prod_name">{{pageLabelMap 'MyAccount_MySubscription_Product'}}</span>
+        </th> -->
+        <th class="cc_table_header">
+         <span class="cc_table_header_subscription_recurring_price">{{pageLabelMap 'MyAccount_MySubscription_Type'}}</span>
+        </th>
+        <th class="cc_table_header">
+         <span class="cc_table_header_subscription_recurring_price">Active Subscription Quantity</span><!--{{pageLabelMap 'MyAccount_MySubscription_Quantity'}}-->
+        </th>
+        <!-- <th class="cc_table_header">
+         <span class="cc_table_header_subscription_recurring_price">{{pageLabelMap 'MyAccount_MySubscription_RecurringPrice'}}</span>
+        </th> -->
+        <!--MAR-629 Code commented Start
+        <th class="cc_table_header">
+         <span class="cc_table_header_subscription_recurring_price">{{pageLabelMap 'MyAccount_MySubscription_Unit_Price'}}</span>
+        </th> 
+        MAR-629 Code commented End-->
+        <th class="cc_table_header">
+         <span class="cc_table_header_subscription_recurring_price">{{pageLabelMap 'MyAccount_MySubscription_Expiration_Date'}}</span>
+        </th>
+        <th class="cc_table_header">
+         <span class="cc_table_header_subscription_status">{{pageLabelMap 'MyAccount_MySubscription_Status'}}</span>
+        </th>
+         <th class="cc_table_header">
+         <span class="cc_table_header_subscription_order_number">{{pageLabelMap 'MyAccount_MyOrder_number(s)'}}</span>
+        </th>
+        <th class="cc_table_header">
+         <span class="cc_table_header_subscription_status">{{pageLabelMap 'MyAccount_MySubscription_Actions'}}</span>
+        </th>
+        <!--
+          {{#ifDisplay 'shact.subs'}}
+        <th class="cc_table_header">
+         <span class="cc_table_header_subscription_actions">{{pageLabelMap 'MyAccount_MySubscription_Actions'}}</span>
+        </th>
+        {{/ifDisplay}}
+        -->
+       </tr>
+       {{#each this.subscriptionList}}
+        <tr class="myAccOrderRows cc_table_row">
+         <td class="cc_table_col">
+         {{#if freeTrial }}
+          <span class="cc_col_subscription_prod_name"><a href="#" data-id="{{sfid}}" class="gotoSubscriptionDetails cc_goto_subscription_details">{{productName}} </a></span>
+           {{else}}        
+           <span class="cc_col_subscription_prod_name"><a href="#" data-id="{{sfid}}"  onclick="SubscriptionCancel(this)">{{productName}} </a></span>
+            {{#if isRenewed}}
+                <p style="font-style: italic;">Renewed until {{date renewEndDate}}</p>
+            {{/if}}
+     {{/if}}    
+         </td>
+         <!-- <td class="cc_table_col">
+          <span class="cc_col_subscription_prod_name">
+           {{productLink subProduct 'cc_prod_link'}}
+          </span>
+         </td> -->
+         <!-- <td class="cc_table_col">
+          <span class="cc_col_subscription_recurring_price"><a href="#" data-id="{{sfid}}" class="gotoSubscriptionDetails cc_goto_subscription_details">{{price topRecurringPrice currencyIsoCode}}</a></span>
+         </td> -->
+         <td class="cc_table_col">
+         {{#if freeTrial }}
+         <span class="cc_col_subscription_prod_name">
+           {{pageLabelMap 'MyAccount_MySubscriptions_Free'}}
+          </span>
+         {{else}}
+          <span class="cc_col_subscription_prod_name">
+           {{pageLabelMap 'MyAccount_MySubscriptions_Premium'}}
+          </span>
+         {{/if}}
+         </td>
+         <td class="cc_table_col" style="text-align: center; padding-right: 3.5%;">
+          <span class="cc_col_subscription_prod_name">
+           {{quantity}}
+          </span>
+         </td>
+        <!-- MAR-629 Code commented Start
+         <td class="cc_table_col">
+        {{#if billingFreq }}
+         <span class="cc_col_subscription_recurring_price">{{currecnyCode}}{{topRecurringPrice}} {{#ifNotEquals billingFreq 'One Time'}} {{billingFreq}} {{/ifNotEquals}}</span>
+         {{else}}
+            <span class="cc_col_subscription_recurring_price">{{currecnyCode}}{{topRecurringPrice}}</span>
+        {{/if}}
+         </td> 
+         MAR-629 Code commented End-->
+         <td class="cc_table_col">
+          <span class="cc_col_subscription_recurring_price">{{date endDate}}</span>
+         </td>
+         <td class="cc_table_col">
+          <span class="cc_col_subscription_status">{{pageLabelPrefixMap 'SUBSST_' status}}</span>
+         </td>
+           <td class="cc_table_col">
+               {{#if orderNumbers.[1]}}
+               <select id="orderNumber"   name="orderNumber" >
+               {{#each orderNumbers}}
+               <option value="{this.OSM_CCOrder__r.Name}">{{this.OSM_CCOrder__r.Name}}</option>
+               {{/each}}
+               </select>
+               {{else}}
+                 <span class="cc_col_subscription_status">{{orderNumbers.[0].OSM_CCOrder__r.Name}}</span>
+                 {{/if}}
+         </td>
+         <td class="cc_table_col" nowrap="true">
+             
+          {{#if canManageSubsc }}
+            
+           <!--span class="cc_col_subscription_prod_name"><a href="#" data-id="{{sfid}}" onClick="SubscriptionCancel(this)" class=" ">{{pageLabelMap 'Manage Subscription'}}  </a></span>&#160;-->
+           {{#ifEquals billingCountry 'United States'}}
+              <a href="#" class="CMI-link-icons" data-id="{{sfid}}" onclick="SubscriptionCancel(this)" ><span class="CMI-text-icons" style="font-size: 100%;">&#9881;</span>{{pageLabelMap 'Manage Subscription'}}</a>
+              {{else}}
+                 {{#ifHasPermission 'isOnBehalf'}}
+                          <a href="#" class="CMI-link-icons" data-id="{{sfid}}" onclick="SubscriptionCancel(this)" ><span class="CMI-text-icons" style="font-size: 100%;">&#9881;</span>{{pageLabelMap 'Manage Subscription'}}</a>
+                         {{else}}
+                        <span class="CMI-text-icons" style="font-size: 100%;">&#9881;</span>{{pageLabelMap 'Manage Subscription'}}
+                {{/ifHasPermission}}
+           {{/ifEquals}}
+           
+           <!-- <input type="button" class="btn btn-default btn-sm" data-id="{{sfid}}"  value="{{pageLabelMap 'Manage Subscription'}}" onclick="SubscriptionCancel(this)"/> 
+            
+           
+           <input type="button" class="btn btn-default btn-sm cc_col_prompt_cancel" data-id="{{sfid}}" value="{{pageLabelMap 'MyAccount_MySubscriptions_Cancel'}}" onclick=" return SubscriptionCancel(this)">&#160; -->
+           
+          {{/if}}
+         </td>
+         <!--
+         {{#ifDisplay 'shact.subs'}}
+         <td class="cc_table_col" nowrap="true">
+          {{#if canCancel }}
+           <input type="button" class="promptCancel btn btn-default btn-sm cc_prompt_cancel" data-id="{{@index}}" data-mode="Cancel" value="{{pageLabelMap 'MyAccount_MySubscriptions_Cancel'}}"/>&#160;
+          {{/if}}
+         </td>
+         {{/ifDisplay}}
+         -->
+        </tr>
+       {{/each}}
+      </table>
+      {{/ifHasPermission}}
+      {{else}}
+       {{pageLabelMap 'MyAccount_MySubscriptions_NoValue'}}
+       {{/if}}
+      <div id="modalSec"></div>
+     </div>
+    </div>
+   </div>
+  </script>
+  <script>
+  
+    function SubscriptionCancel(paramName)
+    {
+        var subscId  = paramName.getAttribute("data-id");
+        //alert(subscId);
+        window.location = "ccrz__CCPage?pagekey=ManageSubscription&subscId="+subscId+getCSRQueryString();
+    }
+  
+  
+   Handlebars.registerHelper('date', function(milsec) {
+   console.log('Subscription date$$$$==='+milsec);
+    if(milsec  != "" && milsec != undefined && milsec != '-')
+    {
+       if(/^[a-zA-Z0-9- ]*$/.test(milsec) == false){
+                console.log('string--if-->> '+milsec);
+                console.log('User Locale '+CCRZ.currentUser.LocaleSidKey);
+                var params = Array.prototype.slice.call(arguments, 1);
+                var thisDate ;
+                if(CCRZ.currentUser.LocaleSidKey==='en_AU'){
+                    var splittedValue = milsec.split('/');
+                    thisDate = new Date(splittedValue[2],splittedValue[1]-1,splittedValue[0]);
+                }else{
+                    thisDate = new Date(milsec);
+                }
+                console.log('thisDate '+thisDate);
+                var dateToStr = thisDate.toString().split(' ');
+                console.log('UTC Converted date'+dateToStr);
+                var datefinal = dateToStr[2] + ' ' + dateToStr[1]+' '+dateToStr[3];
+                console.log('Datefinal '+datefinal);
+              }else{
+                 console.log('string--else-->> '+milsec);
+                console.log('User Locale '+CCRZ.currentUser.LocaleSidKey);
+                var params = Array.prototype.slice.call(arguments, 1);
+                var thisDate ;
+                if(CCRZ.currentUser.LocaleSidKey==='en_AU'){
+                    var splittedValue = milsec.split('/');
+                    thisDate = new Date(splittedValue[2],splittedValue[1]-1,splittedValue[0]);
+                }else{
+                    thisDate = new Date(milsec);
+                }
+                console.log('thisDate '+thisDate);
+                var dateToStr = thisDate.toUTCString().split(' ');
+                //var dateToStr = thisDate.toString().split(' ');
+                console.log('UTC Converted date'+dateToStr);
+                var datefinal = dateToStr[1] + ' ' + dateToStr[2]+' '+dateToStr[3];
+                //var datefinal = dateToStr[2] + ' ' + dateToStr[1]+' '+dateToStr[3];
+                console.log('Datefinal '+datefinal);
+              }
+        
+        return datefinal;
+        }
+        else
+            return '-';
+
+
+}); 
+    //Code Start for MAR-2028
+    //This method takes in the subscription list as argument and then sorts it alphabetically as per Product Name
+    Handlebars.registerHelper('sortByNameFunction', function(data) {
+        var subscriptionList = data.subscriptionList;
+        data.subscriptionList = subscriptionList;
+        subscriptionList.sort((a,b) => (a.productName.toLowerCase() > b.productName.toLowerCase()) ? 1 : ((b.productName.toLowerCase() > a.productName.toLowerCase()) ? -1 : 0));    
+    });// Code End for MAR-2028
+    
+    jQuery(function($){
+       
+      
+
+       
+        
+    });
+  </script>
+  
+  
+  
+</apex:component>

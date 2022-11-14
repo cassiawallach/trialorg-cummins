@@ -1,0 +1,250 @@
+<apex:page docType="html-5.0" sidebar="false" showHeader="false" standardStylesheets="false" applyHtmlTag="false" standardController="Account" extensions="OSMCustomerLookupPopup" cache="true"  applyBodyTag="false">
+    <head>
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" />
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" ></script>
+         <style>   
+            .section-title {
+            
+            line-height: 20px;
+            color: #1e1e1e;
+            font-family: "Lato";
+            font-weight: 400;
+            margin-bottom: 20px;
+            text-align: left;
+            
+            }
+            body {
+            margin: 2px; 
+            text-align: left !important;
+            }
+            
+            .row {
+            margin-right: 10px;
+            margin-left: 10px;
+            
+            margin-bottom: 5px;
+            }
+            .required{
+            color: red;
+            }
+            @page {    
+            size: A4 landscape;    
+            }             
+            Style Attribute {
+            text-align: left;
+            margin: 10px;
+            }
+            
+            .cmi_warning-icon {
+            background:  url({!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/CSS_TND_Icon.png')}) no-repeat -255px -645.5px;
+            width: 20px;
+            height: 20px;
+            display:inline-block;
+            position: absolute;
+            zoom:1.5;
+        } 
+        </style>
+        
+        <script>
+        var displayPopupmsg ;
+        $(document).ready(function(){
+            $('[id$=searchbmsnameid]').on('keyup',function(){
+                var charsize=$(this).val().length;
+                if(charsize<3 && charsize != 0){
+                    $("[id$=searchbmsbtn]")
+                    .attr("disabled", "disabled")
+                    .removeClass("btn")
+                    .addClass("btnDisabled");
+                }else{
+                    $('[id$=searchbmsbtn]')
+                    .removeAttr("disabled")
+                    .removeClass("btnDisabled")
+                    .addClass("btn");
+                }
+            });
+            $('[id$=searchbmsbtn]').on('click',function(){
+                $("[id$=searchbmsbtn]")
+                .attr("disabled", "disabled")
+                .removeClass("btn")
+                .addClass("btnDisabled");
+                var code =$('select[id$="discodeselid"] option:selected').val();
+                SearchBMS();
+            });
+            
+            
+        });
+        function confirmapplicationsave(){
+            if(displayPopupmsg==='Error') {
+                $("#Showerrormsg").modal("show");              
+            }else if(displayPopupmsg==='Data'){
+                $("#Showcustomerdata").modal("show");
+            }else if(displayPopupmsg==='ErrorBMSCode'){
+                $("#ShowerrormsgDistributorCode").modal("show");
+            }
+            
+        }
+        </script>
+        
+        
+    </head>
+    
+    
+    
+    <apex:form style="text-align: right; margin: 10px;">
+        <apex:actionFunction action="{!SearchaccountBMS}" name="SearchBMS" reRender="popup,pbblock" oncomplete="confirmapplicationsave();">
+            
+        </apex:actionFunction>
+        <apex:pageBlock id="pbblock" rendered="{!NOT(showDistributorMsg)}">
+            <div class="row" >
+                <h2 Class="section-title">
+                    Customer Lookup
+                </h2>
+            </div>
+            <apex:outputPanel rendered="true">
+               <div class="row" style="text-align:left;">
+                    <div class="col-lg-6 col-md-12">
+                        <div class="form-group" >
+                            <div class="col-sm-3">
+                                <label for="primaryfirst" >Distributor Code</label><span class="required">*</span>
+                            </div>
+                            <div class="col-sm-9">
+                                <apex:selectList value="{!HQcustomercode}" size="1"  styleClass="form-control" id="discodeselid" multiselect="false"  >
+                                    <apex:selectOptions value="{!distributorcodes}" />
+                                </apex:selectList>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </apex:outputPanel>
+            
+            <div class="row">
+                <div class="col-lg-6 col-md-12">
+                    <div class="form-group" >
+                        <div class="col-sm-3">
+                            <label for="primaryfirst" >Account Name</label><span class="required">*</span>
+                        </div>
+                        <div class="col-sm-9">
+                            <apex:inputtext value="{!selectedaccname}" styleClass="form-control" id="searchbmsnameid"/>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            <div class="row">
+                <div class="col-lg-6 col-md-12">
+                    <div class="form-group" >
+                        <div class="col-sm-3">
+                            <label for="primaryfirst" >BMS Number</label><span class="required">*</span>
+                        </div>
+                        <div class="col-sm-9">
+                            <apex:inputtext value="{!selectedDisCode}" styleClass="form-control" id="searchbmsCodeid"/>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            <div class="row">
+               
+                    <div class="form-group" >
+                        <div class="col-sm-6" style="padding-right:30px">
+                            <button type="button" class="btn btn-default"  style="background-color:teal;color:white;width:151px;height:32px;" id="searchbmsbtn" >BMS Number Lookup</button>
+                        </div>
+                        
+                    </div>
+                
+            </div>           
+            
+            <apex:outputPanel id="popup">
+                <script>
+                displayPopupmsg ='{!displayPopupmsg}';
+                showDistributorMsg = '{!showDistributorMsg}';
+                </script>
+                 <div class="modal fade cc_modal cc_myaccount_orders_modal" id="Showerrormsg" tabindex="-1" role="dialog" >
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content cc_modal_content" style="border-radius:1px;border:1px black;">
+                             <div class="modal-header" style="color: #fff;background-color: black;border-color: black;text-align: left !important;">
+                                <h4 class="modal-title">Select Customer Code</h4>
+                            </div>
+                            <div class="modal-body cc_modal_body" >
+                                <h4 class="modal-title cc_cancel_prompt">
+                                    <p style="color:red;text-align:left !important;">Please enter the correct customer name. Entered customer name is not available in the BMS system.</p>
+                                </h4>
+                            </div>
+                            <div class="modal-footer">
+                             <apex:commandButton value="Close" action="{!closePopup}" styleClass="btn btn-primary" style="width:100px;height:38px;border-radius: 1px; background-color:#0b2e4a"/> 
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal fade cc_modal cc_myaccount_orders_modal" id="ShowerrormsgDistributorCode" tabindex="-1" role="dialog" >
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content cc_modal_content" style="border-radius:1px;border:1px black;">
+                             <div class="modal-header" style="color: #fff;background-color: black;border-color: black;text-align: left !important;">
+                                <h4 class="modal-title">Select Customer Code</h4>
+                            </div>
+                            <div class="modal-body cc_modal_body" >
+                                <h4 class="modal-title cc_cancel_prompt">
+                                    <p style="color:red;text-align:left !important;">This is an invalid customer number. Please enter the correct/ exact number in BMS number field.</p>
+                                </h4>
+                            </div>
+                            <div class="modal-footer">
+                             <apex:commandButton value="Close" action="{!closePopup}" styleClass="btn btn-primary" style="width:100px;height:38px;border-radius: 1px; background-color:#0b2e4a"/> 
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal fade cc_modal " id="Showcustomerdata"  role="dialog" >
+                    <div class="modal-dialog modal-lg" role="document" style="overflow-y: initial !important">
+                        <div class="modal-content ">
+                            <div class="modal-header" style="color: #fff;background-color: black;border-color: black;text-align: left !important;">
+                                <h4 class="modal-title">Select Customer Code</h4>
+                            </div>
+                            <div class="modal-body cc_modal_body" style="height: 80vh;overflow-y: auto;" >
+                                <apex:pageBlock >
+                                    <apex:pageMessages />
+                                    <apex:pageBlockTable value="{!accWrapperMap}" var="accResVar" styleClass="table table-striped" >
+                                        <apex:column headerValue="Option" style="text-align: left !important;">
+                                            <apex:outputpanel rendered="{!accWrapperMap[accResVar].IsSelected}">
+                                                <input type="radio" checked="true" disabled="true"/>
+                                            </apex:outputpanel>
+                                            <apex:outputpanel rendered="{!NOT(accWrapperMap[accResVar].IsSelected)}">
+                                                <input type="radio" name="<strong>selectRadio</strong>" id= "radio">
+                                                <br/>
+                                                <apex:actionSupport event="onclick" action="{!getSelected}"  reRender="">
+                                                    <apex:param name="CustomerCode" value="{!accWrapperMap[accResVar].BMSNo}"/>
+                                                </apex:actionSupport>
+                                            </input>
+                                        </apex:outputpanel>
+                                    </apex:column>
+                                    <apex:column headerValue="Customer Code" value="{!accWrapperMap[accResVar].BMSNo}" style="text-align: left !important;" />
+                                    <apex:column headerValue="Customer Name" value="{!accWrapperMap[accResVar].customerName}" style="text-align: left !important;"/>
+                                    <apex:column headerValue="Customer City" value="{!accWrapperMap[accResVar].City}" style="text-align: left !important;"/>
+                                    <apex:column headerValue="Customer State" value="{!accWrapperMap[accResVar].State}" style="text-align: left !important;"/>
+                                </apex:pageBlockTable>                
+                                <apex:pageBlockButtons location="bottom" styleClass="modal-footer">
+                                    <apex:commandButton action="{!UnlinkBMSNumber}" title="UnLink" Value="UnLink" rendered="{!UnlinkBMS}" styleClass="btn btn-default" style="background-color:teal;color:white;width:150px;height:40px;" />
+                                    <apex:commandButton action="{!updateBMSNo}" title="Link" Value="Link"  rendered="{!!UnlinkBMS}" styleClass="btn btn-default" style="background-color:teal;color:white;width:150px;height:40px;"/>
+                                    <apex:commandButton value="Close" action="{!closePopup}" styleClass="btn btn-primary" style="width:100px;height:38px;border-radius: 1px; background-color:#0b2e4a"/>
+                                </apex:pageBlockButtons>
+                            </apex:pageBlock>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>  
+        </apex:outputPanel>        
+    </apex:pageBlock>
+      <apex:pageBlock id="dealerMsg0" rendered="{!showDistributorMsg}">
+        <apex:outputPanel id="errorMsg" rendered="{!showDistributorMsg}">
+        	<div class="modal-body cc_modal_body" >
+                <h4 class="modal-title cc_cancel_prompt"></h4>
+                       <div id="50sg" style="background-color: #FEEEED;padding: 5px;border: solid 2px red;">                              
+                               <p style="color:black;font-size:13px;text-align:left ; "><span class="cmi_warning-icon" style="color:red;font-size:18px; vertical-align: middle;"></span>&nbsp;&nbsp;&nbsp;&nbsp;&emsp;{!$Label.OSM_Distributor_Message}</p>                              	                                
+                            </div>
+                     </div>
+            </apex:outputPanel>           
+    </apex:pageBlock>
+    </apex:form>
+</apex:page>

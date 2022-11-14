@@ -1,0 +1,189 @@
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global"
+                controller="FSLMakeModelCls">
+    <aura:attribute name="recordId" type="Id"/>
+    <aura:attribute name="Make" type="string"/>
+    <aura:attribute name="selectedMake" type="String"/>
+    <aura:attribute name="selectedModel" type="String"/>
+    <aura:attribute name="selectedApplicationCode" type="String"/>
+    <aura:attribute name="applicationErrMsg" type="String"/>
+    <aura:attribute name="makesList" type="List"/>
+    <aura:attribute name="modelsList" type="List"/>
+    <aura:attribute name="appList" type="List"/>
+    <aura:attribute name="ObjectName" type="String" default="WorkOrder" access="global"/> <!-- Object Name as String-->
+    <aura:attribute name="Application" type="String" default="Application__c" access="global"/>  <!-- Field Name as String-->
+    <aura:attribute name="appPicklist" type="String[]" />
+    <aura:attribute name="makeModelsMap" type="List"/>
+    <aura:attribute name="errorString" type="String" default=""/> 
+    <aura:attribute name="assetId" type="String"/>
+    <aura:attribute name="appErrorMsg" type="String"/>
+    <aura:attribute name="isAssetLocked" type="Boolean"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="loaded" type="Boolean" default="false" />
+    <aura:attribute name="AppDescription" type="String"/>
+    <aura:attribute name="isCumminsAsset" type="Boolean"/> <!--On Non Communs asset make text fields otherwise let it be-->
+    
+    <aura:attribute name="ApplicationMetadataMap" type="Map"/>
+    
+    <lightning:workspaceAPI aura:id="workspace"/>
+    
+    <aura:handler name="init" action="{!c.doInit}" value="{!this}" />
+    
+    <!-- CT3-608, Dinesh Yadav -->
+    <aura:handler event="force:refreshView" action="{!c.doInit}" /> <!-- CT3-608 -->
+    
+    <!-- aura if is not supporting with force:input field-->
+    <!--  <aura:handler name="init" value="{!this}" action="{!c.doInit1}" access="global"/>-->
+    <div class="slds">   
+        <aura:if isTrue="{!v.isCumminsAsset}">
+            <lightning:layout multipleRows="true">
+                
+                <lightning:layoutItem flexibility="auto" padding="around-small">
+                    <!--add custom label for input field-->
+                    <label class="slds-form-element__label" style="margin-right: 0.5rem;">{!$Label.c.FSL_Make}</label>
+                    <!--lightning help text for input field-->
+                    <lightning:helptext content="{!$Label.c.FSL_Select_Help_Text}" class="customIcon"/> 
+                    <lightning:select value="{!v.selectedMake}" onchange="{!c.loadModels}" aura:id="makeSelectList"
+                                      disabled="{!v.isAssetLocked}">
+                        <!--<option value="">Choose one </option>
+                <option value="">{!v.selectedMake}</option>-->
+                        
+                        <aura:if isTrue="{!v.selectedMake == null || v.selectedMake == ''}">
+                            <option value="">{!$Label.c.FSL_Choose_one}</option>
+                            <aura:set attribute="else">
+                                <option value="">{!v.selectedMake}</option>
+                            </aura:set>
+                        </aura:if> 
+                        <aura:iteration items="{!v.makesList}" var="item">
+                            <option value="{!item}">
+                                {!item}
+                            </option>
+                        </aura:iteration>
+                    </lightning:select>
+                </lightning:layoutItem>
+                <br/>
+                
+                <!--<lightning:layoutItem flexibility="auto">
+                <lightning:helptext content="Please select an option from the dropdown menu." />
+            </lightning:layoutItem>-->
+                <lightning:layoutItem flexibility="auto" padding="around-small">
+                    <!--add custom label for input field--> 
+                    <label class="slds-form-element__label" style="margin-right: 0.5rem;">{!$Label.c.FSL_Model}</label>
+                    <lightning:helptext content="{!$Label.c.FSL_Select_Help_Text}" class="customIcon"/>
+                    <br/><!--<lightning:helptext content="Please select an option from the dropdown menu." class="slds-hide"/> -->
+                    <lightning:select value="{!v.selectedModel}" disabled="{!v.isAssetLocked}">
+                        <aura:if isTrue="{!v.selectedModel == null || v.selectedModel == ''}">
+                            <option value="">{!$Label.c.FSL_Choose_one}</option>
+                            <aura:set attribute="else">
+                                <option value="">{!v.selectedModel}</option>
+                            </aura:set>
+                        </aura:if> 
+                        <aura:iteration items="{!v.modelsList}" var="item">
+                            <option value="{!item}">
+                                {!item}
+                            </option>
+                        </aura:iteration>
+                    </lightning:select> 
+                </lightning:layoutItem> 
+                <br/>
+                
+                <lightning:layoutItem flexibility="auto"  padding="around-small">
+                    <!--add custom label for input field-->
+                    <label class="slds-form-element__label" style="margin-right: 0.5rem;">{!$Label.c.FSL_Make_Application}</label>
+                    <lightning:helptext content="{!$Label.c.FSL_Select_Help_Text}" class="customIcon"/>
+                    <br/>
+                    <lightning:select value="{!v.selectedApplicationCode}" onchange="{!c.getSelectedAppDescription}" aura:id="makeAppCodeList1"  disabled="{!v.isAssetLocked}">
+                        <aura:iteration items="{!v.appPicklist}" var="val">
+                            <option value="{!val}"> {!val}</option>
+                        </aura:iteration>
+                    </lightning:select> 
+                </lightning:layoutItem> 
+                
+                <lightning:layoutItem flexibility="auto" padding="around-small">
+                    <br/><br/>
+                    <div class="slds-grid slds-grid--vertical-align-center slds-grid--align-spread "> 
+                        <lightning:button onclick="{!c.saveMakeModelsOnWO}" disabled="{!v.isAssetLocked}"
+                                          variant="brand"
+                                          label="{!$Label.c.FSL_MakeModelSaveLabel}"
+                                          class="slds-m-top_xx-small"/>
+                    </div> 
+                </lightning:layoutItem>
+                <div class="exampleHolder">
+                    <aura:if isTrue="{!v.showSpinner}">
+                        <lightning:spinner alternativeText="Loading" size="medium" />
+                    </aura:if> </div>
+                <!-- Application Error Message -->
+                <lightning:layoutItem size="12" padding="around-small">
+                    <aura:if isTrue="{!v.appErrorMsg != null}">
+                        
+                        <lightning:textarea class="slds-text-color_error" style="font-size: 14px;font-weight:bold; overflow:hidden" disabled="true" name="Warning" label="{!$Label.c.FSL_Warning}"
+                                            maxlength="1000" value="{!v.appErrorMsg}"/>
+                        <!-- QSOl Link Added by Harsha CT3-309 on 05/14-->
+                        <lightning:formattedUrl value="https://quickserve.cummins.com/qs3/pubsys2/xml/en/memo/2019/m1929.html" label="{!$Label.c.FSL_View_Memo}" target="_blank" />
+                    </aura:if>
+                </lightning:layoutItem>
+                <!-- Application Definition Message Added by Sripal Kotha on 03/05/2021 | CT2-85 -->
+                <lightning:layoutItem size="12" padding="around-small">
+                    <aura:if isTrue="{!v.AppDescription!=null}"> 
+                        <!--Application Definition <br/><br/><div style="border:1px solid #D3D3D3;font-size:14px;height:auto;"> {!v.AppDescription} </div>-->
+                        <lightning:textarea class="slds-text" style="font-size: 14px;font-weight:bold; overflow:hidden" disabled="true" name="Application Definition" label="{!$Label.c.FSL_Application_Definition}"
+                                            maxlength="1000" value="{!v.AppDescription}"/>
+                        
+                    </aura:if>
+                </lightning:layoutItem>
+                
+            </lightning:layout>
+            <br/>
+            <aura:set attribute="else">
+                <lightning:layout multipleRows="true">
+                    
+                    <lightning:layoutItem flexibility="auto" padding="around-small">
+                        <!--add custom label for input field-->
+                        <label class="slds-form-element__label" style="margin-right: 0.5rem;">{!$Label.c.FSL_Make}</label>
+                        <!--lightning help text for input field-->
+                        <lightning:helptext content="{!$Label.c.FSL_Select_Help_Text}" class="customIcon"/> 
+                        <lightning:input value="{!v.selectedMake}" placeholder="Enter Make for Non Cummins Asset" disabled="{!v.isAssetLocked}"/>
+                    </lightning:layoutItem>
+                    <br/>
+                    
+                    <lightning:layoutItem flexibility="auto" padding="around-small">
+                        <!--add custom label for input field--> 
+                        <label class="slds-form-element__label" style="margin-right: 0.5rem;">{!$Label.c.FSL_Model}</label>
+                        <lightning:helptext content="{!$Label.c.FSL_Select_Help_Text}" class="customIcon"/>
+                        <br/><!--<lightning:helptext content="Please select an option from the dropdown menu." class="slds-hide"/> -->
+                        <lightning:input value="{!v.selectedModel}" maxlength="25" placeholder="Enter Model for Non Cummins Asset" disabled="{!v.isAssetLocked}"/>                    
+                    </lightning:layoutItem> 
+                    <br/>
+                     <lightning:layoutItem flexibility="auto"  padding="around-small">
+                    <!--add custom label for input field-->
+                    <label class="slds-form-element__label" style="margin-right: 0.5rem;">{!$Label.c.FSL_Make_Application}</label>
+                    <lightning:helptext content="{!$Label.c.FSL_Select_Help_Text}" class="customIcon"/>
+                    <br/>
+                    <lightning:select value="{!v.selectedApplicationCode}" onchange="{!c.getSelectedAppDescription}" aura:id="makeAppCodeList"  disabled="{!v.isAssetLocked}">
+                        <aura:iteration items="{!v.appPicklist}" var="val">
+                            <option value="{!val}"> {!val}</option>
+                        </aura:iteration>
+                    </lightning:select> 
+                </lightning:layoutItem> 
+                    
+                    <lightning:layoutItem flexibility="auto" padding="around-small">
+                        <br/><br/>
+                        <div class="slds-grid slds-grid--vertical-align-center slds-grid--align-spread "> 
+                            <lightning:button onclick="{!c.saveMakeModelsOnWOForNonCumminsAsset}" disabled="{!v.isAssetLocked}"
+                                              variant="brand"
+                                              label="{!$Label.c.FSL_MakeModelSaveLabel}"
+                                              class="slds-m-top_xx-small"/>
+                            
+                        </div> 
+                    </lightning:layoutItem>
+                    <div class="exampleHolder">
+                        <aura:if isTrue="{!v.showSpinner}">
+                            <lightning:spinner alternativeText="Loading" size="medium" />
+                        </aura:if> </div>
+                    <!-- Application Definition Message Added by Sripal Kotha on 03/05/2021 | CT2-85 -->
+                </lightning:layout>
+                <br/>
+            </aura:set>
+        </aura:if> 
+        <br/>
+    </div>
+</aura:component>

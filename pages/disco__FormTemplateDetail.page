@@ -1,0 +1,1106 @@
+<apex:page showHeader="true" sidebar="true" standardStylesheets="true" standardController="disco__Form_Template__c" extensions="disco.Ctl_FormTemplateDetail" applyBodyTag="false"  docType="html-5.0">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<head>
+    <title>{!thisTemplate.name} Details</title>
+    <!-- Lightning Design -->
+    <apex:styleSheet value="{!URLFOR($Resource.disco__SLDS250, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+    <apex:styleSheet value="{!URLFOR($Resource.disco__jquerymodal, '/jquerymodal/jquery.modal.css')}" />
+    <apex:includeScript value="{!URLFOR($Resource.disco__jquery_3_6_0, 'jquery.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.disco__jquerymodal, '/jquerymodal/jquery.modal.js')}"/>
+    <apex:includeScript value="{!$Resource.disco__momentJS}"/>
+    <apex:includeScript value="{!URLFOR($Resource.disco__jszip, '/jszip.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.disco__jszip, '/jszip-load.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.disco__jszip, '/jszip-deflate.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.disco__jszip, '/jszip-inflate.js')}"/>
+    <!-- full babel polyfill -->
+    <script src="{!$Resource.babelpolyfill}"></script>
+    <style>
+    /* Keep SLDS100 background color */
+    .slds-scope svg.slds-icon-text-default {
+        fill: #54698d;
+    }
+    /* Keep SLDS100 background color */
+    .slds-scope .slds-page-header,
+    .slds-scope .slds-grid.slds-page-header__detail-row,
+    .slds-scope .slds-card {
+        background: #f4f6f9;
+    }
+
+    #deleteFormModal .slds-notify {
+        border-radius: 4px;
+    }
+
+    #deleteFormModal .slds-notify.delete-modal_flex {
+        flex-direction: column;
+    }
+
+    #deleteFormModal .slds-notify .delete-notice {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    #deleteFormModal .slds-notify h2,
+    #deleteFormModal .slds-notify li {
+        font-weight: normal;
+    }
+
+    .slds-scope .modal-body .slds-modal__content {
+        box-shadow: none;
+    }
+
+    /* override position from SLDS style */
+    .slds-notify_container.slds-notify_container-OR {
+        position:static;
+        display:none;
+    }
+
+    /* Styling for the CRUD/FLS error */
+    .page-error-cont {
+        text-align: center;
+        width: 400px;
+        max-width:90%;
+        margin: 40px auto;
+        padding: 20px;
+        background-color: #353f54;
+        color: #fff;
+        border-radius: 10px;
+    }
+
+    .slds-badge.managed {
+        vertical-align: 3px;
+        background-color: #6A618E;
+        color: #fff;
+    }
+
+    .page-error-cont button {
+        color: #353f54;
+        margin-top: 10px;
+    }
+    .page-error-cont button:hover {
+        background-color: #F4F6F9;
+    }
+
+    .slds-page-header .slds-page-header__detail-row .slds-col .button-centered {
+        margin: auto;
+    }
+
+    .modal, .slds-spinner_container {
+        border-radius: 4px;
+    }
+
+    #actionsMenu {
+        left: -204px;
+        display: none; /* default to closed menu */
+    }
+
+    .OR-modal_loading {
+        border-radius: 4px;
+        margin-left: 20px;
+    }
+
+    .OR-spinner {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* fix for template name wrapping early in IE */
+    .slds-page-header .slds-grid .slds-col {
+        ms-flex: 1 1;
+        flex: 1 1;
+    }
+
+    .slds-card__body .no-templates-msg,
+    .slds-card__body .no-forms-msg {
+        position: absolute;
+        width: 100%;
+        text-align: center;
+        bottom: 18px;
+        color: #54698D;
+        z-index: 100;
+        pointer-events: none;
+        margin-bottom: 8px;
+    }
+
+    .th-space-holder {
+        height: 32px
+    }
+
+    /* makes the text wrap at the same screen width as the edit button text 
+        so their vertical alignment is always the same */
+    .slds-scope p.ready-to-use-cont {
+        width: 69%;
+        margin: auto;
+    }
+
+    div.slds-scope .slds-checkbox [type="checkbox"][disabled] + .slds-checkbox_faux::after, 
+    div.slds-scope .slds-checkbox [type="checkbox"][disabled] ~ .slds-checkbox_faux::after {
+        border-color: #000;
+    }
+
+    .get-more-btn-container {
+        text-align: center;
+        padding-top: 8px;
+    }
+
+    /* allow delete button to wrap under view button */
+    /* The 'em' unit is used to allow for different levels of zoom in the browser */
+    .slds-scope .form-row .slds-button {
+        width: 6.857em;
+        margin-bottom: 4px;
+    }
+
+    .slds-scope .form-row.templates td {
+        vertical-align: middle;
+    }
+
+    .slds-scope .form-row .slds-button.view-btn {
+        margin-right: 4px;
+    }
+
+    .slds-scope .form-row .slds-button.delete-btn {
+        margin-left: 0;
+    }
+
+    /* table listing forms' details should be middle aligned */
+    .slds-scope .slds-card__body tr td {
+        vertical-align: middle;
+    }
+
+    .slds-scope .slds-card__body tr td button {
+        margin-top: 2px;
+        margin-bottom: 2px;
+    }
+
+    /* allow delete button to wrap under view button */
+    /* The 'em' unit is used to allow for different levels of zoom in the browser */
+    @media screen and (max-width: 57em) {
+        .slds-scope .form-row .slds-button {
+             width: 5.5em;
+        }
+    }
+
+    /* override response SLDS */
+    @media screen and (max-width: 48em) {
+        .slds-scope .slds-card .slds-card__body .slds-table .th-space-holder {
+            display: table-cell;
+        }
+    }
+    /* Add higher z-index to Salesforce Classic's tab drop down, so that it isn't covered up by SLDS styles */
+    #MoreTabs_List {
+        z-index: 10;
+    }
+    #CheckerHeader {
+        border-radius: 4px;
+    }
+    .auto-status-cont {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .slds-scope .slds-badge + .slds-badge.margin-override {
+        margin: 0;
+    }
+
+    .slds-scope .badge-wrapper,
+    .auto-update-modal-info {
+       display: flex;
+    }
+
+    /* override style */
+    .slds-scope .slds-badge_lightest {
+        font-size: 0.625rem;
+    }
+
+    .slds-scope #editTemplateModal .slds-modal__footer .slds-show {
+        display: inline;
+    }
+  
+    </style>
+    <script>
+    // workaround since JSENCODE won't take booleans
+    var yourekaDisabled = '{!JSENCODE(IF(yourekaDisabled,"true", "false"))}';
+    var endpointAvailable = '{!JSENCODE(IF(endpointAvailable,"true", "false"))}';
+    var ns = '{!JSENCODE(namespace)}';
+    var templateID = '{!JSENCODE(thisTemplate.id)}';
+    var templateName = '{!JSENCODE(thisTemplate.name)}';
+    var templateStatus = '{!JSENCODE(thisTemplate.status__c)}';
+    var mobileAvailable = '{!JSENCODE(IF(thisTemplate.Mobile_Available__c==true,"true","false"))}';
+    var publicAvailable = '{!JSENCODE(IF(thisTemplate.Public_Available__c==true,"true","false"))}';
+    var isManagedTemplate = '{!JSENCODE(IF(thisTemplate.Managed_Template__c==true,"true","false"))}' === 'true';
+    var autodiscover = '{!JSENCODE(IF(thisTemplate.Autocreate_Discoveries__c==true,"true","false"))}';
+    var exportTemplateVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateDetail.exportTemplate)}';
+    var updateStatusVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateDetail.updateStatus)}';
+    var testFormTemplateVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateDetail.testFormTemplate)}';
+    var fixFormTemplateVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateDetail.fixFormTemplate)}';
+    var deleteFormVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateDetail.deleteForm)}';
+    var deleteFormTemplateVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateDetail.deleteFormTemplate)}';
+    var cloneFormTemplateVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateDetail.cloneFormTemplate)}';
+    var toggleTemplateCheckboxVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateDetail.toggleTemplateCheckbox)}';
+    var loadNonInheritedLinkedSectionRecordsVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateDetail.loadNonInheritedLinkedSectionRecords)}';
+    var updateAutoLockArchiveDaysVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateDetail.updateAutoLockArchiveDays)}';
+    var nonInheritedLinkedSectionRecords=[];
+    var deployMetadataVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateDetail.deployMetadata)}';
+    var queryMoreFormsVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateDetail.queryMoreForms)}';
+    var queryMoreTemplatesVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateDetail.queryMoreTemplates)}';
+    // used in debugging
+    //var checkAsyncRequestVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateDetail.checkAsyncRequest)}';
+    var templateNotFound = '{!JSENCODE(IF(templateNotFound==true,"true","false"))}';
+    var templateObjectPrefix = '{!JSENCODE(templateObjectPrefix)}';
+    var templateListViewID = '{!JSENCODE(templateListViewID)}';
+    var isLightningExp = typeof sforce !== 'undefined';
+    var checkTemplateVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateDetail.checkFormTemplate)}';
+    var objectName2TriggerInfo = JSON.parse('{!JSENCODE(objectName2TriggerInfoJSON)}');
+    var thisTemplate = JSON.parse('{!JSENCODE(thisTemplateSTR)}');
+    var childTemplateList = JSON.parse('{!JSENCODE(childTemplateListSTR)}');
+    var childTemplateListSize = {!childTemplateListSize};
+    var createTriggers = '{!JSENCODE(createTriggers)}';
+    var totalNumberOfFormsForTemplate = {!totalNumberOfFormsForTemplate};
+    var mobileCBdisabled='{!JSENCODE(IF(!editMobileAvailableAllowed,"true","false"))}';
+    var publicCBdisabled='{!JSENCODE(IF(!editPublicAvailableAllowed,"true","false"))}';
+    var enablePDFsDisabled='{!JSENCODE(IF(!editEnableFormPDFsAllowed,"true","false"))}';
+    var autodiscoverCBDisabled='{!JSENCODE(IF(!editAutocreateDiscoveriesAllowed,"true","false"))}';
+    var hasFormSubmissionData='{!JSENCODE(IF(hasFormSubmissionData,"true","false"))}'=== "true";
+    var SLDS_PATH = '{!URLFOR($Resource.SLDS250)}';
+    var sfEnv = {};
+    sfEnv.sfTheme = '{!JSENCODE(userTheme)}';
+    </script>
+
+    <script src="{!$Resource.formTemplateDetailJS}"></script>
+    <script src="{!$Resource.fieldLinkTriggersJS}"></script>
+</head>
+<body>
+    <div class="slds-scope">
+        <!-- CRUD/FLS errors (can't be a directive or VF component since it has to load the apex:pagemessages for content) -->
+        <apex:outputPanel layout="none" rendered="{!NOT(HasCRUDFLS)}">
+            <div class="page-error-cont">
+                <div>
+                    <apex:messages />
+                </div>
+                <button onclick="returnToListView();" type="button" class="btn cancelBtn">Cancel</button>
+            </div>
+        </apex:outputPanel>
+
+        <apex:outputPanel layout="none">
+            <!-- display handled errors -->
+            <div class="slds-notify_container slds-notify_container-OR">
+                <div class="slds-notify slds-notify_alert slds-theme_error slds-theme_alert-texture" role="alert">
+                    <span class="slds-assistive-text">Info</span>
+                    <h2 id="allErrors"> <!-- errors go here --></h2>
+                </div>
+            </div>
+
+            <apex:outputPanel layout="none" rendered="{!AND(hasCRUDFLS,AND(NOT(yourekaDisabled),NOT(templateNotFound)))}">
+                <!-- PAGE HEADER -->
+                <div class="slds-page-header" role="banner">
+                    <div class="slds-grid">
+                        <div class="slds-col">
+                            <div class="slds-media">
+                                <div class="slds-media__figure">
+                                    <span class="slds-icon_container slds-icon-standard-work-type">
+                                        <svg aria-hidden="true" class="slds-icon slds-icon_large">
+                                            <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/standard-sprite/svg/symbols.svg#template')}"></use>
+                                        </svg>
+                                    </span>
+                                </div>
+                                <div class="slds-media__body">
+                                    <p class="slds-text-heading_label">Form Template</p>
+                                    <h1 class="slds-text-heading_medium">
+                                        <apex:outputText value="{!thisTemplate.name}"/> <apex:outputText styleClass="slds-badge managed slds-m-around_small" value="Managed" rendered="{!thisTemplate.disco__Managed_Template__c}"/>
+                                    </h1>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-col slds-align-middle slds-grid slds-grid_align-end">
+                            <div class="slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open">
+                              <button class="slds-button slds-button_icon-more" aria-haspopup="true" onclick="toggleMenu();">
+                                <svg aria-hidden="true" class="slds-button__icon">
+                                    <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#settings')}"></use>
+                                </svg>
+                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon_x-small">
+                                    <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#down')}"></use>
+                                </svg>
+                                <span class="slds-assistive-text">Show More</span>
+                              </button>
+                              <div id="actionsMenu" class="slds-dropdown slds-dropdown_left slds-dropdown_small">
+                                <ul class="dropdown__list" role="menu">
+                                    <li class="slds-dropdown__item 
+                                        {!IF(OR(thisTemplate.status__c=='Drafting',thisTemplate.status__c=='Inactive'),'slds-show','slds-hide')}" role="presentation">
+                                        <a onclick="updateStatus('In Use','reload');" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Publish!</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#magicwand')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item {!IF(AND(thisTemplate.status__c=='In Use',thisTemplate.forms__r.size == 0,!thisTemplate.managed_template__c,NOT(hasFormSubmissionData)), 'slds-show','slds-hide')}" role="presentation">
+                                        <a onclick="updateStatus('Drafting','reload');" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Return to Drafting</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#undo')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item {!IF(AND(thisTemplate.status__c=='In Use',OR(thisTemplate.forms__r.size > 0,thisTemplate.managed_template__c,hasFormSubmissionData)),'slds-show','slds-hide')}" role="presentation">
+                                        <a onclick="editTemplateModal('returnToDrafting');" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Return to Drafting</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#undo')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item 
+                                        {!IF(thisTemplate.status__c=='In Use','slds-show','slds-hide')}" role="presentation">
+                                        <a onclick="updateStatus('Inactive','reload');" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Set to Inactive</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#ban')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item 
+                                        {!IF(thisTemplate.status__c=='In Use' && thisTemplate.Managed_Template__c == false,'slds-show','slds-hide')}" role="presentation">
+                                        <a onclick="goToFormGen();" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Generate Forms</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#overflow')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item pdf-generation {!IF(thisTemplate.Enable_Form_PDFs__c==false && thisTemplate.Managed_Template__c == false,'','slds-hide')}" role="presentation">
+                                        <a id="enable-form-pdfs" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Enable Form PDFs</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#page')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item pdf-generation {!IF(thisTemplate.Enable_Form_PDFs__c==true && thisTemplate.Managed_Template__c == false,'','slds-hide')}" role="presentation">
+                                        <a id="disable-form-pdfs" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Disable Form PDFs</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#page')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item" role="presentation">
+                                        <a onclick="viewDepLogic();" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">View Dependent Question Logic</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#filter')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item" role="presentation">
+                                        <a onclick="cloneTemplate();" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Copy for a New Version</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#copy')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item {!IF(thisTemplate.forms__r.size == 0, 'slds-hide','')}" role="presentation">
+                                        <a onclick="goToFormTemplateStats();" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">View Charts / Export Answers</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#table')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item" role="presentation">
+                                        <a onclick="exportTemplate();" role="menuitem" tabindex="-1">
+                                            <span class="slds-truncate">Export Template</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#new_window')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item" role="presentation">
+                                        <a onclick="checkTemplateModal('');" role="menuitem" tabindex="-1">
+                                            <span class="slds-truncate">Validate Template</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon--x-small slds-icon-text-default slds-m-left--small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/utility-sprite/svg/symbols.svg#richtextbulletedlist')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item {!IF(AND(thisTemplate.status__c=='In Use',!thisTemplate.managed_template__c), 'slds-show','slds-hide')}" role="presentation">
+                                        <a onclick="openFormSubmissionBehavior();" role="menuitem" tabindex="-1">
+                                            <span class="slds-truncate">Form Submission Behavior</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon--x-small slds-icon-text-default slds-m-left--small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/utility-sprite/svg/symbols.svg#open')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item {!IF(AND(thisTemplate.status__c=='In Use',!thisTemplate.managed_template__c), 'slds-show','slds-hide')}" role="presentation">
+                                        <a onclick="openInboundDeeplink();" role="menuitem" tabindex="-1">
+                                            <span class="slds-truncate">Inbound Deeplink Data</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon--x-small slds-icon-text-default slds-m-left--small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/utility-sprite/svg/symbols.svg#link')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item" role="presentation">
+                                        <a onclick="editTemplateProps();"  role="menuitem" tabindex="-1">
+                                            <span class="slds-truncate">Edit Template Properties</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#settings')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                     <li class="slds-dropdown__item" role="presentation">
+                                        <a onclick="viewTemplateDetails();" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">View Form Template Properties</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/custom-sprite/svg/symbols.svg#custom100')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item" role="presentation">
+                                        <a onclick="deleteTemplateModal();"  role="menuitem" tabindex="-1">
+                                            <span class="slds-truncate">Delete Template</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#delete')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                </ul>
+                              </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- PAGE HEADER DETAIL ROW -->
+                    <div class="slds-grid slds-page-header__detail-row">
+                        <div class="slds-col slds-size_1-of-8 slds-p-horizontal_medium">
+                            <p class="slds-text-heading_label">Status</p>
+                            <div class="slds-text-heading_small statusVal">
+                                <apex:outputText value="{!IF(thisTemplate.disco__Status__c == 'In Use', 'Published', thisTemplate.disco__Status__c)}"/>
+                            </div>
+         	                <div class="slds-form-element slds-m-top_x-small js-hide-checkbox ">
+                                <div class="slds-form-element__control">
+                                    <span class="slds-checkbox">
+                                        <label class="slds-checkbox__label" for="mobile-available">
+                                            <input type="checkbox" name="options" id="mobile-available" />
+                                            <span class="slds-checkbox_faux"></span>
+                                            <span class="slds-form-element__label">Enabled on Mobile</span>
+                                        </label>
+                                    </span>
+                                </div>
+    	                    </div>
+	                        <div class="slds-form-element slds-m-top_x-small js-hide-checkbox ">
+                                <div class="slds-form-element__control">
+                                    <span class="slds-checkbox">
+                                        <label class="slds-checkbox__label" for="public-available">
+                                            <input type="checkbox" name="options" id="public-available" />
+                                            <span class="slds-checkbox_faux"></span>
+                                            <span class="slds-form-element__label">Available for Public Sites</span>
+                                        </label>
+                                    </span>
+                                </div>
+                            </div>
+	                        <div class="slds-form-element slds-m-top_x-small js-hide-checkbox ">
+                                <div class="slds-form-element__control">
+                                    <span class="slds-checkbox">
+                                        <label class="slds-checkbox__label" for="autodiscover">
+                                            <input type="checkbox" name="options" id="autodiscover" />
+                                            <span class="slds-checkbox_faux"></span>
+                                            <span class="slds-form-element__label">Autocreate Discoveries</span>
+                                        </label>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="slds-m-top_x-small">
+                                <span class="slds-badge">Number of Sections: {!numberOfSections}</span>
+                            </div>
+                            <div class="slds-m-top_x-small">
+                                <span class="slds-badge">Number of Questions: {!numberOfQuestions}</span>
+                            </div>
+                        </div>
+                        <div class="slds-col slds-text-align_center slds-m-horizontal_medium slds-size_3-of-8 slds-box slds-theme_default {!IF(thisTemplate.status__c=='Inactive','slds-hide','slds-show')}">
+                            <p class="slds-p-bottom_small">
+                                Want to make changes to your template?
+                            </p>
+                            <!-- If the template is not published -->
+                            <button class="button-centered slds-button slds-button_neutral {!IF(thisTemplate.status__c=='Drafting','slds-show','slds-hide')}" onclick="editTemplate();">
+                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon_left">
+                                    <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#edit')}"></use>
+                                </svg>
+                                Edit
+                            </button>
+                            <!-- If the template is published and no forms -->
+                            <button class="button-centered slds-button slds-button_neutral {!IF(AND(thisTemplate.status__c=='In Use',thisTemplate.forms__r.size == 0,!thisTemplate.managed_template__c,NOT(hasFormSubmissionData)), 'slds-show','slds-hide')}" onclick="unpublishEditTemplate();">
+                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon_left">
+                                    <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#edit')}"></use>
+                                </svg>
+                                Edit
+                            </button>
+                            <!-- If the template is published and has no forms OR has form submission data-->
+                            <button class="button-centered slds-button slds-button_neutral {!IF(AND(thisTemplate.status__c=='In Use',OR(thisTemplate.forms__r.size > 0,thisTemplate.managed_template__c,hasFormSubmissionData)),'slds-show','slds-hide')}" onclick="editTemplateModal();">
+                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon_left">
+                                    <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#edit')}"></use>
+                                </svg>
+                                Edit                    
+                            </button>                                           
+                        </div>
+                        <div class="slds-col slds-m-horizontal_medium slds-size_3-of-8 {!IF(thisTemplate.Managed_Template__c,'slds-show','slds-hide')}"></div>
+                        <div class="slds-col slds-m-horizontal_medium slds-size_3-of-8 slds-box slds-theme_default slds-text-align_center {!IF(thisTemplate.status__c=='Inactive' || thisTemplate.Managed_Template__c,'slds-hide','slds-show')}">
+                            <p class="slds-p-bottom_small ready-to-use-cont">
+                                Ready to use your template?
+                            </p>
+                            <!-- If the template is not published -->
+                            <button class="button-centered slds-button slds-button_brand {!IF(thisTemplate.status__c=='Drafting','slds-show','slds-hide')}" onclick="publishAddFormModal();">
+                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon_left">
+                                    <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#add')}"></use>
+                                </svg>
+                                New Form
+                            </button>
+                            <!-- If the template is published -->
+                            <button class="button-centered slds-button slds-button_brand {!IF(thisTemplate.status__c=='In Use', 'slds-show','slds-hide')}" onclick="addForm();">
+                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon_left">
+                                    <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#add')}"></use>
+                                </svg>
+                                New Form
+                            </button>
+                        </div>
+                        <div class="slds-col slds-size_1-of-8 slds-p-horizontal_medium {!IF(thisTemplate.status__c=='Inactive','slds-show','slds-hide')}">
+                            <div class="slds-box slds-theme_default slds-text-align_center">
+                                This template is inactive.
+                            </div>
+                        </div>
+                        <div class="slds-col slds-size_1-of-8 slds-p-horizontal_medium {!IF(thisTemplate.status__c=='Inactive','slds-show','slds-hide')}">
+                            <!-- Space Holder -->
+                        </div>
+
+                    </div>
+                    <div class="slds-spinner_container slds-hide">
+                        <div class="slds-spinner_brand slds-spinner slds-spinner_small" aria-hidden="false" role="alert">
+                            <div class="slds-spinner__dot-a"></div>
+                            <div class="slds-spinner__dot-b"></div>
+                        </div>
+                    </div>
+                    <!-- / PAGE HEADER DETAIL ROW -->
+                </div>
+                <!-- / PAGE HEADER -->
+                <apex:outputPanel layout="none" rendered="{!thisTemplate.disco__Managed_Template__c!=true}">
+                    <div class="slds-box slds-m-top_small auto-status-cont">
+                        <div>
+                            <apex:outputPanel layout="none" rendered="{!thisTemplate.disco__Remove_Mobile_Avail_Days__c!=null && thisTemplate.disco__Remove_Mobile_Avail_Days__c > 0}">
+                                <p>Submitted Forms are automatically removed from mobile devices after {!thisTemplate.disco__Remove_Mobile_Avail_Days__c} day{!IF(thisTemplate.disco__Remove_Mobile_Avail_Days__c == 1,'','s')}.</p>
+                            </apex:outputPanel>
+                            <apex:outputPanel layout="none" rendered="{!thisTemplate.disco__Remove_Mobile_Avail_Days__c==0}">
+                                <p>Submitted Forms are never automatically removed from mobile devices.</p>
+                            </apex:outputPanel>
+                            <apex:outputPanel layout="none" rendered="{!thisTemplate.disco__Remove_Mobile_Avail_Days__c==null}">
+                                <p>Automatically removing submitted forms from mobile devices has not been enabled.</p>
+                            </apex:outputPanel>
+                            
+                            <apex:outputPanel layout="none" rendered="{!thisTemplate.disco__Auto_Lock_Days__c!=null && thisTemplate.disco__Auto_Lock_Days__c > 0}">
+                                <p>Submitted Forms are automatically locked after {!thisTemplate.disco__Auto_Lock_Days__c} day{!IF(thisTemplate.disco__Auto_Lock_Days__c == 1,'','s')}.</p>
+                            </apex:outputPanel>
+                            <apex:outputPanel layout="none" rendered="{!thisTemplate.disco__Auto_Lock_Days__c==null}">
+                                <p>Automatically locking submitted forms has not been enabled.</p>
+                            </apex:outputPanel>
+                            <apex:outputPanel layout="none" rendered="{!thisTemplate.disco__Auto_Lock_Days__c==0}">
+                                <p>Submitted Forms are never automatically locked.</p>
+                            </apex:outputPanel> 
+
+                            <apex:outputPanel layout="none" rendered="{!thisTemplate.disco__Auto_Archive_Days__c!=null && thisTemplate.disco__Auto_Archive_Days__c > 0}">
+                                <p>Locked Forms are automatically archived after {!thisTemplate.disco__Auto_Archive_Days__c} day{!IF(thisTemplate.disco__Auto_Archive_Days__c == 1,'','s')}.</p>
+                            </apex:outputPanel>
+                            <apex:outputPanel layout="none" rendered="{!thisTemplate.disco__Auto_Archive_Days__c==null}">
+                                <p>Automatically archiving locked forms has not been enabled.</p>
+                            </apex:outputPanel>
+                            <apex:outputPanel layout="none" rendered="{!thisTemplate.disco__Auto_Archive_Days__c==0}">
+                                <p>Locked Forms are never automatically archived.</p>
+                            </apex:outputPanel>
+                        </div>
+                        <div class="slds-hint-parent">
+                            <button class="slds-button slds-button_icon slds-button_icon-border-filled" onclick="editAutoLockArchiveDaysModal();">
+                                <svg class="slds-button__icon slds-button__icon_hint" aria-hidden="true">
+                                    <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#edit')}"></use>
+                                </svg>
+                                <span class="slds-assistive-text">Edit Template Properties</span>
+                            </button>
+                        </div>
+                    </div>
+                </apex:outputPanel>
+
+                <div class="slds-grid {!IF(thisTemplate.Auto_Lock_Days__c == null && thisTemplate.Auto_Archive_Days__c == null && thisTemplate.Remove_Mobile_Avail_Days__c == null, 'slds-m-top_large','slds-m-top_small')}">
+                    <div class="slds-col slds-size_12-of-12">
+                        <div class="slds-card">
+                            <header class="slds-card__header slds-grid">
+                                <div class="slds-col slds-media slds-media_center">
+                                    <div class="slds-media__figure">
+                                        <svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon_large {!IF(thisTemplate.Managed_Template__c, 'slds-hide','')}">
+                                            <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/standard-sprite/svg/symbols.svg#record')}"></use>
+                                        </svg>
+                                        <svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon_large {!IF(thisTemplate.Managed_Template__c, '','slds-hide')}">
+                                            <use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/action-sprite/svg/symbols.svg#description')}"></use>
+                                        </svg>
+                                    </div>
+                                    <div class="slds-media__body">
+                                        <h3 class="slds-text-heading_small">{!IF(thisTemplate.Managed_Template__c, 'Templates','Forms')}
+                                            <span class="slds-text-body_small slds-m-left_xx-small {!IF(thisTemplate.forms__r.size > 500,'','slds-hide')}">(Most Recent 500 Displayed)</span>
+                                        </h3>
+                                        <span class="slds-badge {!IF(thisTemplate.Managed_Template__c,'','slds-hide')}">
+                                            Used In: {!Text(childTemplateListSize)} Template{!IF(childTemplateListSize == 1,'','s')}
+                                        </span>
+                                        <span class="slds-badge margin-override js-num-forms-showing {!IF(thisTemplate.forms__r.size > 0 && !thisTemplate.Managed_Template__c,'','slds-hide')}">
+                                            Number of Forms: {!IF(thisTemplate.forms__r.size >= 100,'100 of ','')}{!Text(totalNumberOfFormsForTemplate)}
+                                        </span>
+                                    </div>
+                                </div>
+                            </header>
+
+                            <!-- CARD BODY = TABLE -->
+                            <section class="slds-card__body">
+                                <div class="slds-scrollable_x">
+                                    <table class="slds-table slds-table_bordered slds-max-medium-table_stacked-horizontal">
+                                        <thead>
+                                            <tr class="slds-no-hover form-column-headers">
+                                                <th class="slds-text-heading_label {!IF(thisTemplate.Managed_Template__c, 'slds-size_1-of-8','slds-size_2-of-8')}" scope="col">Action</th>
+                                                <th class="slds-text-heading_label {!IF(thisTemplate.Managed_Template__c, 'slds-size_3-of-8','slds-size_2-of-8')}" scope="col">Name</th>
+                                                <th class="slds-text-heading_label slds-size_2-of-8 {!IF(thisTemplate.Managed_Template__c, 'slds-hide','')}" scope="col">Status</th>
+                                                <th class="slds-text-heading_label slds-size_2-of-8 {!IF(thisTemplate.Managed_Template__c, '','slds-hide')}" scope="col">Owner</th>
+                                                <th class="slds-text-heading_label slds-size_2-of-8" scope="col">Created Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="row-container">
+                                            <!-- Space Holders to make table headers visible for the following message. -->
+                                            <th class="th-space-holder js-th-space-holder {!IF(thisTemplate.forms__r.size == 0 && !thisTemplate.Managed_Template__c, '','slds-hide')}"></th>
+                                            <th class="th-space-holder js-th-space-holder {!IF(thisTemplate.forms__r.size == 0 && !thisTemplate.Managed_Template__c, '','slds-hide')}"></th>
+                                            <th class="th-space-holder js-th-space-holder {!IF(thisTemplate.forms__r.size == 0 && !thisTemplate.Managed_Template__c, '','slds-hide')}"></th>
+                                            <th class="th-space-holder js-th-space-holder {!IF(thisTemplate.forms__r.size == 0 && !thisTemplate.Managed_Template__c, '','slds-hide')}"></th>
+                                            <div class="no-forms-msg {!IF(thisTemplate.forms__r.size == 0 && !thisTemplate.Managed_Template__c, 'slds-show','slds-hide')} slds-m-bottom_small">
+                                               When you create forms for this template, they will show up here.
+                                            </div>
+                                            <div class="no-templates-msg js-no-templates-msg slds-hide slds-m-bottom_small">
+                                               When you create templates using this Managed Template, they will show up here.
+                                            </div>
+                                            <!-- form list inserted here by JS -->
+                                        </tbody>
+                                    </table>
+                                    <div class="get-more-btn-container">
+                                        <button class="slds-button slds-button_neutral js-get-more-forms"> Load More Forms </button>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </apex:outputPanel>
+
+            <!-- delete Template confirmation modal -->
+            <div id="deleteTemplateModal" class="slds-hide modal">
+                <div class="modal-header slds-modal__header">
+                    <h3 class="modal-title slds-text-heading_small OR-modal-heading">Delete&nbsp;<apex:outputText value="{!thisTemplate.name}"/></h3>
+                </div>
+                <div class="modal-body slds-modal__content">
+                    <div class="can-delete" > Deleting this Form Template will remove all sections, questions, and discovery logic 
+                        that have been created. Are you sure you wish to delete this Form Template?
+                    </div>
+                    <div class="cannot-delete" >A Template with related Forms or Managed Templates cannot be deleted.
+                    </div>
+                </div>
+                <div class="modal-footer slds-modal__footer">
+                    <div class="slds-x-small-buttons_horizontal can-delete">
+                        <button class="slds-button slds-button_neutral" onClick="closeModal('deleteTemplateModal');" type="button">
+                            Cancel
+                        </button>
+                        <button class="slds-button slds-button_neutral slds-button_brand" type="button" onClick="deleteTemplate()">
+                            Yes, Delete
+                        </button>
+                    </div>
+                    <div class="slds-x-small-buttons_horizontal cannot-delete">
+                        <button class="slds-button slds-button_neutral slds-button_brand" onClick="closeModal('deleteTemplateModal');" type="button">
+                            Ok
+                        </button>
+                    </div>
+                    <div class="slds-spinner_container slds-hide">
+                        <div class="slds-spinner_brand slds-spinner slds-spinner_small" aria-hidden="false" role="alert">
+                            <div class="slds-spinner__dot-a"></div>
+                            <div class="slds-spinner__dot-b"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Field Link Results confirmation modal -->
+            <div id="FieldLinkResultsModal" class="slds-hide modal">
+                <div class="modal-header slds-modal__header">           
+                    <h3 class="modal-title slds-text-heading--small OR-modal-heading">
+                        Template Validation for Template:&nbsp;<apex:outputText value="{!thisTemplate.name}"/>
+                    </h3>
+                </div>
+                <div id="FieldLinkResults"></div>
+            </div>
+
+            
+            <!-- delete Form confirmation modal -->
+            <div id="deleteFormModal" class="slds-hide modal">
+                <div class="modal-header slds-modal__header">
+                    <h3 class="modal-title slds-text-heading_small OR-modal-heading">Delete Form</h3>
+                </div>
+                <p/>
+                <div class="modal-body slds-modal__content">
+                    <div>Are you sure you wish to delete this Form?</div>
+
+	                <div id="lsrList" class="slds-m-top_large slds-p-horizontal_medium slds-p-bottom_medium js-standard-text slds-hide">
+	                    <div id="innerLSRlist" class=" slds-notify_container-OR slds-m-bottom_small">
+	                        <div class="slds-notify slds-notify_alert slds-theme_warning slds-theme_alert-texture delete-modal_flex" role="alert">
+                                <span class="delete-notice">
+    	                            <span class="slds-assistive-text">Info</span>
+    	                            <h2>
+    	                                <span class="slds-icon_container slds-m-right_small" title="delete warning">
+    	                                    <svg aria-hidden="true" class="slds-icon slds-icon_small">
+    	                                        <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+    	                                    </svg>
+    	                                </span>
+    	                                The following records will be deleted upon deleting this form:
+    	                            </h2>
+                                </span>
+	                            <div id="lsrListDetail"/>
+	                        </div>
+	                    </div>
+	                </div>
+                </div>
+                <div class="modal-footer slds-modal__footer">
+                    <div class="slds-x-small-buttons_horizontal">
+                        <button class="slds-button slds-button_neutral" onClick="closeModal('deleteFormModal');" type="button">
+                            Cancel
+                        </button>
+                        <button class="slds-button slds-button_neutral slds-button_brand" type="button" onClick="deleteForm()" data-form-id="">
+                            Yes, Delete
+                        </button>
+                    </div>
+                    <div class="slds-spinner_container slds-hide">
+                        <div class="slds-spinner_brand slds-spinner slds-spinner_small" aria-hidden="false" role="alert">
+                            <div class="slds-spinner__dot-a"></div>
+                            <div class="slds-spinner__dot-b"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Edit Template > Copy for a New Version confirmation modal -->
+            <div id="editTemplateModal" class="slds-hide modal">
+                <div class="modal-header slds-modal__header">
+                    <h3 class="modal-title slds-text-heading_small OR-modal-heading copy-new-version">Copy Template for a New Version</h3>
+                    <h3 class="form-submission modal-title slds-text-heading_small OR-modal-heading slds-hide">Return to Drafting</h3>
+                </div>
+                <div class="modal-body slds-modal__content">
+                    <p class="standard-template">You cannot edit a Template that already has Forms based on it. Want to copy this Template to create a new version to edit?</p>
+                    <p class="managed-template">You cannot edit a Managed Template already has Standard Templates based on it. Want to copy this Template to create a new version to edit?</p>
+                    <p class="form-submission slds-hide">Returning to Drafting will remove Form Submission data, do you wish to continue?</p>
+                </div>
+                <div class="modal-footer slds-modal__footer">
+                    <div class="slds-x-small-buttons_horizontal modal-btn-container">
+                        <button class="slds-button slds-button_neutral" onClick="closeModal('editTemplateModal');" type="button">
+                            Cancel
+                        </button>
+                        <button class="slds-button copy-new-version slds-button_neutral slds-button_brand" type="button" onclick="cloneTemplate();" data-form-id="">
+                            Yes, Copy for a New Version
+                        </button>
+                        <button class="form-submission slds-button slds-button_neutral slds-button_brand slds-hide" type="button" onclick="unpublishEditTemplate();" data-form-id="">
+                            Yes, Return to Drafting
+                        </button>
+                    </div>
+                    <div class="slds-spinner_container slds-hide">
+                        <div class="slds-spinner_brand slds-spinner slds-spinner_small" aria-hidden="false" role="alert">
+                            <div class="slds-spinner__dot-a"></div>
+                            <div class="slds-spinner__dot-b"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- New Form > Publish confirmation modal -->
+            <div id="publishAddFormModal" class="slds-hide modal">
+                <div class="modal-header slds-modal__header">
+                    <h3 class="modal-title slds-text-heading_small OR-modal-heading">Publish and Create a Form</h3>
+                </div>
+                <div class="modal-body slds-modal__content">
+                    <p>You must publish the template before you create a form based on your template. Would you like to publish the template?</p>
+                </div>
+                <div class="modal-footer slds-modal__footer">
+                    <div class="slds-x-small-buttons_horizontal">
+                        <button class="slds-button slds-button_neutral" onClick="closeModal('publishAddFormModal');" type="button">
+                            Cancel
+                        </button>
+                        <button class="slds-button slds-button_neutral slds-button_brand" type="button" onclick="publishAddForm();" data-form-id="">
+                            Yes, Publish and Create a Form
+                        </button>
+                    </div>
+                    <div class="slds-spinner_container slds-hide">
+                        <div class="slds-spinner_brand slds-spinner slds-spinner_small" aria-hidden="false" role="alert">
+                            <div class="slds-spinner__dot-a"></div>
+                            <div class="slds-spinner__dot-b"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Template Properties modal -->
+            <div id="editAutoLockArchiveDaysModal" class="slds-hide modal">
+                <div class="modal-header slds-modal__header">
+                    <h3 class="modal-title slds-text-heading_small OR-modal-heading">Form Flow Properties</h3>
+                </div>
+                <div class="modal-body slds-modal__content">
+                    <div class="slds-box slds-box_x-small slds-m-bottom_small slds-theme_shade auto-update-modal-info">
+                        <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-right_small slds-m-top_xxx-small">
+                            <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#info')}"></use>
+                        </svg>
+                        <p>If you do not want an action to run, set the value to 0.</p>
+                    </div>
+                    <form class="js-temp-props-form">
+                    </form>
+                </div>
+                <div class="modal-footer slds-modal__footer">
+                    <div class="slds-x-small-buttons_horizontal">
+                        <button class="slds-button slds-button_neutral" onClick="closeModal('editAutoLockArchiveDaysModal');" type="button">
+                            Cancel
+                        </button>
+                        <button class="slds-button slds-button_neutral slds-button_brand" type="button" onclick="updateTemplateProps();" data-form-id="">
+                            Save
+                        </button>
+                    </div>
+                    <div class="slds-spinner_container slds-hide">
+                        <div class="slds-spinner_brand slds-spinner slds-spinner_small" aria-hidden="false" role="alert">
+                            <div class="slds-spinner__dot-a"></div>
+                            <div class="slds-spinner__dot-b"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Spinner Modal -->
+            <div id="spinnerModal" class="slds-modal">
+                <div class="slds-modal__container">
+                    <div class="slds-modal__content OR-modal_loading">
+                        <div class="slds-spinner_large OR-spinner">
+                            <img class="slds-m-top_large" src="{!URLFOR($Resource.SLDS250, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+                        </div>
+                        <div>
+                            <h3 class="modal-title slds-text-heading_medium slds-m-vertical_large slds-text-align_center">Loading...</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-backdrop"></div>
+        </apex:outputPanel>
+    </div>
+<!-- IE Support for SVGS-->
+<script src="{!URLFOR($Resource.svg4everybody, '/svg4everybody/svg4everybody.min.js')}"></script>
+<script>
+    $(document).ready(function() {
+
+        // hack to remove overriding SF stylesheet in classic
+        $('link[rel=stylesheet][href*="slds.css"]').remove();
+
+        if (window.location.host.indexOf('.visual.') === -1 && isLightningExp) {
+            // If the host doesn't have ".visual." but it is in LEX, then its actually a Napili Community 
+            sfEnv.isNapili = true;
+        }
+
+        if (templateNotFound === 'true') {
+            addError('Template not found, record may have been deleted.');
+        }
+
+        // create triggers if needed
+        if (createTriggers === 'true') {
+            generateZIP();
+        }
+        /* If Template is not Published ('In Use') or is a Managed Template, 
+            don't show mobile available or public available checkboxes */
+        if(templateStatus !== 'In Use' || isManagedTemplate) {
+            $('.js-hide-checkbox').hide();
+        }
+
+        // Check the Mobile Available checkbox if property is true
+        if(mobileAvailable === 'true') {
+            $('#mobile-available').prop('checked', true);
+        }
+        if (mobileCBdisabled==='true') {
+	    	$('#mobile-available').prop('disabled', true);   
+        }
+
+        // Check the Public Available checkbox if property is true
+        if(publicAvailable === 'true') {
+            $('#public-available').prop('checked', true);        
+        }
+        if (publicCBdisabled==='true'){
+	    	$('#public-available').prop('disabled', true);   
+        }
+
+        if (autodiscover==='true'){
+	    	$('#autodiscover').prop('checked', true);   
+        }
+        if (autodiscoverCBDisabled==='true'){
+	    	$('#autodiscover').prop('disabled', true);   
+        }
+        
+        // On change of Mobile Available checkbox, make VFR call to update property in SF
+        $('#mobile-available').on('click', function(){
+            var checkedVal = this.checked;
+            updateCheckboxValInSF(checkedVal,ns+'Mobile_Available__c',this);
+        });
+
+        $('#enable-form-pdfs').on('click', function(){
+            updateCheckboxValInSF(true,ns+'Enable_Form_PDFs__c',this,'.pdf-generation');
+        });
+
+        $('#disable-form-pdfs').on('click', function(){
+            updateCheckboxValInSF(false,ns+'Enable_Form_PDFs__c',this,'.pdf-generation');
+        });
+        if (enablePDFsDisabled==='true') {
+            $('#disable-form-pdfs').prop('disabled', true);   
+        }
+
+        // On change of Public Available checkbox, make VFR call to update property in SF
+        $('#public-available').on('click', function(){
+            var checkedVal = this.checked;
+            updateCheckboxValInSF(checkedVal,ns+'Public_Available__c',this);
+        });
+
+        // On change of autodiscover checkbox, make VFR call to update property in SF
+        $('#autodiscover').on('click', function(){
+            var checkedVal = this.checked;
+            updateCheckboxValInSF(checkedVal,ns+'Autocreate_Discoveries__c',this);
+        });
+
+        function updateCheckboxValInSF(checkedVal,fieldName,thisInput,listItemSelector) {
+            Visualforce.remoting.Manager.invokeAction(  
+                toggleTemplateCheckboxVFR,
+                templateID,
+                fieldName,
+                checkedVal,
+                function(result, event) {
+                    // if it failed revert the value and show error
+                    if(!result) {
+                        errorText = 'Error updating ' + fieldName + '.<br/> ';
+                        // sometimes the error message is ugly like when its from an addError from the trigger
+                        // take a hack at formatting it, if it fails just display it raw
+                        try {
+                            errorText += event.message.split(';')[1].split(':').splice(1).join('').split('[]').join('').split(',')[1];
+                        }
+                        catch (err) {
+                            errorText += event.message;
+                            addError(errorText);
+                        }
+                        addError(errorText);
+                        if (!listItemSelector) {
+                            thisInput.checked = !checkedVal;
+                        }
+                        return;
+                    }
+
+                    if (!!listItemSelector) {
+                        $(listItemSelector).toggleClass('slds-hide');
+                    }
+                }
+            );
+        }
+
+        // Reset visibility of 'get-more-forms' button 
+        $('.js-get-more-forms').addClass('slds-hide');
+
+        // Build forms list
+        var rowsHTML = '';
+        var formsBatchSize = 100;
+        if (thisTemplate.hasOwnProperty(ns+'Forms__r') && thisTemplate[ns+'Forms__r'].hasOwnProperty('records')) {
+            thisTemplate[ns+'Forms__r'].records.forEach(function(form,i){
+                if (i < formsBatchSize) {
+                    // Build rows
+                    rowsHTML += buildFormRows(form);                    
+                } else {
+                    /* If there are still more that would be queried,
+                        make the 'get-more-forms' button visible */
+                    $('.js-get-more-forms').removeClass('slds-hide');
+                }
+            });
+            sfEnv.formsListLength = formsBatchSize;
+
+            $('tbody#row-container').append(rowsHTML);
+
+            $('.js-get-more-forms').on('click',function(){
+                getMoreForms();
+            });
+
+            function getMoreForms(){
+                Visualforce.remoting.Manager.invokeAction(
+                    queryMoreFormsVFR,
+                    sfEnv.formsListLength,
+                    thisTemplate.Id,
+                    function(forms,event){
+                        var formRows = '';
+                        forms.forEach(function(form,i){
+                            // Reset visibility of  'get-more-forms' button 
+                            $('.js-get-more-forms').addClass('slds-hide');
+                            if (i < formsBatchSize) {
+                                // Build rows
+                                formRows += buildFormRows(form);                    
+                            } else {
+                                /* If there are still more that would be queried,
+                                    make the 'get-more-forms' button visible */
+                                $('.js-get-more-forms').removeClass('slds-hide');
+                            }
+                        });
+                        sfEnv.formsListLength += (formsBatchSize < forms.length ? formsBatchSize : forms.length);
+                        $('tbody#row-container').append(formRows);
+
+                        $('.js-num-forms-showing').html('Number of Forms: ' + sfEnv.formsListLength + ' of ' + totalNumberOfFormsForTemplate);
+                    }
+                );
+            }
+        }
+
+        if (childTemplateList && childTemplateList.length && thisTemplate[ns+'Managed_Template__c']) {
+            childTemplateList.forEach(function(template,i){
+                if (i < formsBatchSize) {
+                    // Build rows
+                    rowsHTML += buildTemplateRows(template);                    
+                } else {
+                    /* If there are still more that would be queried,
+                        make the 'get-more-forms' button visible */
+                    $('.js-get-more-forms').removeClass('slds-hide');
+                }
+            });
+            sfEnv.formsListLength = formsBatchSize;
+
+            $('tbody#row-container').append(rowsHTML);
+
+            $('.js-get-more-forms').on('click',function(){
+                getMoreTemplates();
+            });
+
+            function getMoreTemplates(){
+                Visualforce.remoting.Manager.invokeAction(
+                    queryMoreTemplatesVFR,
+                    sfEnv.formsListLength,
+                    thisTemplate.Id,
+                    thisTemplate[ns+'RandomId__c'],
+                    function(templates,event){
+                        var templateRows = '';
+                        templates.forEach(function(template,i){
+                            // Reset visibility of  'get-more-forms' button 
+                            $('.js-get-more-forms').addClass('slds-hide');
+                            if (i < formsBatchSize) {
+                                // Build rows
+                                template += buildTemplateRows(template);                    
+                            } else {
+                                /* If there are still more that would be queried,
+                                    make the 'get-more-forms' button visible */
+                                $('.js-get-more-forms').removeClass('slds-hide');
+                            }
+                        });
+                        sfEnv.formsListLength += (formsBatchSize < templates.length ? formsBatchSize : templates.length);
+                        $('tbody#row-container').append(templateRows);
+                    }
+                );
+            }
+        } else if (childTemplateList && childTemplateList.length === 0 && thisTemplate[ns+'Managed_Template__c']) {
+            $('.js-th-space-holder, .js-no-templates-msg').removeClass('slds-hide');
+        }
+
+        svg4everybody(); // init
+    });
+</script>
+</body>
+</html>
+</apex:page>

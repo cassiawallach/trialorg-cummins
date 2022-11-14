@@ -1,0 +1,1086 @@
+<!--**********************************************************************
+Name:CG_ClaimsUEOneBMS
+Copyright Â© 2018  Cummins
+======================================================
+======================================================
+Purpose:                                                            
+-------  
+We are using this component for warranty overview page in Claims.
+======================================================
+======================================================
+History                                                            
+-------                                                            
+VERSION  AUTHOR                          DATE                DETAIL                                 
+1.0   -  Rajesh Pasupuleti               02/05/2018          INITIAL DEVELOPMENT
+1.0   -  Surender Madipeddi              02/05/2018          INITIAL DEVELOPMENT
+1.1   -  Rajesh Pasupuleti               03/14/2018          Added script "campquantitylen" function for numeric 
+1.2   -  Miruthula Kanagaraj             08/11/2019          Added Read only condition for RO users
+***********************************************************************-->
+
+<apex:component controller="CG_CL_ClaimsUEOneBMS" id="claimsUEComp" allowDML="true">
+    <apex:attribute name="pgName" description="Page Name" type="String" />
+    <!--Passing Page name -->
+    <apex:attribute name="isAutomatedDealerloaction" description="getting isAutomatedDealer value from main class"
+        type="Boolean" />
+    <apex:attribute name="isManualDealerlocation" description="getting isManualDealer value from main class"
+        type="Boolean" />
+    <apex:attribute name="mainController" description="Main Controller Type" type="CG_CL_ClaimsIntake"
+        assignTo="{!mainContr}" />
+    <!--Passing Parent Controller -->
+    <!--This style class will be showing the border.-->
+    <style>
+        .cmi_asterisk1 {
+            color: #D02323;
+        }
+        
+        .showRedBorder {
+            border: 2px solid red !important;
+        }
+        
+        .showRedBorderCheckbox {
+            outline: 2px solid red !important;
+        }
+
+    </style>
+    <style>
+        .claimsCustFields {
+            margin-bottom: 5px;
+        }
+
+    </style>
+
+    <script>
+        function ShowPSNModalPopup(condbasedPSNPopup) {
+            //alert('condbasedPSNPopup' + '  ' + condbasedPSNPopup);
+            var oldPsnVar = '{!mainContr.existingPSN}';
+
+            if (condbasedPSNPopup == 'true') {
+                $('#psnServModelPopupDiv').modal('show');
+            } else {
+                //startRequestJS();
+                if (oldPsnVar != '') {
+
+                    window.location.reload(true);
+                    return false;
+                }
+            }
+        }
+
+    </script>
+    <script>
+        function showPSNChangePopup(newPsn) {
+            //alert('inside showPSNChangePopup '+newPsn);
+            var oldPsn = '{!mainContr.existingPSN}';
+            //alert('inside showPSNChangePopup '+oldPsn);
+            if (oldPsn != '') {
+                $('#psnChangePopUp').modal('show');
+            } else {
+                startRequestJS();
+                //return false;
+            }
+        }
+
+    </script>
+    <script>
+        function changeCampaigns() {
+            callCampaigns();
+        }
+
+    </script>
+    <script language="javascript">
+        $(function() {
+            $("#datepicker").datepicker();
+        });
+
+    </script>
+    <script>
+        function assignWSDtoActual(e) {
+            document.getElementById('{!$Component.warrStDt}').value = e.value;
+            makeBISreadOnlyJS();
+        }
+
+        function assignfaiDtoActual(e) {
+            document.getElementById('{!$Component.FailureDt}').value = e.value;
+            callCampaigns();
+        }
+        function onChangeOfPSNOpenModal(){ //GSSC-240
+            $('#loadingModal').modal('show');
+        }
+        
+        function onCompleteOfPSNCloseModal(){ //GSSC-240
+            $('#loadingModal').modal('hide');
+            //rerenderStartReqPanel();
+        }
+
+    </script>
+    <script language="javascript">
+        /* $(function () {
+                            $('#warrantyDate').datepicker({ dateFormat: 'd/m/yy' });
+                        });
+                        /*  $(function(){
+
+                                var date = new Date();
+                                var currentMonth = date.getMonth();
+                                var currentDate = date.getDate();
+                                var currentYear = date.getFullYear();
+
+                                $('#datepicker').datepicker({
+                                    minDate: new Date(currentYear, currentMonth, currentDate),
+                                    dateFormat: 'dd-mm-yy'
+                                });*/
+
+        //});
+
+        // });
+
+    </script>
+
+    <!-- 
+<script>
+function showdelModalPopup(atId){
+$('#DeletePopupNew').modal(
+{backdrop: 'static',
+keyboard: false,
+show:true
+});        
+}
+</script>-->
+    <!--<apex:actionRegion >-->
+
+    <apex:outputPanel rendered="true" id="oneBMSPnlId">
+        <fieldset class="cmi_field_set">
+            <legend class="fs_legend">
+                {!$Label.CSS_Unit_and_Engine}
+                <!-- <span id="cataId"> 
+<span class="cmi-catastrophicWarning-icon" style="float:right;height:30px"/>
+<span class="repeat-visit-box" style="float:right;margin-left:20px">
+<span class="repeat-visit-text">{!$Label.CSS_Claim_Catastrophic}!</span>
+</span>
+</span> -->
+                <apex:outputPanel rendered="{!IF(mainContr.claimsRec.CSS_Job__r.Repeat_Or_Recent_Calc__c=='Repeat Visit',true,false)}">
+                    <span class="red-flag" style="float:right;height:30px" />
+                    <span class="repeat-visit-box" style="float:right;margin-left:20px">
+                        <span class="repeat-visit-text">{!$Label.css_Repeat_Visit}!</span>
+                    </span>
+
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!IF(mainContr.claimsRec.CSS_Job__r.Repeat_Or_Recent_Calc__c=='Recent Visit',true,false)}">
+                    <span class="orange-flag" style="float:right;height:30px" />
+                    <span class="recent-visit-box" style="float:right;margin-left:20px">
+                        <span class="repeat-visit-text">{!$Label.css_Recent_Visit}!</span>
+                    </span>
+
+                </apex:outputPanel>
+            </legend>
+            <apex:actionRegion >
+                <apex:outputPanel rendered="true" id="oneBMSUEPnlId">
+                    <div class="row">
+                        <div class="form-horizontal" role="form">
+                            <div class="col-sm-4 cmi-tar">
+                                <label>{!$ObjectType.CSS_PSN__c.fields.PSN__c.Label}<span class="cmi_asterisk">*</span></label>
+                            </div>
+                            <!--PSN Number Value- Start-->
+                            <div class="col-sm-8 col-xs-12 claimsCustFields">
+                               <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c != true,true,false)}">
+                                 <apex:outputPanel rendered="{!IF(mainContr.claimsRec.CSS_Job__c==NULL &&  mainContr.claimsRec.Dealer_Service_Job__c == null,true,false)}">
+                                    <apex:actionFunction name="callCampaigns" action="{!getCampaignDetails}" status="updating_esn_status"
+                                        reRender="ClaimsIntks:Intakefrm:SPDataWarMsg,oneBMSUEPnlId,failuredate,certificationPnl">
+                                        <apex:param name="Stopfailuredataupdate" value="stopupdate" assignTo="{!state}" />
+                                    </apex:actionFunction>
+
+                                    <!-- <apex:actionFunction name="FailureDateAction" action="{!getCampaignDetails}" status="updating_esn_status" reRender="checkFailureDateerror" /> -->
+
+                                    <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c != 'Draft'&& mainContr.ClaimsRec.id !=null) ||(mainContr.claimsRec.Pending_Authorization__c =='Not Authorized' && mainContr.ClaimsRec.id !=null),true,false)}">
+                                        <apex:outputField value="{!mainContr.psnRec.PSN__c}">
+                                            <apex:actionSupport event="onchange" action="{!startRequest}" status="updating_esn_status"
+                                                rerender="ApplicationUE,oneBMSUEPnlId,psnServModelPopup,Displayappcodeerror,srtSection"
+                                                immediate="false" oncomplete="ShowPSNModalPopup('{!displayPSNSrvModPopup}');"
+                                            />
+                                        </apex:outputField>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c == 'Draft'|| mainContr.ClaimsRec.id=null) && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && (mainContr.ClaimsRec.Catastrophic__c!=true || mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true)),true,false)}">
+                                        <apex:outputPanel rendered="{!IF(mainContr.FailListVar==false,true,false)}">
+                                             <!-- <apex:InputField id="psnField" styleClass="{!IF((mainContr.psnRec.PSN__c == null && mainContr.isWarrCustomer==true ),'showRedBorder','')}"
+                                                value="{!mainContr.psnRec.PSN__c}">
+                                                <!--apex:actionSupport event="onchange"  status="updating_esn_status" rerender="ApplicationUE,oneBMSUEPnlId,psnServModelPopup,Displayappcodeerror" immediate="false" oncomplete="showPSNChangePopup('{!mainContr.psnRec.PSN__c}');"/> <!--,ShowPSNModalPopup('{!displayPSNSrvModPopup}');-->
+                                              <!--  <apex:actionSupport event="onchange" status="popup_open_waiting" immediate="false"
+                                                    rerender="none" oncomplete="showPSNChangePopup('{!mainContr.psnRec.PSN__c}');"
+                                                />
+                                            </apex:InputField>--> <!-- Commented Input Field and made it input Text to display loading image, GSSC-240-->
+                                            <apex:inputText value="{!mainContr.psnRec.PSN__c}" styleClass="css_ipfiel_size" disabled="false" id="psnField">
+                                        <apex:actionSupport event="onchange" action="{!startRequest}" onsubmit="onChangeOfPSNOpenModal();" oncomplete="onCompleteOfPSNCloseModal();" rerender="ClaimsIntks:Intakefrm:SPDataWarMsg,ClaimsIntks:Intakefrm:faerror,ClaimsIntks:Intakefrm:psnerror,ApplicationUE,oneBMSUEPnlId,psnServModelPopup,Displayappcodeerror" immediate="false"/> 
+                                    </apex:inputText>
+                                        </apex:outputPanel>
+                                        <apex:outputPanel rendered="{!IF(mainContr.FailListVar==true,true,false)}">
+                                            <apex:outputField value="{!mainContr.psnRec.PSN__c}" />
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+                                    <apex:actionFunction name="startRequestJS" status="updating_esn_status" action="{!startRequest}"
+                                        rerender="ClaimsIntks:Intakefrm:SPDataWarMsg,ClaimsIntks:Intakefrm:faerror,ClaimsIntks:Intakefrm:psnerror,ApplicationUE,oneBMSUEPnlId,psnServModelPopup,Displayappcodeerror,certificationPnl"
+                                        oncomplete="ShowPSNModalPopup('{!displayPSNSrvModPopup}');"
+                                        immediate="false" />
+                                    <apex:actionStatus startText="(fetching additional values...)" id="updating_esn_status"
+                                    />
+                                    <apex:actionStatus startText="(please wait...)" id="popup_open_waiting" />
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!IF(mainContr.claimsRec.CSS_Job__c<>NULL || mainContr.claimsRec.Dealer_Service_Job__c != null || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true),true,false)}">
+                                    <apex:outputField value="{!mainContr.psnRec.PSN__c}" />
+                                </apex:outputPanel>
+                             </apex:outputPanel>   
+                             <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c == true,true,false)}">
+                                  <apex:outputText value="{!mainContr.psnRec.PSN__c}"/>
+                             </apex:outputPanel>      
+                            </div>
+                            <!--PSN Number Value-End-->
+                            
+                            <div class="clearfix"></div>
+                            
+                            <!---Multi psn Label and Value -Start-->
+                            <apex:outputPanel rendered="{!IF(mainContr.ClaimsRec.CSS_Job__c == null && mainContr.claimsRec.Dealer_Service_Job__c == null,true,false)}">
+                                <div class="col-sm-4 cmi-tar">
+                                    <apex:outputLabel value="{!$ObjectType.CSS_Claims__c.fields.Multi_PSN_Claim__c.Label}"
+                                    />
+                                </div>
+                                <div class="col-sm-8 col-xs-12 claimsCustFields">
+                                   <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c != true,true,false)}">  
+                                      <apex:InputCheckbox value="{!mainContr.claimsRec.Multi_PSN_Claim__c}" rendered="{!IF((mainContr.secondaryPSN==false && mainContr.MultipsncheckboxEnable != true && (mainContr.ClaimsRec.Catastrophic__c !=true || (mainContr.ClaimsRec.IsDealerCreatedClaim__c==true && $UserRole.Name == 'Factory'))),true,false)}" /> <!-- &&  mainContr.FailListVar == false --><!-- Removed this condition in this bcz FailListVar can be true & it can be enabled at that time -->
+                                      <apex:OutputField value="{!mainContr.claimsRec.Multi_PSN_Claim__c}" rendered="{!IF((mainContr.secondaryPSN==true && mainContr.MultipsncheckboxEnable == true) || ((mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true) || (mainContr.secondaryPSN==false && mainContr.MultipsncheckboxEnable) || (mainContr.secondaryPSN==true && mainContr.MultipsncheckboxEnable==false)),true,false)}"/>
+                                   </apex:outputPanel>   
+                                   <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c == true,true,false)}">
+                                        <apex:OutputField value="{!mainContr.claimsRec.Multi_PSN_Claim__c}"/>
+                                    </apex:outputPanel> 
+                                 </div>
+                            </apex:outputPanel>
+                            <!---Multi psn Label and Value -End -->
+                            
+                            <div class="clearfix"></div>
+                            
+                            <!---Unit number Label and Value -Start -->
+                            <div class="col-sm-4 cmi-tar">
+                                <apex:outputLabel value="{!$ObjectType.CSS_PSN__c.fields.Unit_Number__c.Label}" />
+                            </div>
+                            <div class="col-sm-8 col-xs-12 claimsCustFields ">
+                                <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c == 'Draft' || mainContr.ClaimsRec.id==null) && mainContr.ClaimsRec.Pending_Authorization__c !='Not Authorized' && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true)) && ($User.isClaimReadOnly__c != true), true, false)}">
+                                    <apex:InputText value="{!mainContr.psnRec.Unit_Number__c}" />
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c != 'Draft'&& mainContr.ClaimsRec.id!=null) ||(mainContr.claimsRec.Pending_Authorization__c =='Not Authorized' && mainContr.ClaimsRec.id !=null) || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true)  || ($User.isClaimReadOnly__c == true),true,false)}">
+                                    <apex:outputField value="{!mainContr.psnRec.Unit_Number__c}" />
+                                </apex:outputPanel>
+                            </div>
+                            <!---Unit number Label and Value -End -->
+                            <div class="clearfix"></div>
+                            
+                            <!-- Application Label and Value -Start -->
+                            <div class="col-sm-4 col-xs-12 cmi-tar">
+                                <label>{!$ObjectType.CSS_PSN__c.fields.Application__c.Label}<div class="cmi_asterisk">*</div></label>
+                            </div>
+                            <!--rerender Displayappcodeerror is using in page level to display Product application error message-->
+                            <apex:actionFunction name="callmarketappcode" action="{!updateproductappcode}" reRender="Displayappcodeerror,MakeModelPanelBMSId"></apex:actionFunction>
+
+                            <div class="col-sm-8 col-xs-12 claimsCustFields">
+                               <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c != true,true,false)}">
+                                  <apex:outputPanel rendered="{!IF(mainContr.claimsRec.CSS_Job__c==NULL,true,false)}">
+                                    <apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Status__c == 'Draft'|| mainContr.ClaimsRec.id=null) && (mainContr.claimsRec.Pending_Authorization__c !='Not Authorized'  && mainContr.claimsRec.Dealer_Service_Job__c==NULL) && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true))),true,false)}">
+                                        <apex:outputPanel rendered="{!IF(mainContr.FailListVar==false,true,false)}">
+                                            <apex:selectList value="{!mainContr.filterApplication}" size="1" style="padding:0px;"
+                                                id="ApplicationUE" styleClass="{!IF(((mainContr.filterApplication =='----None----' || mainContr.filterApplication == '' || mainContr.filterApplication == null)&& mainContr.isWarrCustomer==true ),'showRedBorder col-sm-5','col-sm-5')}"
+                                                onchange="callmarketappcode()">
+                                                <apex:selectOptions value="{!Application}"></apex:selectOptions>
+                                            </apex:selectList>
+                                        </apex:outputPanel>
+                                        <apex:outputPanel rendered="{!IF(mainContr.FailListVar==true,true,false)}">
+                                           <apex:outputText value="{!mainContr.psnRec.ApplicationCode__c} - {!mainContr.psnRec.Application__c}"/>
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+                                 </apex:outputPanel>
+                                 <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c != 'Draft'&& mainContr.ClaimsRec.id !=null) ||(mainContr.claimsRec.Pending_Authorization__c =='Not Authorized' && mainContr.ClaimsRec.id !=null),true,false)}">
+                                     <apex:outputField value="{!mainContr.psnRec.Application__c}" />
+                                 </apex:outputPanel>
+                                 <apex:outputPanel rendered="{!IF(mainContr.claimsRec.CSS_Job__c<>NULL ||(mainContr.claimsRec.CSS_Job__c==NULL && mainContr.claimsRec.Pending_Authorization__c =='Not Authorized') || mainContr.claimsRec.Dealer_Service_Job__c!=null || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true),true,false)}">
+                                     <apex:outputField value="{!mainContr.psnRec.Application__c}" />
+                                 </apex:outputPanel>
+                               </apex:outputPanel>
+                               <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c == true,true,false)}">
+                                    <apex:outputText value="{!mainContr.psnRec.Application__c}" />
+                               </apex:outputPanel>
+                            </div>
+                            <!-- Application Label and Value -End -->
+                            <div class="clearfix"></div>
+                            <div class="panel-body">
+                                <apex:outputPanel id="Displayappcodeerror">
+                                    <apex:outputLabel rendered="{!IF((prodcodeErrormessage || mainContr.psnRec.ProductAppcodeErrorflag__c),true,false)}"
+                                        style="color:red"> <b>{!$Label.CSS_Application_code_Error_flag} </b>  
+                                    </apex:outputLabel>
+                                 </apex:outputPanel>
+                            </div>
+                            <!-- License Plate Label and Value -Start -->
+                            <div class="col-sm-4 cmi-tar">
+                                 <label for="">{!$ObjectType.CSS_PSN__c.fields.License_Plate_State__c.Label}</label>
+                            </div>
+                            
+                            <div class="col-sm-8 col-xs-12 claimsCustFields">
+                               <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c != true,true,false)}">
+                                <apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Status__c == 'Draft'|| mainContr.ClaimsRec.id=null) && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true))),true,false)}">
+                                    <apex:selectList value="{!mainContr.psnRec.License_Plate_State__c}" size="1">
+                                        <apex:selectOptions value="{!licensePlateList}"></apex:selectOptions>
+                                    </apex:selectList>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c == 'Draft') && (mainContr.psnRec.License_Plate_State__c==NULL && mainContr.psnRec.License_Plate_State__c=='Select One'), false, true)}">
+                                    <apex:outputText value=" " />
+                                </apex:outputPanel>
+                                <!-- Added cond as part of cata claim -->
+                                <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c == 'Draft') && (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true), true, false)}">
+                                    <apex:outputText value="{!If(mainContr.psnRec.License_Plate_State__c!=null || mainContr.psnRec.License_Plate_State__c!='',mainContr.psnRec.License_Plate_State__c,'--Select One--')}" />
+                                </apex:outputPanel>
+                                <!-- End -->
+                                 <apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Status__c != 'Draft' && mainContr.ClaimsRec.Status__c != '' && mainContr.ClaimsRec.Status__c != NULL) && (mainContr.psnRec.License_Plate_State__c!=NULL && mainContr.psnRec.License_Plate_State__c!='Select One')), true, false)}">
+                                    <apex:outputText value="{!mainContr.psnRec.License_Plate_State__c}"></apex:outputText>
+                                </apex:outputPanel>
+                             </apex:outputPanel>  
+                             <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c == true,true,false)}">
+                                    <apex:outputText value="{!mainContr.psnRec.License_Plate_State__c}" />
+                             </apex:outputPanel>
+                            </div><br/>
+                            <!-- License Plate Label and Value -End -->
+                            
+                            <div class="clearfix"></div>
+
+                            <hr style="margin:20px 60px;border-top:2px solid #eee;" />
+                            <!-- Service Model Label and Value -Start -->
+                            <div class="col-sm-4 cmi-tar">
+                                <apex:outputLabel value="{!$ObjectType.CSS_PSN__c.fields.Service_Model__c.Label}"/>
+                            </div>
+                            <div class="col-sm-8 col-xs-12 claimsCustFields">
+                                <apex:outputtext value="{!mainContr.psnRec.Service_Model__c}" />
+                            </div>
+                            <!--Service Model Label and  Value- End-->
+                            <div class="clearfix"></div>
+                            <!-- Make Label and Value -Start -->
+                            <div class="col-sm-4 cmi-tar" id="Model">
+                                <label>{!$ObjectType.CSS_PSN__c.fields.Make__c.Label}<div class="cmi_asterisk">*</div></label>
+                            </div>
+                            <!--apex:actionFunction name="makett" action="{!searchConfigUnit}" reRender="modlPnl,unitconfig2"></apex:actionFunction-->
+                            <apex:outputPanel id="MakeModelPanelBMSId">
+                                <div class="col-sm-8 col-xs-12 claimsCustFields">
+                                  <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c != true,true,false)}">
+                                    <apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Status__c == 'Draft'|| mainContr.ClaimsRec.id=null) && mainContr.claimsRec.CSS_Job__c==NULL && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && mainContr.claimsRec.Dealer_Service_Job__c == NULL && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true))) ,true,false)}">
+                                        <apex:outputPanel rendered="{!IF(mainContr.FailListVar==false,true,false)}">
+                                            <apex:selectList value="{!mainContr.filterMake}" size="1" style="padding:0px;" styleClass="{!IF(((mainContr.filterMake =='----None----' || mainContr.filterMake == '' || mainContr.filterMake == null)&& mainContr.isWarrCustomer==true ),'showRedBorder col-sm-5','col-sm-5')}">
+                                                <apex:actionSupport action="{!searchConfigUnit}" event="onchange" reRender="modlPnl,unitconfig2"
+                                                />
+                                                <apex:selectOptions value="{!Make}"></apex:selectOptions>
+                                            </apex:selectList>
+                                        </apex:outputPanel>
+                                        <apex:outputPanel rendered="{!IF(mainContr.FailListVar==true,true,false)}">
+                                            <apex:outputText value="{!mainContr.filterMake}"></apex:outputText>
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+
+                                    <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c == 'Draft'|| mainContr.ClaimsRec.id=null) && mainContr.claimsRec.CSS_Job__c==NULL && mainContr.claimsRec.Pending_Authorization__c =='Not Authorized' && mainContr.claimsRec.Dealer_Service_Job__c == NULL ,true,false)}">
+                                        <apex:outputText value="{!mainContr.filterMake}"></apex:outputText>
+                                    </apex:outputPanel>
+
+                                    <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c == 'Draft'|| mainContr.ClaimsRec.id=null) && mainContr.claimsRec.CSS_Job__c==NULL && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && mainContr.claimsRec.Dealer_Service_Job__c == NULL && (mainContr.ClaimsRec.Catastrophic__c ==true &&  mainContr.ClaimsRec.IsDealerCreatedClaim__c==true && $UserRole.Name != 'Factory') ,true,false)}">
+                                        <apex:outputText value="{!mainContr.filterMake}"></apex:outputText>
+                                    </apex:outputPanel>
+
+                                    <apex:outputPanel rendered="{!IF(( mainContr.ClaimsRec.id!=null && mainContr.claimsRec.CSS_Job__c!=NULL) || (mainContr.ClaimsRec.id!=null && mainContr.claimsRec.Dealer_Service_Job__c!=NULL),true,false)}">
+                                        <apex:outputPanel rendered="{!IF(mainContr.ClaimsRec.Status__c == 'Draft' || mainContr.claimsRec.Pending_Authorization__c =='Not Authorized' || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true),true,false)}">
+                                            <apex:outputText value="{!mainContr.filterMake}"></apex:outputText>
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+
+                                    <apex:outputPanel rendered="{!IF(mainContr.claimsRec.CSS_Job__c!=NULL || mainContr.claimsRec.Dealer_Service_Job__c!=NULL ,true,false)}">
+                                        <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c != 'Draft' && mainContr.ClaimsRec.id!=null) ||(mainContr.claimsRec.Pending_Authorization__c =='Not Authorized' && mainContr.ClaimsRec.id !=null) || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true), true, false)}">
+                                            <apex:outputText value="{!mainContr.filterMake}"></apex:outputText>
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+                                    <!--venkat added for defect 176060-->
+                                    <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c != 'Draft' && mainContr.ClaimsRec.id!=null) ||(mainContr.claimsRec.Pending_Authorization__c =='Not Authorized' && mainContr.ClaimsRec.id !=null) || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true), true, false )}">
+                                        <apex:outputText value="{!mainContr.filterMake}"></apex:outputText>
+                                    </apex:outputPanel>
+                                 </apex:outputPanel>
+                                  <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c == true,true,false)}">
+                                       <apex:outputText value="{!mainContr.filterMake}"/>
+                                  </apex:outputPanel>     
+                                </div>
+                                <!-- Make Label and Value -End -->
+                                
+                                <div class="clearfix"></div>
+                                
+                                <!-- Model Label and Value - Start -->
+                                <div class="col-sm-4 col-xs-12 cmi-tar">
+                                    <label for="">{!$ObjectType.CSS_PSN__c.fields.Model__c.Label}<div class="cmi_asterisk">*</div></label>
+                                </div>
+                                <div class="col-sm-8 col-xs-12 claimsCustFields">
+                                    <!--apex:actionFunction name="modelm" action="{!searchConfigUnit}" reRender="unitconfig2"></apex:actionFunction-->
+                                    <apex:outputPanel id="modlPnl">
+                                       <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c != true,true,false)}">
+                                        <apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Status__c == 'Draft'|| mainContr.ClaimsRec.id=null) && mainContr.claimsRec.CSS_Job__c==NULL  && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && mainContr.claimsRec.Dealer_Service_Job__c == NULL && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true))) ,true,false)}">
+                                            <apex:outputPanel rendered="{!IF(mainContr.FailListVar = false,true,false)}">
+                                                <apex:selectList value="{!mainContr.filterModel}" size="1" style="padding:0px;" styleClass="{!IF(((mainContr.filterModel == '----None----' || mainContr.filterModel == '' || mainContr.filterModel == null )&& mainContr.isWarrCustomer==true ),'showRedBorder col-sm-5','col-sm-5')}">
+                                                    <apex:actionSupport action="{!searchConfigUnit}" event="onchange" reRender="unitconfig2"
+                                                    />
+                                                    <apex:selectOptions value="{!Model}"></apex:selectOptions>
+                                                </apex:selectList>
+                                            </apex:outputPanel>
+                                            <apex:outputPanel rendered="{!IF(mainContr.FailListVar = true,true,false)}">
+                                                <apex:outputText value="{!mainContr.filterModel}"></apex:outputText>
+                                            </apex:outputPanel>
+                                        </apex:outputPanel>
+
+                                        <apex:outputPanel rendered="{!IF(( mainContr.ClaimsRec.id!=null && mainContr.claimsRec.CSS_Job__c!=NULL) || (mainContr.claimsRec.Dealer_Service_Job__c!=NULL),true,false)}">
+                                            <apex:outputPanel rendered="{!IF(mainContr.ClaimsRec.Status__c == 'Draft' || mainContr.claimsRec.Pending_Authorization__c =='Not Authorized' || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true),true,false)}">
+                                                <apex:outputText value="{!mainContr.filterModel}"></apex:outputText>
+                                            </apex:outputPanel>
+                                        </apex:outputPanel>
+
+                                        <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c != 'Draft' && mainContr.ClaimsRec.id!=null) ||(mainContr.claimsRec.Pending_Authorization__c =='Not Authorized' && mainContr.ClaimsRec.id !=null) || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true), true, false )}">
+                                            <apex:outputText value="{!mainContr.filterModel}"></apex:outputText>
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+                                     <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c == true,true,false)}">
+                                        <apex:outputText value="{!mainContr.filterModel}"/>
+                                     </apex:outputPanel> 
+                                 </apex:outputPanel> 
+                                </div>
+                            </apex:outputPanel>
+                             <!-- Model Label and Value - End -->
+                            <div class="clearfix"></div>
+                            
+                            <apex:outputPanel rendered="{!checkAccount}">
+                                <apex:outputPanel rendered="{!IF((isAutomatedDealerloaction==false && isManualDealerlocation==false) && ($Setup.css_header_nav__c.RSWButtonEnable__c==true),true,false)}">
+                                    <div class="col-sm-4 col-xs-12 cmi-tar">
+                                        <label for="">{!$ObjectType.CSS_PSN__c.fields.Unit_Type__c.Label}<div class="cmi_asterisk">*</div></label>
+                                    </div>
+                                    <div class="col-sm-8 col-xs-12 claimsCustFields">
+                                       <apex:outputPanel id="unitconfig2">
+                                            <apex:outputPanel rendered="{!IF((mainContr.filterModel != '' && mainContr.filterMake != '' || mainContr.filterModel != '----None----' && mainContr.filterMake != '----None----' ),true,false)}">
+                                                <apex:outputText value="{!mainContr.psnRec.Unit_Type__c}" />
+                                            </apex:outputPanel>
+                                        </apex:outputPanel>
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                            <div class="clearfix"></div>
+                             <!-- VIN Label and Value - Start -->
+                            <div class="col-sm-4 col-xs-12 cmi-tar">
+                                <label for="">{!$ObjectType.CSS_PSN__c.fields.VIN__c.Label}</label>
+                            </div>
+                            <div class="col-sm-8 col-xs-12 claimsCustFields">
+                             <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c != true,true,false)}">    
+                                <apex:outputPanel rendered="{!IF(mainContr.claimsRec.CSS_Job__c==NULL && mainContr.claimsRec.Dealer_Service_Job__c == NULL,true,false)}">
+                                    <apex:outputPanel rendered="{!IF((siebVIN != null && siebVIN != ''),true,false)}">
+                                        <apex:Outputtext value="{!mainContr.psnRec.VIN__c}" />
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!IF(mainContr.ClaimsRec.Status__c == 'Draft' && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized'  && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true)),true,false)}">
+                                        <apex:outputPanel rendered="{!IF((siebVIN == null || siebVIN == ''),true,false)}">
+                                            <apex:Inputtext value="{!mainContr.psnRec.VIN__c}" />
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+
+                                    <apex:outputPanel rendered="{!IF(mainContr.ClaimsRec.Status__c == 'Draft' &&  mainContr.claimsRec.Pending_Authorization__c !='Not Authorized'  && (mainContr.ClaimsRec.Catastrophic__c ==true &&  mainContr.ClaimsRec.IsDealerCreatedClaim__c==true && $UserRole.Name != 'Factory'),true,false)}">
+                                       <apex:Outputtext value="{!mainContr.psnRec.VIN__c}" />
+                                    </apex:outputPanel>
+
+                                    <apex:outputPanel rendered="{!IF(mainContr.ClaimsRec.Status__c == 'Draft' && mainContr.claimsRec.Pending_Authorization__c =='Not Authorized' && (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true),true,false)}">
+                                        <apex:outputPanel rendered="{!IF((siebVIN == null || siebVIN == ''),true,false)}">
+                                            <apex:Outputtext value="{!mainContr.psnRec.VIN__c}" />
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+
+                                    <apex:outputPanel rendered="{!IF(mainContr.ClaimsRec.Status__c = 'Draft',false,true)}">
+                                        <apex:outputPanel rendered="{!IF((siebVIN == null || siebVIN == ''),true,false)}">
+                                           <apex:outputText value="{!mainContr.psnRec.VIN__c}" />
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!IF(mainContr.claimsRec.CSS_Job__c<>NULL || mainContr.claimsRec.Dealer_Service_Job__c != NULL ,true,false)}">
+                                    <apex:outputPanel rendered="{!IF(mainContr.ClaimsRec.Status__c == 'Draft' || mainContr.claimsRec.Pending_Authorization__c =='Not Authorized' || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true),true,false)}">
+                                        <apex:outputPanel rendered="{!IF(mainContr.psnRec.VIN__c<>NULL,true,false)}">
+                                            <apex:outputField value="{!mainContr.psnRec.VIN__c}" />
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+
+                                    <apex:outputPanel rendered="{!IF(mainContr.ClaimsRec.Status__c == 'Draft' && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true)),true,false)}">
+                                        <apex:outputPanel rendered="{!IF(mainContr.psnRec.VIN__c==NULL,true,false)}">
+                                            <apex:inputField value="{!mainContr.psnRec.VIN__c}" />
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+                                </apex:outputPanel>
+                              </apex:outputPanel>
+                              <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c == true,true,false)}">
+                                 <apex:outputText value="{!mainContr.psnRec.VIN__c}"/>
+                              </apex:outputPanel>
+                            </div>
+                             <!-- VIN Label and Value - End -->
+                            <div class="clearfix"></div>
+
+                            <hr style="margin:20px 60px;border-top:2px solid #eee;" />
+                            <!-- WSD Label and Value - Start -->
+                            
+                          <!--   ReadonlyWSD** {!ReadonlyWSD}
+                         ** mainContr.psnRec.PSN__c ** {!mainContr.psnRec.PSN__c} 
+                         ** mainContr.psnRec.Before_In_Service__c {!mainContr.psnRec.Before_In_Service__c}
+                         ** mainContr.ExternReturnDateFlag {!mainContr.ExternReturnDateFlag}
+                         ** mainContr.wsdReadOnlyFromContr{!mainContr.wsdReadOnlyFromContr}-->
+                            <div class="col-sm-4 cmi-tar">
+                                <apex:outputLabel value="{!$ObjectType.CSS_PSN__c.fields.Warranty_Start_Date__c.Label}"/>
+                                <div class="cmi_asterisk">*</div>
+                            </div>
+                            <div class="col-sm-8 col-xs-12 claimsCustFields">
+                              <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c != true,true,false)}">   
+                                <apex:outputPanel id="wsd" rendered="{!IF((ReadonlyWSD == false && mainContr.psnRec.PSN__c != '' && mainContr.psnRec.Before_In_Service__c == false && mainContr.ExternReturnDateFlag != true) && mainContr.wsdReadOnlyFromContr != true, true,false)}">
+                                    <apex:inputField id="warrStDt" value="{!mainContr.psnRec.Warranty_Start_Date__c}"
+                                        style="padding:0px;" styleClass="{!IF((mainContr.psnRec.Warranty_Start_Date__c ==null && mainContr.isWarrCustomer==true ),'showRedBorder form-control cmi-cal css_ipfiel_size','form-control cmi-cal css_ipfiel_size')}"
+                                        showDatePicker="false" onfocus="DatePicker.pickDate(false, this , false);"
+                                        html-placeholder="MM/DD/YYYY">
+
+                                        <apex:actionSupport event="onchange" action="{!MakeBISReadOnly}" reRender="DateErr,readonlyBIS,InputBIS,oneBMSUEPnlId"
+                                        />
+                                    </apex:inputField>
+                                    <div class="input-group date" id="warrantyDate" data-provide="datepicker" data-date-format="{!mainContr.datebyLocaleValue}">
+                                        <span class="input-group-addon" style="width:100px; border: 0px; background: none;">
+                                            <apex:input value="{!warrStDtHidden}" onchange="assignWSDtoActual(this);"   style="display:none"/>
+                                            <apex:actionFunction name="makeBISreadOnlyJS" action="{!MakeBISReadOnly}" reRender="DateErr,readonlyBIS,InputBIS,oneBMSUEPnlId"/>
+                                            <span class="calendar" style="margin:-30px 160px"></span>
+                                        </span>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <apex:outputPanel style="color:red;font-size:14px;" id="DateErr">
+                                            <b><apex:outputText value="{!$Label.CSS_Warranty_Start_Date_should_be_less_than_or_equal_to_current_date}" rendered="{!higherdateErrFlag}" style="color: red ; display: block;"/></b>
+                                            <b><apex:outputText value="{!$Label.Warranty_Start_Date_must_be_later_than_Engine_Build_Date}" rendered="{!builddateErrFlag}" style="color: red ; display: block;"/></b>
+                                        </apex:outputPanel>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel id="readonlyWSD" rendered="{!IF(ReadonlyWSD == true || mainContr.ExternReturnDateFlag == true || mainContr.FailListVar == true || mainContr.wsdReadOnlyFromContr == true, true,false)}">
+                                    <apex:outputText value="{!FormatDate}"/>
+                                </apex:outputPanel>
+                              </apex:outputPanel>
+                              <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c == true,true,false)}">
+                                 <apex:outputText value="{!FormatDate}"/>
+                              </apex:outputPanel>
+                            </div>
+                             <!-- WSD Label and Value - End -->
+                            
+                            <div class="clearfix"></div>
+                           <!--BIS Label and Value- Start-->
+                            <div class="col-sm-4 cmi-tar" style="word-wrap: break-word;">
+                                <apex:outputLabel value="{!$ObjectType.CSS_PSN__c.fields.Before_In_Service__c.Label}"
+                                />
+                            </div>
+                            <apex:outputPanel id="beforeInService">
+                                <div class="col-sm-8 col-xs-12 claimsCustFields">
+                                   <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c != true,true,false)}"> 
+                                     <apex:outputPanel id="InputBIS" rendered="{!IF((mainContr.ClaimsRec.Catastrophic__c==false || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name == 'Factory')) && ReadonlyBIS == false && (mainContr.psnRec.PSN__c != null || mainContr.psnRec.PSN__c != '') && mainContr.psnRec.Warranty_Start_Date__c == null && (mainContr.claimsRec.CSS_Job__c!= null || mainContr.claimsRec.Dealer_Service_Job__c!= null || ((mainContr.claimsRec.CSS_Job__c== null || mainContr.claimsRec.Dealer_Service_Job__c == null)  && mainContr.FailListVar == false))  && mainContr.checkBIS==false , true,false)}">
+                                        <apex:inputCheckbox value="{!mainContr.psnRec.Before_In_Service__c}" styleClass="{!IF((mainContr.psnRec.Before_In_Service__c == false && mainContr.isWarrCustomer==true ),'showRedBorderCheckbox','')}">
+                                            <apex:actionSupport event="onchange" action="{!MakeWSDReadOnly}" reRender="wsd,readonlyWSD,oneBMSUEPnlId"
+                                            /></apex:inputCheckbox>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel id="readonlyBIS" rendered="{!IF((mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true) || (mainContr.psnRec.PSN__c == null || ReadonlyBIS == true || mainContr.psnRec.Warranty_Start_Date__c != null || mainContr.checkBIS == true) || (ReadonlyBIS == false && (mainContr.psnRec.PSN__c != null || mainContr.psnRec.PSN__c != '') && mainContr.psnRec.Warranty_Start_Date__c == null && (((mainContr.claimsRec.CSS_Job__c== null && mainContr.claimsRec.Dealer_Service_Job__c == null) && mainContr.FailListVar == true)) && mainContr.checkBIS==false), true,false)}">
+                                        <apex:outputField value="{!mainContr.psnrec.Before_In_Service__c}" styleClass="css_ipfiel_size"/>
+                                    </apex:outputPanel>
+                                 </apex:outputPanel>
+                                 <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c == true,true,false)}">
+                                     <apex:OutputField value="{!mainContr.psnrec.Before_In_Service__c}"/>  
+                                  </apex:outputPanel>
+                                </div>
+                            </apex:outputPanel>
+                            <!--BIS Label and Value- End-->
+                            <div class="clearfix"></div>
+                           <!--Failure Date Label and Value- Start-->
+                            <div class="col-sm-4 cmi-tar">
+                                <label>{!$ObjectType.CSS_PSN__c.fields.Failure_Date__c.Label}<div class="cmi_asterisk">*</div></label>
+                            </div>
+                            <div class="col-sm-8 col-xs-12 claimsCustFields">
+                                <div class="col-sm-5" style="padding:0px;">
+                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c != true,true,false)}">
+                                      <apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Status__c == 'Draft' || mainContr.ClaimsRec.id=null) && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && mainContr.claimsRec.Dealer_Service_Job__c == NULL && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true))),true,false)}">
+                                        <apex:outputPanel id="failuredate" rendered="{!IF(mainContr.claimsRec.CSS_Job__c==NULL && mainContr.FailListVar==false ,true,false)}">
+                                           <apex:inputField id="FailureDt" value="{!mainContr.psnRec.Failure_Date__c}" style="padding:0px;width:120px"
+                                                styleClass="{!if((checkFailureDateerror || dispFDWSDErrorMsg || dispFDShipDateErrorMsg) || (mainContr.psnRec.Failure_Date__c == null && mainContr.isWarrCustomer==true ),'showRedBorder','')}"
+                                                showDatePicker="false" onchange="changeCampaigns();" /><!-- onchange="changeCampaigns();" Onchange event should be called to get updated values when entering date manually  -->
+                                             
+                                            <div class="input-group date" data-provide="datepicker" id="failureDate" data-date-format="{!mainContr.datebyLocaleValue}">
+                                                <!-- <apex:inputText value="{!mainContr.psnRec.Failure_Date__c}" style="padding:0px;" styleclass="form-control cmi-cal css_ipfiel_size"/> &nbsp; -->
+                                                <!--<apex:inputField value="{!mainContr.psnRec.Failure_Date__c}" style="padding:0px;width:120px" styleclass="form-control cmi-cal css_ipfiel_size" showDatePicker="false" onchange="changeCampaigns();"/> &nbsp;-->
+                                                <!--  <apex:inputField value="{!mainContr.psnRec.Failure_Date__c}" style="padding:0px;width:120px" styleClass="{!if(checkFailureDateerror,'showRedBorder','')}" showDatePicker="false" onchange="changeCampaigns();"/> &nbsp;-->
+                                                <span class="input-group-addon" style="width:22%; border: 0px; background: none;">
+                                                <apex:input value="{!FailureStDtHidden}" onchange="assignfaiDtoActual(this);"   style="display:none"/>
+                                                    <span class="calendar" style="margin:-30px 130px"></span>
+                                                </span>
+                                            </div>
+                                        </apex:outputPanel>
+                                        <apex:outputPanel id="failuredate1" rendered="{!IF(mainContr.claimsRec.CSS_Job__c==NULL && mainContr.FailListVar==true ,true,false)}">
+                                            <apex:outputField id="FailureDt1" value="{!mainContr.psnRec.Failure_Date__c}" style="padding:0px;width:120px" /> &nbsp;
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+                                    <!--starts-->
+                                    <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c != 'Draft' && mainContr.ClaimsRec.id!=null) ||(mainContr.claimsRec.Pending_Authorization__c =='Not Authorized' && mainContr.ClaimsRec.id !=null) || mainContr.claimsRec.Dealer_Service_Job__c != NULL || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true),true,false)}">
+                                        <apex:outputPanel rendered="{!IF(mainContr.claimsRec.CSS_Job__c==NULL ,true,false)}">
+                                            <div class="input-group date" id="failureDate" data-date-format="{!mainContr.datebyLocaleValue}">
+                                                <!-- <apex:inputText value="{!mainContr.psnRec.Failure_Date__c}" style="padding:0px;" styleclass="form-control cmi-cal css_ipfiel_size"/> &nbsp; -->
+                                                <!--<apex:outputField value="{!mainContr.psnRec.Failure_Date__c}" style="padding:0px;" styleclass="form-control cmi-cal css_ipfiel_size" /> &nbsp;-->
+                                                <apex:outputText value="{!FormattedFailureDate}" /> &nbsp;
+                                                <span class="input-group-addon" style="width:22%; border: 0px; background: none;">
+                                                </span>
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!IF(mainContr.claimsRec.CSS_Job__c<>NULL,true,false)}">
+                                        <apex:outputText value="{!FormattedFailureDate}" />
+                                    </apex:outputPanel>
+                                  </apex:outputPanel>
+                                  <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c == true,true,false)}">
+                                     <apex:OutputText value="{!FormattedFailureDate}"/>  
+                                  </apex:outputPanel>
+                                </div>
+                                <!--Failure Date Label and Value-End-->
+                                <div class="col-sm-7">
+                                    <apex:outputPanel rendered="{!checkFailureDateerror}" id="checkFailureDateerror">
+                                        <span style="font-size:12px;color:red"><b>{!$Label.CSS_Failure_Date_cannot_be_greater_than_today}</b></span>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!dispFDWSDErrorMsg}" id="dispFDWSDErrorMsg">
+                                        <span style="font-size:12px;color:red"><b>{!$Label.CG_Failure_Date_Validation}</b></span>                                        <br/>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!dispFDShipDateErrorMsg}" id="dispFDShipDateErrorMsg">
+                                        <span style="font-size:12px;color:red"><b>{!$Label.CSS_Failure_Date_should_be_after_the_Ship_Date}&nbsp;&nbsp;
+                                            <apex:outputText value="{0,date,yyyy/MM/dd}">
+                                                <apex:param value="{!mainContr.claimsRec.ShipDate__c}" />
+                                            </apex:outputText>
+                                            </b>
+                                        </span>
+                                    </apex:outputPanel>
+                                </div>
+                                <div class="clearfix"></div>
+
+                            </div>
+
+
+
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-4 col-xs-12 cmi-tar">
+                                <label>{!$ObjectType.CSS_PSN__c.fields.Mileage__c.Label}<div class="cmi_asterisk">*</div></label>
+                            </div>
+                            <div class="col-sm-3 col-xs-6 claimsCustFields" id="divMileageI">
+                                <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c != true,true,false)}">
+                                  <apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Status__c = 'Draft'|| mainContr.ClaimsRec.id=null)  && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && mainContr.claimsRec.Dealer_Service_Job__c == NULL && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true))),true,false)}">
+                                    <apex:outputPanel rendered="{!IF(mainContr.claimsRec.CSS_Job__c==NULL && mainContr.FailListVar==false,true,false)}">
+                                        <!--This is disabled to fix the backspace error or the firefox browser. Defect 153432 Rupesh.-->
+                                        <!--<apex:InputText value="{!mainContr.psnRec.Mileage__c}" style="padding:0px;" styleClass="col-sm-12" onkeypress="return campquantitylen(event,this)"/>-->
+                                        <apex:inputText value="{!mainContr.psnRec.Mileage__c}" style="padding:0px;" styleClass="col-sm-12"
+                                            maxlength="8" onkeypress="mileagePressBMS(event);"/>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!IF(mainContr.claimsRec.CSS_Job__c==NULL && mainContr.FailListVar ==true && mainContr.psnRec.Mileage__c != 0,true,false)}">
+                                        <apex:outputText value="{!mainContr.psnRec.Mileage__c}" style="padding:0px;" styleClass="col-sm-12"/>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!IF(mainContr.claimsRec.CSS_Job__c==NULL && mainContr.FailListVar ==true && (mainContr.psnRec.Mileage__c == null || mainContr.psnRec.Mileage__c == 0),true,false)}">
+                                        <apex:inputText value="{!mainContr.psnRec.Mileage__c}" style="padding:0px;" styleClass="col-sm-12"/>
+                                    </apex:outputPanel>
+                                 </apex:outputPanel>
+                                 <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c != 'Draft'&& mainContr.ClaimsRec.id !=null) ||(mainContr.claimsRec.Pending_Authorization__c =='Not Authorized' && mainContr.ClaimsRec.id !=null) || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true),true,false)}">
+                                    <apex:outputPanel rendered="{!IF(mainContr.claimsRec.CSS_Job__c==NULL && mainContr.FailListVar==true && mainContr.claimsRec.Dealer_Service_Job__c == NULL,true,false)}">
+                                        <apex:outputText value="{!mainContr.psnRec.Mileage__c}" style="padding:0px;" styleClass="col-sm-12"/>
+                                    </apex:outputPanel>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!IF((mainContr.claimsRec.CSS_Job__c<>NULL || mainContr.claimsRec.Dealer_Service_Job__c != NULL) && (mainContr.psnRec.Mileage__c != 0),true,false)}">
+                                    <apex:outputField value="{!mainContr.psnRec.Mileage__c}" />
+                                </apex:outputPanel>
+                                <!-- Added Condition to enable the field Rajasekhar H Tajmahal GSSC-106 -->
+                                <apex:outputPanel rendered="{!IF((mainContr.claimsRec.CSS_Job__c!= NULL || mainContr.claimsRec.Dealer_Service_Job__c != NULL) && mainContr.ClaimsRec.Status__c == 'Draft' && (mainContr.psnRec.Mileage__c == NULL || mainContr.psnRec.Mileage__c == 0),true,false)}">
+                                    <apex:inputText value="{!mainContr.psnRec.Mileage__c}" style="padding:0px;" styleClass="col-sm-12"/>
+                                </apex:outputPanel>
+                             </apex:outputPanel>
+                              <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c == true,true,false)}">
+                                 <apex:outputField value="{!mainContr.psnRec.Mileage__c}"/>
+                              </apex:outputPanel>  
+                            </div>
+                            <div class="col-sm-5 col-xs-6" style="margin-top:-8px;">
+                               <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c != true,true,false)}">   
+                                 <apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Status__c == 'Draft'||mainContr.ClaimsRec.id=null) && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true))) ,true,false)}">
+                                    <apex:outputPanel rendered="{!IF(mainContr.claimsRec.CSS_Job__c==NULL && mainContr.FailListVar==false,true,false)}">
+                                        <apex:selectRadio value="{!mainContr.mil_measure}" style="padding:0px;" styleClass="col-sm-12"
+                                            disabled="false">
+                                            <apex:selectOptions value="{!items}" />
+                                        </apex:selectRadio>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!IF((mainContr.claimsRec.CSS_Job__c==NULL && mainContr.FailListVar==true) || mainContr.claimsRec.CSS_Job__c!=NULL,true,false)}">
+                                        <apex:selectRadio value="{!mainContr.mil_measure}" style="padding:0px;" styleClass="col-sm-12"
+                                            disabled="true">
+                                            <apex:selectOptions value="{!items}" />
+                                        </apex:selectRadio>
+                                    </apex:outputPanel>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Status__c != 'Draft'&& mainContr.ClaimsRec.id!=null) && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true))),true,false)}">
+                                    <apex:outputPanel rendered="{!IF(mainContr.claimsRec.CSS_Job__c==NULL && mainContr.FailListVar==false,true,false)}">
+                                       <apex:selectRadio value="{!mainContr.mil_measure}" style="padding:0px;" styleClass="col-sm-12"
+                                            disabled="false">
+                                            <apex:selectOptions value="{!items}" />
+                                        </apex:selectRadio>
+                                   </apex:outputPanel>
+                                   <apex:outputPanel rendered="{!IF((mainContr.claimsRec.CSS_Job__c==NULL && mainContr.FailListVar==true && mainContr.ClaimsRec.Status__c == 'Draft' ) || (mainContr.claimsRec.CSS_Job__c!=NULL && mainContr.ClaimsRec.Status__c == 'Draft') ,true,false)}"> <!-- karthik G added draft condtion as part of defect #191374-->
+                                       <apex:selectRadio value="{!mainContr.mil_measure}" style="padding:0px;" styleClass="col-sm-12"
+                                            disabled="true">
+                                            <apex:selectOptions value="{!items}" />
+                                        </apex:selectRadio>
+                                   </apex:outputPanel>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c != 'Draft' && mainContr.claimsRec.CSS_Job__c!=NULL ) ||(mainContr.claimsRec.Pending_Authorization__c =='Not Authorized' && mainContr.ClaimsRec.id !=null) || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true),true,false)}">
+                                    <apex:selectRadio value="{!mainContr.mil_measure}" style="padding:0px;" styleClass="col-sm-12"
+                                        disabled="true">
+                                        <apex:selectOptions value="{!items}" />
+                                    </apex:selectRadio>
+                                </apex:outputPanel>
+                              </apex:outputPanel>
+                              <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c == true,true,false)}">   
+                                 <apex:selectRadio value="{!mainContr.mil_measure}" style="padding:0px;" styleClass="col-sm-12" disabled="true">
+                                     <apex:selectOptions value="{!items}" />
+                                  </apex:selectRadio>
+                               </apex:outputPanel>
+                            </div>
+
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-4 cmi-tar">
+                                <apex:outputLabel value="{!$objectType.CSS_PSN__c.Fields.Product_Hours__c.Label}"
+                                />
+                            </div>
+                            
+                            <div id="divHoursI1" class="col-sm-8 col-xs-12 claimsCustFields">
+                             <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c != true,true,false)}"> 
+                                <apex:outputPanel rendered="{!IF((((mainContr.claimsRec.CSS_Job__c==NULL && mainContr.claimsRec.Dealer_Service_Job__c==null)  && mainContr.ClaimsRec.Status__c == 'Draft' || mainContr.ClaimsRec.id==null) && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true))) ,true,false)}">
+                                    <apex:outputPanel rendered="{!IF(mainContr.FailListVar==false,true,false)}">
+                                        <apex:InputText value="{!mainContr.psnRec.Product_Hours__c}" style="padding:0px;" styleClass="col-sm-4" maxlength="8" onKeyPress="hoursPressBMS1(event);"/>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!IF(mainContr.FailListVar==true && (mainContr.psnRec.Product_Hours__c != 0),true,false)}">
+                                        <apex:outputfield value="{!mainContr.psnRec.Product_Hours__c}" />
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!IF(mainContr.FailListVar==true && (mainContr.psnRec.Product_Hours__c == null || mainContr.psnRec.Product_Hours__c == 0),true,false)}">
+                                        <apex:inputtext value="{!mainContr.psnRec.Product_Hours__c}" />
+                                    </apex:outputPanel>
+                                </apex:outputPanel>
+                              
+                                <apex:outputPanel rendered="{!IF((((mainContr.claimsRec.CSS_Job__c==NULL && mainContr.claimsRec.Dealer_Service_Job__c==null)  && mainContr.ClaimsRec.Status__c != 'Draft' && mainContr.ClaimsRec.id!=null) && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true))) ,true,false)}">
+                                    <apex:outputPanel rendered="{!IF(mainContr.FailListVar==false,true,false)}">
+                                        <apex:outputfield value="{!mainContr.psnRec.Product_Hours__c}" />
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!IF(mainContr.FailListVar==true && (mainContr.psnRec.Product_Hours__c != 0),true,false)}">
+                                        <apex:outputfield value="{!mainContr.psnRec.Product_Hours__c}" />
+                                    </apex:outputPanel>
+                                </apex:outputPanel>
+                                
+                                <apex:outputPanel rendered="{!IF((((mainContr.claimsRec.CSS_Job__c==NULL|| mainContr.claimsRec.Dealer_Service_Job__c<>NULL) && mainContr.ClaimsRec.Status__c == 'Draft' || mainContr.ClaimsRec.id==null) && mainContr.claimsRec.Pending_Authorization__c =='Not Authorized' && (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true)),true,false)}">
+                                   <apex:outputfield value="{!mainContr.psnRec.Product_Hours__c}"/>
+                                </apex:outputPanel>
+                               
+                                <apex:outputPanel rendered="{!IF((mainContr.claimsRec.CSS_Job__c==NULL && mainContr.ClaimsRec.Status__c != 'Draft' && mainContr.ClaimsRec.id !=null &&  mainContr.claimsRec.Pending_Authorization__c =='Not Authorized') || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true && mainContr.claimsRec.CSS_Job__c==NULL && mainContr.claimsRec.Dealer_Service_Job__c==NULL),true,false)}"> <!-- Commented above line and added this line for defect #228-->
+                                  <apex:outputfield value="{!mainContr.psnRec.Product_Hours__c}"/>
+                                </apex:outputPanel>
+                                
+                                <apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Catastrophic__c==false || mainContr.ClaimsRec.Catastrophic__c==true)  && $UserRole.Name != 'Factory' && mainContr.psnRec.Product_Hours__c!=0 && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true && mainContr.ClaimsRec.Status__c == 'Draft') && (mainContr.claimsRec.CSS_Job__c!=NULL || mainContr.claimsRec.Dealer_Service_Job__c!=NULL && mainContr.ClaimsRec.Status__c == 'Draft'),true,false)}"><!-- karthik G added draft condtion as part of defect #191374-->
+                                    <apex:outputfield value="{!mainContr.psnRec.Product_Hours__c}"/>
+                                </apex:outputPanel>
+                                
+                                <apex:outputPanel rendered="{!IF((mainContr.claimsRec.CSS_Job__c<>NULL && mainContr.ClaimsRec.Status__c != 'Draft' && mainContr.ClaimsRec.id !=null) ||(mainContr.claimsRec.CSS_Job__c<>NULL && mainContr.claimsRec.Pending_Authorization__c =='Not Authorized' && mainContr.ClaimsRec.id !=null) || ((mainContr.ClaimsRec.Catastrophic__c==true || mainContr.ClaimsRec.Catastrophic__c==false) && $UserRole.Name == 'Factory'  && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true) && mainContr.psnRec.Product_Hours__c!=0 && (mainContr.claimsRec.CSS_Job__c<>NULL || mainContr.claimsRec.Dealer_Service_Job__c<>NULL),true,false)}">
+                                    <apex:outputfield value="{!mainContr.psnRec.Product_Hours__c}"/>
+                                </apex:outputPanel>
+                                
+                                <!-- Added Condition to enable the field Rajasekhar H Tajmahal GSSC-106 -->
+                                 <apex:outputPanel rendered="{!IF((mainContr.claimsRec.CSS_Job__c!= NULL || mainContr.claimsRec.Dealer_Service_Job__c<>NULL) && mainContr.ClaimsRec.Status__c == 'Draft' && (mainContr.psnRec.Product_Hours__c == NULL || mainContr.psnRec.Product_Hours__c == 0),true,false)}">
+                                        <apex:inputText value="{!mainContr.psnRec.Product_Hours__c}" style="padding:0px;" styleClass="col-sm-4"/>
+                                 </apex:outputPanel>
+                             </apex:outputPanel>
+                             <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c == true,true,false)}">   
+                                  <apex:outputfield value="{!mainContr.psnRec.Product_Hours__c}"/>
+                             </apex:outputPanel>
+                            </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-4 cmi-tar">
+                                <apex:outputLabel value="{!$objectType.CSS_PSN__c.Fields.Mission_Disabling__c.Label}"
+                                />
+                            </div>
+                            <apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Status__c == 'Draft'  || mainContr.ClaimsRec.id=null) && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true))) && ($User.isClaimReadOnly__c != true),true,false)}">
+                                <div class="col-sm-8 col-xs-12 claimsCustFields">
+                                    <apex:InputCheckbox value="{!mainContr.psnRec.Mission_Disabling__c}" />
+                                </div>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c != 'Draft' && mainContr.ClaimsRec.id!=null)|| (mainContr.claimsRec.Pending_Authorization__c =='Not Authorized' && mainContr.ClaimsRec.id !=null) || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true)|| ($User.isClaimReadOnly__c == true),true,false)}">
+                                <div class="col-sm-8 col-xs-12 claimsCustFields">
+                                    <apex:inputCheckbox value="{!mainContr.psnRec.Mission_Disabling__c}" disabled="true"
+                                    />
+                                </div>
+                            </apex:outputPanel>
+                            <div class="clearfix"></div>
+
+                            <hr style="margin:20px 60px;border-top:2px solid #eee;" />
+                            <!--Added Calibration Before,after and Justification fields as per NCIS Story no #114972->RAJESH -->
+                            <div class="col-sm-4 cmi-tar">
+                                <apex:outputLabel value="{!$objectType.CSS_PSN__c.Fields.Calibration_Before__c.Label}" />
+                            </div>
+                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c != true,true,false)}">
+                               
+                                     <apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Status__c == 'Draft' || mainContr.ClaimsRec.id == null) && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true))),true,false)}">
+                                    <div class="col-sm-8 col-xs-12 claimsCustFields">
+                                        <apex:InputText value="{!mainContr.psnRec.Calibration_Before__c}" maxlength="50" styleclass="{!IF((mainContr.ecmFlag==true && (mainContr.psnRec.Calibration_Before__c==null || mainContr.psnRec.Calibration_Before__c=='')),'showRedBorder','')}" />
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!IF((((mainContr.ClaimsRec.Status__c != 'Draft' || mainContr.claimsRec.Pending_Authorization__c =='Not Authorized') || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true)) && mainContr.ClaimsRec.id != null),true,false)}">
+                                    <div class="col-sm-8 col-xs-12 claimsCustFields">
+                                      <apex:outputText value="{!mainContr.psnRec.Calibration_Before__c}" />
+                                    </div>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c == true,true,false)}">
+                                 <div class="col-sm-8 col-xs-12 claimsCustFields">
+                                  <apex:outputText value="{!mainContr.psnRec.Calibration_Before__c}" />
+                                </div>
+                            </apex:outputPanel>   
+                           
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-4 cmi-tar">
+                                <apex:outputLabel value="{!$objectType.CSS_PSN__c.Fields.Revision_Before__c.Label}"
+                                />
+                            </div>
+                            <div class="col-sm-8 col-xs-12 claimsCustFields">
+
+                                <apex:outputPanel rendered="{!IF(mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true || ($User.isClaimReadOnly__c == true),true,false)}">
+                                    <!-- <apex:outputPanel rendered="{!IF(mainContr.ClaimsRec.Status__c != 'Draft'&& mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true,true,false)}">-->
+                                    <!-- <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c != 'Draft' || mainContr.claimsRec.Pending_Authorization__c =='Not Authorized') || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true),true,false)}">-->
+                                    <apex:OutputText value="{!mainContr.psnRec.Revision_Before__c}" />
+                                </apex:outputPanel>
+
+                                <!--<apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Status__c == 'Draft' || mainContr.ClaimsRec.id=null) && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true))) ,true,false)}">-->
+
+                                <!--apex:outputPanel rendered="{!IF(mainContr.ClaimsRec.Status__c == 'Draft'||mainContr.ClaimsRec.Catastrophic__c!=true || $UserRole.Name == 'Factory',true,false)}"-->
+                                <apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Catastrophic__c!=true || $UserRole.Name == 'Factory') && mainContr.ClaimsRec.id!=null) && ($User.isClaimReadOnly__c !=true),true,false)}">
+                                    <apex:InputText value="{!mainContr.psnRec.Revision_Before__c}" disabled="{!mainContr.claimsRec.Status__c !='Draft'}" maxlength="50" styleclass="{!IF((mainContr.ecmFlag==true && (mainContr.psnRec.Revision_Before__c==null || mainContr.psnRec.Revision_Before__c=='')),'showRedBorder','')}" />
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.id==null) && ($User.isClaimReadOnly__c !=true),true,false)}">
+                                    <apex:InputText value="{!mainContr.psnRec.Revision_Before__c}"  maxlength="50" styleclass="{!IF((mainContr.ecmFlag==true && (mainContr.psnRec.Revision_Before__c==null || mainContr.psnRec.Revision_Before__c=='')),'showRedBorder','')}" />
+                                </apex:outputPanel>
+                            </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-4 cmi-tar">
+                                <apex:outputLabel value="{!$objectType.CSS_PSN__c.Fields.Calibration_After__c.Label}" />
+                            </div>
+                            <apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Status__c == 'Draft' || mainContr.ClaimsRec.id=null) && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true))) &&  ($User.isClaimReadOnly__c !=true) ,true,false)}">
+                                <div class="col-sm-8 col-xs-12 claimsCustFields">
+                                    <apex:InputText value="{!mainContr.psnRec.Calibration_After__c}" maxlength="50" styleclass="{!IF((mainContr.ecmFlag==true && (mainContr.psnRec.Calibration_After__c==null || mainContr.psnRec.Calibration_After__c=='')),'showRedBorder','')}" />
+                                </div>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!IF((((mainContr.ClaimsRec.Status__c != 'Draft' || mainContr.claimsRec.Pending_Authorization__c =='Not Authorized') || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true)) && mainContr.ClaimsRec.id != null),true,false)}">
+                                <div class="col-sm-8 col-xs-12 claimsCustFields">
+                                    <apex:outputtext value="{!mainContr.psnRec.Calibration_After__c}" />
+                                </div>
+                            </apex:outputPanel>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-4 cmi-tar">
+                                <apex:outputLabel value="{!$objectType.CSS_PSN__c.Fields.Revision_After__c.Label}"
+                                />
+                            </div>
+                            <div class="col-sm-8 col-xs-12 claimsCustFields">
+                                <!-- <apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Status__c == 'Draft' || mainContr.ClaimsRec.id=null) && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true))) ,true,false)}">-->
+
+                                <apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Catastrophic__c!=true || $UserRole.Name == 'Factory') && mainContr.ClaimsRec.id!=null) && ($User.isClaimReadOnly__c !=true),true,false)}">
+                                    <apex:InputText value="{!mainContr.psnRec.Revision_After__c}" disabled="{!mainContr.claimsRec.Status__c !='Draft'}" maxlength="50" styleclass="{!IF((mainContr.ecmFlag==true && (mainContr.psnRec.Revision_After__c==null || mainContr.psnRec.Revision_After__c=='')),'showRedBorder','')}" />
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.id==null) && ($User.isClaimReadOnly__c !=true),true,false)}">
+                                    <!--<apex:InputText value="{!mainContr.psnRec.Revision_Before__c}"  maxlength="50" />-->
+                                    <apex:InputText value="{!mainContr.psnRec.Revision_After__c}"  maxlength="50" styleclass="{!IF((mainContr.ecmFlag==true && (mainContr.psnRec.Revision_After__c==null || mainContr.psnRec.Revision_After__c=='')),'showRedBorder','')}" /><!--Defect GSSC-319-->
+                                </apex:outputPanel>
+
+                                <!--    <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c != 'Draft' || mainContr.claimsRec.Pending_Authorization__c =='Not Authorized') || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true),true,false)}">-->
+                                <!-- isReadOnlyUser:{!$User.isClaimReadOnly__c} -->
+                                <apex:outputPanel rendered="{!IF(mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true || ($User.isClaimReadOnly__c ==true),true,false)}">
+                                    <apex:OutputText value="{!mainContr.psnRec.Revision_After__c}" />
+                                </apex:outputPanel>
+                            </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-4 cmi-tar">
+                                <apex:outputLabel value="{!$objectType.CSS_PSN__c.Fields.Justification__c.Label}"
+                                />
+                            </div>
+                            <div class="col-sm-6 col-xs-12 ">
+                                <apex:outputPanel rendered="{!IF(((mainContr.ClaimsRec.Status__c == 'Draft' || mainContr.ClaimsRec.id=null) && mainContr.claimsRec.Pending_Authorization__c !='Not Authorized' && (mainContr.ClaimsRec.Catastrophic__c!=true ||  mainContr.ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true))) && ($User.isClaimReadOnly__c !=true),true,false)}">
+                                    <!-- <div class="col-sm-8 col-xs-12 claimsCustFields">-->
+                                    <!--<apex:InputField value="{!mainContr.psnRec.Justification__c}" styleClass="RemoveNoneValue"/>-->
+                                    <apex:selectList value="{!mainContr.psnRec.Justification__c}" size="1">
+                                        <apex:selectOptions value="{!Justification}"></apex:selectOptions>
+                                        <!--kalpana-->
+                                    </apex:selectList>
+                                </apex:outputPanel>
+
+                                <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c != 'Draft' && mainContr.ClaimsRec.id!=null) && (mainContr.psnRec.Justification__c==NULL && mainContr.psnRec.Justification__c=='----Select One----'), true, false)}">
+                                    <!-- <apex:outputText value="{!mainContr.psnRec.Justification__c}"></apex:outputText>-->
+                                    <apex:outputText value=" "></apex:outputText>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!IF((mainContr.ClaimsRec.Status__c != 'Draft' && mainContr.ClaimsRec.id!=null) && (mainContr.psnRec.Justification__c!=NULL && mainContr.psnRec.Justification__c!='----Select One----') || (mainContr.ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && mainContr.ClaimsRec.IsDealerCreatedClaim__c==true) || ($User.isClaimReadOnly__c ==true), true, false)}">
+                                    <apex:outputText value="{!mainContr.psnRec.Justification__c}"></apex:outputText>
+                                    <!-- <apex:outputText value=" "></apex:outputText>-->
+                                </apex:outputPanel>
+
+                                <apex:outputLabel rendered="{!mainContr.justficationErrMsg}" style="color:red">{!$Label.css_You_must_enter_value}</apex:outputLabel>
+
+                            </div>
+                            <div class="clearfix"></div>
+                            <hr style="margin:20px 60px;border-top:2px solid #eee;" />
+                            <!-- NCIS Story no #114972->RAJESH -->
+                        </div>
+                    </div>
+                </apex:outputPanel>
+            </apex:actionRegion>
+        </fieldset>
+    </apex:outputPanel>
+    <!--</apex:actionRegion>-->
+
+    <!-- Added Code for Story 154597 Rajasekhar H -- I-Survived -->
+    <!--popup for Service Model Name Start-->
+
+    <!--  <apex:outputPanel id="psnServModelPopup"> -->
+    <div class="modal fade" id="psnServModelPopupDiv" role="dialog" data-backdrop="static"
+        html-keyboard="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <!--   <apex:outputPanel id="servModelInnerOutputPnl" styleClass="customPopup" layout="block" rendered="{!displayPSNSrvModPopup}">    -->
+                <div class="modal-header">
+                    <apex:actionRegion >
+                        <apex:commandButton title="Close the popup" html-data-dismiss="modal" styleClass="cross_butten"
+                        />
+                    </apex:actionRegion>
+                    <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_cummins_service_system} </h4>
+                </div>
+                <div class="clearfix"></div>
+                <div class="modal-body">
+                    <fieldset class="HHP_fieldSet">
+                        <div class="col-sm-2 col-xs-12">
+                            <div class="css_alert_red" style="zoom:1.95" />
+                        </div>
+                        <div class="col-md-10 col-xs-12">
+                            <b>{!$Label.css_Engine_Serial_Number_ESN_was_not_recognised}.</b><br/>
+                            <b>{!$Label.css_Please_verify_your_ESN}</b><br/>
+                            <b>{!$Label.css_If_you_feel_you_have_recieved_this_message}<br/>{!$Label.css_in_error_please_contact_Customer_Support}</b><br/>
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="clearfix"></div>
+                <hr/>
+                <div class="modal-footer">
+                    <div class="col-sm-7 col-xs-4 cmi-tar">
+                        <apex:actionRegion >
+                            <apex:commandButton value="OK" html-data-dismiss="modal" styleClass="saveButton"
+                            />
+                        </apex:actionRegion>
+                    </div>
+                </div>
+                <!--  </apex:outputPanel> -->
+            </div>
+        </div>
+    </div>
+
+    <!--   </apex:outputPanel> -->
+    <!--popup for Service Model Name End-->
+
+    <!--popup for PSN Change Starts-->
+
+    <div class="modal fade" id="psnChangePopUp" role="dialog" data-backdrop="static"
+        html-keyboard="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <!--   <apex:outputPanel id="servModelInnerOutputPnl" styleClass="customPopup" layout="block" rendered="{!displayPSNSrvModPopup}">    -->
+                <div class="modal-header">
+                    <!--apex:actionRegion >
+<apex:commandButton title="Close the popup" html-data-dismiss="modal" styleClass="cross_butten" />
+</apex:actionRegion-->
+                    <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.CG_WarrantyOverview}- {!$Label.css_cummins_service_system}
+                    </h4>
+                </div>
+                <div class="clearfix"></div>
+                <div class="modal-body">
+                    <div class="col-md-10 col-xs-12">
+                        <b>{!$Label.CSS_PSN_Change_Message}</b><br/><br/><br/>
+                        <div class="col-md-10 col-xs-12" align="right">
+                            <apex:actionRegion >
+                                <apex:commandButton value="{!$Label.css_Yes}" action="{!yesOnPopUp}" status="updating_esn_status"
+                                    rerender="ClaimsIntks:Intakefrm:SPDataWarMsg,ClaimsIntks:Intakefrm:faerror,ClaimsIntks:Intakefrm:psnerror,ApplicationUE,oneBMSUEPnlId,psnServModelPopup,Displayappcodeerror"
+                                    oncomplete="ShowPSNModalPopup('{!displayPSNSrvModPopup}')"
+                                    html-data-dismiss="modal" styleClass="saveButton"
+                                /> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                <apex:commandButton value="{!$Label.CSS_No}" html-data-dismiss="modal" action="{!noOnPopUp}"
+                                    rerender="oneBMSUEPnlId" styleClass="cancelButton"
+                                />
+                            </apex:actionRegion>
+                        </div>
+                    </div>
+
+                    <div class="clearfix"></div>
+                    <!--<div class="modal-footer">
+<div class="col-sm-7 col-xs-4 cmi-tar"> 
+<apex:actionRegion >
+<apex:commandButton value="{!$Label.css_Yes}" action="{!yesOnPopUp}" status="updating_esn_status" rerender="ApplicationUE,oneBMSUEPnlId,psnServModelPopup,Displayappcodeerror" oncomplete="ShowPSNModalPopup('{!displayPSNSrvModPopup}')" html-data-dismiss="modal" styleClass="saveButton"/>&nbsp;&nbsp;
+<apex:commandButton value="{!$Label.CSS_No}" html-data-dismiss="modal" action="{!noOnPopUp}" rerender="oneBMSUEPnlId" styleClass="cancelButton"/>
+</apex:actionRegion>
+</div>
+</div>-->
+                </div>
+                <!--  </apex:outputPanel> -->
+            </div>
+        </div>
+    </div>
+
+    <!--popup for PSN Change Ends-->
+    <!---Loading Popup ---> <!--GSSC-240-->
+            <div class="modal fade" id ="loadingModal" role="dialog" data-backdrop="static" data-keyboard="false">
+                    <div class="modal-dialog">
+                        <div class="modal-content" style="width:0px;margin: 100px;height: 0px;">
+                            <div class="modal-body" style="padding:0px;margin: 200px 0px;">
+                                <apex:image url="{!$Resource.LoadingImg}" width="100" height="100" style="align:center"/>  
+                            </div>
+                        </div>
+                    </div>
+                </div>
+    <!---Loading Popup End----><!--GSSC-240-->
+
+    <script type="text/javascript">
+        function campquantitylen(e, compId) {
+            if ((e.which > 47 && e.which <= 57)) {} else {
+                return false;
+            }
+        }
+
+        /*--Defect 153432--Rupesh--Please do not comment this function below else the backspace not to work in Firefox browser on Mileage field.*/
+        function mileagePressBMS(e) {
+            $('#divMileageI').keypress(function(e) {
+                //alert('hello');
+                if (e.which == 48 || e.which == 49 || e.which == 50 ||
+                    e.which == 51 || e.which == 52 || e.which == 53 ||
+                    e.which == 54 || e.which == 55 || e.which == 56 ||
+                    e.which == 57 || e.which == 8) {
+
+                } else {
+                    return false;
+                }
+            });
+        }
+
+        function hoursPressBMS1(e) {
+            $('#divHoursI1').keypress(function(e) {
+                //alert('keycode:'+e.which);
+                if (e.which == 48 || e.which == 49 || e.which == 50 ||
+                    e.which == 51 || e.which == 52 || e.which == 53 ||
+                    e.which == 54 || e.which == 55 || e.which == 56 ||
+                    e.which == 57 || e.which == 8) {
+
+                } else {
+                    return false;
+                }
+            });
+        }
+
+    </script>
+</apex:component>

@@ -1,0 +1,283 @@
+<apex:component controller="CSS_AttachFileController" allowDML="true">
+
+    <apex:attribute name="JoId" type="String" description="The id of the object to manage attachments for" required="true" assignTo="{!sobjId}"/>
+    <apex:attribute name="BeforeImage" type="String" description="Before Image" />
+    <apex:attribute name="AfterImage" type="String" description="After Image"  />
+    <apex:attribute name="DeleteFlag" type="Boolean" description="The id of the object to manage attachments for" assignTo="{!DeleteFlg}"/>   
+    
+    <c:CSS_Standard_IntakeStyles /> 
+    <c:css_ExtraStyles />
+    
+     <script>
+    //defect fix 
+    function DisableButton1()
+    {
+        
+        document.getElementById('{!$Component.attach1}').disabled=true;
+        processup();
+        return false;
+    }
+   
+    <!--Modified as ROD:86567-->
+        
+        function disableDeleteButton(){
+        document.getElementById("reppages:Intakefrm:theDeleteButton").disabled=true;
+        
+        }
+        
+         //InsiteImage file download
+        function downloadFile1(endPointStr, tokenStr, attachId) {
+            //alert('entered download into downloadFile function...tokenStr>>>:'+tokenStr+' endPointStr>>:'+endPointStr);
+            try {
+                //alert('kal');
+                var statusEle = document.getElementById('{!$Component.intakefrm.j_id371.j_id372.statusCodeId}');
+                var statusStr = statusEle.value;
+               // alert('status code>>>>>:'+statusStr);
+                if(statusStr !=200){
+                    window.open('/apex/CSS_InsiteImageError?errorCode='+statusStr, 'target');             
+                }else{
+                    var tokenElement = document.getElementById('{!$Component.intakefrm.j_id371.j_id372.attId}');
+                    var attIdStr = tokenElement.value;
+                    //alert('attIdStr>>>>>:'+attIdStr);
+                    window.open('/servlet/servlet.FileDownload?file='+attIdStr, 'target');
+                }
+
+            } catch(err) {
+               // alert(err.message);
+                console.log('Error message>>>:'+err.message);
+            }
+        }
+
+   </script>
+<!--<apex:attribute name="AthId" description="Attribute on the component." type="ID"  assignTo="{!Atthid}"/>-->
+    
+        <apex:outputpanel id="attachmentpnl4" >  
+            <apex:actionFunction name="processup" action="{!processUpload}" /> <!----61124 attchments Defect fix ---->
+            <fieldset  class="cmi_field_set"  >
+            <legend class="fs_legend">{!$Label.CSS_Attachments}</legend>
+            <div class="form-horizontal" role="form"> 
+                <label class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Attachments}</label>
+                <div class="col-sm-8 col-xs-12">
+                   <!-- <apex:actionRegion > -->
+                        <a><i class="upload-icon"></i></a> 
+                        <apex:commandLink value="{!$Label.css_Upload}" action="{!showPopup1}" style="text-decoration:underline; margin-left: 5px; font-weight:bold;" rendered="{!IF(sobjId!=null, true, false)}"/>    
+                   <!-- </apex:actionRegion> -->
+                </div>
+                <apex:inputHidden id="tokenId" value="{!sEncryptToken}"/>
+                <apex:inputHidden id="fileNameId" value="{!sFileName}"/>
+                <apex:inputHidden id="attId" value="{!attachId}"/>
+                <apex:inputHidden id="statusCodeId" value="{!statusCode}"/>
+                <apex:outputPanel rendered="{!IF(BeforeImage !=null, true,false)}">  
+                     <label class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Attachments}</label>
+                         <div class="col-sm-8 col-xs-12">
+                            
+                            <!-- <apex:actionRegion >-->
+                             <apex:commandLink value="{!$ObjectType.CSS_Job_Order__c.fields.Before_Image__c.Label}" onClick="processInsiteBefore();return false;"/>
+                                 <apex:actionfunction action="{!getFile}" oncomplete="downloadFile1('{!sEndPoint}','{!sEncryptToken}','{!attachId}')" name="processInsiteBefore" reRender="tokenId,attId,fileNameId,statusCodeId">
+                                     <apex:param name="fileName" value="{!BeforeImage}"/>
+                                 </apex:actionFunction>
+                                 <!--</apex:actionRegion>-->
+                         </div>  
+                    <div class="clearfix"></div>
+                </apex:outputPanel>  
+                <apex:outputPanel rendered="{!IF(AfterImage !=null, true,false)}">
+                      <label class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Attachments}</label>
+                              <div class="col-sm-8 col-xs-12">
+                                  <!--<apex:actionRegion >-->
+                                 <apex:commandLink value="{!$ObjectType.CSS_Job_Order__c.fields.After_Image__c.Label}" onClick="processInsiteAfter();return false;"/>
+                                       <apex:actionfunction action="{!getFile}" oncomplete="downloadFile1('{!sEndPoint}','{!sEncryptToken}','{!attachId}')" name="processInsiteAfter" reRender="tokenId,attId,fileNameId,statusCodeId">
+                                          <apex:param name="fileName" value="{!AfterImage}"/>
+                                       </apex:actionFunction>
+                                  <!--</apex:actionRegion>-->
+                               </div>  
+               </apex:outputPanel>
+                 <apex:repeat value="{!jobAttach}" var="atth">
+                    <div class="clearfix"></div>
+                      <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Attachments}</label>
+                    <div class="col-sm-8 col-xs-12"> 
+                          <a href="/servlet/servlet.FileDownload?file={!atth.Id}" target="_blank" style="text-decoration:underline;">
+                            <i class="cmi_upload-document"></i> {!LEFT(atth.Name,40)}
+                        </a> 
+                        <br/>
+                        <apex:outputLabel value="{!atth.Description}" style="word-break:break-word; font-weight: normal"/>
+                        <div onclick="abc()" class="pull-right">
+                            <apex:outputPanel rendered="{!DeleteFlg}">
+                            <i class="cmi_delete-icon"></i>
+                                </apex:outputPanel>
+                            <apex:commandlink value="{!$Label.CSS_Delete}" action="{!showPopup6}"  style="margin-right: -20px; font-weight:bold ;" rendered="{!DeleteFlg}">
+                                <apex:param name="atthIdParam" value="{!atth.Id}" assignTo="{!atthId}"/>
+                            </apex:commandlink>
+                        </div>
+                        <div class="clearfix"></div>  
+                        <div data-target="#EditPopupNew" data-toggle="modal" class="pull-right" style="font-weight:bold;"><i class="CMI-edit-icon"></i>
+                             <apex:commandLink value="{!$Label.css_Edit}" action="{!showPopup5}" rerender="
+                             PopupNew" style="font-weight:bold;  text-decoration:underline;"> 
+                                <apex:param name="atthIdParam" value="{!atth.Id}" assignTo="{!atthId}"/>
+                            </apex:commandLink>
+                        </div>
+                    </div>   </apex:repeat></div>
+         </fieldset>
+        </apex:outputpanel>
+         <!--apex:outputPanel id="popup">
+                        <apex:outputPanel id="popInnerOutputPnl" styleClass="customPopup" layout="block" rendered="{!displayPopUp}">                  
+                            <div class="modal-header">  
+                                <apex:commandButton title="Close the popup" action="{!closePopup}" styleClass="cross_butten" rerender="popup"/>
+                                <h4 class="modal-title" style="color: #FFFFFF;">Cummins Service System </h4>
+                            </div>
+                            <div class="clearfix"></div> 
+                            <div class="col-md-12 col-xs-12">
+                                <b>Do you want to Exit ?  </b>
+                            </div>
+                            <div class="clearfix"></div>
+                            <hr/>
+                            <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                                <apex:commandButton value="No" action="{!closePopup}" styleClass="cancelButton" rerender="popup"/>
+                            </div>
+                            <div class="col-sm-5 col-xs-4 cmi-tar">     
+                                <apex:commandButton value="Yes" action="{!redirectPopup}" styleClass="saveButton" rerender="popup" />
+                            </div> 
+                        </apex:outputPanel> 
+                    <!--/apex:outputPanel-->
+               <apex:outputPanel id="uPopup">
+                        <apex:outputPanel id="popInnerOutputPnl1" styleClass="uploadAttachmentPopupStyle" layout="block" rendered="{!displayPopup1}"> 
+                             <div class="modal-header">  
+                                <apex:commandButton title="Close the popup" action="{!closePopup1}" styleClass="cross_butten" />
+                                <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.CSS_Triage_Diagnosis_Cummins_Service_System} </h4>
+                            </div>
+                             <div class="clearfix"></div>   
+                            <div class="col-md-12 col-xs-12 modal-title"> 
+                                <apex:outputLabel value="{!$Label.css_File_Select_the_file_you_would_like_to_upload}" for="file_File"/>
+                            </div>
+                            <div class="col-md-12 col-xs-12">
+                                <apex:inputFile id="file_File_1" value="{!fileBody}" filename="{!fileName}" />
+                            </div>
+                             <div class="clearfix"></div>
+                            <div class="col-md-12 col-xs-12 modal-title" >    
+                                <apex:outputLabel value="{!$Label.css_Description}" for="description"/> 
+                            </div>
+                            <div class="col-md-12 col-xs-12">
+                                <apex:inputTextarea id="description_upl1" value="{!description1}" rows="2" cols="20" onkeyup="textCounter(this,'counter_desc1',100);"/>
+                            </div> 
+                            <div class="clearfix"></div>
+                            <div class="col-md-12 col-xs-12 modal-title"> 
+                                {!$Label.css_Remaining_Characters} <input disabled="true" type="disabled" value ="100"  id="counter_desc1" style="border:none;    background: none;" />
+                            </div>
+                            <div class="clearfix"></div>
+                            <div class="col-md-12 col-xs-12 modal-title">
+                                <apex:outputLabel value="{!$Label.css_File_Select_the_file_you_would_like_to_upload}" for="file_File"/>
+                           </div>
+                            <div class="col-md-12 col-xs-12">
+                                <apex:inputFile id="file_File_2" value="{!fileBody2}" filename="{!fileName2}" style="height:30px;"/>
+                            </div>
+                            <div class="clearfix"></div>
+                            <div class="col-md-12 col-xs-12 modal-title">  
+                                <apex:outputLabel value="{!$Label.css_Description}" for="description"/> 
+                            </div>
+                            <div class="col-md-12 col-xs-12">  
+                                <apex:inputTextarea id="description_upl2" value="{!description2}" rows="2" cols="20" onkeyup="textCounter(this,'counter_desc2',100);"/>
+                            </div>
+                            <div class="clearfix"></div>
+                            <div class="col-md-12 col-xs-12 modal-title">  
+                                {!$Label.css_Remaining_Characters} <input disabled="true"  value ="100"   id="counter_desc2" style="border:none;     background: none;" />
+                            </div>
+                            <div class="clearfix"></div>
+                            <div class="col-md-12 col-xs-12 modal-title">
+                                <apex:outputLabel value="{!$Label.css_File_Select_the_file_you_would_like_to_upload}" for="file_File"/>
+                            </div>
+                            <div class="col-md-12 col-xs-12">
+                                <apex:inputFile id="file_File_3" value="{!fileBody3}" filename="{!fileName3}" style="height:30px;"/>
+                            </div>
+                            <div class="clearfix"></div>
+                            <div class="col-md-12 col-xs-12 modal-title">    
+                                <apex:outputLabel value="{!$Label.css_Description}" for="description"/> 
+                            </div>
+                            <div class="col-md-12 col-xs-12">
+                                <apex:inputTextarea id="description_upl3" value="{!description3}" rows="2" cols="20" onkeyup="textCounter(this,'counter_desc3',100);"/>
+                            </div>
+                            <div class="clearfix"></div>
+                            <div class="col-md-12 col-xs-12"> 
+                                {!$Label.css_Remaining_Characters} <input disabled="true" value ="100"   id="counter_desc3" style="border:none;    background: none;" />
+                            </div>
+                            <div class="clearfix"></div>
+                            <hr/> 
+                            <div style="margin-bottom:15px;">
+                                <div class="col-sm-5 col-xs-4 cmi-tar">    
+                                    <apex:commandButton value="{!$Label.css_save_btn}"  styleClass="saveButton" onclick="return DisableButton1();"  id="attach1"></apex:commandButton><!---defect fix 61124----->
+                                </div>
+                                <div class="col-sm-5 col-xs-4 cmi-tar">
+                                   <apex:commandButton value="Cancel" action="{!closePopup1}" styleClass="cancelButton" ></apex:commandButton>
+                              </div>
+                                <br/>
+                            </div>
+                       </apex:outputPanel> 
+                    </apex:outputPanel>
+       
+        <apex:outputPanel id="DeletePopupNew">                  
+                        <apex:outputPanel id="popInnerOutputPn6" styleClass="DeletepopupStyle" layout="block" rendered="{!displayPopup6}">                     
+                            <div class="modal-header">
+                                <apex:commandButton title="Close the popup" action="{!closePopup6}" styleClass="cross_butten" rerender="DeletePopupNew" ></apex:commandButton>  
+                                <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.CSS_Triage_Diagnosis_Cummins_Service_System} </h4>
+                            </div>
+                            <div class="clearfix"></div>
+                            <div class="col-sm-12 col-xs-12">
+                                <font size="4px" weight="bold">{!$Label.css_Please_confirm_delete}.</font>  
+                                <!--   <apex:outputLabel value="JOB NOTES " /> -->
+                            </div>
+                            <div class="clearfix"></div>
+                            <hr/>
+                            <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                                <apex:commandButton value="{!$Label.CSS_Delete}" action="{!delAttachment}" onClick="disableDeleteButton();" styleClass="saveButton" rerender="DeletePopupNew" id="theDeleteButton"/>
+                                
+                            </div>
+                            <div class="col-sm-5 col-xs-4 cmi-tar">
+                                <apex:commandButton value="{!$Label.css_Cancel}" action="{!closePopup6}" styleClass="cancelButton" rerender="DeletePopupNew" />
+                                <!--     <apex:commandButton value="Cancel" action="{!closePopup6}" styleClass="cancelButton"  /> -->
+                            </div> 
+                            
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+        <div class="container">  
+                        <div class="modal fade" id="EditPopupNew"  role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content"> 
+                                    <div class="modal-header">  
+                                        <Button title="Close the popup" class="cross_butten" data-dismiss="modal" /> 
+                                        <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Intake} {!$Label.css_view_History} - {!$Label.css_cummins_service_system}</h4>
+                                    </div>
+                                    <div class="modal-body">
+                                        <form class="form-horizontal" role="form">   
+                                            <div class="form-group">
+                                                <div class="col-sm-12 col-xs-12">
+                                                     <div>  {!$Label.css_Modify_attachment_for} - {!atthName} </div>
+                                                    
+                                                    <!--   <apex:outputLabel value="JOB NOTES " /> -->
+                                                    
+                                                </div>
+                                            </div>
+                                        </form>
+                                        <div class="clearfix"></div>
+                                        <apex:outputLabel value="{!$Label.css_Description}" for="description"/>
+                                        <div class="clearfix"></div>
+                                        <apex:inputtextarea id="edit_desc9_textarea" value="{!description}" rows="2" cols="20" onkeyup="textCounter(this,'edit_desc1',100);"/>
+                                        <div class="clearfix"></div>
+                                        <hr/>
+                                        <div>{!$Label.css_Remaining_Characters} <input disabled="true" value ="100" id="edit_desc1" style="border:none; background: none;" /> </div>      
+                                        
+                                        
+                                        <hr/>
+                                        <div class="col-sm-5 col-xs-4 cmi-tar">    
+                                            <apex:commandButton value="{!$Label.css_save_btn}" action="{!editAttachment}" styleClass="saveButton"  /> 
+                                        </div>
+                                        <div class="col-sm-5 col-xs-4 cmi-tar">
+                                            <button type="button" class="cancelButton" data-dismiss="modal">{!$Label.css_Cancel}</button>
+                                        </div> 
+                                        <br/></div></div></div></div></div>
+      
+        <apex:pageblock >
+              <apex:pageBlockTable value="{!Attach}" var="Att">
+                   <apex:outputLabel value="{!Att.body}"/>
+             </apex:pageBlockTable>
+        </apex:pageblock>
+        
+ 
+</apex:component>

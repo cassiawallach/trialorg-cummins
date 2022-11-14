@@ -1,0 +1,637 @@
+<apex:page id="rescueFormPage" action="{!getRouter}" standardController="CSS_WS_Rescue__c" extensions="CSS_WS_RescueController">    
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content=""/>
+    <meta name="author" content="Cummins Inc."/>
+    <meta name="copyright" content="(C)2015 Cummins Inc., Box 3005, Columbus, IN 47202-3005 U.S.A."/>     
+    <style type="text/css">   
+        .labelcol, .vfLabelColTextWrap { padding-left: 25px !important; }
+    </style>    
+    <apex:pageMessages id="showmsg"/>
+    <apex:form id="formRescue">
+        <apex:tabPanel switchType="ajax" id="theTabPanelRescue"  value="{!TabInFocus}">
+            
+            <!-- TAB for GENERAL DATA -->
+            <apex:tab id="generalDataTab" label="{!$Label.CSS_WS_General_Data}" name="GeneralDataTab" disabled="{!disableGeneralDataTab}">    
+                <apex:pageBlock title="{!$Label.CSS_WS_General_Data}" id="engineSection" rendered="{!showGeneralData}">
+                    
+                    <apex:pageBlockSection columns="2">
+                        <apex:selectList id="serviceProviderDR" value="{!CSS_WS_Rescue__c.CSS_WS_Service_Provider_DR__c }" size="1" style="width: 350px !important;" onChange="rerenderDealers(this.value)" disabled="{!distributorsDisable}">
+                            <apex:selectOptions value="{!distributorsSelectList}"/>
+                        </apex:selectList>
+                        <apex:selectList id="serviceProviderDealer" value="{!CSS_WS_Rescue__c.CSS_WS_Service_Provider_Dealer__c }" size="1" style="width: 350px !important;" disabled="{!dealersDisable}">
+                            <apex:selectOptions value="{!dealersSelectList}"/>
+                            <apex:actionSupport event="onchange" action="{!WhoCaptureFunction}" reRender="engineSection,failureSection"/>
+                        </apex:selectList>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputField id="capturerName" value="{!CSS_WS_Rescue__c.CSS_WS_Capturer_Name__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputField id="chargedTo" value="{!CSS_WS_Rescue__c.CSS_WS_Charged_To__c}" style="width: 173px !important;"/>
+                    </apex:pageBlockSection>
+                     
+                    <apex:pageBlockSection columns="1">
+                        <apex:inputField id="CoordinatedBy" value="{!CSS_WS_Rescue__c.CSS_WS_CoordinatedBy__c}" style="width: 173px !important;">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:inputField id="beforeInService" value="{!CSS_WS_Rescue__c.CSS_WS_Before_In_Service__c}">
+                            <apex:actionSupport rerender="engineSection, failureSection" event="onchange" action="{!GetESN}"/>
+                        </apex:inputField> 
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:inputField id="engineSerialNumber" value="{!CSS_WS_Rescue__c.CSS_WS_Engine_Serial_Number__c}">
+                            <apex:actionSupport rerender="engineSection, failureSection, showmsg" event="onchange" action="{!GetESN}" status="ESNWebServiceCall"/>
+                            <apex:actionstatus id="ESNWebServiceCall"> 
+                                <apex:facet name="start" >
+                                    <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                       
+                                </apex:facet>
+                            </apex:actionstatus>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:selectList id="manufacturer" value="{!CSS_WS_Rescue__c.CSS_WS_Manufacturer__c }" style="width: 173px !important;" size="1" onChange="rerenderModel(this.value)" ><!--- disabled="{!(manufacturerDis == 2)}">-->
+                            <apex:selectOptions value="{!manufacturerSelectList}"/>
+                            <apex:actionSupport event="onchange" rerender="engineSection,failureSection"/>
+                        </apex:selectList>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:selectList id="modelSeries" value="{!CSS_WS_Rescue__c.CSS_WS_Model_Series__c}" style="width: 90px !important; " size="1" ><!--- disabled="{!modelSeriesDis}">-->
+                            <apex:selectOptions value="{!modelSeriesSelectList}"/>
+                        </apex:selectList>  
+                    </apex:pageBlockSection>                                        
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:inputField id="customerName" value="{!CSS_WS_Rescue__c.CSS_WS_Customer_Name_Internal__c}">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important; margin-left: 5px !important"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:selectList id="engineApplication" size="1" style="width: 173px !important;" label="{!$ObjectType.CSS_WS_Rescue__c.fields.CSS_WS_Engine_Application__c.Label}" value="{!CSS_WS_Rescue__c.CSS_WS_Engine_Application_Code__c }"><!-- disabled="{!engineAppDis}">-->
+                            <apex:actionSupport event="onchange" rerender="failureMeasure, failureSection, chargedTo" action="{!reloadEngineApplication}"/>
+                            <apex:selectOptions value="{!engineApplications}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important; margin-left: 178px !important;"/>
+                        </apex:selectList>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:inputText id="serviceModel" value="{!CSS_WS_Rescue__c.CSS_WS_Service_Model__c}" disabled="true"/>
+                    </apex:pageBlockSection>
+                                                            
+                    <apex:pageBlockSection columns="1">                       
+                        <apex:inputText id="failurePointQuantity" value="{!CSS_WS_Rescue__c.CSS_WS_Failure_Point_Quantity__c}" style="width: 169px !important;">
+                            <apex:actionSupport event="onchange" rerender="failurePointQuantity,showmsg,failureSection" action="{!R04067_SF17}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important; margin-left: 178px !important;"/>
+                        </apex:inputText>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:inputField id="warrantyStartDate" value="{!CSS_WS_Rescue__c.CSS_WS_Warranty_Start_Date__c}" style="width: 169px !important;" rendered="{!!warrantyStartDateFlag}">
+                            <apex:actionSupport rerender="engineSection,showmsg,failureSection" event="onchange" action="{!yearsInService}"/>
+                        </apex:inputField>
+                        <apex:outputField id="warrantyStartDate2" value="{!CSS_WS_Rescue__c.CSS_WS_Warranty_Start_Date__c}" label="{!$ObjectType.CSS_WS_Rescue__c.fields.CSS_WS_Warranty_Start_Date__c.Label}" rendered="{!warrantyStartDateFlag}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:inputText id="failureMeasure" value="{!CSS_WS_Rescue__c.CSS_WS_Failure_Measure__c}" disabled="true"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:inputField id="serviceRequest" value="{!CSS_WS_Rescue__c.CSS_WS_ServiceRequest__c}" onchange="calculateYears()">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputText id="yearsInService" value="{!CSS_WS_Rescue__c.CSS_WS_Years_In_Service__c}" rendered="{!CSS_WS_Rescue__c.CSS_WS_ServiceRequest__c != null && CSS_WS_Rescue__c.CSS_WS_Warranty_Start_Date__c != null}"/>        
+                    </apex:pageBlockSection><hr style="background-color: #088A4B; height: 1px;"/>
+                    
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSection columns="3">
+                            <apex:selectList label="{!$ObjectType.CSS_WS_Rescue__c.Fields.CSS_WS_Engine_System__c.Label}" size="1" value="{!CSS_WS_Rescue__c.CSS_WS_Engine_System__c}" multiselect="false" style="padding-left: 25px !important; width: 240px !important;">
+                                <apex:actionSupport event="onchange" action="{!SetComponentList}" rerender="component" focus="component"/>
+                                <apex:selectOptions value="{!GetFailureList}"/>
+                                <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute; margin-left: 250px !important; margin-top: 5px !important;"/>
+                            </apex:selectList>                            
+                            <apex:selectList id="component" label="{!$ObjectType.CSS_WS_Rescue__c.Fields.CSS_WS_Component__c.Label}" size="1" value="{!CSS_WS_Rescue__c.CSS_WS_Component__c}" multiselect="false" style="padding-left: 25px !important;  width: 240px !important;">
+                                <apex:selectOptions value="{!GetComponentList}"/>
+                                <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute; margin-left: 250px !important; margin-top: 5px !important;"/>
+                            </apex:selectList>
+                            <apex:selectList id="failMode" size="1" value="{!CSS_WS_Rescue__c.CSS_WS_Failure_Mode__c}" multiselect="false" style="margin-left:30;  padding-right: 20px; width: 240px !important;">
+                                <apex:selectOptions value="{!GetFailureModeList}"/>
+                                <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute; margin-left: 250px !important; margin-top: 5px !important;"/>
+                            </apex:selectList>
+                        </apex:pageBlockSection>
+                    </apex:pageBlockSection>
+                    
+                    <!------------------------------------ Hidden variables --------------------------------------------->
+                    <apex:pageblocksection > 
+                        <apex:inputHidden id="AccCoverage" value="{!CSS_WS_Rescue__c.CSS_WS_AccCoverage__c}"/>
+                        <apex:inputHidden id="TravelCoverage" value="{!CSS_WS_Rescue__c.CSS_WS_CoveredTravelLabor__c}"/>
+                    </apex:pageblocksection> 
+                    <!--------------------------------------------------------------------------------------------------->
+                                        
+                    <!----------------------------------- Area Functions General Data ----------------------------------->
+                    <apex:actionFunction name="rerenderModel" rerender="engineSection" >
+                        <apex:param name="firstParam" assignTo="{!manufacturer}" value=""/>
+                    </apex:actionFunction>
+                    <apex:actionFunction action="{!saveGeneralData}" name="saveHeader_JS" status="nextGeneralData"/>
+                    <apex:actionFunction name="calculateYears" rerender="engineSection, showmsg" action="{!yearsInService}"/>
+                    <apex:actionFunction name="rerenderDealers" rerender="serviceProviderDealer" >
+                        <apex:param name="dealersParam" assignTo="{!serviceProviderDR}" value="" />
+                    </apex:actionFunction> 
+                    <!----------------------------------- Area Functions General Data ----------------------------------->
+                    
+                    <apex:pageBlockButtons >
+                        <apex:commandButton onclick="saveHeader_JS();" value="{!$Label.CSS_WS_Button_Next}" reRender="showmsg" rendered="{!showGeneralData}"/>
+                        <apex:actionstatus id="nextGeneralData"> 
+                            <apex:facet name="start" >
+                                <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                     
+                            </apex:facet>
+                        </apex:actionstatus>
+                    </apex:pageBlockButtons>
+                </apex:pageBlock>
+                <apex:pageBlock title="{!$Label.CSS_WS_General_Data}" id="engineSectionDisabled" rendered="{!!showGeneralData}">
+                    
+                    <apex:pageBlockSection columns="2">
+                        <apex:selectList id="serviceProviderDRDisabled" value="{!CSS_WS_Rescue__c.CSS_WS_Service_Provider_DR__c }" size="1" style="width: 200px !important;" disabled="true">
+                            <apex:selectOptions value="{!distributorsSelectList}"/>
+                        </apex:selectList>
+                        <apex:selectList id="serviceProviderDealerDisabled" value="{!CSS_WS_Rescue__c.CSS_WS_Service_Provider_Dealer__c }" size="1" style="width: 200px !important;" disabled="true">
+                            <apex:selectOptions value="{!dealersSelectList}"/>
+                            <apex:actionSupport event="onchange" action="{!WhoCaptureFunction}" reRender="engineSection,failureSection"/>
+                        </apex:selectList>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputField id="capturerNameDisabled" value="{!CSS_WS_Rescue__c.CSS_WS_Capturer_Name__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputField id="chargedToDisabled" value="{!CSS_WS_Rescue__c.CSS_WS_Charged_To__c}" style="width: 173px !important;"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputField id="CoordinatedByDisabled" value="{!CSS_WS_Rescue__c.CSS_WS_CoordinatedBy__c}" style="width: 173px !important;"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputField id="beforeInServiceDisabled" value="{!CSS_WS_Rescue__c.CSS_WS_Before_In_Service__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputField id="engineSerialNumberDisabled" value="{!CSS_WS_Rescue__c.CSS_WS_Engine_Serial_Number__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:selectList id="manufacturerDisabled" value="{!CSS_WS_Rescue__c.CSS_WS_Manufacturer__c }" disabled="true" style="width: 173px !important;" size="1">
+                            <apex:selectOptions value="{!manufacturerSelectList}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputField id="serviceModelDisabled" value="{!CSS_WS_Rescue__c.CSS_WS_Service_Model__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:selectList id="modelSeriesDisabled" value="{!CSS_WS_Rescue__c.CSS_WS_Model_Series__c}" disabled="true" style="width: 90px !important; " size="1">
+                            <apex:selectOptions value="{!modelSeriesSelectList}"/>
+                        </apex:selectList>  
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:selectList id="engineApplicationDisabled" size="1" style="width: 173px !important;" disabled="true" label="{!$ObjectType.CSS_WS_Rescue__c.fields.CSS_WS_Engine_Application__c.Label}" value="{!CSS_WS_Rescue__c.CSS_WS_Engine_Application_Code__c }">
+                            <apex:selectOptions value="{!engineApplications}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputField id="customerNameDisabled" value="{!CSS_WS_Rescue__c.CSS_WS_Customer_Name_Internal__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">                       
+                        <apex:outputField id="failurePointQuantityDisabled" value="{!CSS_WS_Rescue__c.CSS_WS_Failure_Point_Quantity__c}" style="width: 169px !important;"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputField id="warrantyStartDateDisabled" value="{!CSS_WS_Rescue__c.CSS_WS_Warranty_Start_Date__c}" style="width: 90px !important;" rendered="{!CSS_WS_Rescue__c.CSS_WS_Before_In_Service__c==false}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputField id="failureMeasureDisabled" value="{!CSS_WS_Rescue__c.CSS_WS_Failure_Measure__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputField id="serviceRequestDisabled" value="{!CSS_WS_Rescue__c.CSS_WS_ServiceRequest__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputField id="yearsInServiceDisabled" value="{!CSS_WS_Rescue__c.CSS_WS_Years_In_Service__c}" rendered="{!CSS_WS_Rescue__c.CSS_WS_ServiceRequest__c != null && CSS_WS_Rescue__c.CSS_WS_Warranty_Start_Date__c != null}"/>        
+                    </apex:pageBlockSection><hr style="background-color: #088A4B; height: 1px;"/>
+                    
+                    <apex:pageBlockSection >
+                        <apex:pageBlockSection columns="3">
+                            <apex:selectList label="{!$ObjectType.CSS_WS_Rescue__c.Fields.CSS_WS_Engine_System__c.Label}" disabled="true" size="1" value="{!CSS_WS_Rescue__c.CSS_WS_Engine_System__c}" style="width: 173px !important;">
+                                <apex:selectOptions value="{!GetFailureList}"/>
+                            </apex:selectList>                            
+                            <apex:selectList id="component" label="{!$ObjectType.CSS_WS_Rescue__c.Fields.CSS_WS_Component__c.Label}" size="1" disabled="true" value="{!CSS_WS_Rescue__c.CSS_WS_Component__c}" style="width: 173px !important;">
+                                <apex:selectOptions value="{!GetComponentList}"/>
+                            </apex:selectList>
+                        </apex:pageBlockSection>
+                        <apex:pageBlockSection >
+                            <apex:selectList size="1" value="{!CSS_WS_Rescue__c.CSS_WS_Failure_Mode__c}" disabled="true" style="width: 173px !important;">
+                                <apex:selectOptions value="{!GetFailureModeList}"/>
+                            </apex:selectList>
+                        </apex:pageBlockSection>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockButtons >
+                        <apex:commandButton action="{!saveGeneralDataDisabled}" value="{!$Label.CSS_WS_Button_Next}" status="nextGeneralData" rendered="{!!showGeneralData}"/>
+                        <apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_RescueFormat?id={!CSS_WS_Rescue__c.Id}&clone=1'; return false;" rendered="{!!showGeneralData}" />
+                        <apex:actionstatus id="nextGeneralData"> 
+                            <apex:facet name="start" >
+                                <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                     
+                            </apex:facet>
+                        </apex:actionstatus>
+                    </apex:pageBlockButtons>
+                    
+                </apex:pageBlock>
+            </apex:tab>
+            
+            <!-- TAB for BITACORA -->
+            <apex:tab id="bitacoraTab" label="{!$Label.CSS_WS_Bitacora}" name="BitacoraTab" disabled="{!disableBitacoraTab}"> 
+                <apex:pageBlock title="{!$Label.CSS_WS_Bitacora}" id="bitacoraBlock">
+                    
+                    <apex:pageBlockSection >
+                        <apex:outputField id="serviceRequest2" value="{!CSS_WS_Rescue__c.CSS_WS_ServiceRequest__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection >
+                        <apex:inputField id="serviceCoordination" value="{!CSS_WS_Rescue__c.CSS_WS_ServiceCoordination__c}">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection >
+                        <apex:inputField id="expertOutput" value="{!CSS_WS_Rescue__c.CSS_WS_ExpertOutPut__c}">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection >
+                        <apex:inputField id="repairEnding" value="{!CSS_WS_Rescue__c.CSS_WS_RepairEnding__c}">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection><hr style="background-color: #088A4B; height: 1px;"/>
+                    
+                    <apex:pageBlockSection columns="2">
+                        <apex:pageBlockSection >
+                            <apex:inputField id="travelHoursRoundTrip" value="{!CSS_WS_Rescue__c.CSS_WS_TravelHoursRoundTrip__c}" taborderhint="1">
+                                <apex:actionSupport action="{!GetHRRoundTravelPolicy}" event="onchange" rerender="bitacoraBlock" focus="travelKmRoundTrip"/>
+                                <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;" />
+                            </apex:inputField>
+                            <apex:inputField id="travelKmRoundTrip" value="{!CSS_WS_Rescue__c.CSS_WS_TravelKmRoundTrip__c}" taborderhint="2">
+                                <apex:actionSupport action="{!GetKMRoundTravelPolicy}" event="onchange" reRender="bitacoraBlock" focus="returns"/>
+                                <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;" />
+                            </apex:inputField>
+                        </apex:pageBlockSection>
+                      
+                        <apex:pageBlockSection >
+                            <apex:inputField id="returns" value="{!CSS_WS_Rescue__c.CSS_WS_Returns__c}" taborderhint="3">
+                                <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                            </apex:inputField>
+                        </apex:pageBlockSection>
+                    </apex:pageBlockSection>
+                   
+                    <apex:pageBlockSection columns="2" >
+                        <apex:pageBlockSection collapsible="3">
+                            <apex:inputField id="travelHoursRoundTripPolicy" value="{!CSS_WS_Rescue__c.CSS_WS_TravelHoursRoundTripPolicy__c}" taborderhint="4"/>
+                            <apex:inputField id="travelKmRoundTripPolicy" value="{!CSS_WS_Rescue__c.CSS_WS_TravelKmRoundTripPolicy__c}" taborderhint="5" />
+                        </apex:pageBlockSection><apex:pageBlockSection ></apex:pageBlockSection>
+                    </apex:pageBlockSection>
+                    
+                    <!----------------------------------- Area Functions Bitacora ----------------------------------->
+                    <apex:actionFunction action="{!saveBitacora}" name="validateBitacora_JS" rerender="theTabPanelRescue,showmsg,AccCoverage,TravelCoverage" oncomplete="" status="nextBitacora"/>
+                    <!----------------------------------- Area Functions Bitacora ----------------------------------->
+                    
+                    <apex:pageBlockButtons >
+                        <apex:commandButton action="{!backBitacora}" value="{!$Label.CSS_WS_Button_Back}"/>
+                        <apex:commandButton onclick="validateBitacora_JS(); return false;" value="{!$Label.CSS_WS_Button_Next}"/>
+                        <apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_RescueFormat?id={!CSS_WS_Rescue__c.Id}&clone=1'; return false;"/>
+                        <apex:actionstatus id="nextBitacora"> 
+                            <apex:facet name="start" >
+                                <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                     
+                            </apex:facet>
+                        </apex:actionstatus>
+                    </apex:pageBlockButtons>
+                </apex:pageBlock> 
+            </apex:tab>
+            
+            <!-- TAB for MINIMUM FARE -->
+            <apex:tab id="minimumFareTab" label="{!$Label.CSS_WS_Fare}" name="MinimumFareTab" disabled="{!disableMinimumFareTab}"> 
+                <!--<apex:tab id="minimumFareTab" label="Minimum Fare" name="MinimumFareTab" disabled="false"> -->
+                <apex:pageBlock title="{!$Label.CSS_WS_Fare}" id="minimumFare">
+                    
+                    <apex:pageBlockSection > 
+                        <apex:inputField id="signalTime" value="{!CSS_WS_Rescue__c.CSS_WS_SignalTime__c}" style="width: 90px !important;">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection > 
+                        <apex:inputField id="signalBy" value="{!CSS_WS_Rescue__c.CSS_WS_SignalBy__c}" style="width: 90px !important;">
+                            <apex:actionSupport action="{!RR35RR36RR37}" event="onchange" rerender="travelKmRoundTripPolicy,travelHoursRoundTripPolicy,rescueCost" status="RR35RR36RR37"/>
+                            <apex:actionstatus id="RR35RR36RR37"> 
+                                <apex:facet name="start" >
+                                    <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                      
+                                </apex:facet>
+                            </apex:actionstatus>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection > 
+                        <apex:outputField id="travelKmRoundTripPolicy" value="{!CSS_WS_Rescue__c.CSS_WS_TravelKmRoundTripPolicy__c}" />
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection > 
+                        <apex:outputField id="travelHoursRoundTripPolicy" value="{!CSS_WS_Rescue__c.CSS_WS_TravelHoursRoundTripPolicy__c}" />
+                        <apex:outputField id="rescueCost" value="{!CSS_WS_Rescue__c.CSS_WS_RescueCost__c}" rendered="IF(UPPER(CSS_WS_Rescue__c.CSS_WS_RescueStatus__c )=='AUTHORIZED',true,false) "/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection > 
+                        <apex:inputfield id="totalLunchTime" value="{!CSS_WS_Rescue__c.CSS_WS_TotalLunchTime__c}">
+                            <apex:outputText value="{!$Label.CSS_WS_Exchange_Rate}" style="font-weight: bold; color: #585858; font-size: 95%; margin-left: 60px !important; margin-top: 5px !important;"/>
+                            <apex:outputText id="exchangeRate" value="{!CurrencyPrice}" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputfield>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection > 
+                        <apex:outputLabel value="MXN" style="margin-left:64% !important; display : inline-flex; font-weight: bold;">
+                            <apex:outputLabel value="USD" style="margin-left: 200px !important; display : inline-flex; font-weight: bold;"/> 
+                        </apex:outputLabel>                
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2">                   
+                        <apex:inputField id="lunchAmount" value="{!CSS_WS_Rescue__c.CSS_WS_LunchAmount_MXN__c}">
+                            <apex:actionSupport action="{!GetLunchAmount}" event="onchange" reRender="minimumFare, showmsg"/>
+                            <apex:outputText value="{0, number, currency}" style="position: absolute !important; margin-left: 120px !important; margin-top: 5px !important;">
+                                <apex:param value="{!CSS_WS_Rescue__c.CSS_WS_LunchAmount__c}" />
+                            </apex:outputText> 
+                        </apex:inputField>                  
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection >                       
+                        <apex:inputField id="lodgingAmount" value="{!CSS_WS_Rescue__c.CSS_WS_Lodging_Amount_MXN__c}">
+                            <apex:actionSupport action="{!GetLodgingAmount}" event="onchange" reRender="minimumFare, showmsg"/>
+                            <apex:outputText value="{0, number, currency}" style="position: absolute !important; margin-left: 120px !important; margin-top: 5px !important;">
+                                <apex:param value="{!CSS_WS_Rescue__c.CSS_WS_Lodging_Amount__c}"/>
+                            </apex:outputText> 
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <!--<apex:pageBlockSection > 
+                        <apex:inputField id="craneFlag" value="{!CSS_WS_Rescue__c.Towing_Flag__c}" >
+                            <apex:actionSupport action="{!delTowingInfo}" event="onchange" rerender="minimumFare, showmsg"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection id="towingInfo" columns="1" rendered="{!CSS_WS_Rescue__c.Towing_Flag__c}">
+                        <hr style="background-color: #088A4B; height: 1px;" rendered="{!CSS_WS_Rescue__c.Towing_Flag__c}"/>
+                        <apex:inputField id="craneAuthorization" value="{!CSS_WS_Rescue__c.CSS_WS_Towing_Amount_MXN__c}" rendered="{!CSS_WS_Rescue__c.Towing_Flag__c}">
+                            <apex:actionSupport action="{!GetTowingAmount}" event="onchange" reRender="towingInfo"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                            <apex:outputText value="{0, number, currency}" style="position: absolute !important; margin-left: 120px !important; margin-top: 5px !important;">
+                                <apex:param value="{!CSS_WS_Rescue__c.CSS_WS_TowingAmount__c}" />
+                            </apex:outputText>
+                        </apex:inputField>
+                        
+                        <apex:inputField id="authorizer" value="{!CSS_WS_Rescue__c.CSS_WS_Authorizer__c}"  rendered="{!CSS_WS_Rescue__c.Towing_Flag__c}" style="width: 173px !important;">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                        
+                        <apex:inputField id="craneJustification" value="{!CSS_WS_Rescue__c.CSS_WS_Crane_Justification__c}"  rendered="{!CSS_WS_Rescue__c.Towing_Flag__c}" style="width: 300px !important; height:100px" html-maxlength="3000">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                        <hr style="background-color: #088A4B; height: 1px;" rendered="{!CSS_WS_Rescue__c.Towing_Flag__c}"/>
+                    </apex:pageBlockSection> -->
+                    
+                    <apex:pageBlockSection >
+                        <apex:outputField id="responseTime" value="{!CSS_WS_Rescue__c.CSS_WS_ResponseExitTime__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection >                        
+                        <apex:outputField id="repairtime" value="{!CSS_WS_Rescue__c.CSS_WS_RepairTime__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection >                       
+                        <apex:outputField id="RescueTime" value="{!CSS_WS_Rescue__c.CSS_WS_TotalRescueTime__c}"/>
+                    </apex:pageBlockSection>
+
+                    <!----------------------------------- Area Functions Minimum Fare ----------------------------------->
+                    <apex:actionFunction action="{!saveMinimumFare}" name="validateMinimumFare_JS" reRender="theTabPanelRescue,showmsg" oncomplete="" status="nextMinimumFare"/>
+                    <apex:actionFunction action="{!backMinimumFare}" name="backMinimumFareTab" />
+                    <!----------------------------------- Area Functions Minimum Fare ----------------------------------->
+                    
+                    <apex:pageBlockButtons >
+                        <apex:commandButton onclick="backMinimumFareTab(); return false;" value="{!$Label.CSS_WS_Button_Back}"/>
+                        <apex:commandButton onclick="validateMinimumFare_JS(); return false;" value="{!$Label.CSS_WS_Button_Next}"/>
+                        <apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_RescueFormat?id={!CSS_WS_Rescue__c.Id}&clone=1'; return false;"/>
+                        <apex:actionstatus id="nextMinimumFare"> 
+                            <apex:facet name="start" >
+                                <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                     
+                            </apex:facet>
+                        </apex:actionstatus>
+                    </apex:pageBlockButtons>
+                </apex:pageBlock>
+            </apex:tab>
+            
+            <!-- TAB for SERVICE DATAIL -->
+            <apex:tab id="serviceDetailTab" label="{!$Label.CSS_WS_Service_Detail}" name="ServiceDetailTab" disabled="{!disableServiceDetailTab}"> 
+                <apex:pageBlock id="serviceDetails" title="{!$Label.CSS_WS_Service_Detail}">
+                    
+                    <apex:pageBlockSection >
+                        <apex:inputField id="sparePartsUsage" value="{!CSS_WS_Rescue__c.CSS_WS_SparePartsUsage__c}">
+                            <apex:actionSupport event="onchange" reRender="partSection" />
+                        </apex:inputField>
+                    </apex:pageBlockSection> 
+                    
+                    <apex:pageBlockSection > 
+                        <apex:inputField id="failurePlace" value="{!CSS_WS_Rescue__c.CSS_WS_FailurePlace__c}"  style="width: 90px !important;">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection > 
+                        <apex:inputField id="roadSection" value="{!CSS_WS_Rescue__c.CSS_WS_RoadSection__c}"  style="width: 90px !important;">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection> 
+                    
+                    <apex:pageBlockSection > 
+                        <apex:inputField id="reportedFailure" value="{!CSS_WS_Rescue__c.CSS_WS_ReportedFailure__c}" style="width: 300px !important; height:100px" html-maxlength="3000">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection> 
+                    
+                    <apex:pageBlockSection > 
+                        <apex:inputField id="technicalCause" value="{!CSS_WS_Rescue__c.CSS_WS_TechnicalCause__c}" style="width: 300px !important; height:100px" html-maxlength="3000">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection > 
+                        <apex:inputField id="tecnhicalCorrection" value="{!CSS_WS_Rescue__c.CSS_WS_TecnhicalCorrection__c}" style="width: 300px !important; height:100px" html-maxlength="3000">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection><hr style="background-color: #088A4B; height: 1px;"/> 
+                    
+                    <apex:pageBlockSection > 
+                        <apex:inputField id="failureIsProductProblem" value="{!CSS_WS_Rescue__c.CSS_WS_FailureIsProductProblem__c}"  style="width: 90px !important;">
+                            <apex:actionSupport event="onchange" rerender="serviceDetails" action="{!FailureIsProductProblem}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>                                         
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection rendered="{!CSS_WS_Rescue__c.CSS_WS_FailureIsProductProblem__c=='No'}">
+                        <apex:inputField value="{!CSS_WS_Rescue__c.CSS_WS_FailureRelatedTo__c}"  style="width: 173px;">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection> 
+                   
+                    <apex:pageBlockSection rendered="{!CSS_WS_Rescue__c.CSS_WS_FailureIsProductProblem__c=='Yes'}">
+                        <apex:selectList id="promotionIds" size="1" style="width: 173px;" value="{!CSS_WS_Rescue__c.CSS_WS_TechnicianPromotion__c}">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin-left: 178px !important; margin-top: 5px;"/>
+                            <apex:selectOptions value="{!promotionIDsList}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSection> 
+                    
+                    <apex:pageBlockSection rendered="{!CSS_WS_Rescue__c.CSS_WS_FailureIsProductProblem__c=='No'}">
+                        <apex:inputField value="{!CSS_WS_Rescue__c.CSS_WS_OtherObservation__c}"  style="width: 300px; height: 75px;">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+       
+                    <apex:pageBlockSection columns="1" id="partSection" >
+                        <apex:pageBlock mode="detail" rendered="{!Rescue.CSS_WS_SparePartsUsage__c}">
+                            <apex:pageBlockButtons location="top">
+                                <apex:commandButton action="{!addRow}" value="{!$Label.CSS_WS_Button_Add_New_Part}" rerender="partSection"/>
+                                <!--<apex:commandButton action="{!SavePartsGrids}" value="Validate & Save Parts" />-->
+                            </apex:pageBlockButtons>
+                            <apex:pageBlockTable value="{!PartList}" var="part" id="PartsGridSection" style="width: 600px !important;">
+                                <apex:column headerValue="{!$Label.CSS_WS_Action}">
+                                    <apex:commandButton value="{!$Label.CSS_WS_Label_Delete}" action="{!DeletePart}" reRender="partSection,showmsg">
+                                        <apex:param name="PartsToDelete" value="{!part.Index}" assignTo="{!PartToDelete}"/> 
+                                    </apex:commandButton>
+                                </apex:column>
+                                <apex:column headerValue="{!$Label.CSS_WS_Row}">
+                                    <apex:outputText value="{!part.Index}" >
+                                    </apex:outputText>
+                                </apex:column>
+                                <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_Parts__c.fields.CSS_WS_PartNumber__c.Label}">
+                                    <apex:inputText value="{!part.Part.CSS_WS_Part_ID__c}" >
+                                        <apex:actionSupport action="{! GetPartsInfo }" event="onchange" reRender="partSection,showmsg" >
+                                            <apex:param name="PartsTUpdate" value="{!part.Index}" assignTo="{!PartToUpdate}"/> 
+                                            <apex:param name="PartsToSearch" value="{!part.Part.CSS_WS_Part_ID__c}" assignTo="{!OldPartNum}"/>
+                                        </apex:actionSupport>
+                                    </apex:inputText>
+                                </apex:column>
+                                <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_Parts__c.fields.CSS_WS_Quantity__c.Label}">
+                                    <apex:inputField value="{!part.Part.CSS_WS_Quantity__c}" />
+                                </apex:column>
+                                <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_Parts__c.fields.CSS_WS_Description__c.Label}"  style="width : 250px">
+                                    <apex:outputText value="{!part.Part.CSS_WS_Description__c}" />
+                                </apex:column>
+                            </apex:pageBlockTable>
+                        </apex:pageBlock>
+                    </apex:pageBlockSection><hr style="background-color: #088A4B; height: 1px;"/>
+                    
+                    <apex:pageBlockSection >                     
+                        <apex:inputField value="{!CSS_WS_Rescue__c.CSS_WS_DeadTime__c}" style="width: 90px !important;"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection >
+                        <apex:inputField value="{!CSS_WS_Rescue__c.CSS_WS_Responsable__c}" style="width: 173px !important;">
+                            <apex:actionSupport action="{!CheckResponsableValue}" event="onchange" reRender="showmsg"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection >
+                        <apex:inputField value="{!CSS_WS_Rescue__c.CSS_WS_Exit__c}" id="exit" onchange="exit_action()">
+                            <apex:outputLabel value="{!$ObjectType.CSS_WS_Rescue__c.fields.CSS_WS_Repair__c.Label}" style="font-weight: bold; color: #3D3B3B; font-size: 95%; margin-left:20px !important; margin-top:1px !important; position: absolute;"/>
+                            <apex:inputField value="{!CSS_WS_Rescue__c.CSS_WS_Repair__c}" id="repair" onchange="repair_action()" style="margin-left:70px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection >
+                        <apex:inputField value="{!CSS_WS_Rescue__c.CSS_WS_Comments__c}" style="width: 300px !important; height:100px" html-maxlength="3000"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:inputField value="{!CSS_WS_Rescue__c.CSS_WS_ReasonNoTargetTime__c}">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: relative !important; margin: 5px !important; margin-left: 5px !important;" rendered="{!if(if(isnull(CSS_WS_Rescue__c.CSS_WS_TotalRescueTime__c),0,CSS_WS_Rescue__c.CSS_WS_TotalRescueTime__c) > 7,TRUE,FALSE)}"/>
+                            <apex:actionSupport action="{!ReasonNoTargetTimeSelectedValues}" event="onchange" rerender="showmsg,other"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2" id="other">
+                        <apex:inputField value="{!CSS_WS_Rescue__c.CSS_WS_OtherSituation__c}" style="width: 300px !important; height:100px" html-maxlength="3000" rendered="{!CONTAINS(CSS_WS_Rescue__c.CSS_WS_ReasonNoTargetTime__c,'Other') || CONTAINS(CSS_WS_Rescue__c.CSS_WS_ReasonNoTargetTime__c,'Otra')}" >
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection><hr style="background-color: #088A4B; height: 1px;"/> 
+                    
+                    <apex:outputPanel onclick="refreshAttachmentRescue()"> 
+                        <apex:pageBlockSection columns="1">
+                            <apex:outputText label="{!$Label.CSS_WS_Attachments_M001}">
+                                <apex:commandLink value="Attach Files" onclick="window.open('/p/attach/NoteAttach?pid={!CSS_WS_Rescue__c.Id}&isdtp=mn&parentname={!CSS_WS_Rescue__c.Id}&retURL=apex/CSS_WS_CloseWindowPage','_blank','height=350,width=650,left=100,top=100,scrollbars=yes,toolbar=no,status=no'); return false;" />
+                            </apex:outputText>
+                        </apex:pageBlockSection>
+                        
+                        <apex:pageBlockSection columns="2" id="AttachmentSectionRescue">
+                            <apex:outputText label="{!$Label.CSS_WS_Attachments_M004}">                        
+                                <apex:pageBlockTable value="{!rescue_attachment_list}" var="att"> 
+                                    <apex:column >
+                                        <apex:commandButton action="{!rescueDeleteAttachmentRow}" immediate="true" reRender="AttachmentSectionRescue" value="Delete">
+                                            <apex:param name="rowIdRescue" value="{!att.Id}" assignTo="{!rescueSelectedRowId}"/>
+                                        </apex:commandButton>
+                                    </apex:column>
+                                    <apex:column value="{!att.name}"/>  
+                                </apex:pageBlockTable> 
+                            </apex:outputText>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                                
+                    <!----------------------------------- Area Functions Minimum Fare ----------------------------------->
+                    <apex:actionFunction action="{!backServiceDetail}" name="backServiceDetailTab" reRender="theTabPanelRescue"/>
+                    <apex:actionFunction action="{!saveRescue}" name="saveRescue" reRender="theTabPanelRescue,showmsg"/>
+                    <apex:actionFunction name="refreshAttachmentRescue" action="{!rescueAttachment}" rerender="AttachmentSectionRescue"/>
+                    <apex:actionFunction name="exit_action" action="{!selectExit}" reRender="repair"/>
+                    <apex:actionFunction name="repair_action" action="{!selectRepair}" reRender="exit"/>
+                    <!----------------------------------- Area Functions Minimum Fare ----------------------------------->
+                    
+                    <apex:pageBlockButtons >
+                        <apex:commandButton onclick="backServiceDetailTab(); return false;" value="{!$Label.CSS_WS_Button_Back}"/>
+                        <apex:commandButton onclick="saveRescue(); return false;" status="finalSave" value="{!$Label.CSS_WS_Button_Review}"/>
+                        <apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_RescueFormat?id={!CSS_WS_Rescue__c.Id}&clone=1'; return false;"/>
+                        <apex:actionstatus id="finalSave"> 
+                            <apex:facet name="start" >
+                                <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                   
+                            </apex:facet>
+                        </apex:actionstatus>
+                    </apex:pageBlockButtons>
+                </apex:pageBlock>        
+            </apex:tab>
+            
+        </apex:tabPanel>
+    </apex:form>
+</apex:page>

@@ -1,0 +1,1322 @@
+<apex:page id="reppages" Controller="CSS_JobPlanSRTController" docType="html-5.0" showHeader="false" standardStylesheets="false" action="{!jobPlanSRTAction}">
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content=""/>
+    <meta name="author" content="Cummins Inc."/>
+    <meta name="copyright" content="(C)2015 Cummins Inc., Box 3005, Columbus, IN 47202-3005 U.S.A."/> 
+    <title>{!$Label.css_Cummins_Service_System} | {!$Label.css_Job_Plan}</title>
+    <!--  <c:css_styles /> -->
+
+    <c:CSS_Standard_IntakeStyles />
+    <c:css_ExtraStyles />
+    <apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/jquery-1.11.2.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/jquery.dataTables.min.js')}"/>   
+    <apex:stylesheet value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/css/component_specific/jquery.dataTables.css')}"/>      
+    <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.1.1.min.js"></script>
+
+    <script>
+        $(function(){
+            var className = document.getElementById('diagnostic-accordian').className;    
+            var fID =  document.getElementById('fieldsetDisplaySRT');
+            if(className == "panel-collapse collapse in") {
+                fID.style.display = "table-cell";
+            }
+
+        });
+        
+        function showLoadingPopUp(){
+            $('#loadingModal').modal(
+                {backdrop: 'static',
+                 keyboard: false,
+                 show:true
+                });
+        }
+        
+        function HideLoadingPopUp(){
+            $('#loadingModal').modal('hide');
+        }
+            
+
+    </script>
+
+    <script>
+
+        function filedsetMethodRepairSRT(){
+            var className = document.getElementById('repair-accordian').className;    
+            var fID =  document.getElementById('fieldsetDisplaySRT');
+            if(className == "panel-collapse collapse") {
+                fID.style.display = "table-cell";
+                
+            }
+            else{
+                fID.style.display = "block";
+            }
+        }
+
+        function filedsetMethodDiagSRT() {
+            var className = document.getElementById('diagnostic-accordian').className;    
+            var fID =  document.getElementById('fieldsetDisplaySRT');
+            if(className == "panel-collapse collapse") {
+                fID.style.display = "table-cell";
+            }
+            else{
+                fID.style.display = "block";
+            }
+        }
+        
+         function filedsetMethodCampaignTRPATCs() {
+            var className = document.getElementById('campaign-accordian').className;    
+            var fID =  document.getElementById('fieldsetDisplaySRT');
+            if(className == "panel-collapse collapse") {
+                fID.style.display = "table-cell";
+                //alert('Inside IF'+fID);
+            }
+            else{
+                fID.style.display = "block";
+            }
+        }
+
+        function qtyPressJobplan(e,compId){ 
+            var technicianTimeVal= document.getElementById(compId.id).value;
+            if(((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105)) || ((e.which == 190 || e.which == 110) && !(technicianTimeVal.includes('.'))))
+            {
+            } 
+            else 
+            {
+                return false;
+            }
+        }
+        function validateActtt(compId){
+            var technicianTime= document.getElementById(compId.id).value;
+            var techTimelength=document.getElementById(compId.id).value.length;
+            var techTimesplit = [];
+
+            if(technicianTime.includes('.')){
+                techTimesplit = technicianTime.split(".");
+                var declength = techTimesplit[1].length;
+                if(declength > 1){                
+                    var newStr = technicianTime.substring(0, technicianTime.length-1);
+                    document.getElementById(compId.id).value = newStr;
+                    return false;    
+                }
+            }
+            else {
+                if(techTimelength == 5)
+                {
+                    var newStr1 = technicianTime.substring(0, technicianTime.length-1);
+                    var newStr2 = newStr1/10;
+                    document.getElementById(compId.id).value = newStr2;
+                }
+            }
+            if(techTimelength == 4 && !technicianTime.includes('.')){
+                var result = Number(document.getElementById(compId.id).value)/10;
+                document.getElementById(compId.id).value=result;
+            }
+        }
+    </script>
+
+    <style>
+        cmi_lighttealbutton1:hover {
+            color:#fff;
+            background :#33a6cc;
+        }
+
+        cmi_lighttealbutton1 {
+            background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#006666), color-stop(100%,#003635));
+            background: #006666; /* Old browsers */
+            background: -o-linear-gradient(top,  #006666 0%,#003635 100%); /* Opera 11.10+ */
+            background: -ms-linear-gradient(top,  #006666 0%,#003635 100%); /* IE10+ */
+            background: linear-gradient(to bottom,  #006666 0%,#003635 100%); /* W3C */
+        }
+
+        .cmi_narrativetextarea{
+            border: 1px solid #d3d3d3;
+            overflow-x: hidden;
+            overflow-y: scroll;
+            height: 100px;    
+        }
+        .error{
+            display: none;
+            margin-left: 10px;
+        }       
+
+        .error_show{
+            color: red;
+            margin-left: 10px;
+        }
+
+        input.invalid, textarea.invalid{
+            border: 2px solid red;
+        }
+
+        input.valid, textarea.valid{
+            border: 2px solid green;
+        }
+
+    </style>    
+    <style>       
+        .no-sort::after { display: none!important; }
+
+        .no-sort { pointer-events: none!important; cursor: default!important; }        
+        @media (max-width:419px) {    
+            .helpmodal{display:inline-block;}
+            .cmi-css_field_set{margin-left: -20px !important;}
+            #failureDate .helpmodal{    display: block;
+                margin-top: -15px;
+                margin-left: 154px;
+                border-bottom: none !important;}
+            .job-col {
+                text-align: left;
+                margin-top: 5px;
+            }
+            .ueformselect{
+                width: 70% !important;
+            }
+        }
+        table.dataTable thead .sorting {
+            background: url({!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/sort_both.png')}) no-repeat center right;
+        }
+        table.dataTable thead .sorting_asc {
+            background: url({!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/sort_asc.png')}) no-repeat center right;
+        }
+        table.dataTable thead .sorting_desc {
+            background: url({!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/sort_desc.png')}) no-repeat center right;
+        }
+        table.dataTable thead .sorting_asc_disabled {
+            background: url({!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/sort_asc_disabled.png')}) no-repeat center right;
+        }
+        table.dataTable thead .sorting_desc_disabled {
+            background: url({!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/sort_desc_disabled.png')}) no-repeat center right;
+        }                
+        .asterisk {
+            color: #D02323;
+            font-size: 14px;
+            width: 5px;
+            line-height: 13px;
+            vertical-align: top;
+            float: right;
+            /* margin-left: -5px;
+            top: -18px;*/                      
+            position: relative;
+            left: 17px;
+        }
+
+        .asterisk1 {
+            color: #D02323;
+            font-size: 14px; 
+            *top: 0px;                                  
+
+        }
+        <!-- .cmi_customerpopup > thead > tr > th,
+        .cmi_customerpopup > tbody > tr > td{
+        border: 1px solid #d2d2d2;
+        }
+        -->
+        .cmi_customerpopup thead {
+            background:#e2e2e2 ;
+        }
+        .cmi_customerpopup > tbody > tr > td {
+            border-top:0px solid #ffffff ;
+        }
+
+        .cmi_customerpopup tr:nth-of-type(even) { 
+            background: #ffffff; 
+        }
+
+        .cmi_customerpopup  td {
+            border-left: 0px solid #FFF;
+            font-size: 12px;
+            padding: 5px 10px 5px 10px; 
+            font-family: "Helvetica Neue 55", Arial, sans-serif;
+            text-align: center;
+        }
+        .cmi_customerpopup th, .cmi_customerpopup td {
+            text-align:center;
+        } 
+
+        .cmi_cu-popupwidth{
+            width:1100px;
+        }
+        @media (min-width: 749px) and (max-width:1110px) {
+
+            .cmi_cu-popupwidth{
+                width:800px;
+            }
+
+            .cmi_customerpopup  td {
+                font-size: 8px;
+            }
+        }
+
+        @media (min-width: 610px) and (max-width:748px) {
+            .cmi_cu-popupwidth{
+                width:600px;
+            }
+        }
+
+        @media (min-width: 509px) and (max-width:609px) {
+            .cmi_cu-popupwidth{
+                width:500px;
+            }
+        }
+        @media (min-width: 409px) and (max-width:508px) {
+            .cmi_cu-popupwidth{
+                width:400px;
+            }
+        }
+        @media (min-width: 310px) and (max-width:408px) {
+            .cmi_cu-popupwidth{
+                width:300px;
+            }
+        }
+        @media (max-width: 750px){
+            table.cmi_customerpopup{
+                display: none;
+            }    
+        }
+
+
+
+
+
+        @media (min-width: 300px) and (max-width:749px) {
+
+            .cmi_customerpopup td:nth-of-type(even) { 
+                background: #ffffff; 
+            }
+
+            .cmi_customerpopup  td {
+                border-left: 0px solid #FFF;
+                font-size: 12px;
+                padding: 5px 10px 5px 10px; 
+                font-family: "Helvetica Neue 55", Arial, sans-serif;
+                text-align: center;
+            }
+        } 
+
+        @media (min-width: 300px) and (max-width:749px) {
+            .cmi_customerPopupMobile {
+                display: inline-block;
+                font-family: 'Helvetica Neue 55', Arial, sans-serif;
+                color:#000000;
+                font-size:13px;
+                border-bottom:2px solid #666666;
+                margin-bottom:20px;
+                line-height:1.4;
+            }
+            .cmi_customerPopupMobile td {
+                display: block;
+                font-family: 'Helvetica Neue 55', Arial, sans-serif;
+                color:#000000;
+                font-size:13px;
+                margin:0;
+                border:0px solid #ffffff !important;
+            }
+
+            .cmi_customerPopupMobile th {
+                background: #ffffff;
+                font-family: 'Helvetica Neue 55', Arial, sans-serif;
+                color:#000000;
+                font-weight: bold;
+                text-align: left;
+                /* border-bottom: 1px solid white; */
+                width: 20%;
+                padding-left: 8px;
+            }
+
+            td:nth-of-type(even) { 
+                background: #ffffff; 
+            }
+
+        }
+
+
+        #hidedefaultview1,#hidedefaultview2,#hidedefaultview3,#hidedefaultview4, #hidedefaultview4inputfield,#hideLinkId4,
+        #hidedefaultview1-mobile ,#hidedefaultview2-mobile,#hidedefaultview3-mobile,#hidedefaultview4-mobile,#hideComplaintType4-mobile{
+            display:none;
+        }
+
+        @media(max-width: 749px){
+            .cmi_deleterow{
+                display: none; 
+            }
+        }
+        @media(min-width: 750px){
+            .cmi_deleterowmobile{
+                display: none; 
+            }
+        }      
+
+        .cmi_add-icon {
+            background: url({!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/CMI-WebIcon-Sprite.png')}) no-repeat -100px -320px rgba(0, 0, 0, 0);
+        display: inline-block;
+        height: 20px;
+        margin: 0px 0px 0px 0px;
+        position: relative;
+        width: 22px;
+
+        } 
+
+    </style>
+    <style type="text/css">
+
+        /* warranty table styles */
+        .cmi_warranty-table th, .cmi_warranty-table td,.cmi_warranty-certificatetable th, .cmi_warranty-certificatetable td{
+            border: 1px solid #8c8c8c;
+            padding:5px;
+        }
+
+        .cmi_warranty-table td {
+            text-align: center;
+        }
+
+        .cmi_warrantytable-mobile td{
+
+            border-left: 1px solid #FFF;
+            font-size: 12px;
+            padding: 5px 10px 12px 10px; 
+            font-family: "Helvetica Neue 55", Arial, sans-serif;
+            text-align: center;
+            border: 1px solid #8c8c8c;
+            padding:5px;
+
+        }
+
+        .cmi_warrantytable-mobile th{
+            width: 50%;
+            background-color: #cccccc;
+            border: 1px solid #8c8c8c;
+            padding:5px;
+            text-align: center;
+        }
+        .cmi_warrantytable-mobile tbody tr:first-child ,tr.cmi_warrantysecondrow-mobile {
+            border:2px solid #000000;
+        }
+
+        .cmi_warrantytable-text{
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .cmi_warranty-header {
+            font-weight: bold;
+            border : 2px solid #000000;
+        }
+
+        .cmi_warranty-header p {
+            text-align: center;
+            margin-bottom:0px;
+            font-size:14px;"
+        }
+
+        .cmi_warranty-certificatetable th{
+            background:#e2e2e2;
+
+        }
+
+        .cmi_warranty-certificatetable tr:nth-of-type(odd){
+            background:#ffffff;
+        }
+
+        .cmi_warranty-certificatetable tr:nth-of-type(even){
+            background:#e2e2e2;
+        }
+
+        .cmi_warranty-table tr:nth-of-type(even){
+            background:#ffffff;
+        }
+        .cmi_warranty-table tr:nth-of-type(odd){
+            background:#e2e2e2;
+        }
+
+        /*  .cmi_warranty-table a {
+        color:#007c7c;
+        text-decoration: underline;
+        } */
+
+        /* warranty table styles end */
+
+        .CMI-edit-icon {
+
+            background: url(assets/img/CMI-WebIcon-Sprite.png) no-repeat scroll -100px -950px rgba(0, 0, 0, 0);
+            display: inline-block;
+            height: 20px;
+            width: 22px;
+            margin: 1px 0px 0px 10px;
+            position: relative;
+        }
+
+
+
+        /*              buttons             */
+        .CMI-primary-button {
+            height: 30px;
+            border-radius: 5px;
+            display: inline-block;
+            padding: 0 10px;
+            color: #ffffff;
+            line-height: 30px;
+            text-align: center;
+            margin-left: 0 auto;
+            border:0px solid #007c7c;
+
+            /* Fallback (could use .jpg/.png alternatively) */
+            background-color: red;
+
+            /* SVG fallback for IE 9 (could be data URI, or could use filter) */
+            background-image: url(fallback-gradient.svg); 
+
+            /* Safari 4, Chrome 1-9, iOS 3.2-4.3, Android 2.1-3.0 */
+            background-image:
+                -webkit-gradient(linear, left top, right top, from(#003635), to(#006666));
+
+            /* Safari 5.1, iOS 5.0-6.1, Chrome 10-25, Android 4.0-4.3 */
+            background-image:
+                -webkit-linear-gradient(top, #003635, #006666);
+
+            /* Firefox 3.6 - 15 */
+            background-image:
+                -moz-linear-gradient(top, #003635, #006666);
+
+            /* Opera 11.1 - 12 */
+            background-image:
+                -o-linear-gradient(top, #003635, #006666);
+
+            /* Opera 15+, Chrome 25+, IE 10+, Firefox 16+, Safari 6.1+, iOS 7+, Android 4.4+ */
+            background-image:
+                linear-gradient(to top, #003635, #006666);
+        }
+        .CMI-primary-button:hover {
+            background:#007c7c;
+            cursor: pointer !important;
+        }
+        .CMI-primary-button:active {
+            background:#006666;
+        }
+
+
+
+    </style>
+
+    <apex:outputPanel id="exeReload" >
+        <script>
+            function redirectPage(){
+                //alert('hello');
+                var bool = '{!cancelSJWrapperObj1.errorFlag}';
+                //alert(bool);
+                if(bool=='false'){
+                    //alert('hi');
+                    document.location.href = '/apex/CSS_Job_Detail?nto=HOME';
+                }
+            }
+
+            function ClearErrorMessage(){
+                document.getElementById('CancelErrorId').innerHTML = '';
+            }
+
+            function CloseErrorMessage(){
+                document.getElementById('closeErrorId').innerHTML = '';
+                document.getElementById('closeErrorId1').innerHTML = '';
+            }
+
+        </script>
+    </apex:outputPanel>
+
+
+    <c:CSS_JavaScript />
+
+    <!--**************************************** -->
+    <script>
+        function callTND(){ window.open("/apex/CSS_JobTnDJo?id={!workJob.Id}", '_self');}
+        //function callRepair(){ window.open( "/apex/CSS_Job_Detail?id={!workjob.Id}&nto=DET", '_self');}
+        function callRepair(){ window.open( "/apex/CSS_JobRepair?id={!workjob.Id}&nto=DET", '_self');}
+        function textCounter(field,field2,maxlimit)
+        {
+            var countfield = document.getElementById(field2);
+            if ( field.value.length > maxlimit ) 
+            {
+                field.value = field.value.substring( 0, maxlimit );
+                return false;
+            } else 
+            {
+                countfield.value = maxlimit - field.value.length;
+            }
+        }
+        function callJobInvoice(){ window.open( "/apex/CSS_JobInvoice?id={!workjob.Id}", '_self');}
+    </script> 
+
+    <div class="container-fluid1" style="margin-right:15px;">
+        <apex:composition template="CSS_STDTemplate" />
+        <apex:define name="body">
+            <apex:form id="jobplanfrm" >
+
+
+                <apex:outputpanel id="DisplayChevs1" rendered="{!IF(workjob.id ==null , false , true)}">
+
+                    <ul class="nav nav-tabs desk-tabs" id="JobDetailTab" style="background-color: #eee;">
+                        <li><a href="" style="color:#888;" class="not-active">{!$Label.css_Intake}</a></li>
+                        <li><a href="#" class="not-active" onClick ="callTND()">{!$Label.css_Triage} &amp; {!$Label.css_Diagnosis}</a></li>
+                        <li class="active"><a href="" style="color:#888;">{!$Label.css_Job_Plan}</a></li>
+                        <li><a href="#" class="not-active" onClick="callRepair()">{!$Label.css_Repairs}</a></li>
+                        <li><a href="" style="color:#888;" class="not-active">{!$Label.css_Warramnty_Claim}</a></li>
+                        <li><a href="#" style="{!IF($Setup.css_header_nav__c.CG_Invoice_Check__c = true,'','color:#888;')}" class="{!IF($Setup.css_header_nav__c.CG_Invoice_Check__c = true,'active','not-active')}" onclick="{!IF($Setup.css_header_nav__c.CG_Invoice_Check__c = true,'callJobInvoice();','')}">{!$Label.css_Invoice}</a></li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <div class="tab-pane active" id="rpr">
+                            <div class="panel panel-default">
+                                <div class="panel-body intakechevs" style="padding-top:0px;">
+
+                                    <!--   <apex:form > -->
+                                    <!--ul class="desk-ulist">
+<li class="first-child">
+<apex:commandLink action="{!jobplan_srt}" styleclass="{!srt_chv_sts}" id="srtsave" >
+<span class="{!srt_btn_cls}"/>                                               
+<apex:outputtext styleClass="{!srt_txt_sts}" id="in_srt_chev" value="{!$Label.CSS_SRTs}" escape="false"/>
+</apex:commandLink>
+</li>
+</ul-->
+                                    <ul class="desk-ulist">
+                                        <li class="first-child">
+                                            <apex:commandLink action="{!jobplan_jo}" styleclass="{!jo_chv_sts}" id="josave">
+                                                <span class="{!jo_btn_cls}"/>                                                
+                                                <apex:outputtext styleClass="{!jo_txt_sts}" id="in_over_chev" value="{!$Label.css_jo_label}" escape="false"/>
+                                            </apex:commandLink>
+                                        </li>
+                                        <li>
+                                            <apex:commandLink action="{!jobplan_srt}" styleclass="{!srt_chv_sts}" id="srtsave" >
+                                                <span class="{!srt_btn_cls}"/>                                               
+                                                <apex:outputtext styleClass="{!srt_txt_sts}" id="in_srt_chev" value="{!$Label.CSS_SRTs}" escape="false"/>
+                                            </apex:commandLink>
+                                        </li>
+                                        <li>
+                                            <apex:commandLink action="{!jobplan_prt}" styleclass="{!prt_chv_sts}" id="prtsave">
+                                                <span class="{!prt_btn_cls}"/>                                                
+                                                <apex:outputtext styleClass="{!prt_txt_sts}" id="in_pr_chev" value="{!$Label.CSS_Parts}" escape="false"/>
+                                            </apex:commandLink>
+                                        </li>
+                                        <li>
+                                            <apex:commandLink action="{!jobplan_war}" styleclass="{!war_chv_sts}" id="warsave">
+                                                <span class="{!war_btn_cls}"/>                                           
+                                                <apex:outputtext styleClass="{!war_txt_sts}" id="in_wr_chev" value="{!$Label.css_warr_chev}" escape="false"/>
+                                            </apex:commandLink>
+                                        </li>
+
+
+
+                                        <li>
+                                            <apex:commandLink action="{!jobplan_narr}" styleclass="{!nar_chv_sts}" id="narsave" >
+                                                <span class="{!nar_btn_cls}"/>                                               
+                                                <apex:outputtext styleClass="{!nar_txt_sts}" id="in_narr_chev" value="{!$Label.CSS_Narrative_chev}" escape="false"/>
+                                            </apex:commandLink>
+                                        </li>
+                                        <!--<apex:outputPanel rendered="{!IF(($Setup.css_header_nav__c.EnableBMSButton__c && workJob.Account__r.ERP_System__c == 'One BMS'),true,false)}">  {!IF(($Setup.css_header_nav__c.EnableBMSButton__c && workJob.Account__r.ERP_System__c == 'One BMS' || $Profile.Name='CSS_Service_Advanced'),true,false)}-->
+                                        <apex:outputPanel rendered="{!IF((displaySRTButton && $Setup.css_header_nav__c.IsQuoteEnabled__c),true,false)}">
+                                            <li class="last-child">
+                                                <apex:commandLink action="{!jobplan_jpq}" styleclass="{!qt_chv_sts}" id="jpqsave">
+                                                    <span class="{!qt_btn_cls}"/>                                                  
+                                                    <apex:outputtext styleClass="{!qt_txt_sts}" id="in_quote_chev" value="{!$Label.CSS_Quote}" escape="false"/>
+                                                </apex:commandLink>
+                                            </li>
+                                        </apex:outputPanel>
+
+                                    </ul>
+                                    <!---Mobile App--->
+                                    <ul class="mob-ulist">
+                                        <li class="first-child">
+                                            <apex:commandLink action="{!jobplan_jo}" styleclass="{!jo_chv_sts}" id="josave1">
+                                                <span class="{!jo_btn_cls}"/>                                                
+                                                <apex:outputtext styleClass="{!jo_txt_sts}" id="in_over_chev1" value="{!$Label.css_jo_label}" escape="false"/>
+                                            </apex:commandLink>
+                                        </li>
+                                        <li>
+                                            <apex:commandLink action="{!jobplan_srt}" styleclass="{!srt_chv_sts}" id="srtsave1" >
+                                                <span class="{!srt_btn_cls}"/>                                               
+                                                <apex:outputtext styleClass="{!srt_txt_sts}" id="in_srt_chev1" value="{!$Label.CSS_SRTs}" escape="false"/>
+                                            </apex:commandLink>
+                                        </li>
+                                        <li>
+                                            <apex:commandLink action="{!jobplan_prt}" styleclass="{!prt_chv_sts}" id="prtsave1">
+                                                <span class="{!prt_btn_cls}"/>                                                
+                                                <apex:outputtext styleClass="{!prt_txt_sts}" id="in_pr_chev1" value="{!$Label.CSS_Parts}" escape="false"/>
+                                            </apex:commandLink>
+                                        </li>
+                                        <li>
+                                            <apex:commandLink action="{!jobplan_war}" styleclass="{!war_chv_sts}" id="warsave1">
+                                                <span class="{!war_btn_cls}"/>                                           
+                                                <apex:outputtext styleClass="{!war_txt_sts}" id="in_wr_chev1" value="{!$Label.css_warr_chev}" escape="false"/>
+                                            </apex:commandLink>
+                                        </li>
+
+
+
+                                        <li>
+                                            <apex:commandLink action="{!jobplan_narr}" styleclass="{!nar_chv_sts}" id="narsave1" >
+                                                <span class="{!nar_btn_cls}"/>                                               
+                                                <apex:outputtext styleClass="{!nar_txt_sts}" id="in_narr_chev1" value="{!$Label.CSS_Narrative_chev}" escape="false"/>
+                                            </apex:commandLink>
+                                        </li>
+                                        <apex:outputPanel rendered="{!IF((displaySRTButton && $Setup.css_header_nav__c.IsQuoteEnabled__c),true,false)}">
+                                            <li class="last-child">
+                                                <apex:commandLink action="{!jobplan_jpq}" styleclass="{!qt_chv_sts}" id="jpqsave1">
+                                                    <span class="{!qt_btn_cls}"/>                                                  
+                                                    <apex:outputtext styleClass="{!qt_txt_sts}" id="in_quote_chev1" value="{!$Label.CSS_Quote}" escape="false"/>
+                                                </apex:commandLink>
+                                            </li>
+                                        </apex:outputPanel>
+
+                                    </ul>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel-body">                                    
+                        <!-- ******* BEGIN TD - JOB OVERVIEW **** -->
+                        <apex:outputPanel id="joboverviewpnl" >
+                            <div class="col-md-12">
+                                <div class="row">
+                                    <!-- <c:CSS_JobOverviewPanel CustName="{!workJob.Customer_Name__c}" DateCreated="{!workJob.CreatedDate}" DateIn="{!workJob.Date_In__c}" jobOrdNumb="{!workJob.Name}" ShopWO="{!workJob.Shop_Work_Order__c}" LastSaved="{!workJob.LastModifiedDate}" JobESN="{!workJob.ESN__c}" ServModel="{!workJob.Service_Model__c}" RepRecent="{!workJob.Repeat_Or_Recent_Calc__c}" JobLoc="{!workJob.JobLocation__c}" pgName="INTAKE"  ControlNo="{!workJob.Control_Number__c}" /> -->
+                                    <!-- Modified as per story# 76192 -->
+                                    <c:CSS_JobOverviewPanel CustName="{!workJob.Customer_Name__c}"  JobOrdId="{!workJob.Id}" JobStatus="{!workJob.Status__c}" DateCreated="{!workJob.CreatedDate}" DateIn="{!workJob.Date_In__c}" jobOrdNumb="{!workJob.Name}" ShopWO="{!workJob.Shop_Work_Order__c}" LastSaved="{!workJob.LastModifiedDate}" JobESN="{!workJob.ESN__c}" ServModel="{!workJob.Service_Model__c}" RepRecent="{!workJob.Repeat_Or_Recent_Calc__c}" JobLoc="{!workJob.JobLocation__c}" pgName="INTAKE"  ControlNo="{!workJob.Control_Number__c}" paccarAuthReq="{!workJob.PACCAR_Auth_Required__c}"/>
+
+                                </div>
+                            </div>                            
+                        </apex:outputPanel> 
+
+
+                        <!--code for job plan overview bottom part-->
+
+                        <apex:outputPanel id="joboverviewpnl123" rendered="{!show_jo_pnl}" >
+                            <!----Story 75790 Start--->
+                            <apex:outputpanel id="esnChangedPnlJP" rendered="{!IF(CONTAINS(workjob.BMSStatus__c,'esnChanged'), true, false)}">
+                                <fieldset class=".cmi_field_set">
+                                    <apex:outputLabel id="esnChangedLblJP"><span style="color:red">{!$Label.CSS_esnChanged_ChkWarranty}</span></apex:outputLabel> 
+                                </fieldset>
+                            </apex:outputpanel>
+                        </apex:outputPanel>
+                    </div>
+
+                    <apex:outputPanel id="srtCheveron" rendered="{!show_srt_pnl}">
+
+                        <!-- edit start -->
+
+                        <div>
+                            <!----Story 75790 Start--->     
+                            <apex:outputpanel id="esnChangedPnlJP4" rendered="{!IF(CONTAINS(workjob.BMSStatus__c,'esnChanged'), true, false)}">     
+                                <fieldset class=".cmi_field_set">       
+                                    <apex:outputLabel id="esnChangedLblJP4"><span style="color:red">{!$Label.CSS_esnChanged_ChkWarranty}</span></apex:outputLabel>      
+                                </fieldset>     
+                            </apex:outputpanel>     
+                            <!----Story 75790 End--->
+                            <!--  <apex:outputPanel id="missingFieldpnl2" rendered="{!IF((workJob.Unit_Number__c == ''|| workjob.Shop_Work_Order__c == '' || workjob.Customer_Code__c == '') && bmsEnabled==true, true,false )}"> -->
+                            <div class="panel-body" style="padding:10px 15px 0px 25px !important">   
+                                <div class="container-fluid">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <div class="form-horizontal" role="form">
+
+                                                        <apex:outputPanel id="missingFieldpnl289">
+                                                            <apex:outputPanel rendered="{!IF(workJob.Unit_Number__c != '' && (workJob.Account__r.ERP_System__c == 'BMS Legacy' || workJob.Account__r.ERP_System__c == 'One BMS'), true,false )}">
+
+                                                                <div class="col-sm-4 col-xs-12 cmi-tar">
+                                                                    <apex:outputLabel >{!$Label.CSS_Unit_Number}</apex:outputLabel>
+
+                                                                </div>
+                                                                <div class="col-sm-8 col-xs-12">
+                                                                    <apex:outputfield value="{!workJob.Unit_Number__c}"/>
+
+                                                                </div>
+                                                            </apex:outputPanel>
+                                                            <div class="clearfix"></div>
+                                                            <apex:outputPanel rendered="{!IF(workjob.Shop_Work_Order__c != ''  && (workJob.Account__r.ERP_System__c == 'BMS Legacy' || workJob.Account__r.ERP_System__c == 'One BMS'), true,false )}">
+                                                                <div class="col-sm-4 col-xs-12 cmi-tar">
+                                                                    <apex:outputLabel >{!$Label.css_shop_work_order}</apex:outputLabel>
+                                                                </div>
+                                                                <div class="col-sm-8 col-xs-12">
+                                                                    <apex:outputfield value="{!workJob.Shop_Work_Order__c}"/>
+                                                                    <a data-target="#showqmarkpopup" data-toggle="modal" ><span class="cmi_intake_help" /></a>
+                                                                    <apex:commandLink rerender="showqmarkpopup" style="text-decoration:underline" />
+                                                                </div><br/>
+                                                            </apex:outputPanel> 
+                                                            <div class="clearfix"></div>
+                                                            <apex:outputPanel rendered="{!IF( workjob.Customer_Code__c != '' && (workJob.Account__r.ERP_System__c == 'BMS Legacy' || workJob.Account__r.ERP_System__c == 'One BMS'), true,false )}">  
+                                                                <div class="col-sm-4 col-xs-12 cmi-tar">
+                                                                    <apex:outputLabel >{!$Label.CSS_Customer_Code} </apex:outputLabel>
+                                                                </div>
+                                                                <div class="col-sm-8 col-xs-12">
+                                                                    <apex:outputfield value="{!workJob.Customer_Code__c}"/>
+
+                                                                </div>
+
+                                                            </apex:outputPanel> 
+                                                        </apex:outputPanel> 
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- edit -->
+
+                        <div>
+                            <!--  <apex:outputPanel id="missingFieldpnl2" rendered="{!IF((workJob.Unit_Number__c == ''|| workjob.Shop_Work_Order__c == '' || workjob.Customer_Code__c == '') && bmsEnabled==true, true,false )}"> -->
+                            <apex:outputPanel id="missingFieldpnl2">
+                                <apex:outputPanel rendered="{!IF(workJob.Unit_Number__c == '' && (workJob.Account__r.ERP_System__c == 'BMS Legacy' || workJob.Account__r.ERP_System__c == 'One BMS'), true,false )}">
+
+                                    <div class="col-sm-2 col-xs-12 cmi-tar">
+                                        <apex:outputLabel >{!$Label.CSS_Unit_Number}</apex:outputLabel>
+
+                                    </div>
+                                    <div class="col-sm-10 col-xs-12">
+                                        <apex:inputfield value="{!workJob.Unit_Number__c}" onchange="unitnumber()">
+                                            <apex:actionFunction name="unitnumber" action="{!onChangeOfUnitNumber}" rerender="missingFieldpnl,missingFieldpnl289,missingFieldpnl2,btnSendSRTpnl1, btnSendSRTpnl2,btnSendSRTpnl3,btnSendSRTpnl4"/>
+                                        </apex:inputfield> 
+                                        <apex:outputLabel style="color:red">{!$Label.CSS_Required_for_Quote}</apex:outputLabel>
+                                    </div><br/>
+                                </apex:outputPanel>
+                                <div class="clearfix"></div>
+                                <apex:outputPanel rendered="{!IF(workjob.Shop_Work_Order__c == ''  && (workJob.Account__r.ERP_System__c == 'BMS Legacy' || workJob.Account__r.ERP_System__c == 'One BMS'), true,false )}">
+                                    <div class="col-sm-2 col-xs-12 cmi-tar">
+                                        <apex:outputLabel >{!$Label.css_shop_work_order}</apex:outputLabel>
+                                    </div>
+                                    <div class="col-sm-10 col-xs-12">
+                                        <apex:inputfield value="{!workJob.Shop_Work_Order__c}" onchange="unitnumber1()" html-maxlength="9"> <!--added html-maxlength as 9 for story GSSC-259-->
+                                            <apex:actionFunction name="unitnumber1" action="{!updateservjob}" rerender="missingFieldpnl2,missingFieldpnl289, joboverviewpnl, btnSendSRTpnl1, btnSendSRTpnl2,btnSendSRTpnl3,btnSendSRTpnl4"/>
+                                        </apex:inputfield>
+                                        <a data-target="#showqmarkpopup" data-toggle="modal" ><span class="cmi_intake_help" /></a>
+                                        <apex:commandLink rerender="showqmarkpopup" style="text-decoration:underline" />
+                                        <apex:outputLabel style="color:red">{!$Label.CSS_Required_for_Quote}</apex:outputLabel>
+                                    </div><br/>
+                                </apex:outputPanel> 
+                                <div class="clearfix"></div>
+                                <apex:outputPanel rendered="{!IF( workjob.Customer_Code__c == '' && (workJob.Account__r.ERP_System__c == 'BMS Legacy' || workJob.Account__r.ERP_System__c == 'One BMS'), true,false )}">  
+                                    <div class="col-sm-2 col-xs-12 cmi-tar">
+                                        <apex:outputLabel >{!$Label.CSS_Customer_Code} </apex:outputLabel>
+                                    </div>
+                                    <div class="col-sm-10 col-xs-12">
+                                        <apex:inputfield value="{!workJob.Customer_Code__c}" onchange="unitnumber2()">
+                                            <apex:actionFunction name="unitnumber2" action="{!updateservjob}" rerender="missingFieldpnl,missingFieldpnl289,missingFieldpnl2,btnSendSRTpnl1, btnSendSRTpnl2,btnSendSRTpnl3,btnSendSRTpnl4"/>
+                                        </apex:inputfield>
+                                        <apex:outputLabel style="color:red">{!$Label.CSS_Required_for_Quote}</apex:outputLabel>
+                                    </div><br/>
+
+                                </apex:outputPanel> 
+                            </apex:outputPanel> 
+                        </div>
+                        <div class="clearfix"></div>
+                        <div class="row">
+                            <!--   Commented for Story Number 78788 start by Venkat -->
+                            <!--   <apex:outputPanel id="btnSendSRTpnl1">
+
+
+<div class="col-sm-offset-5">
+<!--  <apex:commandLink styleclass="CMI-primary-button" value="{!$Label.CSS_Send_SRTs_To_BMS}" action="{!sendSRTsToBMS}" rendered="{!$Setup.css_header_nav__c.EnableBMSButton__c}"/> 
+<apex:commandLink styleclass="CMI-primary-button" value="{!$Label.CSS_Send_SRT_s_To_BMS_WOQT}" action="{!sendSRTsToBMSWOQT}" rendered="{!IF(($Setup.css_header_nav__c.EnableBMSButton__c && workJob.Unit_Number__c != '' && workjob.Shop_Work_Order__c != '' && workjob.Customer_Code__c != '') && bmsEnabled==true, true,false )}"/>
+</div>
+</apex:outputPanel>
+<apex:outputPanel id="btnSendSRTpnl2">
+<div class="col-sm-offset-5">
+<!--   <apex:commandLink styleclass="cmi_lighttealbutton" value="{!$Label.CSS_Send_SRTs_To_BMS}" rendered="{!$Setup.css_header_nav__c.EnableBMSButton__c}"/> 
+<apex:commandLink styleclass="cmi_lighttealbutton" value="{!$Label.CSS_Send_SRT_s_To_BMS_WOQT}"  rendered="{!IF((workJob.Unit_Number__c == ''|| workjob.Shop_Work_Order__c == '' || workjob.Customer_Code__c == '') && $Setup.css_header_nav__c.EnableBMSButton__c && bmsEnabled==true, true,false )}"/>
+</div>
+</apex:outputPanel>  -->
+                            <!--   Commented for Story Number 78788 end by Venkat --> 
+                            <!---- Commented as Part of Story Number:80880  by Anirudh 
+<div class="clearfix"></div>
+<apex:outputPanel id="btnSendSRTpnl3">
+<div class="col-sm-offset-5" style="margin-top:10px;">
+<!--  <apex:commandLink styleclass="CMI-primary-button" value="{!$Label.CSS_Send_SRTs_To_BMS}" action="{!sendSRTsToBMS}" rendered="{!$Setup.css_header_nav__c.EnableBMSButton__c}"/> 
+<apex:commandLink styleclass="CMI-primary-button" value="{!$Label.CSS_Send_SRTs_To_BMS}" action="{!sendSRTsToBMSWO}" rendered="{!IF(($Setup.css_header_nav__c.EnableBMSButton__c && workjob.Shop_Work_Order__c != '' && workjob.Customer_Code__c != '') && bmsEnabled==true, true,false )}"/>
+</div>
+</apex:outputPanel>
+<apex:outputPanel id="btnSendSRTpnl4">
+<div class="col-sm-offset-5" style="margin-top:10px;">
+<!--   <apex:commandLink styleclass="cmi_lighttealbutton" value="{!$Label.CSS_Send_SRTs_To_BMS}" rendered="{!$Setup.css_header_nav__c.EnableBMSButton__c}"/> 
+<apex:commandLink styleclass="cmi_lighttealbutton" value="{!$Label.CSS_Send_SRTs_To_BMS}" rendered="{!IF((workjob.Shop_Work_Order__c == '' || workjob.Customer_Code__c == '') && $Setup.css_header_nav__c.EnableBMSButton__c && bmsEnabled==true, true,false )}"/>
+</div>
+</apex:outputPanel>
+<!---- Commented as Part of Story Number:80880 End by Anirudh ---->
+                        </div>
+                        <div class="clearfix"></div>
+                        <div>
+                            <c:CG_ODMMessages JobOrdID="{!workJob.Id}"></c:CG_ODMMessages>
+                        </div>
+
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <fieldset style="border:1px solid grey;" id="fieldsetDisplaySRT">
+                                        <legend class="fs_legend">{!$Label.css_job_pan_srts}</legend>
+                                          <c:CSS_SRT JoId="{!workjob.Id}" LaborRate="{!workjob.CSS_In_Shop_Labor_Rate__c}"  DiagEquId="{!workjob.Equipment_ID__c}" isDealer="{!isDealer}" displayType="JP" RedirectPage1="/apex/CSS_JobPlanSRT?id={!workJob.Id}&pgflag=jo"></c:CSS_SRT>
+
+                                        <!-- Component for Campaigns,TRPs,ATCs for US : 116998 -->
+                                        <apex:outputpanel >
+                                            <div>
+                                                <c:CSS_JobPlanCampaigns EquipID="{!workjob.Equipment_ID__c}"/>
+                                            </div>
+                                        </apex:outputpanel>
+
+                                        <!--  As per Iron man story no :94357 commented Admin srt part 
+<apex:outputPanel id="CTT709">
+<div> 
+
+<c:CSS_ADMIN_SRT sJobId="{!workjob.Id}" RedirectPage1="/apex/CSS_JobPlan?id={!workJob.Id}&pgflag=jo" /> 
+</div> 
+</apex:outputPanel>    --> 
+
+
+
+                                        <!--  Component for  99 TIME srt part as per Batman story no : #106947 Start -->
+                                        <apex:outputPanel id="CTT759">
+                                            <div> 
+                                                <c:CSS_99TIME_SRT sJobId="{!workjob.Id}" mainController="{!controllerRef}" PName="jobplan"/>
+
+                                            </div> 
+                                        </apex:outputPanel> 
+                                        <apex:outputPanel >
+                                            <div> 
+                                                <c:CSS_OverlapSRTcomp JoId="{!workjob.Id}" DiagEquId="{!workjob.Equipment_ID__c}"/>
+                                            </div> 
+                                        </apex:outputPanel> 
+                                        
+                                        <div class="col-sm-3" style="padding:0px;margin-bottom:10px;">
+                                            <div class="col-sm-4" style="padding:0px;"><b>{!$Label.CG_TotalSRTHours}</b></div>
+                                            <div class="col-sm-2" style="padding:0px;">{!JobTotalSRTHrs.TotalSRTExtendedHours__c}</div>
+                                            <div class="clearfix"/>
+                                        </div>
+                                        <div class="clearfix"/>
+
+                                        <div class="col-sm-3" style="padding:0px;">
+                                            <div class="col-sm-6" style="padding:0px;">
+                                                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.Fields.Actual_Technician_Time__c.Label}"></apex:outputLabel>  
+                                            </div>
+                                            <div class="col-sm-4">  
+                                                <apex:inputField value="{!workjob.Actual_Technician_Time__c}" style="width:60px" onkeydown="return qtyPressJobplan(event,this)" onkeyup="validateActtt(this)" html-placeholder="000.0" html-maxlength="5" id="acttt"/>                                 
+                                            </div>
+                                            <div class="clearfix"/>
+                                        </div>
+                                        <div class="clearfix"/>
+                                    </fieldset>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+
+
+                        <div class="panel-body">   
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <!--Start Overview chevron in SRTs-->  
+                                    <hr/>
+                                    <div class="pull-left btncrumbslft">
+                                        <ul class="desk-ulist">
+                                            <li>
+                                                &nbsp;
+                                            </li>
+                                            <li>
+                                                <apex:commandLink action="{!jobplan_jo}" styleclass="{!jo_chv_sts}" id="josavebottom2" ondblclick="doStopDblClick();">
+                                                    <span class="{!jo_btn_cls}"/>
+                                                    <!-- <span class="{!jo_txt_sts}"> Overview </span> -->
+                                                    <apex:outputtext styleClass="{!jo_txt_sts}"  value="{!$Label.css_jo_label}" escape="false"/>
+                                                </apex:commandLink>
+                                            </li>
+                                            <li>
+                                                &nbsp;
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <!--End Overview chevron in SRTs--> 
+
+
+                                    <!-- Span to show the Send to ERP button START -->
+                                    <apex:outputPanel rendered="{!displaySendERP_Button}">
+                                     
+                                 <!-- <apex:outputPanel rendered="{!IF(contains(workJob.BMSStatus__c, 'QTFI0') && displaySRTButton==true && displaySRTButtonDist==false,true,false)}">-->
+                                       <apex:outputPanel rendered="{!IF(contains(workJob.BMSStatus__c, 'QTFI0') && displaySRTButton==true && ($Setup.css_header_nav__c.RSWButtonEnable__c == false),true,false)}">
+                                        <!--<apex:outputPanel >-->
+                                        <span style="float:left;margin-left:28%" >
+                                            <apex:actionRegion >
+                                                <apex:commandLink styleclass="CMI-primary-button" value="{!$Label.CSS_Send_SRTs_to_ERP}"  onClick="showLoadingPopUp();" onComplete="HideLoadingPopUp();" action="{!sendSRTsToBMSWO}" status="sendERPStatus1" style="font-size:14px;line-height:2em;height:45px;padding:5px 40px;border:0px;" rerender="messagesPnlId"/>
+                                                <!--<a data-target="#loadingModal" data-toggle="modal" class="btn-intake btn-intake-footer m-btn-width">{!$Label.CSS_Send_SRTs_to_ERP}</a>-->
+                                                <apex:actionStatus startText="requesting..." id="sendERPStatus1">
+                                                    <apex:facet name="start">Loading... <img src="/img/loading.gif" /></apex:facet>
+                                                    <apex:facet name="stop"></apex:facet>
+                                                </apex:actionStatus>
+                                            </apex:actionRegion>
+                                        </span>  
+                                    </apex:outputPanel>
+                                  <!-- <apex:outputPanel rendered="{!IF(NOT(contains(workJob.BMSStatus__c, 'QTFI0')) || displaySRTButton==false && displaySRTButtonDist==false,true,false)}">-->
+                                     <apex:outputPanel rendered="{!IF((NOT(contains(workJob.BMSStatus__c, 'QTFI0')) || displaySRTButton==false) && ($Setup.css_header_nav__c.RSWButtonEnable__c == false),true,false)}">
+                                        <span style="float:left;margin-left:28%" >
+                                            <apex:commandLink styleclass="cmi_lighttealbutton" value="{!$Label.CSS_Send_SRTs_to_ERP}"   style="font-size:14px;line-height:2em;height:45px;padding:5px 40px;border:0px;"/>
+                                        </span>  
+                                    </apex:outputPanel>
+</apex:outputPanel>
+                                    <!--<span style="float:left;margin-left:28%" >
+<apex:commandLink styleclass="CMI-primary-button" value="{!$Label.CSS_Send_SRTs_to_ERP}" action="{!sendSRTsToBMSWO}" style="font-size:16px;line-height:2.5em;height:55px;padding:5px 72px;border:0px;"   />
+</span>  -->
+                                    <!-- Span to show the Send to ERP button END -->
+
+
+                                    <!--Start Parts chevron in SRTs-->  
+                                    <div class="pull-right btncrumbs" style="margin-top:-19px;">
+                                        <ul class="desk-ulist">
+                                            <li>
+                                                &nbsp;
+                                            </li>
+                                            <li>
+                                                <apex:commandLink action="{!jobplan_prt}" styleclass="{!prt_chv_sts}" id="prtsavebottom1" ondblclick="doStopDblClick();">
+                                                    <span class="{!prt_btn_cls}"/>
+                                                    <!--<span class="{!vi_txt_sts}"> Parts </span> -->
+                                                    <apex:outputtext styleClass="{!prt_txt_sts}"  value="{!$Label.CSS_Parts}" escape="false"/>
+                                                </apex:commandLink>
+                                            </li>
+                                            <li>
+                                                &nbsp;
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <!--End Parts chevron in SRTs--> 
+                            </div>
+                        </div>
+
+                        <!-- Output panel for showing ERP Status error  START -->
+                        <!-- <apex:outputPanel rendered="{!showErrorBMS}"> -->
+                        <div class="row">
+                        <apex:outputPanel id="messagesPnlId">
+                            <apex:outputPanel rendered="{!IF(BMSErrorMsg != null && BMSErrorMsg != '',true,false)}">
+                                <div style="margin-left:38%;font-size:16px;color:red">
+                                    <apex:outputText value="{!BMSErrorMsg}" escape="false"/>                                
+                                </div>
+                            </apex:outputPanel>
+
+                            <!-- <apex:outputPanel rendered="{!showSucessBMS}">  -->
+                            <!-- <apex:outputPanel rendered="{!IF( (BMSSuccessMsg != null && BMSSuccessMsg != '') || (BMSSuccessWOQTMsg != null && BMSSuccessWOQTMsg != ''),true,false)}"> -->
+                            <div style="margin-left:5%;margin-right:5%;font-size:16px;color:green;text-align:center;">
+                                <apex:outputText value="{!BMSSuccessMsg}" rendered="{!showSucessBMS}" escape="false"/><br/>
+                                <apex:outputText value="{!BMSSuccessWOQTMsg}" rendered="{!showSucessBMS}" escape="false"/>
+                            </div>
+                            <!--</apex:outputPanel>  -->
+                        </apex:outputPanel>
+                        </div>
+                        <!-- Output panel for showing ERP Status error  END -->            
+
+                        <!--start of code for job plan SRTs bottom part-->
+                        <div class="panel-body" style="margin-bottom:10px;">
+                            <div class="col-sm-offset-5 col-sm-7">
+                                <div class="col-md-2 col-sm-2 col-xs-12" >
+                                    <span class="mob-only"> &nbsp; </span>
+                                    <apex:commandLink action="{!pgSave}" value="{!$Label.css_save_btn}" styleclass="btn-intake btn-intake-footer m-btn-width" rerender=""/>
+                                    <span class="mob-only"> &nbsp; </span>
+                                </div> 
+                                <div class="col-sm-2 col-xs-12" >
+                                    <!--  <apex:commandButton id="clsJob1" action="{!showPopup}" rerender="popup" value="{!$Label.css_exit_btn}" styleclass="btn-intake btn-intake-footer m-btn-width"/>  -->
+                                    <apex:commandButton id="clsJob1" html-data-toggle="modal" html-data-target="#exitModal" value="{!$Label.css_exit_btn}" styleClass="btn-intake btn-intake-footer m-btn-width" onComplete="return false;"/>
+                                    <span class="mob-only"> &nbsp; </span>
+                                </div>
+                                <div class="col-sm-6 col-xs-12">
+                                    <apex:commandlink action="{!closeSession}"  value="{!$Label.css_save_close_btn}" rendered="{!$Setup.css_header_nav__c.btnJobFinishedCanceled__c}" styleclass="btn-intake btn-intake-footer m-btn-width" />
+                                </div>
+                                <!-- 82020- Story87378 Reminder when canceling a job - Krishna on 19-06-2017.-->
+                                <!--
+<div class="col-sm-2 col-xs-12">
+<apex:commandLink action="{!cancel}" value="{!$Label.css_cancel_btn}" styleclass="btn-intake btn-intake-footer m-btn-width" rendered="{!$Setup.css_header_nav__c.btnJobFinishedCanceled__c}"/>
+<span class="mob-only"> &nbsp; </span>
+</div>
+-->
+                                <div class="col-sm-2 col-xs-12">
+                                    <apex:outputPanel rendered="{!$Setup.css_header_nav__c.btnJobFinishedCanceled__c}">
+                                        <a data-target="#cancelModelPopup" data-toggle="modal" class="btn-intake btn-intake-footer m-btn-width">{!$Label.css_cancel_btn}</a>
+                                        <span class="mob-only"> &nbsp; </span>
+                                    </apex:outputPanel>
+                                </div>
+                                <!-- 82020- Story87378 Reminder when canceling a job - Krishna on 19-06-2017.-->
+                            </div> 
+
+                            <!---KALPANA--->
+                            <div class="modal fade" id ="exitModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                                <div class="modal-dialog" style="width:400px;">
+                                    <div class="modal-content">
+                                        <div class="modal-header"> 
+                                            <apex:commandButton title="Close the popup" html-data-dismiss="modal" styleClass="cross_butten" rerender="popup"/>
+                                            <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Cummins_Service_System} </h4>
+                                        </div>
+                                        <div class="clearfix"></div> 
+                                        <div class="modal-body" style="margin:30px 0px 50px 90px;"> 
+                                            <div class="col-md-12 col-xs-12">
+                                                <b>{!$Label.css_Do_you_want_to_Exit}</b>
+                                            </div>
+                                        </div>
+                                        <div class="clearfix"></div>
+                                        <div class="modal-footer">
+                                            <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                                                <apex:commandButton value="{!$Label.CSS_FAQs_Working_A7}" action="{!redirectPopup}" styleClass="saveButton" rerender="popup" />
+                                            </div>
+                                            <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                                                <apex:commandButton value="{!$Label.CSS_No}" html-data-dismiss="modal" styleClass="cancelButton" rerender="popup"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!----Loading Pop Up----->
+                            <div class="modal fade" id ="loadingModal" role="dialog">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Cummins_Service_System} </h4>
+                                        </div>
+                                        <div class="clearfix"></div> 
+                                        <div class="modal-body"> 
+                                            <b>{!$Label.CSS_Validation_Msg}</b><br/><br/>
+                                            <b>{!$Label.CSS_Refresh_Msg}</b><br/><br/>
+                                            <!--<img src="/img/loading.gif" style="float:center"/>-->
+
+
+                                        </div>
+                                        <div class="modal-body">
+                                            <apex:image url="{!$Resource.LoadingImg}" width="50" height="50" style="align:center"/>  
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!----Loading Pop Up----->
+                            <!--CANCEL POPUP--->
+                            <apex:outputPanel id="cancelModelPopup">
+                                <div class="modal fade" id="cancelModelPopup"  role="dialog">
+                                    <apex:outputPanel id="cancelModeShow" styleClass="popupAttachBg" layout="block">                  
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">  
+                                                    <apex:commandButton title="Close the popup" html-data-dismiss="modal" styleClass="cross_butten" onclick="ClearErrorMessage();"/>
+                                                    <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_cummins_service_system} </h4>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <b>{!$Label.CSS_Cancel_Popup_Message}</b>
+                                                </div>
+                                                <apex:outputPanel id="msgbody">
+                                                    <apex:outputPanel rendered="{!cancelSJWrapperObj1.errorFlag}">
+                                                        <div class="modal-body">
+                                                            <span id="CancelErrorId"><b><apex:outputText value="{!cancelSJWrapperObj1.errorMessage}" style="color:red;"/></b></span>
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                </apex:outputPanel>
+                                                <div class="modal-footer">
+                                                    <div class="col-sm-8 col-xs-4 cmi-tar"> 
+                                                        <apex:commandButton value="{!$Label.CSS_FAQs_Working_A7}" action="{!cancel}" styleClass="saveButton"   status="cancelJobImg" rerender="msgbody,exeReload" oncomplete="redirectPage();"/>
+
+                                                        <apex:actionStatus id="cancelJobImg">
+                                                            <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                                            <apex:facet name="stop"></apex:facet>
+                                                        </apex:actionStatus>&nbsp; &nbsp;
+                                                        <apex:commandButton value="{!$Label.CSS_No}" html-data-dismiss="modal" onclick="ClearErrorMessage();" styleClass="cancelButton"/>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </apex:outputPanel>
+                                </div>
+                            </apex:outputPanel>
+                        </div> 
+                        <!--end of code for job plan SRTs bottom part-->
+
+
+                    </apex:outputPanel>
+                </apex:outputpanel>
+                <!-- 56604  Start Code for Job Closure panel content --->    
+                <apex:outputPanel id="jobClosePanel">
+                    <!---    <apex:outputPanel id="JobCloseInnerPanel" rendered="{!displayClosePopup}" styleclass="customPopup" layout="block" >
+---->       <apex:outputPanel id="JobCloseInnerPanel" rendered="{!displayClosePopup}" styleclass="popupAttachBg" layout="block" >
+                    <apex:outputPanel styleClass="custPopupAttach" layout="block"> <!----Defect fix 73962---->
+                        <div role="dialog">
+                            <div class="modal-header">  
+                                <apex:commandButton title="Close the popup" action="{!closeSession_close}" styleClass="cross_butten" rerender="jobClosePanel" oncomplete="CloseErrorMessage();"></apex:commandButton>  
+                                <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.CSS_Job} - {!workjob.Customer_Name__c}</h4>
+                            </div>
+                            <div class="modal-body" style="max-height:500px;overflow:auto;">
+                                <!-- Begin Code for Warning Message with CAMPAIGNS, TSB's TRP's incomplete  as-->
+                                <apex:outputPanel id="NoCampTSBsTRPs" rendered="{!nocamptsbtrps}">
+                                    <div>
+                                        {!$Label.css_Please_check_off_required_Campaigns_TRPs_TSBs_or_provide_comments} 
+                                    </div>
+                                </apex:outputPanel>
+                                <!-- End Code for Warning Message with CAMPAIGNS, TSB's TRP's incomplete -->
+
+                                <!-- Begin Code for  Job Close with Resolution and Feed Back Fields -->
+                                <apex:outputPanel rendered="{!showResolution}">
+                                    <apex:pageMessages />
+                                    <div>
+                                        {!$Label.css_You_are_about_to_close_the_Job}.  
+                                    </div><br/> 
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <b><apex:outputLabel value="{!$objectType.CSS_Job_Order__c.Fields.CSS_Resolution__c.Label}"/></b>
+                                            <apex:selectRadio value="{!workJob.CSS_Resolution__c}" layout="pageDirection">
+                                                <apex:selectOptions value="{!resolutionOptions}" />
+                                            </apex:selectRadio>
+
+                                            <apex:outputPanel rendered="{!IF(workJob.Account__r.ERP_System__c == 'BMS Legacy' || workJob.Account__r.ERP_System__c == 'One BMS', true,false)}">
+                                                <div class="form-horizontal" role="form">
+                                                    <apex:outputPanel rendered="{!IF((workJob.Customer_Code__c==''||workJob.Customer_Code__c==null), true,false)}">
+                                                        <label for="" class="col-sm-4 cmi-tar">{!$Label.CSS_Customer_Code}<span class="cmi_asterisk">*</span></label>
+                                                        <div class="col-sm-7 col-xs-12 " >
+                                                            <apex:InputField value="{!workJob.Customer_Code__c}"></apex:InputField>
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF((workJob.Unit_Number__c==''||workJob.Unit_Number__c==null), true,false)}">
+                                                        <div class="clearfix"></div>
+                                                        <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Unit_Num}<span class="cmi_asterisk">*</span></label>
+                                                        <div class="col-sm-8 col-xs-12 " >
+                                                            <apex:InputField value="{!workJob.Unit_Number__c}"></apex:InputField>
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                    <div class="clearfix"></div>
+                                                    <apex:outputPanel rendered="{!IF((workJob.Shop_Work_Order__c==''||workJob.Shop_Work_Order__c==null), true,false)}">
+                                                        <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Work_Oder_Num}<span class="cmi_asterisk">*</span></label>
+                                                        <div class="col-sm-8 col-xs-12 " >
+                                                            <apex:InputField value="{!workJob.Shop_Work_Order__c}" html-maxlength="9"></apex:InputField> <!--added html-maxlength as 9 for story GSSC-259-->
+                                                            <a data-target="#showqmarkpopup" data-toggle="modal" ><span class="cmi_intake_help" /></a>
+                                                            <apex:commandLink rerender="showqmarkpopup" style="text-decoration:underline" />
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                    <div class="clearfix"></div>                                                            
+                                                </div>
+                                            </apex:outputPanel>
+                                            <apex:outputPanel id="resolutionReqMessage">
+                                                <apex:outputPanel rendered="{!showResolutionRequired}"> <!--Rajesh. Fixed as part of defect 179167-->
+                                                        <div class="modal-body"> <!--Rajesh. Fixed as part of defect 179167-->
+                                                           <span id="resolutionRequired"><b><apex:outputText value="Please select the resolution" style="color:red;"/></b></span> <!--Rajesh. Fixed as part of defect 179167-->
+                                                        </div> <!--Rajesh Narra-->
+                                               </apex:outputPanel> <!--Rajesh Narra-->
+                                           </apex:outputPanel>
+                                            <apex:outputLabel value="{!$objectType.CSS_Job_Order__c.Fields.CSS_Feedback_Comments__c.Label}"/>
+                                            <div style="padding-left:15px;border-bottom:1px solid #000000">       
+                                                <apex:inputTextarea value="{!workjob.CSS_Feedback_Comments__c}" style="min-height:100px; overflow-x:hidden; overflow-y:scroll; resize: none; border-style: groove;" onkeyup="textCounter(this,'ttocounter',2000);" rows="1" cols="20" />
+                                                {!$Label.css_Remaining_Characters} <input type="text" value="2000" readonly="readonly" maxlength="3" size="3"  id="ttocounter" style="border:none;" />    
+                                            </div><br/>
+                                            <apex:outputPanel id="errmsgbody">
+                                                <apex:outputPanel rendered="{!cancelSJWrapperObj1.errorFlag}">
+                                                    <div class="modal-body">
+                                                        <span id="closeErrorId"><b><apex:outputText value="{!cancelSJWrapperObj1.errorMessage}" style="color:red;"/></b></span> 
+                                                    </div>
+                                                </apex:outputPanel>
+                                            </apex:outputPanel>
+                                            <div class="row" style="padding-left:15px">
+                                                <div class="col-sm-offset-2 col-sm-4 col-xs-12">    
+                                                    <apex:commandButton value="{!$Label.css_Close_Job}" action="{!saveAndCloseJob}" styleClass="saveButton" status="closeJobImg3" rerender="errmsgbody,exeReload,resolutionReqMessage,showResolution" oncomplete="redirectPage();"></apex:commandButton>
+                                                    <apex:actionStatus id="closeJobImg3">
+                                                        <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                                        <apex:facet name="stop"></apex:facet>
+                                                    </apex:actionStatus>
+                                                </div>
+                                                <div class="col-sm-6 col-xs-12">
+                                                    <apex:commandButton value="{!$Label.css_Cancel}" action="{!closeSession_close}" styleClass="cancelButton" rerender="jobClosePanel" oncomplete="CloseErrorMessage();"/><br/> 
+                                                </div><br/>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </apex:outputPanel>
+                                <!-- End Code for Job Close with Resolution and Feed Back Fields -->
+
+                                <!-- Begin Code for Job Close with Verified Solutions with out Repairs -->
+                                
+                                <apex:outputPanel id="repairsPan" rendered="{!showRepairs}">
+                                    <apex:outputText rendered="{!showRepairErrorMessage}" value="Please select repair response for the below solutions" style="color:red; font-weight:bold"/>
+                                    <apex:outputText rendered="{!showRepairRequired}" value="Please select resolution" style="color:red; font-weight:bold"/><!--Rajesh. Fixed as part of defect 179167-->
+                                    <div>
+                                        {!$Label.css_You_are_about_to_close_the_Job}.
+                                    </div><br/>
+                                    <div><b>{!$Label.css_Please_provide_repair_information_forthe_cases}.</b><br/>
+                                        <div><br/>
+                                            <apex:selectOptions value="{!responseOptions}"/>
+                                            <apex:repeat var="qa" value="{!responseValues}">
+                                                {!qa.Case_Name__c} - {!qa.Solution_Title__c}
+                                                <apex:selectRadio value="{!qa.Repair_Response__c}" layout="pageDirection">
+                                                    <apex:selectOptions value="{!responseOptions}"/>
+                                                </apex:selectRadio> 
+                                            </apex:repeat>
+                                            <apex:outputPanel rendered="{!IF(workJob.Account__r.ERP_System__c == 'BMS Legacy' || workJob.Account__r.ERP_System__c == 'One BMS', true,false)}">
+                                                <div class="form-horizontal" role="form">
+                                                    <apex:outputPanel rendered="{!IF((workJob.Customer_Code__c==''||workJob.Customer_Code__c==null), true,false)}">
+                                                        <label for="" class="col-sm-4 cmi-tar">{!$Label.CSS_Customer_Code}<span class="cmi_asterisk">*</span></label>
+                                                        <div class="col-sm-7 col-xs-12 " >
+                                                            <apex:InputField value="{!workJob.Customer_Code__c}"></apex:InputField>
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF((workJob.Unit_Number__c==''||workJob.Unit_Number__c==null), true,false)}">
+                                                        <div class="clearfix"></div>
+                                                        <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Unit_Num}<span class="cmi_asterisk">*</span></label>
+                                                        <div class="col-sm-8 col-xs-12 " >
+                                                            <apex:InputField value="{!workJob.Unit_Number__c}"></apex:InputField>
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                    <div class="clearfix"></div>
+                                                    <apex:outputPanel rendered="{!IF((workJob.Shop_Work_Order__c==''||workJob.Shop_Work_Order__c==null), true,false)}">
+                                                        <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Work_Oder_Num}<span class="cmi_asterisk">*</span></label>
+                                                        <div class="col-sm-8 col-xs-12 " >
+                                                            <apex:InputField value="{!workJob.Shop_Work_Order__c}" html-maxlength="9"></apex:InputField> <!--added html-maxlength as 9 for story GSSC-259-->
+                                                            <a data-target="#showqmarkpopup" data-toggle="modal" ><span class="cmi_intake_help" /></a>
+                                                            <apex:commandLink rerender="showqmarkpopup" style="text-decoration:underline" />
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                    <div class="clearfix"></div>                                                            
+                                                </div>
+                                            </apex:outputPanel>
+                                            
+                                            <div>
+                                                <apex:outputLabel value="{!$objectType.CSS_Job_Order__c.Fields.CSS_Resolution__c.Label}" rendered="{!showResolutionWithRepair}"/>
+                                                <apex:selectRadio value="{!workJob.CSS_Resolution__c}" layout="pageDirection" rendered="{!showResolutionWithRepair}">
+                                                    <apex:selectOptions value="{!resolutionOptions}" />
+                                                </apex:selectRadio>
+
+                                                                                                       
+                                                    <apex:outputLabel value="{!$objectType.CSS_Job_Order__c.Fields.CSS_Feedback_Comments__c.Label}"/>
+                                                    <apex:inputTextarea value="{!workjob.CSS_Feedback_Comments__c}" style="min-height:100px; overflow-x:hidden; overflow-y:scroll; resize: none; border-style: groove;" onkeyup="textCounter(this,'txtcounter',2000);" rows="1" cols="20" />
+                                                    {!$Label.css_Remaining_Characters} <input type="text" value="2000" readonly="readonly" maxlength="3" size="3"  id="txtcounter" style="border:none;" />    
+                                                 <br/>
+                                            </div>
+                                            <apex:outputPanel id="errmsgbody1">
+                                                <apex:outputPanel rendered="{!cancelSJWrapperObj1.errorFlag}">
+                                                    <div class="modal-body">
+                                                        <span id="closeErrorId1"><b><apex:outputText value="{!cancelSJWrapperObj1.errorMessage}" style="color:red;"/></b></span>
+                                                    </div>
+                                                </apex:outputPanel>
+                                            </apex:outputPanel> 
+                                            <div class="row" style="padding-left:15px">
+                                                <div class="col-sm-offset-2 col-sm-4 col-xs-12">    
+                                                    <apex:commandButton value="{!$Label.css_Close_Job}" action="{!saveAndCloseJob}" styleClass="saveButton" status="closeJobImg1" rerender="errmsgbody1,exeReload,repairsPan" oncomplete="redirectPage();"></apex:commandButton>
+                                                    <apex:actionStatus id="closeJobImg1">
+                                                        <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                                        <apex:facet name="stop"></apex:facet>
+                                                    </apex:actionStatus>
+                                                </div>
+                                                <div class="col-sm-6 col-xs-12">
+                                                    <apex:commandButton value="{!$Label.css_Cancel}" action="{!closeSession_close}" styleClass="cancelButton" rerender="jobClosePanel" oncomplete="CloseErrorMessage();"/><br/>
+                                                </div><br/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </apex:outputPanel>
+                                <!-- End Code for Resoluiton inclduing negative repair Reponse -->
+
+                            </div>
+                        </div>
+                    </apex:outputPanel>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+                <!-- 56604  EndCode for Job Closure panel content ---> 
+            </apex:form>
+        </apex:define>
+    </div>
+</apex:page>

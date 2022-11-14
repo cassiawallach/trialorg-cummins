@@ -1,0 +1,360 @@
+<apex:component controller="OSM_SW_Cart_Wishlist_Comp_Ctrl">
+    
+<script id="CMI-SW-QuickOrder-WishlistItems-Desktop" type="text/template">
+    <div class="quick_wishlist cc_quick_wishlist">
+     <!--**************************************************-->
+     <div class="orderPaginationSec cc_orderPaginationSec"></div>
+     <!--**************************************************-->
+     <form id="deskQuickWishForm" class="wishForm cc_wish_form">
+       <div class="cc_name">
+           <h4><b>Wishlist</b><h4>
+        </div>
+
+         <div class="row CMI-Cart-table-header">
+             <div class="col-md-5">
+             </div>
+             <div class="col-md-7">
+                 
+                     <!-- <div class="col-md-2">
+                           <B>Package</B>
+                     </div>  -->
+                     <div class="col-md-2"></div>
+                   <div class="col-md-2"></div>
+                     
+                     <div class="col-md-2">
+                           <B>Quantity</B>
+                     </div>
+                               
+                     <div class="col-md-2">
+                          <B>Unit Price</B>
+                     </div>
+                     
+                     <div class="col-md-2">
+                          <B>Billing Frequency</B>
+                     </div>
+                          
+                     <div class="col-md-2">
+                           <B>Sub Total</B>
+                     </div>
+             </div>
+        </div>
+        
+      {{#ifNotEquals this.WishlistData.length 0}}
+     
+        {{#each this.WishlistData}}
+
+        <div class="CMI-Wishlist-Item">
+     
+        <div class="row cc_wish_row">
+            <div class="col-md-2 cc_wish_img">
+            <a href="#" class="prodLink cc_prod_link" data-id="{{this.productDetail.SKU}}">{{{displayImage this.mediaWrapper 'cart img-responsive'}}}</a>
+        </div>         
+         
+         <div class="col-md-3 cc_wish_prod_details"> 
+              <div class="cc_name">
+                {{productLink this.productDetail 'productName cc_prod_link'}}
+              </div>
+              
+              <div class="cc_name">
+                {{this.productDetail.shortDesc}}
+  <!-- Icons -->
+          
+          <div style="display: flex; flex-wrap: nowrap; margin-top: 15px">             
+         <div style="padding-right: 15px;">
+             <div class="CMI-MoveToCart">
+                <span class="CMI-text-icons"  style="color: teal" >p</span>
+                <a href="javascript:void(0);" class="cc_label cmi_move_to_cart" data-id="{{this.sfId}}"  style="color: teal" >{{pageLabelMap 'MoveToCart'}}</a>
+            </div>
+         </div>            
+                
+        <div>
+            <div class="delete-links">                
+                <span class="CMI-text-icons" style="color: teal" >0</span>
+                <a href="javascript:void(0);" class="cc_label cmi_delete_wishlist" data-id="{{this.sfId}}"  style="color: teal; font-size: 11px" >{{pageLabelMap 'Action_Delete'}}</a>
+            </div>
+        </div>                
+    </div>
+    
+ <!-- Icons End -->           
+    
+    
+              </div>          
+         </div>
+         
+         <div class="col-md-7">         
+             <!-- <div class="col-md-2 cc_wish_prod_details">
+                  <div class="cc_name">
+                        {{this.productPackage}}
+                  </div>
+             </div> -->
+                  <div class="col-md-2"></div>
+                  <div class="col-md-2"> </div>
+         
+             <div class="col-md-2 cc_wish_prod_details">
+                  <div class="cc_name" style="text-align: center;">
+                       {{this.quantity}}
+                  </div>
+             </div>
+         
+             <div class="col-md-2 cc_wish_prod_details">
+                  <div class="cc_name">
+                       {{price this.price}}
+                  </div>
+             </div>
+         
+              <div class="col-md-2 cc_wish_prod_details">
+                  <div class="cc_name">
+                        {{this.billingFrequency}}
+                  </div>
+              </div>
+          
+             <div class="col-md-2 cc_wish_prod_details">
+                  <div class="cc_name">
+                        {{price this.totalPrice}}
+                  </div>
+             </div>         
+         </div>
+         
+        </div>
+        
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+        </div>
+        
+        
+      
+        </div>    
+       {{/each}}
+       
+      {{/ifNotEquals}}
+     </form>
+    </div>
+   </script>
+
+<script>
+   jQuery(function($) {    
+        CCRZ.models.WishlistItemModel = CCRZ.CloudCrazeModel.extend({
+            idAttribute: "uid"
+    });
+       
+        CCRZ.collections.WishlistItemList = CCRZ.CloudCrazeCollection.extend({
+             model : CCRZ.models.WishlistItemModel,
+             className: '',
+             initialize : function(dataList){
+              //this.reset(dataList);
+             },   
+        });
+   });
+  </script>
+
+    <script type="text/javascript">
+    
+   jQuery(function($) {
+
+     CCRZ.views.CMIWishlistView = CCRZ.CloudCrazeView.extend({
+     templatePhone : CCRZ.util.template('CMI-SW-QuickOrder-WishlistItems-Desktop'),
+     templateDesktop : CCRZ.util.template('CMI-SW-QuickOrder-WishlistItems-Desktop'),
+     viewName : "cmiWishlistView",
+     className: 'OSM_SW_Cart_Wishlist_Comp_Ctrl',
+     init : function(){
+      
+      var v = this;
+      v.wishlistItems = new CCRZ.collections.WishlistItemList();
+      CCRZ.pubSub.on("action:MyWishListView:refresh",function(cartId) {
+      
+        CCRZ.console.log('Start Wishlist refresh');
+        this.fetchWishlistItems();
+        v.render();
+        CCRZ.console.log('done with Wishlist refresh');
+    },this);
+    
+      this.fetchWishlistItems();
+    
+     },
+     events: {
+      "click .pickQuickWish" : "showDetails",
+      "change .selectWishlist" : "selectDetails",
+      "click .addAll" : "addAllItems",
+      "click .cmi_delete_wishlist" : "deleteEntity",
+      "click .cmi_move_to_cart" : "moveToCart",
+      "click .cmi_move_to_wishlist" : "tmpMoveToWishlist"      
+     },
+     render : function() {
+      var v = this;
+      //var selList = v.wishlistData.where({isActive: true});
+  
+     //if (CCRZ.display.isPhone()){
+       //this.setElement($(CCRZ.uiProperties.quickWishlistView.phone.selector));
+       //this.$el.html(v.templatePhone(v.wishlistData.toJSON()));
+      //}
+      //else {
+      
+       this.setElement($('.CMI-Wishlist-Div'));
+       //this.$el.html(v.templateDesktop(v.wishlistData.toJSON()));
+       this.$el.html(v.templateDesktop(this.dataSet));
+      //}
+    },
+    fetchWishlistItems : function(callback){
+            var me = this;
+            //alert('==Inside fetchFeaturedProds===');
+            this.invokeContainerLoadingCtx(
+                $('.cartContainer'),
+                'fetchWishListItems',
+                function(resp){
+                    if(resp && resp.success){//response was successful
+                        me.dataSet = resp.data;
+                        
+                        //alert('Got the response from Server');
+                        
+                        /*for (i = 0; i < resp.data.length; i++) { 
+                            CCRZ.console.log('Data from backend---'+Object.values(resp.data[i]));
+                        }
+                        */
+                        //callback();
+                    }
+                    else{
+                       CCRZ.console.log('==Response unsuccessful==='+resp.message);
+                    }
+                },
+                {
+                    buffer:false, //this call will be executed by itself
+                    nmsp : false //defines that this is a call to a subscriber class
+                }
+            );//end invokeCtx call
+        },
+         
+        tmpMoveToWishlist:function(event) {
+            var objLink = $(event.target);
+            var id = objLink.data("id");       
+            
+            var v = this;
+            this.invokeContainerLoadingCtx( $('.CMI_FeaturedCSS'), 'hanleMoveToWishlist', function(response) {
+             
+                //v.dataSet = response.data;           
+                //alert('=====Got the response====');            
+         },
+                                            
+         {
+             buffer:false, //this call will be executed by itself
+             nmsp : false //defines that this is a call to a subscriber class
+         }
+         
+         );
+        },
+        moveToCart: function(event) {
+            var objLink = $(event.target);
+            var id = objLink.data("id");
+            //alert('Id----'+id);        
+        
+        var objLinkParent = $(event.currentTarget);
+        var parentElement = objLink.parents(".Cmi-Wishlist-Item");
+        parentElement.fadeOut(2500);                    
+                    
+         var v = this;
+         this.invokeContainerLoadingCtx( $('.cartContainer'), 'handleMovetoCart', id, function(response) {
+             
+            v.dataSet = response.data;
+            
+            if(v.cartView) {
+              console.log('=====cartview is not null====');
+            }
+            
+            console.log('=====Firing Refresh Cart===='+JSON.stringify(v.cartView.params));
+            CCRZ.pubSub.trigger("action:CartDetailView:refresh", v.cartView);
+            //CCRZ.pubSub.trigger("action:CartDetailView:cartItemsRefreshed",v.cartView);
+            //v.cartView.render();
+            v.render();
+            
+            //alert('got the response');
+            //CCRZ.pagevars.currentCartID = cartId;
+            //cart change will update cookie
+            //CCRZ.pubSub.trigger('cartChange', cartId);
+       
+          //CCRZ.pubSub.trigger('refreshWishlists', val);
+          //if (val == '-1') {
+           //v.refresh();
+          //}
+         },
+         {
+             buffer:false, //this call will be executed by itself
+             nmsp : false //defines that this is a call to a subscriber class
+         }
+         
+         );
+        },
+         
+        deleteEntity: function(event) {
+            var objLink = $(event.target);
+            var wishlistItemId = objLink.data("id");
+            var v = this;
+        
+            var objLinkParent = $(event.currentTarget);
+            var parentElement = objLink.parents(".Cmi-Wishlist-Item");
+            parentElement.fadeOut(2500);        
+        
+            this.invokeContainerLoadingCtx($('.cartContainer'), 'handleDeleteWLItem', wishlistItemId, function(response){
+                v.dataSet = response.data;
+                v.render();
+            },
+      {
+          buffer:false, //this call will be executed by itself
+          nmsp : false //defines that this is a call to a subscriber class
+      }
+      
+      );
+     },
+         
+     showDetails: function (event) {
+          var objLink = $(event.target);
+          var id = objLink.data("id");
+          var selList = this.wishlistData.get(id);
+          $('.selWish').html(selList.attributes.name);
+          this.detailsView.generateDisplay(selList);
+     },
+         
+     selectDetails: function (event) {
+          var objLink = $(event.target);
+          var id = objLink.val();
+          var selList = this.wishlistData.get(id);
+          $('.selWish').html(selList.attributes.name);
+          this.detailsView.generateDisplay(selList);
+     },
+         
+     editEntity: function(event) {
+          var objLink = $(event.target);
+          var id = objLink.data("id");
+          var selList = this.wishlistData.get(id);
+          this.openModal(selList);
+     },
+     addAllItems: function(event) {
+          var formEle = $('form.wishForm');
+          var formData = form2js(formEle.attr('id'), '.', false, function(node) {}, false);
+          var dataSet = JSON.stringify(formData.quickadd);
+          var v = this;
+         
+          this.invokeContainerLoadingCtx($('.deskLayout'), 'handleAddBulktoCart', dataSet, function(response){
+               var cartId = response.data;
+               CCRZ.pagevars.currentCartID = cartId;
+               //cart change will update cookie
+               CCRZ.pubSub.trigger('cartChange', cartId);
+               if (CCRZ.getPageConfig('wl.g2c', false))
+                cartDetails();
+        });
+     }
+    });    
+    
+    CCRZ.WishListViewCMI = new CCRZ.views.CMIWishlistView();
+    
+     CCRZ.pubSub.on('view:CartDetailView:refresh',function(aggregateView){
+        //alert('Start Rendering the Wishlist..');
+        CCRZ.WishListViewCMI.render();
+    });
+    
+        CCRZ.pubSub.on('view:CartDetailView:refresh',function(cartView){            
+            CCRZ.WishListViewCMI.cartView = cartView;            
+       });    
+   });
+
+  </script>
+</apex:component>

@@ -1,0 +1,104 @@
+<aura:component controller="FSL_orderController" implements="flexipage:availableForAllPageTypes,force:appHostable,flexipage:availableForRecordHome,force:lightningQuickAction,force:hasRecordId" >
+    <head>
+        <link href="/salesforce/assets/styles/salesforce-lightning-design-system.min.css" rel="stylesheet" type="text/css"/>
+    </head>	
+    <aura:attribute type="List" name="PSOfalutCode"/>
+    <aura:attribute type="List" name="NPSOfalutCode"/>
+    <aura:attribute name="PSOcolumns" type="List"/>
+    <aura:attribute name="NPSOcolumns" type="List"/>
+    <aura:attribute name="maxSeqFromInsite" type="integer"/> <!--field stores values on latest integration of solutions -->
+    <aura:attribute name="keyList" type="List"/>
+    <aura:attribute name="faultcodeValues" type="object" />
+    <aura:attribute name="priorityRecieved" type="boolean" default="false"/>
+    <aura:attribute name="NonpriorityRecieved" type="boolean" default="false"/>
+    <aura:attribute name="fetchLatest" type="boolean" default="false"/>
+    <aura:handler name="init" value="{!this}" action="{!c.fetchFaultCodes}"/>
+    <aura:method name="messageMethod" action="{!c.fetchUpdatedData}" access="public">
+    </aura:method>
+    <aura:attribute name="recordId" type="String" />
+    <!-- Added by Piyush for VGRS2-36 -->
+     <aura:attribute name="ShowSpinner" type="Boolean" default="false"></aura:attribute>
+    <aura:if isTrue="{!v.ShowSpinner}">
+        <lightning:spinner aura:id="busyIndicator" variant="brand" size="large"/>
+    </aura:if>
+    <aura:attribute name="FTRFlag" type="boolean" default="false"/><!--Road-468 - Rajender added on 07/25/2022-->
+    <aura:attribute name="woStatus" type="boolean" default="false"/><!--Road-468 - Rajender added on 07/25/2022-->
+    <!--VGRS2-36 End-->
+    <aura:if  isTrue="{!and(v.priorityRecieved, v.NonpriorityRecieved)}" >
+        <aura:if  isTrue="{!not(empty(v.PSOfalutCode))}">
+            <br/>    
+            <div >
+                <!--Start Road-468 - Rajender added on 07/25/2022-->
+                <aura:if isTrue="{!v.FTRFlag}">
+                    <h1><strong>  {!$Label.c.FSL_FTR_Sol_Label} </strong></h1><br/>
+                    <aura:set attribute="else">
+                        <h1 class="slds-text-title--caps"><strong>  {!$Label.c.css_Prioritized_Fault_Codes} </strong></h1><br/>
+                    </aura:set>
+                </aura:if>
+                <!--End Road-468 - Rajender added on 07/25/2022-->
+                <c:FSL_FaultCodeServiceTable faultCodeTable="{!v.PSOfalutCode}" workOrderId="{!v.recordId}" priorityCode="Priority"/>
+            </div>
+        </aura:if>      
+        <br/>
+        <aura:if  isTrue="{!not(empty(v.NPSOfalutCode))}">
+            <!--Start Road-468 - Rajender added on 07/25/2022-->
+            <aura:if isTrue="{!v.FTRFlag == false}">
+                <div >
+                    <h1 class="slds-text-title--caps"><strong> {!$Label.c.FSL_NonPrioritizedFC} </strong></h1> <br/>
+                    <c:FSL_FaultCodeServiceTable faultCodeTable="{!v.NPSOfalutCode}"  workOrderId="{!v.recordId}" priorityCode="NonPriority"/>
+                </div>
+            </aura:if>
+            <!--End Road-468 - Rajender added on 07/25/2022-->
+        </aura:if>
+    </aura:if>
+    <br/>
+    <lightning:accordion aura:id="accordion" allowMultipleSectionsOpen="true" activeSectionName="B">
+        <!--<aura:iteration items="{!v.faultcodeValues}"  var="mapKey" indexVar="key">  
+        <lightning:accordionSection label="{!mapKey.key}"> 
+          <c:FSL_FaultCodeServiceTable faultCodeTable="{!mapKey.value}" workOrderId="{!v.recordId}" />
+  </lightning:accordionSection>
+    </aura:iteration>-->
+        <aura:iteration items="{!v.faultcodeValues}"  var="mapMainKey" indexVar="key"> 
+            <lightning:accordionSection label="{!mapMainKey.key}"> 
+                <aura:iteration items="{!mapMainKey.value}"  var="mapKey" indexVar="ikey">  
+                    <aura:if  isTrue="{!(mapKey.key == 'Priority')}">
+                        <h1 class="slds-text-title--caps"><strong> {!$Label.c.css_Prioritized_Fault_Codes} </strong></h1>
+                        <c:FSL_FaultCodeServiceTable faultCodeTable="{!mapKey.value}" workOrderId="{!v.recordId}" priorityCode="Priority"/>
+                    </aura:if>
+                    <aura:if  isTrue="{!(mapKey.key == 'NonPriority')}">
+                        <h1 class="slds-text-title--caps"><strong> {!$Label.c.FSL_NonPrioritizedFC} </strong></h1>
+                        <c:FSL_FaultCodeServiceTable faultCodeTable="{!mapKey.value}" workOrderId="{!v.recordId}" priorityCode="NonPriority"/>
+                    </aura:if>
+                </aura:iteration>
+            </lightning:accordionSection>
+        </aura:iteration>
+    </lightning:accordion>
+    <!--Start Road-468 - Rajender added on 07/25/2022-->
+    <aura:if isTrue="{!AND(v.FTRFlag, v.woStatus)}">
+        <!--Rama Patchigolla FTR image with Hover-->
+        <div>
+            <c:fSL_FTR_Image/>
+        </div>
+        <!--End of FTR image Hover-->
+        <br/>
+        <div>
+            <p class="PClass"> {!$Label.c.FSL_FTR_FC_Info1} </p>
+            <br/>
+            <p class="PClass"> {!$Label.c.FSL_FTR_FC_Info2} </p>
+            <br/>
+        </div>
+        <div class="slds-align_absolute-left" style="height: 5rem;">
+            <lightning:button label="{!$Label.c.FSL_FTR_Proceed_to_JP}" 
+                              class="slds-m-top--medium"
+                              variant="brand"
+                              onclick="{!c.gotoJobPlan}" /> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            
+            <lightning:button label="{!$Label.c.FSL_FTR_Proceed_to_Repair}" 
+                              class="slds-m-top--medium"
+                              variant="brand" 
+                              onclick="{!c.gotoRepair}" /> &nbsp;&nbsp;&nbsp;
+            <lightning:spinner aura:id="Spinner" alternativeText="Loading..." title="Loading.." variant="brand" size="medium" class="slds-hide"/>
+        </div>
+    </aura:if>
+    <!--End Road-468 - Rajender added on 07/25/2022-->
+</aura:component>

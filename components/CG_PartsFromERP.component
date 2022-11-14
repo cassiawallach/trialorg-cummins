@@ -1,0 +1,186 @@
+<apex:component controller="CG_CL_PartsFromERPController" allowDML="true">
+
+    <!--<apex:attribute name="jobId" type="ID" description="JobId" assignTo="{!pgId}"></apex:attribute>--->
+    <!-- job plan parts ui -->
+    <apex:attribute name="JobRecord" description="Service Job Values" type="CSS_Job_Order__c" assignTo="{!workJob}"/>
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js" />
+    <apex:includeScript value="https://code.jquery.com/ui/1.12.1/jquery-ui.js" />
+    <style>
+
+        .cmi_userreqParts thead th, .cmi_userreqParts tbody td {
+            width:6%;
+            text-align:center;
+        }
+
+
+    </style>
+    <script>
+        function onfcodechangeJS(val,partId){
+            onfcodechange(val,partId);
+        }
+    </script> 
+    <apex:actionRegion >
+        <apex:actionFunction name="onfcodechange" action="{!FailCodeChange}"  rerender="rowAccount,TotalPriceid"> 
+            <apex:param name="failCodeval"  value="" assignTo="{!failcodeSelected}"/>
+            <apex:param name="partsID"  value="" assignTo="{!partIdSelected}"/>
+        </apex:actionFunction></apex:actionRegion> 
+    <apex:OutputPanel >
+        <div class="panel-group cmi_generic-accordion" > 
+            <div class="panel panel-default">
+                <div class="panel-heading " id="accordion1-heading-7">
+                    <h4 class="panel-title" data-toggle="collapse" data-parent="#accordion1-heading-7" data-target="#campaign-accordian7" aria-expanded="true" >
+                        <a class="accordion-toggle" >
+                            <span class="glyphicon glyphicon-plus"></span>
+                            <div class="cmi_accordion-title"><b>{!$Label.CSS_Parts_ERP}</b></div>
+                        </a>
+                    </h4>
+                </div>
+            </div>
+            <!-- <apex:actionFunction name="PartsAction" action="{!getUserAddedParts}" rerender="srtparts" status="callPartsStatus" /> -->
+            <div id="campaign-accordian7" class="panel-collapse collapse" aria-expanded="true" style="margin-top:10px">
+                <apex:actionStatus startText="requesting..." id="callPartsStatus">
+                    <apex:facet name="start">Loading... <img src="/img/loading.gif" /></apex:facet>
+                    <apex:facet name="stop"></apex:facet>
+                </apex:actionStatus>
+
+
+                <apex:outputPanel id="PartsfromERP">        
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-sm-12" style="padding-top:20px;"> 
+                                <div class="hidden-xs">
+                                    <div class="row cmi_jobplan-table">
+                                        <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+
+
+                                            <table class="mytable table table-bordered table-striped cmi_userreqParts"  width="100%" border="0" cellpadding="0" cellspacing="0">
+                                                <thead>
+                                                    <tr height="54">
+                                                        <th>{!$ObjectType.CSS_Parts_Options__c.fields.Service_partnumber__c.Label}</th>
+                                                        <th>{!$ObjectType.CSS_Parts_Options__c.fields.Part_Description__c.Label}</th>
+                                                        <th>{!$Label.CSS_Qty}</th>
+                                                        <th >{!$Label.CSS_Return_to_Factory}</th> 
+                                                        <th>{!$Label.css_Unit_Price_USD}</th>  <!--<br/>(USD)</th>-->
+                                                        <th>{!$Label.css_Total_Price}</th>
+                                                        <th >{!$Label.CSS_Covered}</th> 
+                                                        <th >{!$Label.CSS_Fail_Code}</th> 
+                                                        <th >{!$Label.CSS_Account_Code}</th> 
+                                                        <th>{!$Label.Css_Comments}</th>
+                                                    </tr>
+                                                </thead>
+                                                <apex:repeat value="{!lstpartWrapper}" var="partscomp" id="parts">
+                                                    <tr >
+                                                        <td ><apex:outputText value="{!partscomp.servicePartNumber}" styleClass="URCheckbox"/></td> 
+                                                        <td ><span><apex:outputText value="{!partscomp.partDesc}" /></span></td>
+                                                        <td ><span><apex:outputtext value="{!partscomp.qty}"/></span></td>
+                                                        <td ><span><apex:outputtext value="{!partscomp.returnToFactory}"/></span></td>
+                                                        <td style="text-align: right;"><span><apex:outputtext value="{!partscomp.SellPrice}"/></span></td>
+                                                        <td >
+                                                            <apex:outputpanel id="TotalPriceid">
+                                                                <span><apex:outputtext value="{!partscomp.TotalPrice}"/></span>
+                                                            </apex:outputpanel>
+                                                        </td>
+                                                        <td ><span><apex:outputtext value="{!partscomp.Covered}"/></span></td>
+                                                        <apex:outputpanel id="failaccountCode">
+                                                            <td>
+                                                                <apex:outputPanel rendered="{!IF((partscomp.failcode != null && partscomp.failcode != ''),true,false)}">
+                                                                    <span><apex:outputtext value="{!partscomp.failcode}"/></span>
+                                                                </apex:outputPanel>
+                                                                <apex:outputpanel rendered="{!IF((partscomp.failcode == null || partscomp.failcode == ''),true,false)}">
+
+                                                                    <apex:selectList value="{!partscomp.failcode}" size="1" style="width:100px;" onchange="onfcodechangeJS(this.value,'{!partscomp.partids}');" id="FailCodeid">
+                                                                        <apex:selectOptions value="{!failcodes}" ></apex:selectOptions>
+                                                                    </apex:selectList>
+
+                                                                </apex:outputpanel>
+                                                            </td>
+                                                            <td style="text-align:center;" id="AccountCodePart" >
+                                                                <apex:outputpanel id="rowAccount">
+                                                                    <apex:outputText rendered="{!IF(partscomp.accountcode != null && partscomp.accountcode != '' && partscomp.Covered>0,true,false)}">
+                                                                        <span><apex:outputtext value="{!partscomp.accountcode}"/></span>
+
+                                                                    </apex:outputText>
+                                                                    <apex:outputText rendered="{!IF(partscomp.Covered==0,true,false)}">
+                                                                     <apex:selectList value="{!partscomp.accountcode}" size="1" style="width:100px;"  disabled="true" readonly="true">
+                                                                            <apex:selectOption itemValue="Select One" itemLabel="Select One"/>
+                                                                        </apex:selectList>
+                                                                    </apex:outputText>
+                                                                    <apex:outputText rendered="{!IF((partscomp.failCode == 'Select One' || partscomp.failCode == '')  && partscomp.Covered>0,true,false)}">
+                                                                        <!-- <apex:outputText rendered="{!IF((failcodeSelected == 'Select One' || failcodeSelected == ''),true,false)}">-->
+                                                                        <apex:selectList value="{!partscomp.accountcode}" size="1" style="width:100px;"  disabled="true" readonly="false" onchange="onaccCodechange(this.value,'{!partscomp.partids}');">
+                                                                            <apex:selectOption itemValue="Select One" itemLabel="Select One"/>
+                                                                        </apex:selectList>
+
+                                                                    </apex:outputText>
+                                                                    <!-- <apex:outputText rendered="{!IF((partscomp.accountcode == null || partscomp.accountcode == ''),true,false)}">-->
+                                                                    <apex:outputText rendered="{!IF((partscomp.failCode != 'Select One' && (partscomp.failCode != '' && partscomp.failCode != null) && (partscomp.accountCode == null || partscomp.accountCode == '')),true,false)}" >
+                                                                        <!-- <apex:outputText rendered="{!IF((failcodeSelected != 'Select One' && failcodeSelected != '' && partscomp.accountCode != 'Select One'),true,false)}" >-->
+                                                                        <!--<apex:selectList value="{!partscomp.accountcode}" size="1" style="width:100px;" onchange="onaccCodechange(this.value,'{!partscomp.partids}');">
+<apex:selectOptions value="{!partscomp.accCodes}" ></apex:selectOptions>
+</apex:selectList>-->
+
+                                                                    </apex:outputText>
+                                                                    <!--  <apex:outputText rendered="{!IF(failcodeSelected != 'Select One'  && failcodeSelected != '' &&  ,true,false)}">
+<!--<apex:outputText rendered="{!IF(partscomp.failcode != 'Select One'  && partscomp.failcode == 'Select One' ,true,false)}">-->
+                                                                    <!--  <p>  
+<apex:selectList value="{!partscomp.accountcode}" size="1" style="width:100px;">
+<apex:selectOptions value="{!accCodes}"></apex:selectOptions>
+</apex:selectList>
+</p>
+</apex:outputText>-->
+                                                                </apex:outputpanel>
+                                                            </td>
+                                                        </apex:outputpanel>
+                                                        <td ><span><apex:outputtext value="{!partscomp.comments}"/></span></td>
+                                                    </tr>
+                                                </apex:repeat>
+                                            </table>
+                                        </div>
+                                        <apex:actionRegion >
+                                            <apex:actionFunction name="onaccCodechange" action="{!onaccCodechange}" rerender="rowAccount,TotalPriceid"> 
+                                                <apex:param name="accCodeval"  value="" assignTo="{!acccodeSelected}"/>
+                                                <apex:param name="partID"  value="" assignTo="{!partIdSelected}"/>
+                                            </apex:actionFunction>
+                                        </apex:actionRegion>
+                                    </div>
+                                </div>
+
+
+                                <div class="col-sm-offset-5 col-sm-4" style="margin-top:10px;">
+                                    <!--apex:commandLink action="{!saveParts}" value="{!$Label.css_save_btn}" styleclass="btn-intake btn-intake-footer m-btn-width"/-->
+                                    <apex:actionRegion >
+                                        <apex:commandLink action="{!saveParts}" value="{!$Label.css_save_btn}" styleClass="saveButton" status="Actstatusid" />
+                                    </apex:actionRegion>
+                                    <apex:actionStatus startText="requesting..." id="Actstatusid">
+                                        <apex:facet name="start">Saving... <img src="/img/loading.gif" /></apex:facet>
+                                        <apex:facet name="stop"></apex:facet>
+                                    </apex:actionStatus>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+
+                                    <!-- <apex:commandLink action="{!GetPartsfromERP}" value="{!$Label.Css_Get_Parts_from_ERP}" styleClass="saveButton" status="Actstatusid" />                
+<apex:actionStatus startText="requesting..." id="ActstatusidR">
+<apex:facet name="start">Loading... <img src="/img/loading.gif" /></apex:facet>
+<apex:facet name="stop"></apex:facet>
+</apex:actionStatus>&nbsp;&nbsp;-->
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </apex:outputPanel>
+
+
+
+
+
+
+
+
+
+
+            </div>
+        </div>
+    </apex:OutputPanel>
+
+    <!--</apex:actionRegion>-->
+</apex:component>

@@ -1,0 +1,274 @@
+<apex:page showHeader="false" sidebar="false" controller="disco.Ctl_TB_DiscoveryRules" 
+standardStylesheets="false" applyBodyTag="false" applyHtmlTag="false" docType="html-5.0">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<head>
+		<title>{!thisFormTemplate.name} Builder</title>
+		<!-- Local Host Load -->
+		<!-- <base href="https://localhost:9006/form-builder/" />
+		<link rel="stylesheet" href="/lib/bootstrap-3.3.6/css/bootstrap.min.css" />
+		<link rel="stylesheet" href="/dist/site.css" />
+		<link rel="stylesheet" href="/dist/form-builder-app.css" /> -->
+		
+		<!-- Static Resource Load -->
+		<link rel="stylesheet" href="{!URLFOR($Resource.ngApp, 'bootstrap.min.css')}" />
+		<link rel="stylesheet" href="{!URLFOR($Resource.ngApp, 'site.css')}"/>
+		<link rel="stylesheet" href="{!URLFOR($Resource.ngApp, 'form-builder-app.css')}"/>
+		
+		<apex:styleSheet value="{!URLFOR($Resource.disco__SLDS250, '/assets/styles/salesforce-lightning-design-system-vf.min.css')}" />
+		<script>
+			var CTL_VARS = {};
+			CTL_VARS.vfr = {};
+			CTL_VARS.vfr.updatePrefsVFR = '{!JSENCODE($RemoteAction.Ctl_TB_DiscoveryRules.updateUserPreferences)}';
+			CTL_VARS.vfr.addDiscoveryType = '{!JSENCODE($RemoteAction.Ctl_TB_DiscoveryRules.addDiscoveryType)}';
+			CTL_VARS.vfr.saveDRs = '{!JSENCODE($RemoteAction.Ctl_TB_DiscoveryRules.saveDRs)}';
+			var templateID = '{!JSENCODE(thisFormTemplate.id)}';
+			var templateName = '{!JSENCODE(thisFormTemplate.name)}';
+			var isManagedTemplate = '{!JSENCODE(IF(thisFormTemplate.Managed_Template__c,"true","false"))}' == "true" ? true : false;
+			var discoveryTypeOptions = JSON.parse('{!JSENCODE(discoveryTypeOptionsJSON)}');
+			var formFields2DiscoveryFields = JSON.parse('{!JSENCODE(formFields2DiscoveryFields)}');
+			var existingDiscoveryRulesJSON = JSON.parse('{!JSENCODE(existingDiscoveryRuleWrappersJSON)}');
+			var questionsWithDiscoveriesJSON = JSON.parse('{!JSENCODE(questionsWithDiscoveriesJSON)}');
+			var managedTemplatesJSON = JSON.parse('{!JSENCODE(managedTemplatesJSONString)}');
+			var ns = '{!JSENCODE(namespace)}';
+			var userPreferences = JSON.parse('{!JSENCODE(userPreferences)}');
+			var logoPath = '{!JSENCODE($Resource.ng_youreka_logo_png)}';
+			var exDiscoRulesPath = "{!JSENCODE($Resource.ex_disco_rules_png)}";
+			var isLightningExp = typeof sforce !== 'undefined'; // navigation with the possibility of LightingExp 
+			var domain = window.location.href.split('apex/')[0];
+			var fullLogoPath = domain + logoPath.slice(1); // used in VF component
+			var isTemplateBuilderUser = '{!JSENCODE(IF(isTemplateBuilderUser,"true","false"))}' == "true" ? true : false;
+		</script>
+	</head>
+	<body class="slds-scope" ng-app="Youreka.FormBuilder" ng-controller="MainCtrl">
+
+		<!-- CRUD/FLS errors -->
+		<apex:outputPanel layout="none" rendered="{!NOT(hasFLSCRUD)}">
+			<div class="page-error-cont">
+				<div class="alertError">
+					<apex:messages />
+				</div>
+				<button ng-click="cancel()" type="button" class="btn cancelBtn cancelUpdate">Cancel</button>
+			</div>
+		</apex:outputPanel>
+
+		<apex:outputPanel layout="block" styleClass="builderPageIntro alertErrorContainer" rendered="{!!isTemplateBuilderUser}">
+            <div class="page-error-cont">
+                <div class="alertError">
+                    The Template Builder User License is required in order to access the Template Builder.
+                </div>
+                <button ng-click="cancel()" type="button" class="btn cancelBtn cancelUpdate">Cancel</button>
+            </div>
+        </apex:outputPanel>
+		
+		<apex:outputPanel layout="none" rendered="{!AND(hasFLSCRUD,isTemplateBuilderUser)}">
+			<!-- header with graphic and links -->
+			<c:FormBuilderHeader />
+
+			<!-- warning message if premium will expire -->
+			<c:PremiumExpiration />
+			
+			<!-- if its not in drafting status -->
+			<div ng-show="template.status!=='Drafting' && isTemplateBuilderUser" class="form-status-container ng-cloak">
+				<p class="slds-text-heading_medium">You cannot edit a template that does not have a status of 'Drafting'.</p>
+				<button type="button" ng-click="cancel()" class="slds-button slds-button_neutral">Cancel</button>
+			</div>
+			<!-- if it is in drafting status -->
+			<div ng-show="template.status==='Drafting'" class="ng-cloak">
+				<!-- show if premium is disabled so they're aware of whats missing -->
+				<div ng-show="{!premiumDisabled}">
+					<yr-premium-disabled featurename="Discovery Rules"/>
+				</div>
+				<!-- Template Name -->
+				<div class="slds-m-top_medium slds-m-bottom_large slds-m-left_large">
+					<h2 class="slds-text-heading_large" style="display:inline;">{{template.name}}</h2>
+					<span class="slds-badge managed slds-m-around_small" ng-class="{'badge-managed-template': template.managedTemplate}">{{template.managedTemplate ? 'Managed' : 'Standard'}}</span>
+					<a class="edit-text-link" ng-click="openRenameTemplateModal();">
+						<svg aria-hidden="true" class="slds-icon slds-icon-text-default OR-icon-default slds-icon_small">
+							<use xlink:href="{{SLDS_PATH + '/assets/icons/utility-sprite/svg/symbols.svg#edit'}}"></use>
+						</svg>
+					</a>
+				</div>
+				<div class="builderPageIntro slds-col slds-size_1-of-1">
+					<div class="slds-m-left_large slds-m-right_large slds-m-top_large">
+						<!-- Progress Tracker -->
+						<c:FormBuilderProgressBar currStep="rules"/>
+						 
+						<!-- Intro Text -->
+						<div class="helper-text slds-grid" ng-hide="template.hideHelperIntro">
+							<!-- TODO: Change intro content... -->
+							<div class="slds-col slds-size_11-of-12">
+								<p>Now we can create Discovery Rules! These are similar to Simple Discovery Rules, but allow you to create weighted values and combine multiple questions together to drive the creation of a Discovery. 
+								</p>
+								<ol>
+									<li class="slds-list__item">
+										Start by clicking on the <span class="highlight-helper-text" ng-mouseover="highlightDiscoRule=true" ng-mouseleave="highlightDiscoRule=false">Create a Discovery Rule</span> button on the right.
+									</li>
+									<li class="slds-list__item">
+										Now you can drag one of the questions from the 
+										<span ng-mouseover="highlightAvailableQuestions=true" ng-mouseleave="highlightAvailableQuestions=false" class="highlight-helper-text">Available Questions</span> list onto the workspace in the <span class="highlight-helper-text" ng-mouseover="highlightWeightsTab=true" ng-mouseleave="highlightWeightsTab=false">Question &amp; Value Weights</span> tab.
+									</li>
+									<ul class="slds-list_vertical slds-list_dotted OR-nested-list__margin">
+										<li class="slds-list__item">
+											At this point, you can add weights to each question's answer value, making certain answers more likely to trigger a discovery than others. 
+										</li>
+										<li class="slds-list__item">
+											The <span class="highlight-helper-text" ng-mouseover="highlightDiscoLogicTab=true" ng-mouseleave="highlightDiscoLogicTab=false">Discovery Logic</span> tab allows you to set thresholds that must be met to trigger a Discovery. 
+											For example, if Question 1 had an answer with a weight of 2, and Question 2 had an answer with a weight of 2, you could set the threshold weight in the Discovery Logic tab to Greater Than 3. Then, if a user fills out their form and selects both answers that were set to have a weight of 2 (generating total weight of 4), the threshold of Greater Than 3 has been met and the Discovery is triggered.
+										</li>
+										<li class="slds-list__item">
+											Next, you need to specify the Discovery Type.  Again, you can use can start typing to search for an existing Discovery Type or click the '+ Add "XYZ" to list of Discovery Types' button to create a new Discovery Type.
+										</li>
+									</ul>
+									<li class="slds-list__item">
+										Fill in additional information on the <span class="highlight-helper-text" ng-mouseover="highlightDiscoLogicTab=true" ng-mouseleave="highlightDiscoLogicTab=false">Discovery Logic</span> and <span class="highlight-helper-text" ng-mouseover="highlightTargetLocTab=true" ng-mouseleave="highlightTargetLocTab=false">Target Location</span> tabs where necessary.
+									</li>
+									<li class="slds-list__item">
+										Discovery Rules can be combined to create Discovery Rule Groups, which we will create on the next page. To do this, click the <span class="highlight-helper-text" ng-mouseover="highlightUseInGroup=true" ng-mouseleave="highlightUseInGroup=false">Use in Discovery Groups</span> checkbox on a Discovery Rule.
+									</li>
+								</ol>
+							</div>
+							<div class="slds-col slds-size_1-of-12 flexbox-center">
+								<button type="button" class="slds-button slds-button_icon-inverse" ng-click="dismissIntroHelp()">
+								  <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+									<use xlink:href="{{SLDS_PATH + '/assets/icons/action-sprite/svg/symbols.svg#close'}}"></use>
+								  </svg>
+								  <span class="slds-assistive-text">Close</span>
+								</button>
+							</div>
+						</div>
+						<!-- END Progress Tracker -->
+						<!-- Button Row -->
+						<div class="button-row-background_dark OR-row_top-border" sticky="true" ng-hide="{!premiumDisabled}"> 
+							<section class="slds-grid button-row">
+								<div id="buttonRowSpc" class="slds-col slds-size_1-of-3 no-slds-col">
+								</div>
+								<div class="slds-col slds-size_1-of-3 no-slds-col">
+									<div class="slds-button-group slds-m-around_small flex-center disco-q-save-cont" role="group">
+										<button type="button" ng-click="quickSave('discoRules')" class="slds-button slds-button_neutral">
+											Save
+										</button>
+									</div>
+								</div>
+								<div class="slds-col slds-size_1-of-3 no-slds-col">
+									<div class="slds-clearfix">
+										<div class="slds-float_right">
+											<div class="slds-button-group slds-m-around_small three-btn-group" role="group">
+												<button type="button" ng-click="back()" class="slds-button slds-button_neutral nav-btn-min-w" ng-class="highlightBack ? 'glow' : ''">
+													<span class="dont-wrap">
+													<svg aria-hidden="true" class="slds-icon slds-icon-text-default OR-icon-default slds-icon_x-small">
+													  <use xlink:href="{{SLDS_PATH + '/assets/icons/utility-sprite/svg/symbols.svg#chevronleft'}}"></use>
+													</svg>
+													Back</span>
+												</button>
+												<button type="button" ng-click="cancel()" class="slds-button slds-button_neutral">
+													Close
+												</button>
+												<button type="button" ng-click="saveAndContinue('discoRules')"  ng-class="highlightSaveAndContinue ? 'glow' : ''" class="slds-button slds-button_brand saveAndContinueBtn">
+													<span class="dont-wrap">Continue<svg aria-hidden="true" class="slds-icon slds-icon-text-default OR-icon-default slds-icon_x-small">
+													  <use xlink:href="{{SLDS_PATH + '/assets/icons/utility-sprite/svg/symbols.svg#chevronright'}}"></use>
+													</svg></span>
+												</button>
+											</div>
+										</div>
+									</div>
+								</div>
+							</section>
+							<div class="slds-box slds-box_small slds-theme_error no-border-radius" ng-show="validationError">
+								<p>Review the errors on this page.</p>
+							</div>
+						</div>
+						<!-- END Continue / Preview Button Row -->
+						<!-- premium disabled button row -->
+						<div class="button-row-background_dark OR-row_top-border no-premium" sticky="true" ng-show="{!premiumDisabled}"> 
+							<section class="slds-grid">
+								<div class="slds-col slds-size_1-of-3">
+								</div>
+								<div class="slds-col slds-size_1-of-3">
+									<div class="slds-button-group slds-m-around_small slds-grid_align-end" role="group">
+										<button type="button" ng-click="back()" class="slds-button slds-button_neutral nav-btn-min-w">
+											<span class="dont-wrap">
+											<svg aria-hidden="true" class="slds-icon slds-icon-text-default OR-icon-default slds-icon_x-small">
+											  <use xlink:href="{{SLDS_PATH + '/assets/icons/utility-sprite/svg/symbols.svg#chevronleft'}}"></use>
+											</svg>
+											Back</span>
+										</button>
+										<button type="button" ng-click="cancel()" class="slds-button slds-button_neutral">
+											Close
+										</button>
+										<button type="button" ng-click="continueWithoutSave()" class="slds-button slds-button_neutral nav-btn-min-w">
+											<span class="dont-wrap">Continue
+											<svg aria-hidden="true" class="slds-icon slds-icon-text-default OR-icon-default slds-icon_x-small">
+												<use xlink:href="{{SLDS_PATH + '/assets/icons/utility-sprite/svg/symbols.svg#chevronright'}}"></use>
+											</svg></span>
+										</button>
+									</div>
+								</div>
+							</section>
+						</div>
+						<!-- END premium disabled button row -->
+						<div class="draggable-items-bar" ng-view="true" ng-hide="{!premiumDisabled}">
+							<!-- APP CONTENT -->
+						</div>
+						<div ng-show="{!premiumDisabled}">
+							<a title="Click to find out more at: https://youreka.io/pricing" href="https://youreka.io/pricing" target="_blank">
+								<img class="example-img" src="{{EX_DISCO_RULES_PATH}}"/>
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</apex:outputPanel>
+		<div id="scripts">
+			<!-- IE 11 Static Resource Load -->
+			<!-- IE 11 polyfills -->
+			<!-- IE 11 support for SVGs  -->
+			<script src="{!URLFOR($Resource.svg4everybody, '/svg4everybody/svg4everybody.min.js')}"></script>
+			<!-- full babel polyfill -->
+			<script src="{!$Resource.babelpolyfill}"></script>
+
+			<!-- Local Host Load -->
+			<!-- <script src="/lib/lodash-3.10.1/lodash.min.js"></script>
+			<script src="/lib/jquery-1.11.3/jquery.min.js"></script> -->
+            <!-- Modified JQuery-UI version (LN 1927) to address sorting scrolled pages -->
+			<!-- <script src="/lib/jquery-ui-1.11.4.custom/jquery-ui.js"></script>
+			<script src="/lib/angular-1.4.8/angular.min.js"></script>
+			<script src="/lib/angular-1.4.8/angular-route.min.js"></script>
+			<script src="/lib/angular-1.4.8/angular-animate.min.js"></script>
+
+			<script src="/lib/ui-bootstrap-0.14.3/ui-bootstrap-tpls.min.js"></script>
+			<script src="/lib/ui-sortable-0.13.4/sortable.min.js"></script>
+			<script src="/lib/sticky.min.js"></script>
+
+			<script src="/lib/babelpolyfill.js"></script>
+            <script src="/lib/svg4everybody.min.js"></script>
+			
+			<script src="/dist/common-module.js"></script>
+			<script src="/dist/form-builder-app.js"></script>
+			<script src="/dist/form-builder-templates.js"></script> -->
+			
+			<!-- Static Resource Load -->
+			<script src="{!URLFOR($Resource.ngApp, 'lodash.min.js')}"></script>
+			<script src="{!URLFOR($Resource.ngApp, 'jquery.min.js')}"></script>
+			<script src="{!URLFOR($Resource.ngApp, 'jquery-ui.js')}"></script>
+			<script src="{!URLFOR($Resource.ngApp, 'angular.min.js')}"></script>
+			<script src="{!URLFOR($Resource.ngApp, 'angular-route.min.js')}"></script>
+			<script src="{!URLFOR($Resource.ngApp, 'angular-animate.min.js')}"></script>
+
+			<script src="{!URLFOR($Resource.ngApp, 'ui-bootstrap-tpls.min.js')}"></script>
+			<script src="{!URLFOR($Resource.ngApp, 'sortable.min.js')}"></script>
+			<script src="{!URLFOR($Resource.ngApp, 'sticky.min.js')}"></script>
+			
+			<script src="{!URLFOR($Resource.ngApp, 'common-module.js')}"></script>
+			<script src="{!URLFOR($Resource.ngApp, 'common-templates.js')}"></script>
+			<script src="{!URLFOR($Resource.ngApp, 'form-builder-app.js')}"></script>
+			<script src="{!URLFOR($Resource.ngApp, 'form-builder-templates.js')}"></script>
+			
+			<script>
+				$(document).ready(function() { 
+					svg4everybody(); // init
+				});
+			</script>
+		</div>
+	</body>
+</html>
+</apex:page>

@@ -1,0 +1,775 @@
+<!-- 
+Version      Author                  Date             Comments
+1.0         Rajesh Pasupuleti        19/03/2018       Initial Version
+-->  
+<apex:component access="global" controller="CG_CL_GSQParts" allowDML="true">
+    <apex:attribute name="mainController" description="Main Controller Type" type="CG_CL_ClaimsPartsandOtherClaimbles" />
+    <apex:attribute name="isAutomatedDealerloaction" description="getting delar value" type="boolean" />
+
+
+
+    <script>
+
+        //karthik G GSSC 57
+        function validateMaxValsug(compId,coveragetyp,coveredpar){
+
+            var CoveredVal= parseInt(compId.value);
+            var coveredparInt = parseInt(coveredpar);
+            if(CoveredVal > 100) {
+                compId.value=100;   
+            }
+            if(coveredparInt!=''){
+
+
+                if(coveragetyp == 'POL' && CoveredVal >  coveredparInt ){
+                    compId.value = coveredparInt;
+                }
+            }
+            else if(coveragetyp == 'POL'){
+                compId.value=100;  
+            }
+        }
+        // karthik G end 
+
+        /*/161414 startText
+       function callActionEnableJS(checkbox){
+            if(checkbox.checked){
+                callActionEnable(true);
+            }
+            else{
+                callActionEnable(false);
+            }
+        }
+        //End*/
+        function trackingNumber(e,compId){
+            if((e.which>47 && e.which<58) || (e.which>64 && e.which<91) || (e.which>96 && e.which<123))
+            {
+                var max_chars = 34;
+                if(compId.value.length > max_chars) {
+                    return false;
+                }
+            }
+            else
+            {                
+                return false;
+            }
+        }
+
+        function rIDVal(e,compId){
+
+            if((e.which > 47 && e.which <=57) || e.which == 8)
+            {
+                var max_chars = 34;
+                if(compId.value.length > max_chars) {
+                    return false;
+                }
+            } 
+            else {
+                return false;
+            }
+
+        }
+        function callfailcodemethodGSQ1(value,value1,value2){ 
+            //   alert('failcodelogic is calling..'+value);
+            // alert('failcodelogic is calling..'+value1);
+            //  alert('failcodelogic is calling..'+value2);
+            failcodelogicGSQ(value,value1,value2);
+        }
+
+        function callAccountcodemethodGSQ(value,value1,value2,value3){
+            //  alert('accountcodelogic is calling..');
+            AccountcodelogicGSQ(value,value1,value2,value3);
+        }
+
+        function showNotesPopupFunc(partsnotes){
+            document.getElementById("partsnotemodalid").innerHTML = partsnotes;
+            $('#ShowNotesPopUp').modal('show'); 
+        }  
+
+        //Added function as part of GSSC-302 Great Pyramid Of Giza//
+        function ReturnWaiverhoverFunc(servicePartNum,returnToFac){ 
+            if(!servicePartNum && returnToFac==='Y' ){
+                $('#ReturnWaiverhoverpopup').modal('show');
+            }else{
+                $('#ReturnWaiverhoverpopup').modal('hide'); 
+            }
+
+            //alert(servicePartNum);
+            //alert(returnToFac);
+
+            // $('#ReturnWaiverhoverpopup').modal('show'); 
+
+        }
+
+
+    </script>
+
+    <style type="text/css">
+
+        .showRedBorder{
+            border: 2px solid red !important;
+        }
+
+    </style>
+    <script type="text/javascript">
+        function qtyPressClaimblesCovered(e,compId){
+            var technicianTimeVal= document.getElementById(compId.id).value;
+            if(( e.which == 46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105)))
+            {
+
+            } 
+            else 
+            {
+                return false;
+            }     
+        }
+        //Added as part of GSSC-295 start
+        $(function(){
+            $('#check_sugPart').click(function(){
+                console.debug('inside the method true');
+
+                console.debug($('.partCheckbox'));
+                $('.partCheckbox').each(function() {
+                    $(this).prop("checked", true);
+                });
+
+                console.debug('inside the method true 1');
+                selectALLChecked();
+                return false;
+            });
+
+            $('#uncheck_sugPart').click(function(){
+                console.debug('inside the method false');
+                //$('input[type="checkbox"]').removeAttr('checked');
+                $('.partCheckbox').each(function() {
+                    $(this).removeAttr('checked');
+                });
+                console.debug('inside the method false');
+                selectALLChecked();
+                return false;
+            });   
+        });
+        //Added as part of GSSC-295 end
+    </script>
+
+
+    <apex:ActionRegion >
+
+        <apex:actionFunction name="AccountcodelogicGSQ" action="{!onChangeofAccountCode}"  rerender="opCovered,opReturnFlagPnl"> 
+            <apex:param name="AccountCodeval"  value="" assignTo="{!SelectedAccountCode}"/>
+            <apex:param name="FailCodeval"  value="" assignTo="{!SelectedFailCode}"/>
+            <apex:param name="PartsRowID"  value="" assignTo="{!selectedPartRowCount}"/>
+            <apex:param name="PartNumber"  value="" assignTo="{!servicePartNumber}"/>
+        </apex:actionFunction>
+
+        <apex:actionFunction name="failcodelogicGSQ" action="{!onChangeofFailCode}" rerender="opCovered,opReturnFlagPnl,opCovered1"> 
+            <apex:param name="FailCodeval1"  value="" assignTo="{!SelectedFailCode}"/>
+            <apex:param name="PartsID1"  value="" assignTo="{!selectedPartRowCount}"/>
+            <apex:param name="PartNumber1"  value="" assignTo="{!servicePartNumber}"/>
+        </apex:actionFunction>
+        <apex:actionFunction name="afSPCheckboxChecked" action="{!SPCheckboxChecked}" rerender="opCovered,opCovered1" /><!---opReturnFlagPnl--->
+        <!--apex:actionFunction name="selectALLChecked" rerender="opReturnFlagPnl"/>-->
+
+
+        <div class="panel-group cmi_generic-accordion">
+            <div class="panel panel-default">
+                <div class="panel-heading " id="accordion1-heading-3" onclick="filedsetMethodClaims();">
+                    <h4 class="panel-title" data-toggle="collapse" data-parent="#accordion1-heading-3" data-target="#campaign-accordian2" aria-expanded="true" > <!--  onclick="PartsList(); return false;" -->
+                        <a class="accordion-toggle">
+                            <span class="glyphicon glyphicon-plus"></span>
+                            <div class="cmi_accordion-title"><b>Suggested Parts From GSQ</b></div>
+                        </a>
+                    </h4>
+                </div>
+            </div>   
+            <!--<apex:ActionRegion >
+<apex:actionFunction name="PartsList" action="{!getPartsList}" rerender="GSQParts" status="gsqcallPartsStatus" /> 
+</apex:ActionRegion>-->
+            <!--Added below code for showing error message as per 24 #161414,By RAJESH 6th Sec 2018-->     
+            <apex:outPutPanel id="ErrMsg">
+                <apex:outPutPanel rendered="{!IF(errMSG == true, true,false)}">
+                    <b><apex:outputText value="{!$Label.CG_Tracking_Number_Required}"  style="text-align:center; color: red ; display: block;"  /></b>
+                    <!-- <apex:outputLabel style="text-align:center; color: red ; display: block;" value="{!$Label.CG_Please_enter_value}"  rendered="{!IF(ErrorMessage== true, true, false)}" />-->
+                </apex:outPutPanel>
+            </apex:outPutPanel>
+            <!--END-->
+
+            <apex:outPutPanel id="SuggestedGSQ"> 
+
+                <div id="campaign-accordian2" class="panel-collapse collapse" aria-expanded="true" style="margin-top:10px">
+                    <apex:outPutPanel id="FAErrMsg">
+                        <b><apex:outputText rendered="{!IF(failAccCodeErrorMessage == true, true,false)}" value="{!$Label.css_Please_enter_values_for_fail_code_and_account_code}"  style="text-align:left; color: red ; display: block;" /></b>
+                        <apex:outputPanel rendered="{!IF(errMsgLstNew != null && errMsgLstNew.size > 0, true,false)}" >
+                            <apex:repeat value="{!errMsgLstNew}" var="errMsgs">
+                                <b><apex:outputLabel style="text-align:left; color: red ; display: block;" value="{!errMsgs}" /></b>
+                            </apex:repeat>
+                        </apex:outputPanel>
+                    </apex:outPutPanel>
+                    <apex:outputPanel id="GSQParts">
+                        <!--Added as part of GSSC-295 start -->
+                        <div style="float:right">
+                            <u><a id ="uncheck_sugPart" href="#" Class="text-decoration: none;">{!$Label.CSS_Uncheck_All}</a></u>&nbsp;&nbsp;
+                            <u><a id ="check_sugPart" href="#" Class="text-decoration: none;">{!$Label.CSS_Check_All}</a></u>&nbsp;&nbsp;
+                        </div>
+                        <!--Added as part of GSSC-295 end -->
+                        <table class="mytable table table-bordered table-striped cmi_GsqParts" cellpadding="0" cellspacing="0" >
+                            <thead>
+                                <tr height="54">
+                                    <!--  <th>{!$Label.CSS_Failure_GSQ}</th>-->
+                                    <th>{!$Label.CSS_Select}</th>
+                                    <th>{!$Label.CSS_Quantity}</th>
+                                    <th>{!$Label.CSS_Service} {!$Label.CSS_Part_Number}</th>
+                                    <!--<th>{!$Label.CSS_Part_Number}</th>-->
+                                    <th>{!$Label.CSS_Part_Name}</th>
+                                    <th>{!$Label.CSS_Part} {!$Label.CSS_Description}</th>
+                                    <th>{!$Label.CSS_Requested}</th>
+                                    <!--Added below dealerlocation code for showing filcode and account code like required as per story #176379 Kung Fu Panda sprint,-By RAJESH 12th Mar 2019----->                                        
+                                    <apex:outputtext rendered="{!IF(dealerLocation == true,true,false)}">
+                                        <th>{!$Label.CSS_Fail_Code}
+                                            <span style="color: red">*</span>
+                                        </th>
+                                        <th>{!$Label.CSS_Account_Code}
+                                            <span class="cmi_asterisk" style="float:none;font-size:13px;top:2px;left:4px;">*</span>
+                                        </th>
+                                    </apex:outputtext>
+                                    <apex:outputtext rendered="{!IF(dealerLocation == false,true,false)}">
+                                        <th>{!$Label.CSS_Fail_Code}</th>
+                                        <th>{!$Label.CSS_Account_Code}</th>
+                                    </apex:outputtext>
+                                    <!--End below dealerlocation code for showing filcode and account code like required as per story #176379 Kung Fu Panda sprint,-By RAJESH 12th Mar 2019----->                                            
+
+                                    <!--th>{!$Label.CSS_Fail_Code}</th>
+<th>{!$Label.CSS_Account_Code}</th-->
+                                    <th>{!$Label.CSS_Return_to_Factory}</th>
+                                    <!--Added below value for Return Waiver as per 24 sprint,-By RAJESH 04th Sec 2018-->
+                                    <th >Return Waiver</th>
+                                    <!--End-->
+                                    <th>{!$Label.css_Tracking_Number}</th>
+                                    <th>RID</th>
+
+                                    <th>{!$Label.CSS_Replacement_Repair_Reason}</th>
+                                    <apex:outputPanel rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==false,true,false)}">
+                                        <!--<apex:outputPanel rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==true && claimRec.CSS_Job__c!=null,false,true)}">-->
+                                        <!-- <th>{!$Label.css_Unit_Price_USD}</th> -->  
+                                        <th>{!$Label.CG_UnitPrice}({!mainController.userRec.DefaultCurrencyIsoCode})</th>
+                                        <!-- <th>{!$Label.CSS_Total_USD}</th> -->
+                                        <th>{!$Label.CSS_Total} ({!mainController.userRec.DefaultCurrencyIsoCode})</th>
+                                    </apex:outputPanel>
+                                </tr>
+                            </thead>
+                            <!-- Debugging...Please ignore this for sometime: {!listsrtsolWrapper} -->
+                            <apex:repeat value="{!listsrtsolWrapper}" var="sol"> 
+                                <apex:variable var="solcnt" value="{!0}" />
+                                <!--Components - {!listsrtsolWrapper}-->
+                                <!--     <apex:outputPanel rendered="{!IF(sol.allParts == 0 ,true,false)}">
+
+<apex:repeat value="{!sol.compWrapper}" var="c">
+<apex:variable var="solcnt" value="{!solcnt+1}" />
+<tr>
+<apex:outputPanel rendered="{!IF(solcnt == 1,true,false)}">
+<td rowspan="{!sol.solcompCount}">
+<apex:outputtext value="{!c.compName}-{!c.FailCode}" /><br/>
+</td>
+</apex:outputPanel>
+<apex:outputText rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==false,true,false)}">
+<td colspan="13" style="text-align:left;"><b> {!$Label.CG_No_Parts_Returned_from_GSQ_Claims} </b> </td>
+</apex:outputText>
+<apex:outputText rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==true,true,false)}">
+<td colspan="11" style="text-align:left;"><b> {!$Label.CG_No_Parts_Returned_from_GSQ_Claims} </b> </td>
+</apex:outputText>
+</tr>
+</apex:repeat>
+</apex:outputPanel>--->
+
+                                <apex:outputPanel rendered="{!IF(sol.allParts > 0 ,true,false)}" id="opParts">
+                                    <apex:repeat value="{!sol.compWrapper}" var="c">
+                                        <apex:variable var="partcount" value="{!0}" />
+                                        <apex:repeat value="{!c.partWrapper}" var="pr">
+                                            <apex:variable var="solcnt" value="{!solcnt+1}" />
+                                            <apex:variable var="partcount" value="{!partcount + 1}" /> 
+                                            <tr >
+                                                <!--  <apex:outputPanel rendered="{!IF(c.count == 0 ,true,false)}">
+<td>
+<apex:outputtext value="{!c.compName}-{!c.FailCode}" />
+</td>
+<apex:outputText rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==false,true,false)}">
+<td colspan="14" style="text-align:left;"><b> {!$Label.CSS_No_Parts_Returned_from_GSQ} </b> </td>
+</apex:outputText>
+<apex:outputText rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==true,true,false)}">
+<td colspan="12" style="text-align:left;"><b> {!$Label.CSS_No_Parts_Returned_from_GSQ} </b> </td>
+</apex:outputText>
+
+</apex:outputPanel>-->
+                                                <apex:outputPanel rendered="{!IF(c.count > 0 ,true,false)}">
+
+                                                    <!--partcount - {!partcount}
+c.count - {!c.count}-->
+                                                    <!--  <apex:outputPanel rendered="{!IF(partcount == 1,true,false)}">
+<td rowspan="{!c.count}" style="width:15%">
+<apex:outputtext value="{!c.compName}-{!c.FailCode}" />
+</td>
+
+</apex:outputPanel>--->
+
+
+                                                    <!--td style="text-align:center;width:50px;"-->
+                                                    <!-- As per the story 179800 making checkbox editable for both manual/automatic claims -->
+                                                    <td style="text-align:center;width:50px;">
+                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                            <apex:inputCheckbox value="{!pr.partChildCheckbox}" styleClass="partCheckbox" disabled="true"/>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                            <apex:inputCheckbox value="{!pr.partChildCheckbox}" styleClass="partCheckbox" onchange="afSPCheckboxChecked();"/>
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                    <!--/td-->
+                                                    <td>
+                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                            <apex:outputText style="width:50px;" value="{!pr.qty }"/>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                            <apex:outputPanel rendered="{!IF((mainController.claimsRec.CSS_Job__c!=NULL)&&(isAutomatedDealerloaction == false),true,false)}">
+                                                                <apex:outputText style="width:50px;" value="{!pr.qty }"/>
+                                                            </apex:outputPanel>
+                                                            <!--Below code added for automated claim story #161010-->
+                                                            <apex:outputPanel rendered="{!IF((mainController.claimsRec.CSS_Job__c!=NULL)&&(isAutomatedDealerloaction == true),true,false)}">
+                                                                <apex:inputText value="{!pr.qty }" maxlength="4" style="width:50px;" onkeydown="return quantityPressValidate(event,this)" />
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c == NULL,true,false)}">
+                                                                <apex:inputText value="{!pr.qty }" maxlength="4" style="width:50px;" onkeydown="return quantityPressValidate(event,this)" />
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>    
+                                                    </td>
+                                                    <td>
+                                                        <apex:outputtext value="{!pr.servicePartNumber}" />
+                                                    </td>
+                                                    <td style="width:200px"><span><apex:outputtext value="{!pr.partName}"/></span></td>
+                                                    <!--<td><span><apex:outputText value="{!pr.partDesc}"/></span></td>-->
+
+                                                    <!---- Hyperlink & Icon on Part Description Start - Story GSSC-21--->
+                                                    <td>
+                                                        <a href="javascript:void()" onclick="return showNotesPopupFunc('{!pr.notes}');" style="text-decoration:underline; margin-left: 5px; font-weight:bold;">{!pr.partDesc} <span class="cmi_eyeIcon"/></a>
+                                                    </td>
+                                                    <!---- Hyperlink & Icon on Part Description End -Story GSSC-21--->
+
+                                                    <td style="text-align:center;">
+                                                        <apex:outputPanel id="opCovered">
+                                                            <!-- <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c !=NULL,true,false)}"> 
+<apex:outputPanel rendered="{!IF((c.FailCodeEditable != 'Select One' && c.FailCodeEditable != '' || c.FailCode != 'Select One' && c.FailCode != '') && (c.AccountCodeEdit != 'Select One' && c.AccountCodeEdit != '' || c.AccountCode != 'Select One' && c.AccountCode != ''),true,false)}">
+<apex:outputText value="{!pr.covered }" style="width:50px;"/>--><!--onkeydown="return qtyPress1(event,this)"-->
+                                                            <!--   </apex:outputPanel>
+</apex:outputPanel>-->                                     <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                            <apex:outputtext value="{!pr.covered}"/>
+                                                            </apex:outputPanel> 
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                <!--Below code added for automated claim story #161010-->
+                                                                <apex:outputPanel rendered="{!IF((mainController.claimsRec.CSS_Job__c!=NULL)&&(isAutomatedDealerloaction == false),true,false)}">
+                                                                    <apex:outputPanel rendered="{!IF((c.FailCodeEditable != 'Select One' && c.FailCodeEditable != '' || c.FailCode != 'Select One' && c.FailCode != '') && (c.AccountCodeEdit != 'Select One' && c.AccountCodeEdit != '' || c.AccountCode != 'Select One' && c.AccountCode != ''),true,false)}">
+                                                                        <apex:outputText value="{!pr.covered }" style="width:50px;"/><!--onkeydown="return qtyPress1(event,this)"-->
+                                                                    </apex:outputPanel>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF((mainController.claimsRec.CSS_Job__c!=NULL)&&(isAutomatedDealerloaction == true),true,false)}">
+                                                                    <apex:outputPanel rendered="{!IF((c.FailCodeEditable != 'Select One' && c.FailCodeEditable != '' || c.FailCode != 'Select One' && c.FailCode != '') && (c.AccountCodeEdit != 'Select One' && c.AccountCodeEdit != '' || c.AccountCode != 'Select One' && c.AccountCode != ''),true,false)}">
+                                                                        <apex:inputText value="{!pr.covered }" style="width:50px;" id="warVal1" maxlength="3" onkeyup="validateMaxValsug(this,'{!pr.coveragetypeval}','{!pr.coveredpartsper}');" /><!--onkeydown="return qtyPress1(event,this)"-->
+                                                                    </apex:outputPanel>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c ==NULL,true,false)}"> 
+                                                                    <apex:outputPanel rendered="{!IF((c.FailCodeEditable != 'Select One' && c.FailCodeEditable != '' || c.FailCode != 'Select One' && c.FailCode != '') && (c.AccountCodeEdit != 'Select One' && c.AccountCodeEdit != '' || c.AccountCode != 'Select One' && c.AccountCode != ''),true,false)}">
+                                                                        <apex:inputText value="{!pr.covered }" style="width:50px;" id="warVal" maxlength="3" onkeyup="validateMaxValsug(this,'{!pr.coveragetypeval}','{!pr.coveredpartsper}');" /><!--onkeydown="return qtyPress1(event,this)"-->
+                                                                    </apex:outputPanel>
+                                                                </apex:outputPanel>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                    <td>
+                                                        <!--Added " mainControclaimsRec.Dealer_Service_Job__c "  in below fail code and account code related main conditions and cheching with dealer location as well as per story #176379 Kung Fu Panda sprint,-By RAJESH 15th Mar 2019   -->               
+                                                        <apex:outputPanel id="failcodeid123">
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                <apex:outputtext value="{!pr.failCode}"/>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                <apex:outputPanel rendered="{!IF((mainController.claimsRec.CSS_Job__c!=NULL || mainController.claimsRec.Dealer_Service_Job__c!=NULL)&&($Setup.css_header_nav__c.RSWButtonEnable__c == false),true,false)}">
+                                                                    <!--<apex:outputtext value="{!pr.failCode}" />-->
+                                                                    <apex:outputText rendered="{!IF(dealerLocation==true,true,false)}">
+                                                                        <apex:selectList value="{!pr.failCode}" size="1"  disabled="{!if(failcodeDropDown.size == 1, true, false)}" onchange="callfailcodemethodGSQ1(this.value,'{!pr.partRowCount}','{!pr.servicePartNumber}')" style="width:100px" styleClass="{!if((((pr.failCode=='Select One' || pr.failCode=='' || pr.failCode==null) && pr.partChildCheckbox==true) || pr.isPartsCovLimitExceedPW == true) ,'showRedBorder','')}">
+                                                                            <apex:selectOptions value="{!failcodeDropDown}"></apex:selectOptions>
+                                                                        </apex:selectList>
+                                                                    </apex:outputText>
+                                                                    <apex:outputText rendered="{!IF(dealerLocation!=true,true,false)}">
+                                                                        <apex:outputtext value="{!pr.failCode}" />
+                                                                    </apex:outputText>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF((mainController.claimsRec.CSS_Job__c!=NULL || mainController.claimsRec.Dealer_Service_Job__c!=NULL)&&($Setup.css_header_nav__c.RSWButtonEnable__c == true),true,false)}">
+                                                                    <apex:outputText rendered="{!IF(dealerLocation==true,true,false)}">
+                                                                        <apex:selectList value="{!pr.failCode}" size="1"  disabled="{!if(failcodeDropDown.size == 1, true, false)}" onchange="callfailcodemethodGSQ1(this.value,'{!pr.partRowCount}','{!pr.servicePartNumber}')" style="width:100px" styleClass="{!if((((pr.failCode=='Select One' || pr.failCode=='' || pr.failCode==null) && pr.partChildCheckbox==true) || pr.isPartsCovLimitExceedPW == true),'showRedBorder','')}">
+                                                                            <apex:selectOptions value="{!failcodeDropDown}"></apex:selectOptions>
+                                                                        </apex:selectList>
+                                                                    </apex:outputText>
+                                                                    <apex:outputText rendered="{!IF(dealerLocation!=true,true,false)}">
+                                                                        <apex:selectList value="{!pr.failCode}" size="1"  disabled="{!if(failcodeDropDown.size == 1, true, false)}" onchange="callfailcodemethodGSQ1(this.value,'{!pr.partRowCount}','{!pr.servicePartNumber}')" style="width:100px;">
+                                                                            <apex:selectOptions value="{!failcodeDropDown}"></apex:selectOptions>
+                                                                        </apex:selectList>
+                                                                    </apex:outputText>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF((mainController.claimsRec.CSS_Job__c ==NULL && mainController.claimsRec.Dealer_Service_Job__c==NULL),true,false)}">
+                                                                    <apex:outputText rendered="{!IF(dealerLocation==true,true,false)}">
+                                                                        <apex:selectList value="{!pr.failCode}" size="1" style="width:100px" disabled="{!if(failcodeDropDown.size == 1, true, false)}" onchange="callfailcodemethodGSQ1(this.value,'{!pr.partRowCount}','{!pr.servicePartNumber}')" styleClass="{!if((((pr.failCode=='Select One' || pr.failCode=='' || pr.failCode==null)&& pr.partChildCheckbox==true) || pr.isPartsCovLimitExceedPW == true),'showRedBorder','')}">
+                                                                            <apex:selectOptions value="{!failcodeDropDown}" />
+                                                                        </apex:selectList>
+                                                                    </apex:outputText>
+                                                                    <apex:outputText rendered="{!IF(dealerLocation!=true,true,false)}">
+                                                                        <apex:selectList value="{!pr.failCode}" size="1" onchange="callfailcodemethodGSQ1(this.value,'{!pr.partRowCount}','{!pr.servicePartNumber}')" disabled="{!if(failcodeDropDown.size == 1, true, false)}" style="width:100px" styleClass="{!if((pr.isPartsCovLimitExceedPW == true),'showRedBorder','')}">
+                                                                            <apex:selectOptions value="{!failcodeDropDown}" />
+                                                                        </apex:selectList>
+                                                                    </apex:outputText>
+                                                                </apex:outputPanel>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                    <td>
+                                                        <apex:outputPanel id="opCovered1">      
+                                                            <!--   <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c !=NULL,true,false)}">
+<apex:outputPanel rendered="{!IF(((c.AccountCodeEdit == 'Select One' || c.AccountCodeEdit == '') && (c.AccountCode == null || c.AccountCode == '')),true,false)}">
+<apex:outputText Value="Select One"/>
+</apex:outputPanel>
+
+<apex:outputPanel rendered="{!IF((c.AccountCodeEdit != 'Select One' && c.AccountCodeEdit != '') || (c.accountcode != 'Select One' && c.accountcode != '') ,true,false)}">
+<apex:outputText value="{!pr.accountCode}" />
+</apex:outputPanel>
+</apex:outputPanel>-->                                   <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                            <apex:outputtext value="{!pr.accountCode}"/>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                <!--Below code added for automated claim story #161010-->
+                                                                <apex:outputPanel rendered="{!IF((mainController.claimsRec.CSS_Job__c!=NULL || mainController.claimsRec.Dealer_Service_Job__c!=NULL )&&($Setup.css_header_nav__c.RSWButtonEnable__c == false),true,false)}"> 
+                                                                    <apex:outputText rendered="{!IF(dealerLocation==true,true,false)}">
+                                                                        <!--apex:outputPanel rendered="{!IF(((c.AccountCodeEdit == 'Select One' || c.AccountCodeEdit == '') && (c.AccountCode == null || c.AccountCode == '')),true,false)}"-->
+                                                                        <apex:outputpanel rendered="{!IF((pr.accountCode=='Select One' || pr.accountCode=='' || pr.accountCode==null),true,false)}">
+                                                                            <apex:selectList disabled="true" value="{!pr.accountCode}" styleClass="{!if(((pr.accountCode=='Select One' || pr.accountCode=='' || pr.accountCode==null) && pr.accountcodeMessage==false && pr.partChildCheckbox==true) ,'showRedBorder','')}">
+                                                                                <apex:selectOption itemValue="Select One" itemLabel="Select One"/>
+                                                                            </apex:selectList>
+                                                                            </apex:outputPanel>
+                                                                        <!--apex:outputPanel rendered="{!IF((c.AccountCodeEdit != 'Select One' && c.AccountCodeEdit != '') || (c.accountcode != 'Select One' && c.accountcode != '') ,true,false)}"-->
+                                                                        <apex:outputpanel rendered="{!IF((pr.accountCode!='Select One' && pr.accountCode!='' && pr.accountCode!=null),true,false)}">
+                                                                            <apex:selectList value="{!pr.accountCode}" size="1" style="width:100px" onchange="callAccountcodemethodGSQ(this.value,'{!pr.failCode}','{!pr.partRowCount}','{!pr.servicePartNumber}')"  styleClass="{!if((((pr.accountCode=='Select One' || pr.accountCode=='' || pr.accountCode==null) && pr.accountcodeMessage==false && pr.partChildCheckbox==true) || pr.isPartsCovLimitExceed == true || pr.isPartsCovLimitExceedPW == true) ,'showRedBorder','')}">
+                                                                                <apex:selectOptions value="{!pr.accCodes}" />
+                                                                            </apex:selectList>
+                                                                            </apex:outputPanel>
+                                                                    </apex:outputText>
+                                                                    <apex:outputText rendered="{!IF(dealerLocation!=true,true,false)}">
+                                                                        <!--apex:outputPanel rendered="{!IF(((c.AccountCodeEdit == 'Select One' || c.AccountCodeEdit == '') && (c.AccountCode == null || c.AccountCode == '')),true,false)}"-->
+                                                                        <apex:outputpanel rendered="{!IF((pr.accountCode=='Select One' || pr.accountCode=='' || pr.accountCode==null),true,false)}">
+                                                                            <apex:outputText Value="Select One"></apex:outputText>
+                                                                            </apex:outputPanel>
+                                                                        <!--apex:outputPanel rendered="{!IF((c.AccountCodeEdit != 'Select One' && c.AccountCodeEdit != '') || (c.accountcode != 'Select One' && c.accountcode != '') ,true,false)}"-->
+                                                                        <apex:outputpanel rendered="{!IF((pr.accountCode!='Select One' && pr.accountCode!='' && pr.accountCode!=null),true,false)}">
+                                                                            <apex:outputText value="{!pr.accountCode}"></apex:outputText>
+                                                                            </apex:outputPanel>
+                                                                    </apex:outputText>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF((mainController.claimsRec.CSS_Job__c!=NULL || mainController.claimsRec.Dealer_Service_Job__c!=NULL)&&($Setup.css_header_nav__c.RSWButtonEnable__c == true),true,false)}">
+                                                                    <apex:outputText rendered="{!IF(dealerLocation==true,true,false)}">
+                                                                        <!--apex:outputPanel rendered="{!IF(((c.AccountCodeEdit == 'Select One' || c.AccountCodeEdit == '') && (c.AccountCode == null || c.AccountCode == '')),true,false)}"-->
+                                                                        <apex:outputpanel rendered="{!IF((pr.accountCode=='Select One' || pr.accountCode=='' || pr.accountCode==null),true,false)}">
+                                                                            <apex:selectList disabled="true" value="{!pr.accountCode}" styleClass="{!if(((pr.accountCode=='Select One' || pr.accountCode=='' || pr.accountCode==null) && pr.accountcodeMessage==false && pr.partChildCheckbox==true) ,'showRedBorder','')}">
+                                                                                <apex:selectOption itemValue="Select One" itemLabel="Select One"/>
+                                                                            </apex:selectList>
+                                                                            </apex:outputPanel>
+                                                                        <!--apex:outputPanel rendered="{!IF((c.AccountCodeEdit != 'Select One' && c.AccountCodeEdit != '') || (c.accountcode != 'Select One' && c.accountcode != '') ,true,false)}"-->
+                                                                        <apex:outputpanel rendered="{!IF((pr.accountCode!='Select One' && pr.accountCode!='' && pr.accountCode!=null),true,false)}">
+                                                                            <apex:selectList value="{!pr.accountCode}" size="1" style="width:100px" onchange="callAccountcodemethodGSQ(this.value,'{!pr.failCode}','{!pr.partRowCount}','{!pr.servicePartNumber}')"  styleClass="{!if(((((pr.accountCode=='Select One' || pr.accountCode=='' || pr.accountCode==null) && pr.accountcodeMessage==false && pr.partChildCheckbox==true)) || pr.isPartsCovLimitExceed == true  || pr.isPartsCovLimitExceedPW == true),'showRedBorder','')}">
+                                                                                <apex:selectOptions value="{!pr.accCodes}" />
+                                                                            </apex:selectList>
+
+                                                                            </apex:outputPanel>
+                                                                    </apex:outputText>
+                                                                    <apex:outputText rendered="{!IF(dealerLocation!=true,true,false)}">
+                                                                        <!--apex:outputPanel rendered="{!IF(((c.AccountCodeEdit == 'Select One' || c.AccountCodeEdit == '') && (c.AccountCode == null || c.AccountCode == '')),true,false)}"-->
+                                                                        <apex:outputpanel rendered="{!IF((pr.accountCode=='Select One' || pr.accountCode=='' || pr.accountCode==null),true,false)}">
+                                                                            <apex:selectList disabled="true" value="{!pr.accountCode}">
+                                                                                <apex:selectOption itemValue="Select One" itemLabel="Select One"/>
+                                                                            </apex:selectList>
+                                                                            </apex:outputPanel>
+                                                                        <!--apex:outputPanel rendered="{!IF((c.AccountCodeEdit != 'Select One' && c.AccountCodeEdit != '') || (c.accountcode != 'Select One' && c.accountcode != '') ,true,false)}"-->
+                                                                        <apex:outputpanel rendered="{!IF((pr.accountCode!='Select One' && pr.accountCode!='' && pr.accountCode!=null),true,false)}">  
+                                                                            <apex:selectList value="{!pr.accountCode}" size="1" onchange="callAccountcodemethodGSQ(this.value,'{!pr.failCode}','{!pr.partRowCount}','{!pr.servicePartNumber}')" styleClass="{!IF(pr.isPartsCovLimitExceed == true  || pr.isPartsCovLimitExceedPW == true,'showRedBorder','')}" style="width:100px">
+                                                                                <apex:selectOptions value="{!pr.accCodes}" />
+                                                                            </apex:selectList>
+                                                                            </apex:outputPanel>
+                                                                    </apex:outputText>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF((mainController.claimsRec.CSS_Job__c ==NULL && mainController.claimsRec.Dealer_Service_Job__c==NULL),true,false)}">
+                                                                    <apex:outputText rendered="{!IF(dealerLocation==true,true,false)}">
+                                                                        <!--apex:outputPanel rendered="{!IF(((c.AccountCodeEdit == 'Select One' || c.AccountCodeEdit == '') && (c.AccountCode == null || c.AccountCode == '')),true,false)}"-->
+                                                                        <apex:outputpanel rendered="{!IF((pr.accountCode=='Select One' || pr.accountCode=='' || pr.accountCode==null),true,false)}">
+                                                                            <apex:selectList disabled="true" value="{!pr.accountCode}" styleClass="{!if(((pr.accountCode=='Select One' || pr.accountCode=='' || pr.accountCode==null) && pr.accountcodeMessage==false && pr.partChildCheckbox==true) ,'showRedBorder','')}">
+                                                                                <apex:selectOption itemValue="Select One" itemLabel="Select One"/>
+                                                                            </apex:selectList>
+                                                                            </apex:outputPanel>
+                                                                        <!--apex:outputPanel rendered="{!IF((c.AccountCodeEdit != 'Select One' && c.AccountCodeEdit != '') || (c.accountcode != 'Select One' && c.accountcode != '') ,true,false)}"-->
+                                                                        <apex:outputpanel rendered="{!IF((pr.accountCode!='Select One' && pr.accountCode!='' && pr.accountCode!=null),true,false)}">
+                                                                            <apex:selectList value="{!pr.accountCode}" size="1"  onchange="callAccountcodemethodGSQ(this.value,'{!pr.failCode}','{!pr.partRowCount}','{!pr.servicePartNumber}')" style="width:100px" styleClass="{!if((((pr.accountCode=='Select One' || pr.accountCode=='' || pr.accountCode==null) && pr.accountcodeMessage==false && pr.partChildCheckbox==true) || pr.isPartsCovLimitExceed == true || pr.isPartsCovLimitExceedPW == true),'showRedBorder','')}">
+                                                                                <apex:selectOptions value="{!pr.accCodes}" />
+                                                                            </apex:selectList>
+
+                                                                            </apex:outputPanel>
+                                                                    </apex:outputText>
+                                                                    <apex:outputText rendered="{!IF(dealerLocation!=true,true,false)}">
+                                                                        <!--apex:outputPanel rendered="{!IF(((c.AccountCodeEdit == 'Select One' || c.AccountCodeEdit == '') && (c.AccountCode == null || c.AccountCode == '')),true,false)}"-->
+                                                                        <apex:outputpanel rendered="{!IF((pr.accountCode=='Select One' || pr.accountCode=='' || pr.accountCode==null),true,false)}">
+                                                                            <apex:selectList disabled="true" value="{!pr.accountCode}">
+                                                                                <apex:selectOption itemValue="Select One" itemLabel="Select One"/>
+                                                                            </apex:selectList>
+                                                                            </apex:outputPanel>
+                                                                        <!--apex:outputPanel rendered="{!IF((c.AccountCodeEdit != 'Select One' && c.AccountCodeEdit != '') || (c.accountcode != 'Select One' && c.accountcode != '') ,true,false)}"-->
+                                                                        <apex:outputpanel rendered="{!IF((pr.accountCode!='Select One' && pr.accountCode!='' && pr.accountCode!=null),true,false)}">
+                                                                            <apex:selectList value="{!pr.accountCode}" size="1" style="width:100px" onchange="callAccountcodemethodGSQ(this.value,'{!pr.failCode}','{!pr.partRowCount}','{!pr.servicePartNumber}')" styleClass="{!IF(pr.isPartsCovLimitExceed == true || pr.isPartsCovLimitExceedPW == true,'showRedBorder','')}">
+                                                                                <apex:selectOptions value="{!pr.accCodes}" />
+                                                                            </apex:selectList>
+                                                                            </apex:outputPanel>
+                                                                    </apex:outputText>
+                                                                </apex:outputPanel>
+                                                            </apex:outputPanel>        
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                    <!--End " mainControclaimsRec.Dealer_Service_Job__c " as well in below fail code and account code related main conditions as per story #176379 Kung Fu Panda sprint,-By RAJESH 15th Mar 2019   -->                                           
+                                                    <td> 
+                                                        <apex:outputPanel id="opReturnFlagPnl">
+                                                            <apex:outputPanel id="opReturnFlag" rendered="{!IF(pr.partChildCheckbox == false || pr.returnToFactory != 'Y',true,false)}">
+                                                                <apex:outputtext value="{!pr.returnToFactory}" />
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel id="opReturnFlag1" rendered="{!IF(pr.partChildCheckbox == true && pr.returnToFactory == 'Y',true,false)}">
+                                                                <div>
+                                                                    <span class="underline"><a href="/apex/CG_PartsReturnEPRPDF?id={!pgId}" style="border-bottom:1px solid #007c7c !important" target="_blank" id="gsqvalId" >{!$label.CSS_Parts_Return_Label}</a></span>
+                                                                </div>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                    <!--Added below value for Return Waiver as per 24 sprint,-By RAJESH 04th Sec 2018-->                        
+                                                    <td class="ReturnWaiverCamCell" style="text-align:center;">
+                                                        <apex:outputPanel rendered="{!IF(pr.servicePartNumber!=Null && pr.returnToFactory == 'Y',true,false)}"> <!--302 -->
+                                                            <span class="ReturnWaiverCam"> {!$Label.CG_ReturnWaiver_Msg}  </span>
+                                                        </apex:outputPanel> <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                        <apex:outputText rendered="{!IF(pr.returnToFactory=='N',true,false)}">
+                                                            <apex:inputCheckbox style="width:50px;" disabled="true"/>
+                                                        </apex:outputText> 
+                                                        <apex:outputText rendered="{!IF(pr.returnToFactory=='Y',true,false)}">
+                                                            <apex:inputCheckbox value="{!pr.returnWaiver}" disabled="true"/>
+                                                        </apex:outputText>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                            <apex:outputText rendered="{!IF(pr.returnToFactory=='N',true,false)}">
+                                                                <apex:inputCheckbox style="width:50px;" disabled="true"/>
+                                                            </apex:outputText> 
+                                                            <apex:outputText rendered="{!IF(pr.returnToFactory=='Y',true,false)}">
+                                                                <apex:inputCheckbox value="{!pr.returnWaiver}" style="width:50px;" onchange="callReturnWaiverAction1(this.checked,'{!pr.partRowCount}');" id="returnWaiver"/><!--onclick="callActionEnableJS(this)"-->
+                                                            </apex:outputText>
+                                                        </apex:outputPanel>      
+                                                    </td>                                               
+                                                    <!--End--> 
+                                                    <td> <!-- Tracking Number -->
+                                                        <apex:outputpanel id="TrackingNumberShow"> 
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                <apex:outputText value="{!pr.TrackingNumber}"></apex:outputText>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                <apex:outputPanel rendered="{!IF((pr.returnToFactory == 'Y' && pr.returnWaiver =='false'),true,false)}">
+                                                                    <apex:inputtextarea value="{!pr.TrackingNumber}" style="overflow-y:scroll;height:50px;width:100px;resize:none" onkeypress="return trackingNumber(event,this)" styleClass="{!if(((pr.TrackingNumber=='Select One' || pr.TrackingNumber==null || pr.TrackingNumber=='') && pr.TrackingNumberReq==true)  ,'showRedBorder','')}"/>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF(pr.returnToFactory == 'N',true,false)}">
+                                                                    <apex:outputText value=""></apex:outputText>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF((pr.returnWaiver =='true' && pr.returnToFactory == 'Y'),true,false)}">
+                                                                    <!-- <apex:outputPanel rendered="{!IF((trackingNumber ==true && pr.returnToFactory == 'Y'),true,false)}">    -->
+                                                                    <apex:selectList value="{!pr.TrackingNumber}" size="1" styleClass="{!if((pr.TrackingNumber=='Select One' && pr.TrackingNumberReq==true)  ,'showRedBorder','')}">
+                                                                        <apex:selectOptions value="{!trackingNumber2}" />
+                                                                    </apex:selectList>
+                                                                </apex:outputPanel>
+                                                            </apex:outputPanel>    
+                                                        </apex:outputpanel>
+                                                    </td>
+
+                                                    <td width="15%"> <!-- RID -->
+                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                            <apex:outputPanel rendered="{!IF(pr.returnToFactory == 'Y',true,false)}">
+                                                                <apex:outputText value="{!pr.RID}"/>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(pr.returnToFactory == 'N',true,false)}">
+                                                                <apex:outputText value=""></apex:outputText>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                            <apex:outputPanel rendered="{!IF(pr.returnToFactory == 'Y',true,false)}">
+                                                                <apex:inputtextarea value="{!pr.RID}" style="overflow-y:scroll;height:50px;width:100px;resize:none" onkeypress="return rIDVal(event,this)"/>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(pr.returnToFactory == 'N',true,false)}">
+                                                                <apex:outputText value=""></apex:outputText>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+
+                                                    </td>
+
+                                                    <!--Place holder for story 175940--Prabhakar/Rupesh-->
+
+                                                    <td>
+                                                        <apex:outputPanel id="repreason">
+                                                            <!--   <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c !=NULL,true,false)}">
+<apex:outputText value="{!pr.replacementReason}"/>
+<!-- <apex:selectList disabled="true" value="{!pr.replacementReason}" size="1" style="width:100px">
+<apex:selectOptions value="{!replacementReasonOptions}" />
+</apex:selectList> -->
+                                                            <!--   </apex:outputPanel>-->
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                <apex:outputText value="{!pr.replacementReason}"/>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                <!--Below code added for automated claim story #161010-->
+                                                                <apex:outputPanel rendered="{!IF((mainController.claimsRec.CSS_Job__c!=NULL)&&(isAutomatedDealerloaction == false),true,false)}">
+                                                                    <apex:outputText value="{!pr.replacementReason}"/>
+                                                                    <!-- <apex:selectList disabled="true" value="{!pr.replacementReason}" size="1" style="width:100px">
+<apex:selectOptions value="{!replacementReasonOptions}" />
+</apex:selectList> -->
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF((mainController.claimsRec.CSS_Job__c!=NULL)&&(isAutomatedDealerloaction == true),true,false)}">
+                                                                    <apex:selectList value="{!pr.replacementReason}" size="1" style="width:100px">
+                                                                        <apex:selectOptions value="{!replacementReasonOptions}" />
+                                                                    </apex:selectList>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c ==NULL,true,false)}" >
+                                                                    <apex:selectList value="{!pr.replacementReason}" size="1" style="width:100px">
+                                                                        <apex:selectOptions value="{!replacementReasonOptions}" />
+                                                                    </apex:selectList>
+                                                                </apex:outputPanel>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                    </td>
+
+                                                    <!--Place holder for story 175940--Prabhakar/Rupesh-->
+
+
+
+                                                    <!--<apex:outputPanel rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==true,true,false)}">
+<td>
+<apex:outputText value="0.00"/>
+</td>
+<td>
+<apex:outputText value="0.00"></apex:outputText>
+</td>
+</apex:outputPanel>-->
+                                                    <!-- defect 189636-- Unit Price and Total Price to be displayed for Other than Dealers-->
+                                                    <apex:outputPanel rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==false,true,false)}">
+                                                        <td>
+                                                            <apex:outputText value="{!ROUND(pr.UnitPrice, 2)}"/>
+                                                        </td>
+                                                        <td>
+                                                            <apex:outputText value="{!ROUND(pr.TotalPrice, 2)}"></apex:outputText>
+                                                        </td>
+                                                    </apex:outputPanel>
+                                                </apex:outputPanel>
+                                            </tr>
+                                        </apex:repeat>
+                                    </apex:repeat>
+                                </apex:outputPanel>
+                            </apex:repeat>
+                        </table>
+
+                        <apex:actionFunction name="callReturnWaiverAction1" action="{!enableTrackingNumber1}" reRender="TrackingNumberShow,ErrMsg">
+                            <apex:param name="rwCheck" value="" assignTo="{!isReturnwaiver}"/>
+                            <apex:param name="selectedPart" value="" assignTo="{!selectedPart}"/>
+                        </apex:actionFunction>
+
+
+
+                    </apex:outputPanel>
+
+
+                    <div class="col-sm-9"> </div>
+                    <!-- <div style="margin-top:50px;" class="col-sm-3">
+<div style="border:2px solid #aaa;padding:0px 40px;">
+<b>GSQ Parts <br/>(USD)</b>
+</div>
+</div>-->
+
+                    <apex:outputPanel rendered="{!IF(($Setup.css_header_nav__c.RSWButtonEnable__c==false || (dealerLocation==true && isFactory)) && (claimRec.CSS_Job__c!=null || claimRec.Dealer_Service_Job__c!=null || claimRec.CSS_Job__c ==null || claimRec.Dealer_Service_Job__c ==null),true,false)}">
+                        <div style="margin-top:20px;" class="col-sm-3">
+                            <fieldset style="border:2px solid #aaa">
+                                <b> {!$Label.css_gsq_parts_usd} ({!mainController.userRec.DefaultCurrencyIsoCode})</b>&nbsp;
+                                {!ROUND(ConsolidateTemptotal, 2)}
+                            </fieldset>
+                        </div>
+                    </apex:outputPanel>
+                    <div class="col-sm-9"> </div>
+                    <div class="col-sm-offset-5 col-sm-2" style="margin-top:10px;">
+                        <apex:commandLink value="{!$Label.css_save_btn}" styleclass="saveButton" status="statusGSQId" reRender="TrackingNumberShow,ErrMsg,failcodeid123,opCovered1,FAErrMsg,opReturnFlagPnl" action="{!saveParts}"></apex:commandLink>
+                        <apex:actionStatus startText="requesting..." id="statusGSQId">
+                            <apex:facet name="start">Saving... <img src="/img/loading.gif" /></apex:facet>
+                            <apex:facet name="stop"></apex:facet>
+                        </apex:actionStatus>
+                    </div>
+                    <br/>
+                    <div class="clearfix"></div>
+                    <br/>
+                </div>
+            </apex:outPutPanel>
+        </div>   
+
+        <!----Show Notes Pop Up Start----->
+        <apex:outputPanel id="Popid" >
+            <div class="container">  
+                <div class="modal fade" id ="ShowNotesPopUp" role="dialog"  data-backdrop="static" data-keyboard="false" style="padding-top:50px">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button"  class="cross_butten" data-dismiss="modal"></button>
+                                <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Cummins_Service_System} </h4>
+                            </div>
+                            <div class="clearfix"></div> 
+                            <div class="modal-body"> 
+                                <p id="partsnotemodalid">
+                                </p>
+                            </div>
+                            <div class="modal-footer">
+                                <div class="col-sm-12" align="center" draggable="false" >
+                                    <button type="button"  class="cancelButton" data-dismiss="modal">{!$Label.css_Ok}</button>
+
+                                </div> <br/>
+                                <div class="clearfix"></div>
+                                <div class="clearfix"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>    
+        </apex:outputPanel>     
+        <!----Show Notes Pop Up End----->  
+
+
+        <div class="container">  
+            <div class="modal fade" id ="ReturnWaiverhoverpopup" role="dialog"  data-backdrop="static" data-keyboard="false" >
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button"  class="cross_butten" data-dismiss="modal"></button>
+                            <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Cummins_Service_System} </h4>
+                        </div>
+                        <div class="clearfix"></div> 
+                        <div class="modal-body"> 
+                            {!$label.CG_ReturnWaiver_Msg}
+                        </div>
+                        <div class="modal-footer">
+                            <div class="col-sm-12" align="center" draggable="false" >
+                                <button type="button"  class="cancelButton" data-dismiss="modal">{!$Label.css_Ok}</button>
+
+                            </div> <br/>
+                            <div class="clearfix"></div>
+                            <div class="clearfix"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>    
+
+
+
+    </apex:ActionRegion>
+</apex:component>

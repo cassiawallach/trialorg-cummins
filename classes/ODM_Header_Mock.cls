@@ -1,0 +1,14 @@
+@istest
+Global class ODM_Header_Mock implements httpcalloutmock {
+   global httpresponse respond(httprequest req) 
+   {
+       httpresponse res = new httpresponse();
+       res.setStatus('success');
+       res.setHeader('Content-Type', 'application/json');
+       res.setStatusCode(200);
+       string JSON='{ "Header": { "Sender": { "ServiceName": "ODMHeaderValidation", "SenderID": "CSS" }, "Target": { "TargetID": "ODM" } }, "Response": { "DecisionID": "2018-10-05T04:14:28.424-04:00", "claim": { "thresholdAmount": "", "cmiEngineSerialNumber": 74067622, "claimSource": "Guidanz", "paccarCertifiedLocationFlag": "", "paccarPaymentRoutingFlag": "", "newPartsWarrantyFlag": "N", "paccarFlag": "", "level": 0, "button": "", "roadRelayWarrantyFlag": "N", "penalty": 0, "serviceProvider": { "region": "NORTH AMERICA", "regionCode": "USCA", "groupName": "", "territory": 122, "status": "Active", "outfileAllClaimsFlag": "N", "engineEffectiveDate": "", "spState": "", "oemCode": 103, "channelOfDistribution": 101, "spSCMDeductiblePct": 3, "spSCMDollarAmt": 30000, "spCountry": "Canada", "engineExpirationdate": "", "paccarChecked": "", "spCertificationEndDate": "2017-12-11T00:00:00-06:00", "serviceModelName": "ISL G CM2180", "ltaChecked": "N", "channelDescription": "", "spServiceLevel": "", "spWarrantyTrainingStatus": "", "inactiveDate": "", "claimAllowedDays": 365 }, "serviceProviderName": "", "ownerName": "", "thresholdHrs": "", "status": "WARNING", "productApplicationCode": "BB", "engine": { "serviceModel": "", "productApplicationDesp": "AUTOMOTIVE", "marineFlag": "N", "designPhaseCode": "C7", "engineFamilyCode": 88, "warrantyIndicatorFlag": "", "buildDate": "2016-11-18T00:00:00-06:00", "billToCode": "", "etoConversionDate": "", "oemCode": "08875" }, "countryCode": "", "claimSubmittedDate": "", "ecmCalibBefore": 0, "manualAdjudicationFlag": "", "manufacturer": "", "claimCreatedDate": "2018-10-01T00:00:00-05:00", "claimNumber": "C0001550718", "claimSubSource": "", "groupName": "", "reconPartsWarrantyFlag": "N", "historyClaimFlag": "H1", "claimReceivedDate": "", "failureDate": "2018-10-01T00:00:00-05:00", "multiESNFlag": "N", "totalClaimAmt": 1, "distributorCode": 3623, "messages": [ { "description": "Failure point on this claim is less than the last one. Please verify correct failure point is entered", "code": "ODM-HE-WAR-208", "type": "WARNING" } ], "roNumber": "", "serviceModelName": "ISL G CM2180", "modelSeries": "", "engineApplicationCode": "", "warrantyStartDate": "", "approverName": "", "engineFamily": "6L GAS PLUS", "certificationFlag": "", "failurePoint": 0, "applicationName": "Guidanz", "claimStatus": "In Review", "failureMeasure": "Miles", "cmiServiceProviderCode": 56255, "ecmCalibAfter": 0, "bisFlag": "N", "possessionFlag": "" } } }';
+		res.setbody(json);
+       return res;
+   }
+
+}

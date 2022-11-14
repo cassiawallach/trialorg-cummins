@@ -1,0 +1,204 @@
+<aura:component implements="lightning:isUrlAddressable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" 
+                controller="FSLAddCustPartsCls">
+    
+    <!--Init handler which is call doInit js function on component Load-->  
+    <aura:attribute name="isOpen" type="Boolean" default="false"/>
+    <aura:attribute name="isTroubleShoot" type="Boolean" default="false"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler name="change" value="{!v.reloadedPartsList}" action="{!c.reloadCustParts}"/>
+    
+    <!--Event handler for Add and Delete Row Event which is fire from Child Component-->    
+    <aura:handler name="DeleteRowEvt" event="c:FSLDeleteRowEvt" action="{!c.removeDeletedRow}"/>
+    <aura:handler name="AddRowEvt" event="c:FSLAddNewRowEvt" action="{!c.addNewRow}"/>
+    <aura:registerEvent name="ReloadCustPartsEvt" type="c:FSLReloadCustParts"/> 
+    
+    <!--Aura Attribute for store Contact Object List as Array-->    
+    <aura:attribute name="contactList" type="Contact[]"/> 
+    <aura:attribute name="cssPartsList" type="FSL_Custom_Part__c[]"/> 
+    <aura:attribute name="reloadedPartsList" type="FSL_Custom_Part__c[]"/> 
+    <aura:attribute name="cssPartsToDel" type="FSL_Custom_Part__c[]"/> 
+    <aura:attribute name="listSize" type="Integer"/> 
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="repRsnLOVs" type="list" />
+    <aura:attribute name="saveInProgress" type="Boolean" default="false"/>
+    <aura:attribute name="ProfileCheck" type="String"/>
+     <aura:attribute name="roleName" type="string" />
+    <aura:attribute name="woType" type="string" />
+    <aura:attribute name="arrowDirection" type="string" default="arrowup" description="Use for change arrow sign direction on header based on click"/>
+    <aura:attribute name="isAsc" type="boolean" default="true" description="boolean flag for pass sorting condition to apex class"/> 
+    <aura:attribute name="selectedTabsoft" type="string" default="Name" description="Use for show/hide arraow sign on header based on conditions"/>
+    <!--Starts added by   vinod yelala 5-2-->
+    <aura:attribute name="selectedRowOnParent" type="Integer"/>
+    <aura:attribute name="currentRow" type="Integer"/>
+    <!--Ends added by vinod yelala 5-2-->
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <!--<aura:handler name="change" value="{!v.currentRow}" action="{!c.refreshScreenData}"/>-->
+    <!--<c:FSLSpinner showSpinner="{!v.showSpinner}"/> -->
+    <div class="slds-m-around_xx-large">
+        <aura:if isTrue="{!v.isOpen}">
+            <!--###### MODAL BOX Start######--> 
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                 <div class="slds-modal__container"  
+                     style= "margin-left: 15% !important;width: 90% !important;max-width: 70% !important; min-width: 20rem !important;">
+                    <!-- ###### MODAL BOX HEADER Start ######-->
+                                <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModel }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">{!$Label.c.user_requested_parts}</h2>
+                    </header>
+                    <!--###### MODAL BOX BODY Part Start######-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <!--Table Part-->           
+                        <!-- <table class="slds-table slds-table_bordered slds-table_cell-buffer"> 
+                            <thead>
+                                <tr class="slds-text-title_caps">                                    
+                                    <th scope="col">
+                                        <div class="slds-truncate">{!$Label.c.css_Quantity}</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate">{!$Label.c.CSS_Part_Number}</div>
+                                    </th>
+                                    <th scope="col" >
+                                        <div class="slds-truncate" >
+                                            {!$Label.c.CSS_Part_Name}
+                                            <abbr class="slds-required" title="required" style="font-size: 1rem;">* </abbr>
+                                        </div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate">
+                                        
+                                            {!$Label.c.CSS_Replacement_Repair_Reason}</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate">{!$Label.c.css_Notes}</div>
+                                    </th>
+                                    <th scope="col">                                        
+                                        <a onclick="{!c.addNewRow}">
+                                            <lightning:icon iconName="utility:add" id="parentAdd" class="slds-icon slds-icon_small" size="small" alternativeText="add"/>
+                                            <span class="slds-assistive-text">Add Icon</span>
+                                        </a>    
+                                    </th>
+                                </tr>
+                            </thead>   
+                            <tbody>
+                                     
+                                <aura:iteration items="{!v.cssPartsList}" var="item" indexVar="index">
+                                    <c:FSLAddCustrParts cssPartInst="{!item}" rowIndex="{!index}" repRsnLOVs="{!v.repRsnLOVs}" 
+                                                        listSize="{!v.listSize}"/>
+                                </aura:iteration>
+                            </tbody>
+                        </table>-->
+                        <!--CT3-13 Header freeze in JOb Plan/T&D & Repair for AddParts/EditPats start-->
+                        <div class="slds-table--header-fixed_container" aura:id="datatableId" style="height:350px;">
+                            <!--CT3-13 Header freeze in JOb Plan/T&D & Repair for AddParts/EditPats end-->
+    					<div class="slds-scrollable_y" style="height:100%;">
+                        <!-- <table class="slds-table slds-table-bordered slds-table-cell-buffer slds-table-header-fixed"> -->
+                        <table class="slds-table slds-table_bordered slds-table--header-fixed">
+                            <thead>
+                                <tr class="slds-text-title--caps">
+                                    <th class="slds-is-sortable slds-text-title--caps" scope="col" onclick="{!c.sortQuantity}">
+                                        <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset slds-cell-fixed">
+                                            <!--div class="slds-cell-fixed"-->
+                                            <span class="slds-assistive-text">Sort</span>
+                                            <span class="slds-truncate" title="Quantity">{!$Label.c.css_Quantity}</span>  
+                                            <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'Quantity__c') }">&nbsp;  &#9660; </aura:if>  
+                                            <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'Quantity__c') }"> &nbsp;  &#9650; </aura:if>   
+                                            <!--/div-->
+                                        </a>
+                                    </th>
+                                    <th class="slds-is-sortable slds-text-title--caps" scope="col" onclick="{!c.sortpart}">
+                                        <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset slds-cell-fixed">
+                                            <!--div class="slds-cell-fixed"-->
+                                            <span class="slds-assistive-text">Sort</span>
+                                            <span class="slds-truncate" title="PartNumber">{!$Label.c.CSS_Part_Number}</span>
+                                            <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'Part_Number__c') }">&nbsp;  &#9660;</aura:if>
+                                            <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'Part_Number__c') }">&nbsp;  &#9650;</aura:if>     
+                                            <!--/div-->
+                                        </a>
+                                    </th>
+                                    <th class="slds-is-sortable slds-text-title--caps" scope="col" onclick="{!c.sortName}">
+                                        <!--CT3-13 Header freeze in JOb Plan/T&D & Repair for AddParts/EditPats start-->
+                                         <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset slds-cell-fixed">
+                                            <!--div class="slds-cell-fixed"-->
+                                            <span class="slds-assistive-text">Sort</span>
+                                            <span class="slds-truncate" title="PartName">{!$Label.c.CSS_Part_Name}
+                                                <abbr class="slds-required" title="required" style="font-size: 1rem;">* </abbr></span>
+                                                <!--CT3-13 Header freeze in JOb Plan/T&D & Repair for AddParts/EditPats end-->
+                                            <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'Name') }">&nbsp;  &#9660;</aura:if>
+                                            <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'Name') }">&nbsp;  &#9650;</aura:if>     
+                                           	<!--/div-->
+                                        </a>
+                                    </th>
+                                    <th class="slds-is-sortable slds-text-title--caps" scope="col" onclick="{!c.sortReplacement}">
+                                        <!--CT3-13 Header freeze in JOb Plan/T&D & Repair for AddParts/EditPats start-->
+                                        <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset slds-cell-fixed">
+                                            <!--div class="slds-cell-fixed"-->
+                                            <!--CT3-13 Header freeze in JOb Plan/T&D & Repair for AddParts/EditPats end-->
+                                            <span class="slds-assistive-text">Sort</span>
+                                            <!--CT3-13 Header freeze in JOb Plan/T&D & Repair for AddParts/EditPats start-->
+                                          <span class="slds-grow slds-cell-wrap slds-truncate" title="Replacement/RepairReason" style="width:170px">{!$Label.c.CSS_Replacement_Repair_Reason} 
+                                                </span>
+                                                <!--CT3-13 Header freeze in JOb Plan/T&D & Repair for AddParts/EditPats end-->
+                                           <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'Replacement_Reason__c') }">&nbsp;  &#9660;</aura:if>
+                                            <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'Replacement_Reason__c') }">&nbsp;  &#9650;</aura:if>     
+                                            <!--/div-->
+                                        </a>
+                                    </th>
+                                    <th class="slds-is-sortable slds-text-title--caps" scope="col" onclick="{!c.sortnotes}">
+                                        <!--CT3-13 Header freeze in JOb Plan/T&D & Repair for AddParts/EditPats start-->
+                                        <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset slds-cell-fixed slds-cell-fixed">
+                                           <!--CT3-13 Header freeze in JOb Plan/T&D & Repair for AddParts/EditPats end-->
+                                            <!--div class="slds-cell-fixed"-->
+                                            <span class="slds-assistive-text">Sort</span>
+                                            <!--CT3-13 Header freeze in JOb Plan/T&D & Repair for AddParts/EditPats start-->
+                                            <span class="slds-truncate" title="Notes">{!$Label.c.css_Notes}</span>
+                                            <!--CT3-13 Header freeze in JOb Plan/T&D & Repair for AddParts/EditPats end-->
+                                            <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'Notes__c') }">&nbsp;  &#9660;</aura:if>
+                                            <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'Notes__c') }">&nbsp;  &#9650;</aura:if>     
+                                            <!--/div-->
+                                        </a>
+                                    </th>
+                                    <th scope="col">                                        
+                                        <a onclick="{!c.addNewRow}" class="slds-cell-fixed">
+                                            <!--div class="slds-cell-fixed"-->
+                                            <lightning:icon iconName="utility:add" id="parentAdd" class="slds-icon slds-icon_small" size="small" alternativeText="add"/>
+                                            <span class="slds-assistive-text">Add Icon</span>
+                                            <!--/div-->
+                                        </a>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <aura:iteration items="{!v.cssPartsList}" var="item" indexVar="index">
+                                   
+                                    <c:FSLAddCustrParts cssPartInst="{!item}" woType="{!v.woType}" rowIndex="{!index}" repRsnLOVs="{!v.repRsnLOVs}" 
+                                                        listSize="{!v.listSize}"/>
+                                    
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                        </div>
+                        </div>
+                        <br/>
+                        <!--Save Button which is call Save js function on click --> 
+                        <!--<button class="slds-button slds-button_brand" onclick="{!c.Save}">Save</button>-->
+                    </div>
+                    <!--###### MODAL BOX FOOTER Part Start ######-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral" 
+                                          label="{!$Label.c.css_Cancel}"
+                                          title="Cancel"
+                                          onclick="{! c.closeModel }"/>
+                        <lightning:button variant="brand" 
+                                          label="{!$Label.c.CSS_Save_And_Close}"
+                                          title="Save and Close"
+                                          onclick="{! c.Save }"/>
+                    </footer>
+                </div>
+            </section><div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+    </div>
+</aura:component>

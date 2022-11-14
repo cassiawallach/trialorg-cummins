@@ -1,0 +1,189 @@
+<aura:component controller="FSLSolutionComponentsCls"
+                implements="flexipage:availableForAllPageTypes,force:appHostable,flexipage:availableForRecordHome,force:lightningQuickAction,force:hasRecordId" >
+    
+    <aura:attribute name="cssSolId" type="String" default=""/>
+    <aura:attribute name="urlName" type="String" default=""/>
+    <aura:attribute name="recordId" type="String"/>    
+    <aura:attribute name="fuelComps" type="list" />
+    <aura:attribute name="repRsnLOVs" type="list" />
+    <aura:attribute name="selectedRR" type="string"/>
+    <aura:attribute name="fuelCompsList" type="list" />
+    <aura:attribute name="fuelCompsParts" type="list" />
+    <aura:attribute name = "FailureCodes" type="List"/>
+    <aura:attribute name="fuelCompsPartsABC" type="list" />     
+    <aura:attribute name="showAddfailure" type="boolean" default="false"/><!--added Ravi kanth-->
+    <aura:attribute name="addCustParts" type="boolean" default="false"/><!--added by Vinod for custparts-->
+    <aura:attribute name="displayerror" type="String" default=""/>
+    <aura:attribute name="cssPartsList" type="CSS_Parts_Options__c[]"/> 
+    <aura:attribute name="roleName" type="string" /> <!-- Priyanka VGRS2-15-->
+    <!--Starts added by vinod yelala 4-25-->
+    <aura:attribute name="selectedRowOnParent" type="Integer"/>
+    <aura:attribute name="currentRow" type="Integer"/>
+    <!--Ends added by vinod yelala 4-25-->
+    <!--added by vinod yellala for select logic on sol comp-->
+    <aura:attribute name="selectedComps" type="List"/>
+    <aura:attribute name="deSelectedComps" type="List"/>
+    <!--added by vinod for repair buttons-->
+    <aura:attribute name="hideAddFailureBtn" type="Boolean"/>
+    <aura:attribute name="isTroubleShoot" type="Boolean" default="true"/>
+    <aura:attribute name="selectedParts" type="List"/>
+    <aura:attribute name="deSelectedParts" type="List"/>    
+    <aura:attribute name="partReplRsnArr" type="List"/>
+    <aura:attribute name="recordTypeName" type="String"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" access="global"/>
+    <!--Added Ravi kanth to reload page after inserting the CSS Solution component -->
+    <!--<aura:handler event="force:refreshView" action="{!c.isRefreshed}" /> -->
+    <aura:handler name="ReloadCustPartsEvt" event="c:FSLReloadCustParts" action="{!c.reloadCustParts}"/>
+    <aura:registerEvent name="AddSolComps" type="c:FSLAddSelectedSolComp" />
+    <aura:handler name='FailshowEvent' event='c:FSLShowfailureEve' action='{!c.handleCompsHelper}' />
+    <aura:handler name="change" value="{!v.selectedRowOnParent}" action="{!c.reloadData}"/>
+    
+    <!--added by Piyush VGRS2-328 -->
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <c:FSL_WaitingIconUtility></c:FSL_WaitingIconUtility>
+     <!--   <lightning:spinner size="large" variant="brand" /> --> 
+    </aura:if>
+    <!-- VGRS2-328 End--> 
+    <div class="slds">
+        <br/>
+        
+        <!--<aura:if isTrue="{! v.fuelCompsPartsABC.size > 0}">-->
+        <aura:if isTrue="{!v.currentRow== v.selectedRowOnParent}">
+            <div class="boxingCSS">      
+                
+                
+                <h1><b> {!$Label.c.CSS_Parts_Name_Identified_By_Technician}</b> 
+                    <!-- Added Ravikanth -->
+                    <div class="slds-float_right">
+                        <!--<aura:if isTrue="{!!v.hideAddFailureBtn}">-->
+                        <lightning:button variant="brand" label="{!$Label.c.FSL_Add_Failure}" title="{!$Label.c.FSL_Add_Failure}" onclick="{! c.showfailurecomp }"/>
+                        <!-- </aura:if>-->
+                        <lightning:button variant="brand" label="{!$Label.c.FSL_Add_Parts}" title="{!$Label.c.FSL_Add_Parts}" onclick="{! c.showCustParts }"/>
+                    </div>
+                    <!--end Ravi kanth-->
+                </h1>
+                <br/>
+                <div class="slds-scrollable_y">
+                    <aura:if isTrue="{!and(empty(v.fuelCompsPartsABC),!v.showSpinner)}">
+                        <div class="slds-align_absolute-center">
+                            {!$Label.c.FSLNoSolsAssociatedAlert}
+                        </div>
+                        <aura:set attribute="else">
+                            <aura:if isTrue="{!and(!empty(v.fuelCompsPartsABC), !v.fuelCompsPartsABC[0].isPartsIntegrationPassed)}">
+                                <!-- added by sruthi 02/22 VGRS2-339 -->
+                                <div class="slds-align_absolute-center" style="color:red">
+                                    {!$Label.c.Servicedown_message}
+                                </div>
+                            </aura:if>  
+                            <!--  ending here vgrs2-339 -->
+                            <aura:iteration items="{!v.fuelCompsPartsABC}" var="wl">
+                                <table>
+                                    <tr>
+                                        <td style="width:10% !important;">
+                                            <ui:inputCheckbox aura:id="checkbox" text="{!wl.compId}" value="{!wl.selectedComp}"
+                                                              click="{!c.addSolCompsToEvt}"/>
+                                        </td>
+                                        <td>
+                                            <span><b>{!wl.compName}</b></span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <br/>
+                                <aura:if isTrue="{!empty(wl.cssSoldOpts)}">
+                                    <div class="slds-align_absolute-center" >
+                                        {!$Label.c.FSLNoSRTPartOptionsFound}
+                                    </div>
+                                    <aura:set attribute="else">
+                                        <table class="slds-table slds-table_bordered slds-table_cell-buffer " >
+                                            <thead>
+                                                <tr class="slds-text-title_caps">
+                                                    <th scope="col" data-label="{!$Label.c.CSS_Select}" style="width: 10%;">
+                                                        <!--{!$Label.c.CSS_Select}-->
+                                                        <div class="slds-truncate">{!$Label.c.CSS_Select}</div>
+                                                    </th>
+                                                    <th scope="col" style="width: 40%;">
+                                                        <div class="slds-truncate">{!$Label.c.CSS_Part_Name}</div>
+                                                    </th>
+                                                    <th scope="col" style="width: 15%;">
+                                                        <div class="slds-truncate">{!$Label.c.css_Quantity}</div>
+                                                    </th>
+                                                    <th scope="col" style="width: 25%;">
+                                                        <div class="slds-truncate">{!$Label.c.CSS_Replacement_Repair_Reason}</div>
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <aura:iteration items="{!wl.cssSoldOpts}" var="compPart">
+                                                    <tr>
+                                                        <th scope="row" data-label="Select">
+                                                            <!--ui:inputCheckbox aura:id="checkbox"  text="{!compPart}" value="{!compPart.selectedPart}"
+                                                                              click="{!c.addPartOptions}" labelClass="{!wl.compId}"/-->
+                                                            
+                                                            <ui:inputCheckbox aura:id="checkboxNew"  text="{!compPart}" value="{!compPart.selectedPart}"
+                                                                              click="{!c.addPartOptions}" labelClass="{!wl.compId}"/>
+                                                        </th>
+                                                        <th scope="row" data-label="Select">
+                                                            {!compPart.partName}
+                                                        </th>
+                                                        <th>
+                                                            <lightning:input class="slds-size_1-of-2" type="text" name="input1" value="{!compPart.defQty}" 
+                                                                             onchange="{!c.assignSolComps}"/>
+                                                        </th>
+                                                        <th>
+                                                            <!-- <lightning:input class="slds-size_1-of-2" type="text" name="input1" value="{!compPart.replReason}"/>-->
+                                                            <lightning:select value="{!compPart.replReason}" messageWhenValueMissing="{!compPart.partOptId}" 
+                                                                              onchange="{!c.collectReplRsns}">  
+                                                                <!--<aura:if isTrue="{!compPart.replReason == null || compPart.replReason == ''}">
+                                                                    <option value="">Choose one... </option>
+                                                                    <aura:set attribute="else">
+                                                                        <option value="">{!compPart.replReason}</option>
+                                                                    </aura:set>
+                                                                </aura:if> -->
+                                                                <aura:iteration items="{!v.repRsnLOVs}" var="item">
+                                                                    <option value="{!item}">
+                                                                        {!item}
+                                                                    </option>
+                                                                </aura:iteration>
+                                                            </lightning:select>
+                                                        </th>
+                                                    </tr>
+                                                </aura:iteration>
+                                            </tbody>
+                                        </table> 
+                                    </aura:set>
+                                </aura:if>
+                            </aura:iteration>
+                        </aura:set>
+                    </aura:if>
+                </div><br/>
+                <!--<div>
+                    <lightning:button class="slds-align_absolute-center" variant="brand" label="Save" title="Save" onclick="{! c.saveSolComps }"/>
+
+                </div>-->
+            </div>
+            
+        </aura:if>
+        <!--<aura:set attribute="else"                
+            No Components Found.
+            </aura:set>
+        </aura:if> -->
+        
+    </div>
+    
+    <!--Starts Added by Vinod for cust parts solution-->
+    <!--<c:FSLAddCustParts isOpen="{!v.addCustParts}"/>-->
+    <c:FSLDynamicAddCustrParts isOpen="{!v.addCustParts}" recordId="{!v.recordId}" reloadedPartsList="{!v.cssPartsList}"
+                               selectedRowOnParent="{!v.selectedRowOnParent}" currentRow="{!v.currentRow}" isTroubleShoot="{!v.isTroubleShoot}" roleName = "{!v.roleName}"/>
+    <!--Ends Added by Vinod for cust parts solution-->
+    <!-- Added Ravikanth Add fialure functionality-->
+    <div class="slds-var-m-around_xx-large">
+        
+        <!--Use aura:if tag to display Model Box, on the bese of conditions. [isOpen boolean attribute] -->   
+        <aura:if isTrue="{!v.showAddfailure}">
+            <!--added css solid attribute to pass solution id 8/15-->
+            <c:FSLShowfailurecomp recordId="{!v.recordId}" showAddfailure="{!v.showAddfailure}" cssSolId="{!v.cssSolId}" FailureCodes="{!v.FailureCodes}"  />            
+        </aura:if>
+    </div>
+    <!-- End Ravi Kanth-->
+</aura:component>

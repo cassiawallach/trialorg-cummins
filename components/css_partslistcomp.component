@@ -1,0 +1,443 @@
+<apex:component controller="CSS_SRTParts" allowDML="true">
+    
+<!--<apex:attribute name="pageId" type="Id" description="Getting pageId Id" required="true" assignTo="{!CID}"/> -->
+
+    <!-- job plan parts ui -->
+    <style>
+
+        /*   .cmi_jobplan-table th,.cmi_jobplan-table td{
+        text-align: center;
+        }
+
+        .cmi_jobplan-table tr:nth-of-type(even){
+        background:#f2f2f2;
+        }
+        .cmi_jobplan-table tr:nth-of-type(odd){
+        background:#ffffff;
+        }
+
+        th, td {
+        border: 1px solid #d0d0d0;
+        padding:5px;
+        }
+        */
+
+        .cmi_GsqParts thead th, .cmi_GsqParts td {
+            width:10%; 
+            text-align: center;
+        }
+    
+    </style>
+    <script>
+        
+         function checkSelectBox(PartId){
+             //alert(PartId);
+          document.getElementById(PartId).firstChild.checked = true;
+         }
+        
+
+        function callAccountcodemethodGSQ(value,value1,value2,value3){
+            AccountcodelogicGSQ(value,value1,value2,value3);
+        }
+        
+        function quantityPressValidate(e,compId){
+            if((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105))
+            {
+            } 
+            else 
+            {
+                return false;
+            }        
+        }
+        
+        //Renamed below method from validateMaxVal to validateMaxValGSQ as part of the defect # 190703
+        function validateMaxValGSQ(compId){
+            var WarrTime= document.getElementById(compId.id).value;
+            var WarrTimeLength= document.getElementById(compId.id).value.length;
+            if(WarrTime > 100) {
+                document.getElementById(compId.id).value=100;   
+            }
+        }
+
+        $(function(){
+            $('#check_sugPart').click(function(){
+                console.debug('inside the method true');
+
+                console.debug($('.partCheckbox'));
+                $('.partCheckbox').each(function() {
+                    $(this).prop("checked", true);
+                });
+
+                console.debug('inside the method true 1');
+                return false;
+            });
+
+            $('#uncheck_sugPart').click(function(){
+                console.debug('inside the method false');
+                //$('input[type="checkbox"]').removeAttr('checked');
+                $('.partCheckbox').each(function() {
+                    $(this).removeAttr('checked');
+                });
+                console.debug('inside the method false');
+                return false;
+            });   
+        });
+        
+         function newWindowGSQ(url,title){
+            //var left = (screen.width/2)-(w/2);
+            window.open(url, title, 'status = 1 scrollbars=yes, resizable=1, width=1600, height=800');
+          //  CallTwoScrollbarFunctions();
+        } 
+        
+        function showNotesPopupFunc(partsnotes){
+            document.getElementById("partsnotemodalid").innerHTML = partsnotes;
+            $('#ShowNotesPopUp').modal('show'); 
+        }
+            
+                     
+       
+    </script>
+    
+    <apex:actionRegion >
+        
+     <apex:outputpanel >
+    <apex:actionFunction name="AccountcodelogicGSQ" action="{!onChangeofAccountCode}"  rerender="opCovered,opReturnFlag"> 
+        <apex:param name="AccountCodeval"  value="" assignTo="{!SelectedAccountCode}"/>
+        <apex:param name="FailCodeval"  value="" assignTo="{!SelectedFailCode}"/>
+        <apex:param name="PartsRowID"  value="" assignTo="{!selectedPartRowCount}"/>
+        <apex:param name="PartNumber"  value="" assignTo="{!servicePartNumber}"/>
+    </apex:actionFunction>
+
+    <div class="panel-group cmi_generic-accordion">
+        <div class="panel panel-default">
+            <div class="panel-heading " id="accordion1-heading-3" onclick="filedsetMethod();">
+                <h4 class="panel-title" data-toggle="collapse" data-parent="#accordion1-heading-3" data-target="#campaign-accordian2" aria-expanded="true" > <!--  onclick="krishna()" -->
+                    <a class="accordion-toggle">
+                        <span class="glyphicon glyphicon-plus"></span>
+                        <div class="cmi_accordion-title"><b>{!$Label.CSS_Suggested_Parts_From_GSQ}</b></div>
+                    </a>
+                </h4>
+            </div>
+        </div>
+        <apex:actionFunction name="gsqPartsAction" action="{!getPartsList}" rerender="gsqparts" status="gsqcallPartsStatus"> 
+        </apex:actionFunction>
+       
+
+        
+        <div id="campaign-accordian2" class="panel-collapse collapse" aria-expanded="true" style="margin-top:10px;">
+            <apex:actionStatus startText="requesting..." id="gsqcallPartsStatus">
+                <apex:facet name="start">Loading... <img src="/img/loading.gif" /></apex:facet>
+                <apex:facet name="stop"></apex:facet>
+            </apex:actionStatus>
+            <apex:outputPanel id="gsqparts">
+                <div class="panel-body">
+                    <div class="row" >
+                        <div class="col-sm-12" style="padding-top:20px;">
+                            <div class="hidden-xs">
+                                <div class="row cmi_jobplan-table">
+                                    <div class="col-sm-12 col-xs-12" style="margin:25px 0px;">
+                                      <!--<apex:actionFunction name="savecheckbox" action="{!saveParts}" reRender="srtparts"/>-->
+                                       <!-- <div class="row">
+                                            <div class="col-sm-12" height="100%">  -->
+                                        <apex:outputPanel rendered="{!IF(partsList.size != 0 ,true,false)}">
+                                            
+                                                <a onclick="newWindowGSQ('/apex/CG_SuggestedPartsFromGSQ?Id={!pgId}','newGSQPage')"
+                                                   href="" target="_blank" style="cursor: pointer;text-decoration:underline">{!$Label.css_view} &nbsp;{!$Label.CSS_Suggested_Parts_From_GSQ}</a>
+                                            
+                                        </apex:outputPanel>
+                                           <!-- </div>
+                                        </div>-->
+                                     
+                                     <apex:outputPanel rendered="{!IF(partsList.size == 0 ,true,false)}">  <!--Begin Added as part of new page for GSQ -->
+                                         <u><a id ="uncheck_sugPart" href="#" Class="text-decoration: none;">{!$Label.CSS_Uncheck_All}</a></u>&nbsp;&nbsp;
+                                         <u><a id ="check_sugPart" href="#" Class="text-decoration: none;">{!$Label.CSS_Check_All}</a></u>&nbsp;&nbsp;
+                                         
+                                         <apex:variable var="fcCnt" value="{!1}" />
+                                        <apex:outputPanel rendered="{!IF(listsrtsolWrapper.size == 0 ,true,false)}">
+                                            <table class="mytable table table-bordered table-striped cmi_GsqParts" cellpadding="0" cellspacing="0" >
+                                                    <thead>
+                                                        <tr height="54">
+                                                            <th>{!$Label.CSS_Solution}</th>
+                                                            <th>{!$Label.CSS_Failure_GSQ}</th>
+                                                            <th>{!$Label.CSS_Select}</th>
+                                                         <!--   <th style="text-align:center;">{!$ObjectType.CSS_Parts_Options__c.fields.Css_Estimate__c.Label}</th> -->
+                                                            <th>{!$Label.CSS_Service} {!$Label.CSS_Part_Number}</th>
+                                                            <th>{!$Label.CSS_Part_Name}</th>
+                                                            <th>{!$Label.CSS_Part} {!$Label.CSS_Description}</th>
+                                                            <th>{!$Label.CSS_Covered}</th>
+                                                            <th>{!$Label.CSS_Account_Code}</th>
+                                                            <th>{!$Label.CSS_Return_to_Factory}</th>
+                                                            <th>{!$Label.CSS_Option_Number}</th>
+                                                            <th>{!$Label.CSS_Quantity}</th>
+                                                            <th>{!$Label.CSS_Size}</th>
+                                                            <th>{!$Label.CSS_Replacement_Repair_Reason}</th>
+                                                            <!--<th>{!$Label.css_Notes}</th>-->
+                                                        </tr>
+                                                    </thead>
+                                            </table> 
+                                            
+                                        </apex:outputPanel>
+                                        
+                                       <apex:repeat value="{!listsrtsolWrapper}" var="sol"> 
+                                            <apex:outputPanel rendered="{!IF(sol.compWrapper.size > 0 ,true,false)}">
+                                                <table class="mytable table table-bordered table-striped cmi_GsqParts" cellpadding="0" cellspacing="0" >
+                                                    <thead>
+                                                        <tr height="54">
+                                                            <th>{!$Label.CSS_Solution}</th>
+                                                            <th>{!$Label.CSS_Failure_GSQ}</th>
+                                                            <th>{!$Label.CSS_Select}</th>
+                                                       <!--     <th style="text-align:center;">{!$ObjectType.CSS_Parts_Options__c.fields.Css_Estimate__c.Label}</th> -->
+                                                            <th>{!$Label.CSS_Service} {!$Label.CSS_Part_Number}</th>
+                                                            <th>{!$Label.CSS_Part_Name}</th>
+                                                            <th>{!$Label.CSS_Part} {!$Label.CSS_Description}</th>
+                                                            <th>{!$Label.CSS_Covered}</th>
+                                                            <th>{!$Label.CSS_Account_Code}</th>
+                                                            <th>{!$Label.CSS_Return_to_Factory}</th>
+                                                            <th>{!$Label.CSS_Option_Number}</th>
+                                                            <th>{!$Label.CSS_Quantity}</th>
+                                                            <th>{!$Label.CSS_Size}</th>
+                                                            <th>{!$Label.CSS_Replacement_Repair_Reason}</th>
+                                                             <!-- commented as part of story GSSC-22-->
+                                                            <!--<th>{!$Label.css_Notes}</th>-->
+                                                        </tr>
+                                                    </thead>
+                                                    <apex:variable var="solcnt" value="{!0}" />
+                                                    <apex:outputPanel rendered="{!IF(sol.allParts == 0 ,true,false)}">
+                                                        <apex:repeat value="{!sol.compWrapper}" var="c">
+                                                            <apex:variable var="solcnt" value="{!solcnt+1}" />
+                                                            <tr>
+
+
+                                                                <apex:outputPanel rendered="{!IF(solcnt == 1,true,false)}">
+                                                                    <td rowspan="{!sol.solcompCount}">
+                                                                        <apex:outputtext value="{!sol.solName}-{!sol.solTitle}" /><br/>
+
+                                                                        <apex:outputPanel rendered="{!IF(sol.ParentSolId != null,true,false)}">
+                                                                            ({!$Label.CSS_Compound_of} <b></b><apex:outputtext value="{!sol.ParentSolName}"/>) 
+                                                                        </apex:outputPanel>
+
+                                                                    </td>
+                                                                </apex:outputPanel>
+
+
+                                                                <td>
+                                                                    <apex:outputtext value="{!c.compName}" />
+                                                                </td>
+                                                                <td colspan="13" style="text-align:left;"><b> {!$Label.CSS_No_Parts_Returned_from_GSQ} </b> </td>
+
+
+                                                            </tr>
+                                                        </apex:repeat>
+                                                    </apex:outputPanel>
+
+                                                    <!--    <apex:outputPanel rendered="{!IF(c.partWrapper.size > 0 ,true,false)}"> -->
+                        
+                                                    <apex:outputPanel rendered="{!IF(sol.allParts > 0 ,true,false)}" id="opParts">
+                                                        <apex:repeat value="{!sol.compWrapper}" var="c">
+                                                            <apex:variable var="partcount" value="{!0}" />
+                                                             <apex:repeat value="{!c.partWrapper}" var="pr">
+                                                                <apex:variable var="solcnt" value="{!solcnt+1}" />
+                                                                <apex:variable var="partcount" value="{!partcount + 1}" /> 
+                                                                <tr>
+                                                                    <apex:outputPanel rendered="{!IF(solcnt == 1,true,false)}">
+                                                                        <td rowspan="{!sol.allParts}" style="width:150px;">
+                                                                            <apex:outputtext value="{!sol.solName}-{!sol.solTitle}" /><br/>
+
+                                                                            <apex:outputPanel rendered="{!IF(sol.ParentSolId != null,true,false)}" >
+                                                                                ({!$Label.CSS_Compound_of} <b></b><apex:outputtext value="{!sol.ParentSolName}"/>)
+                                                                            </apex:outputPanel>
+
+                                                                        </td>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(c.count == 0 ,true,false)}">
+                                                                        <td>
+                                                                            <apex:outputtext value="{!c.compName}" />
+                                                                            <apex:outputPanel rendered="{!IF(c.failcode != null ,true,false)}">
+                                                                            <apex:outputtext value="-{!c.failcode}" />
+                                                                            </apex:outputPanel>
+                                                                            
+                                                                            <apex:outputPanel rendered="{!IF(c.failcode == null && c.FailCodeEditable != null ,true,false)}">
+                                                                            <apex:outputtext value="-{!c.FailCodeEditable}" />
+                                                                            </apex:outputPanel>
+                                                                        </td>
+                                                                        <td colspan="13" style="text-align:left;"><b> {!$Label.CSS_No_Parts_Returned_from_GSQ} </b> </td>
+
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(c.count > 0 ,true,false)}">
+
+
+                                                                        <apex:outputPanel rendered="{!IF(partcount == 1,true,false)}">
+                                                                            <td rowspan="{!c.count}" style="width:15%">
+                                                                                <apex:outputtext value="{!c.compName}" />
+                                                                                
+                                                                              <apex:outputPanel rendered="{!IF(c.failcode != null ,true,false)}">
+                                                                            <apex:outputtext value="-{!c.failcode}" />
+                                                                            </apex:outputPanel>
+                                                                            
+                                                                            <apex:outputPanel rendered="{!IF(c.failcode == null && c.FailCodeEditable != null ,true,false)}">
+                                                                            <apex:outputtext value="-{!c.FailCodeEditable}" />
+                                                                            </apex:outputPanel>
+                                                                              
+                                                                            </td>
+
+                                                                        </apex:outputPanel>
+
+
+                                                                        <td style="text-align:center;width:50px;">
+                                                                            <div id="{!pr.partIds}">
+                                                                            <apex:inputCheckbox value="{!pr.partChildCheckbox}" styleClass="partCheckbox"/>
+                                                                                </div>
+                                                                        </td>
+                                                                      <!--  <td>
+                                                                        <apex:inputCheckbox value="{!pr.partEstimateCheckbox}" styleClass="partCheckbox" onclick="checkSelectBox('{!pr.partIds}');"/>
+                                                                        </td> -->
+                                                                        <td>
+                                                                            <apex:outputtext value="{!pr.servicePartNumber}" />
+                                                                        </td>
+                                                                        <td style="width:200px"><span><apex:outputtext value="{!pr.partName}"/></span></td>
+                                                                        <!--<td><span><apex:outputText value="{!pr.partDesc}"/></span></td>-->
+                                                                        <!---- Hyperlink & Icon on Part Description Start - Story GSSC-21--->
+                                                                        <td>
+                                                                          <a href="javascript:void()" onclick="return showNotesPopupFunc('{!pr.notes}');" style="text-decoration:underline; margin-left: 5px; font-weight:bold;">{!pr.partDesc} <span class="cmi_eyeIcon"/></a>
+                                                                        </td>
+                                                                        <!---- Hyperlink & Icon on Part Description End -Story GSSC-21--->
+                                                                        <td style="text-align:center;">
+
+                                                                            <apex:outputPanel rendered="{!IF(c.FailCodeEditable == 'Select One' || c.FailCodeEditable == '' || c.AccountCodeEdit == 'Select One' || c.AccountCodeEdit == '',true,false)}">
+                                                                                <apex:outputText value="" />
+                                                                            </apex:outputPanel>
+
+                                                                            <apex:outputPanel id="opCovered">
+                                                                                <!-- Covered Percent: {!pr.covered }-->
+                                                                                <apex:outputPanel rendered="{!IF((c.FailCodeEditable != 'Select One' && c.FailCodeEditable != '' || c.FailCode != 'Select One' && c.FailCode != '') && (c.AccountCodeEdit != 'Select One' && c.AccountCodeEdit != '' || c.AccountCode != 'Select One' && c.AccountCode != ''),true,false)}">
+                                                                                    <div id="divSRTTime">
+                                                                                        <apex:inputText value="{!pr.covered }" style="width:50px;" id="warVal" onkeyup="validateMaxValGSQ(this);" onkeydown="return quantityPressValidate(event,this)" /> <!--qtyPress -- Removed qtyPress method and added quantityPressValidate method on onkeydown event as part of the defect # 190703-->
+                                                                                    </div>
+                                                                                </apex:outputPanel>
+                                                                            </apex:outputPanel>
+
+                                                                        </td>
+
+                                                                        <td>
+                                                                                    
+
+                                                                            <apex:outputPanel rendered="{!IF(c.FailCodeEditable == 'Select One',true,false)}">
+
+                                                                                <apex:outputText value="" />
+                                                                            </apex:outputPanel>
+                                                                           <!-- AccCodeEdit:{!c.AccountCodeEdit}
+                                                                            accCode:{!c.AccountCode}-->
+                                                                            <apex:outputPanel rendered="{!IF(((c.AccountCodeEdit == 'Select One' || c.AccountCodeEdit == '') && (c.AccountCode == null || c.AccountCode == '')),true,false)}">
+                                                                               
+                                                                                <apex:selectList disabled="true" value="{!pr.accountCode}">
+                                                                                    <apex:selectOption itemValue="Select One" itemLabel="Select One"/>
+                                                                                </apex:selectList>
+                                                                            </apex:outputPanel>
+                                                                            <apex:outputPanel rendered="{!IF((c.AccountCodeEdit != 'Select One' && c.AccountCodeEdit != '') || (c.accountcode != 'Select One' && c.accountcode != '') ,true,false)}">
+                                                                                
+                                                                                <apex:selectList value="{!pr.accountCode}" size="1" onchange="callAccountcodemethodGSQ(this.value,'{!pr.failCode}','{!partcount}','{!pr.servicePartNumber}')" style="width:100px">
+                                                                                    <apex:selectOptions value="{!pr.accCodes}" />
+                                                                                    <!--<apex:selectOptions value="{!AccountCodeDropDown}" />-->
+                                                                                </apex:selectList>
+                                                                            </apex:outputPanel>
+
+
+
+                                                                        </td>
+                                                                        <td> 
+                                                                            <apex:outputPanel id="opReturnFlag">
+                                                                                <apex:outputtext value="{!pr.returnToFactory}" /> 
+                                                                            </apex:outputPanel>
+                                                                        </td>
+                                                                        <td>
+                                                                            <apex:outputtext value="{!pr.optionNumber}" />
+                                                                        </td>
+                                                                        <td>
+                                                                            <apex:inputText value="{!pr.qty }" maxlength="4" style="width:50px;" onkeydown="return quantityPressValidate(event,this)" />
+                                                                        </td>
+                                                                        <td width="15%">
+                                                                            <apex:outputtext value="{!pr.partSize}" style="width:100px"/>
+                                                                        </td>
+                                                                        <td>
+                                                                            <apex:selectList value="{!pr.replacementReason}" size="1" style="width:100px">
+                                                                                <apex:selectOptions value="{!replacementReasonOptions}" />
+                                                                            </apex:selectList>
+                                                                        </td>
+                                                                         <!-- commented as part of story GSSC-22-->
+                                                                        <!--<td>
+                                                                            <apex:inputTextarea value="{!pr.notes }" html-maxlength="255" style="width:150px;resize:none;" />
+                                                                        </td>-->
+                                                                        
+                    
+                                    
+                                                                    </apex:outputPanel>
+                                                                </tr>
+                                                             </apex:repeat>
+                                                          </apex:repeat>
+                                                    </apex:outputPanel>
+                                                    
+                                                </table>
+                                               
+                                            </apex:outputPanel>
+                                        </apex:repeat>
+                                         
+                                         <div class="col-sm-offset-5 col-sm-2" style="margin-top:10px;">
+                                             <apex:commandLink action="{!saveParts}" value="{!$Label.css_save_btn}" styleclass="saveButton"/>
+                                         </div>
+                                    </apex:outputPanel> <!--   End Added as part of new page for GSQ -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                           <!-- <apex:commandButton value="{!$Label.CSS_Send_Parts_To_BMS}"  styleClass="saveButton" ></apex:commandButton> -->
+                        </div>
+                    </div>
+                   <!-- <div class="row">
+                        <div class="container">   
+                            <apex:outputPanel rendered="{!IF(partsList.size != 0 ,true,false)}">
+                                <a onclick="newWindowGSQ('/apex/CG_SuggestedPartsFromGSQ?Id={!pgId}','newGSQPage')"
+                                   href="" target="_blank" style="cursor: pointer;text-decoration:underline">{!$Label.css_view} &nbsp;{!$Label.CSS_Suggested_Parts_From_GSQ}</a>
+
+                            </apex:outputPanel>
+                        </div>
+                    </div>-->
+                </div>
+            </apex:outputPanel>
+        </div>
+         
+    </div>
+    </apex:outputpanel>
+    <!----Show Notes Pop Up Start----->
+    <apex:outputPanel id="Popid" >
+          <div class="container">  
+            <div class="modal fade" id ="ShowNotesPopUp" role="dialog"  data-backdrop="static" data-keyboard="false" style="padding-top:50px">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button"  class="cross_butten" data-dismiss="modal"></button>
+                           <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Cummins_Service_System} </h4>
+                        </div>
+                        <div class="clearfix"></div> 
+                        <div class="modal-body"> 
+                            <p id="partsnotemodalid">
+                            </p>
+                        </div>
+                       <div class="modal-footer">
+                          <div class="col-sm-12" align="center" draggable="false" >
+                                <button type="button"  class="cancelButton" data-dismiss="modal">{!$Label.css_Ok}</button>
+                                
+                            </div> <br/>
+                            <div class="clearfix"></div>
+                            <div class="clearfix"></div>
+                       </div>
+                    </div>
+                 </div>
+            </div>
+         </div>    
+    </apex:outputPanel>     
+    <!----Show Notes Pop Up End----->    
+
+    
+    </apex:actionRegion>
+    <!-- job plan parts ui end -->
+</apex:component>

@@ -1,0 +1,431 @@
+<apex:page standardController="cnx__Connects_Configuration__c" extensions="cnx.ConfigObjControllerExtension" title="b+s Configuration Edit Page"
+    lightningStyleSheets="true" showHeader="false" applyHtmlTag="false" applyBodyTag="false">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <head>
+        <apex:includeScript value="{!URLFOR($Resource.cnx__CnxSfdcResources, 'config/lib/jquery/dist/jquery.min.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.cnx__CnxSfdcResources, 'config/lib/svg4everybody/dist/svg4everybody.min.js')}"/>
+        <apex:includeScript value="{!URLFOR($Resource.cnx__CnxSfdcResources, 'config/js/Configuration.min.js')}"/>
+        <apex:slds />
+        <apex:variable var="isCloned" value="{! $CurrentPage.parameters.clone == '1' }"/>
+        <script>
+            $(document).ready(function() {
+                var cnxConfigRecordId = '{!IF(!isCloned, Connects_Configuration__c.Id, '')}';
+                var cnxIsDefaultConfig = {!IF(!isCloned, Connects_Configuration__c.Is_Default__c, false)};
+                var cnxFeatureSet = {!featureSet} || 0;
+
+                var cnxConfigViewMain = new ConfigViewMain(cnxConfigRecordId, cnxIsDefaultConfig, cnx.ConfigObjControllerExtension, cnxFeatureSet);
+                cnxConfigViewMain.initializeConfigViewMain();
+            });
+
+            window.utilitySpritePath = '{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/')}';
+
+        </script>
+        <style>
+            #cnx-config-scope .slds-vertical-tabs {
+                overflow: visible;
+            }
+        </style>
+    </head>
+    <body style="background-color: rgb(176, 196, 223)">
+        <div id="cnx-config-scope" class="slds-scope">
+            <div class="slds-brand-band slds-brand-band_medium slds-p-bottom_medium">
+                <c:ErrorToast />
+                <div class="slds-page-header slds-m-around_medium">
+                    <div class="slds-page-header__row">
+                        <div class="slds-page-header__col-title">
+                            <div class="slds-media">
+                                <div class="slds-media__body">
+                                    <div class="slds-page-header__name">
+                                        <div class="slds-page-header__name-title">
+                                            <h1>
+                                                <span>b+s Configuration</span>
+                                                <span class="slds-page-header__title slds-truncate" title="{!cnx__Connects_Configuration__c.Name}">{!cnx__Connects_Configuration__c.Name}</span>
+                                            </h1>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-page-header__col-actions">
+                            <div class="slds-page-header__controls">
+                                <!-- Default Button Help -->
+                                <div class="slds-page-header__control">
+                                    <div style="padding-left:2rem; padding-top:0.5rem; position:relative;">
+                                        <button id="cnx-tooltip-isDefault" class="slds-button slds-button_icon" aria-describedby="help-isDefault" aria-disabled="true" title="Help">
+                                            <svg class="slds-button__icon" aria-hidden="true">
+                                                <use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/svg/symbols.svg#info')}"></use>
+                                            </svg>
+                                            <span class="slds-assistive-text">Help</span>
+                                        </button>
+                                        <div class="slds-popover slds-popover_medium slds-popover_tooltip slds-nubbin_top-right slds-fall-into-ground" role="tooltip" id="help-isDefault" style="position:absolute;top:45px;right:-16px">
+                                            <div class="slds-popover__body"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Default Button -->
+                                <div class="slds-page-header__control">
+                                    <input type="checkbox" id="cnx-input-isDefault" name="cnx-cnx__Is_Default__c" style="display: none"/>
+                                    <button class="slds-button slds-button_neutral slds-button_dual-stateful" aria-live="assertive" id="cnx-button-isDefault" aria-describedby="help-isDefault">
+                                        <span class="slds-text-not-pressed">
+                                            <svg class="slds-button__icon slds-button__icon_small slds-button__icon_left" aria-hidden="true">
+                                                <use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/svg/symbols.svg#add')}"></use>
+                                            </svg>
+                                            Set as Default
+                                        </span>
+                                        <span class="slds-text-pressed">
+                                            <svg class="slds-button__icon slds-button__icon_small slds-button__icon_left" aria-hidden="true">
+                                                <use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/svg/symbols.svg#check')}"></use>
+                                            </svg>
+                                            Current Default
+                                        </span>
+                                    </button>
+                                </div>
+                                <!-- Action Buttons -->
+                                <div class="slds-page-header__control">
+                                    <ul class="slds-button-group-list">
+                                        <li>
+                                            <button id="cnx-save-button" class="slds-button slds-button_neutral">Save</button>
+                                        </li>
+                                        <li>
+                                            <apex:form >
+                                                <apex:actionFunction name="closeEditViewJS" action="{!cancel}" immediate="true"/>
+                                                <!--return false in order to prevent the button from executing its normal behaviour and posting the form a second time after the closeEditViewJS() function returns.-->
+                                                <button id="cnx-cancel-button" onclick="window.closeEditViewJS(); return false;" class="slds-button slds-button_neutral">Cancel</button>
+                                            </apex:form>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <c:Card label="Global">
+                    <div class="slds-vertical-tabs" id="cnx-global-tabs">
+                        <ul class="slds-vertical-tabs__nav" role="tablist" aria-orientation="vertical">
+                            <c:TabSelector tabId="0" label="General" isActive="true"/>
+                            <c:TabSelector tabId="1" label="Appearance"/>
+                            <c:TabSelector tabId="2" label="Deployment Type"/>
+                            <c:TabSelector tabId="3" label="Finesse"/>
+                            <c:TabSelector tabId="4" label="Additional Settings"/>
+                        </ul>
+                        <c:TabContent tabId="0" label="General" isActive="true">
+                            <div class="slds-form__row">
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="Name"/>
+                                <c:LongTextArea configWrapper="{!cnxConfigWrapper}" field="cnx__Description__c"/>
+                            </div>
+                        </c:TabContent>
+                        <c:TabContent tabId="1" label="Appearance">
+                            <div class="slds-form__row">
+                                <c:NumberField configWrapper="{!cnxConfigWrapper}" field="cnx__Softphone_Height__c"/>
+                                <c:NumberField configWrapper="{!cnxConfigWrapper}" field="cnx__Softphone_Width__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:NumberField configWrapper="{!cnxConfigWrapper}" field="cnx__Not_Ready_Threshold__c"/>
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Enable_HTML5_Desktop_Notifications__c" enabledText="Enabled" disabledText="Disabled"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:ComboBoxField configWrapper="{!cnxConfigWrapper}" field="cnx__Display_Team_Messages__c"/>
+                                <c:ComboBoxField configWrapper="{!cnxConfigWrapper}" field="cnx__Shown_Team_Message_Lines__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:NumberField configWrapper="{!cnxConfigWrapper}" field="cnx__Call_Item_Height__c" step="1"/>
+                                <c:CheckboxGroup configWrapper="{!cnxConfigWrapper}" field="cnx__Call_Layout__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Enable_Redial_Button__c" enabledText="Enabled" disabledText="Disabled"/>
+                                <c:NumberField configWrapper="{!cnxConfigWrapper}" field="cnx__Redial_List_Size__c" step="1"/>
+                            </div>
+                        </c:TabContent>
+                        <c:TabContent tabId="2" label="Deployment Type">
+                            <div class="slds-form__row">
+                                <c:ComboBoxField configWrapper="{!cnxConfigWrapper}" field="cnx__Deployment_Type__c"/>
+                                <div class="slds-form__item"></div>
+                            </div>
+                        </c:TabContent>
+                        <c:TabContent tabId="3" label="Finesse">
+                            <div class="slds-form__row">
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__Finesse_URL_A_v2__c"/>
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__Finesse_URL_B_v2__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:NumberField configWrapper="{!cnxConfigWrapper}" field="cnx__Finesse_Server_Timeout__c" step="1000"/>
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__Finesse_SSO_Frame_URL_v2__c"/>
+                            </div>
+                        </c:TabContent>
+                        <c:TabContent tabId="4" label="Additional Settings">
+                            <div class="slds-form__row">
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Enable_Issue_Report__c" enabledText="Enabled" disabledText="Disabled"/>
+                                <div class="slds-form__item"></div>
+                            </div>
+                            <div class="slds-form__row" data-toggled-by="cnx__Enable_Issue_Report__c">
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__Issue_Report_URL_v2__c"/>
+                                <div class="slds-form__item"></div>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__Flags__c"/>
+                                <div class="slds-form__item"></div>
+                            </div>
+                        </c:TabContent>
+                    </div>
+                </c:Card><!-- End GLOBAL Card -->
+
+                <c:Card label="Voice">
+                    <div class="slds-vertical-tabs" id="cnx-voice-tabs">
+                        <ul class="slds-vertical-tabs__nav" role="tablist" aria-orientation="vertical">
+                            <c:TabSelector tabId="5" label="Dialing and Lookup Rules" isActive="true"/>
+                            <c:TabSelector tabId="6" label="Call Data Display"/>
+                            <c:TabSelector tabId="7" label="Mobile Agent"/>
+                            <c:TabSelector tabId="8" label="New Record URLs" deployments="voice mcal mri omni"/>
+                            <c:TabSelector tabId="9" label="Call Log" deployments="voice mcal mri omni"/>
+                            <c:TabSelector tabId="10" label="Search"/>
+                            <c:TabSelector tabId="11" label="Screen Pop" deployments="voice mcal mri omni"/>
+                            <c:TabSelector tabId="12" label="Additional Voice Settings"/>
+                        </ul>
+                        <c:TabContent tabId="5" label="Dialing and Lookup Rules" isActive="true">
+                            <c:ConfigMappingTable configWrapper="{!cnxConfigWrapper}" field="cnx__Dialing_Rules__c" iconName="breadcrumbs" labelKey="Search Pattern" labelValue="Replacement" requireKey="false" requireValue="false" growNoneKey="false"/>
+                            <c:ConfigMappingTable configWrapper="{!cnxConfigWrapper}" field="cnx__Lookup_Rules__c" iconName="cases" labelKey="Search Pattern" labelValue="Replacement" requireKey="false" requireValue="false" growNoneKey="false"/>
+                            <div class="slds-form__row">
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__Internal_Number_Format_RegEx__c"/>
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Edit_Number_On_Click_to_Dial__c"/>
+                            </div>
+                        </c:TabContent>
+                        <c:TabContent tabId="6" label="Call Data Display">
+                            <c:ConfigMappingTable configWrapper="{!cnxConfigWrapper}" field="cnx__Call_Data_Display_Options__c" iconName="description" labelKey="Label" labelValue="Variable" placeholders="['callData']"/>
+                        </c:TabContent>
+                        <c:TabContent tabId="7" label="Mobile Agent">
+                            <div class="slds-form__row">
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Enable_Mobile_Agent_Support__c" enabledText="Enabled" disabledText="Disabled"/>
+                                <div class="slds-form__item"></div>
+                            </div>
+                            <div class="slds-form__row" data-toggled-by="cnx__Enable_Mobile_Agent_Support__c">
+                                <c:RadioGroup configWrapper="{!cnxConfigWrapper}" field="cnx__Force_Mobile_Agent_Connection__c"/>
+                                <div class="slds-form__item"></div>
+                            </div>
+                        </c:TabContent>
+                        <c:TabContent tabId="8" label="New Record URLs">
+                            <c:ConfigMappingTable configWrapper="{!cnxConfigWrapper}" field="cnx__Voice_New_Record_URL__c" iconName="record_create" labelKey="Label" labelValue="URL" requireKey="false" placeholders="['sObjectTypes', 'callData', 'foundRecords', 'dateAndTime']" rowLimit="5"/>
+                        </c:TabContent>
+                        <c:TabContent tabId="9" label="Call Log">
+                            <div class="slds-form__row">
+                                <c:ComboBoxField configWrapper="{!cnxConfigWrapper}" field="cnx__Call_Log_Type__c"/>
+                                <div class="slds-form__item"></div>
+                            </div>
+                            <div class="slds-form__row" data-call-log-types="callActivityRecord">
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Show_Call_Log_Comment_Field__c"/>
+                            </div>
+                            <div data-call-log-types="callActivityRecord">
+                                <c:ConfigMappingTable configWrapper="{!cnxConfigWrapper}" field="cnx__Call_Log_Variable_Mapping__c" iconName="log_a_call" isSortable="false" labelKey="Field API Name" labelValue="Value" placeholders="['callData', 'dateAndTime']"/>
+                            </div>
+                        </c:TabContent>
+                        <c:TabContent tabId="10" label="Search">
+                            <c:Card label="CRM Search and Screen Pop" isFormCard="true">
+                                <div class="slds-form__row">
+                                    <c:ComboBoxTextField configWrapper="{!cnxConfigWrapper}" field="cnx__Search_and_Screen_Pop_Variable__c" dropdown="{AgentId},{ANI},{CallKeyCallId},{CallKeyPrefix},{CallKeySequenceNum},{CallType},{Channel},{Destination},{DialedNumber},{Direction},{DNIS},{<ECCArrayName[index]>},{<ECCVarName>},{Id},{<LocalVariable>},{PV<n>},{QueueName},{QueueNumber},{Sender},{UniqueId}"/>
+                                    <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__Additional_Search_Parameters_v2__c"/>
+                                </div>
+                                <div class="slds-form__row">
+                                    <c:NumberField configWrapper="{!cnxConfigWrapper}" field="cnx__Max_Number_of_CRM_Lookup_Suggestions__c"/>
+                                    <div class="slds-form__item"></div>
+                                </div>
+                            </c:Card>
+                            <c:Card label="Directory Search" isFormCard="true">
+                                <div class="slds-form__row">
+                                    <c:NumberField configWrapper="{!cnxConfigWrapper}" field="cnx__Max_Directory_Lookup_Suggestions__c"/>
+                                    <c:CheckboxGroup configWrapper="{!cnxConfigWrapper}" field="cnx__Types_To_Include_In_Directory_Lookup__c"/>
+                                </div>
+                            </c:Card>
+                        </c:TabContent>
+                        <c:TabContent tabId="11" label="Screen Pop">
+                            <c:ConfigMappingTable configWrapper="{!cnxConfigWrapper}" field="cnx__Screen_Pop_for_Call_Events__c" iconName="new_window" mapClassOverride="ScreenPopCallEventTable"/>
+                        </c:TabContent>
+                        <c:TabContent tabId="12" label="Additional Voice Settings">
+                            <div class="slds-form__row">
+                                <c:ComboBoxTextField configWrapper="{!cnxConfigWrapper}" field="cnx__Variable_for_Record_Sharing__c" dropdown="PV<n>,<ECCArrayName[index]>,<ECCVarName>"/>
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__Campaign_Account_Number_URL_v2__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Show_Supervisor_Monitoring_to_Agent__c"/>
+                                <c:CheckboxGroup configWrapper="{!cnxConfigWrapper}" field="cnx__Disabled_Voice_Actions__c"/>
+                            </div>
+                        </c:TabContent>
+                    </div>
+                </c:Card><!-- End VOICE Card -->
+
+                <c:Card label="Media" deployments="omni mri mcal">
+                    <div class="slds-form" role="list">
+                        <div class="slds-form__row">
+                            <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Use_Legacy_Media_Routing__c"/>
+                        </div>
+                    </div>
+                    <div class="slds-vertical-tabs" id="cnx-media-tabs">
+                        <ul class="slds-vertical-tabs__nav" role="tablist" aria-orientation="vertical">
+                            <c:TabSelector tabId="13" label="Cisco Universal Queue" deployments="mri"/>
+                            <c:TabSelector tabId="14" label="Cisco Universal Queue (Legacy)" deployments="mcal"/>
+                            <c:TabSelector tabId="15" label="Salesforce Omni-Channel" deployments="omni"/>
+                            <c:TabSelector tabId="16" label="Agent Work Layout" deployments="omni mri"/>
+                            <c:TabSelector tabId="17" label="New Record URLs" deployments="mcal"/>
+                            <c:TabSelector tabId="18" label="Additional Media Settings" deployments="mri mcal"/>
+                        </ul>
+                        <c:TabContent tabId="13" label="Cisco Universal Queue">
+                            <c:ExtMRIMappingTable configWrapper="{!cnxConfigWrapper}" field="cnx__Cisco_Media_Routing_Domains__c" iconName="email"/>
+                            <div class="slds-form__row">
+                                <c:LookupField configWrapper="{!cnxConfigWrapper}" field="cnx__Presence_State_Available_All__c" status="available"/>
+                                <c:LookupField configWrapper="{!cnxConfigWrapper}" field="cnx__Presence_State_Busy_All__c" status="busy"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:ComboBoxTextField configWrapper="{!cnxConfigWrapper}" field="cnx__Work_Item_Id_Variable__c" dropdown="PV<n>,<ECCArrayName[index]>,<ECCVarName>"/>
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Support_Chat_Button_State__c"/>
+                            </div>
+                        </c:TabContent>
+                        <c:TabContent tabId="14" label="Cisco Universal Queue (Legacy)">
+                            <div class="slds-form__row">
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__Media_Service_URL__c"/>
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__Agent_Media_Profile__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:ComboBoxTextField configWrapper="{!cnxConfigWrapper}" field="cnx__Media_Search_and_Screen_Pop_Variable__c" dropdown="{AgentId},{ANI},{CallKeyCallId},{CallKeyPrefix},{CallKeySequenceNum},{CallType},{Channel},{Destination},{DialedNumber},{Direction},{DNIS},{<ECCArrayName[index]>},{<ECCVarName>},{Id},{<LocalVariable>},{PV<n>},{QueueName},{QueueNumber},{Sender},{UniqueId}"/>
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__Media_Additional_Search_Parameters_v2__c"/>
+                            </div>
+                        </c:TabContent>
+                        <c:TabContent tabId="15" label="Salesforce Omni-Channel">
+                            <div class="slds-form__row">
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Hide_Omni_Channel_Work_Item__c"/>
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Hide_Chat_After_Accepting__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Switch_to_Talking_State_on_Reserved__c"/>
+                                <c:LookupField configWrapper="{!cnxConfigWrapper}" field="cnx__Service_Presence_Status_While_Talking__c" status="all"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:LookupFieldMulti configWrapper="{!cnxConfigWrapper}" field="cnx__Service_Presence_Online_Status_v2__c" status="available"/>
+                                <c:LookupFieldMulti configWrapper="{!cnxConfigWrapper}" field="cnx__Service_Presence_Busy_Status_v2__c" status="busy"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:NumberField configWrapper="{!cnxConfigWrapper}" field="cnx__Chats_To_Set_Voice_NR__c"/>
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Count_Offered_Chats_to_Set_Voice_NR__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__Not_Ready_Reason_Code_While_Chat__c"/>
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Allow_Agents_to_Decline_Requests__c"/>
+                            </div>
+                        </c:TabContent>
+                        <c:TabContent tabId="16" label="Agent Work Layout">
+                            <c:ConfigMappingTable configWrapper="{!cnxConfigWrapper}" field="cnx__Agent_Work_Layout__c" iconName="record_create" labelKey="Object API Name" labelValue="Field API Names" requireValue="false" isSortable="false" rowLimit="8"/>
+                        </c:TabContent>
+                        <c:TabContent tabId="17" label="New Record URLs">
+                            <c:ConfigMappingTable configWrapper="{!cnxConfigWrapper}" field="cnx__Media_New_Record_URL__c" iconName="record_create" labelKey="Label" labelValue="URL" requireKey="false" placeholders="['sObjectTypes', 'callData', 'foundRecords', 'dateAndTime']" rowLimit="5"/>
+                        </c:TabContent>
+                        <c:TabContent tabId="18" label="Additional Media Settings">
+                            <div class="slds-form__row">
+                                <c:CheckboxGroup configWrapper="{!cnxConfigWrapper}" field="cnx__Disabled_Media_Actions__c"/>
+                            </div>
+                        </c:TabContent>
+                    </div>
+                </c:Card><!-- End MEDIA Card -->
+
+                <c:Card label="Integrations" deployments="voice mcal mri omni">
+                    <div class="slds-form" role="list">
+                        <div class="slds-form__row">
+                            <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Enable_Integration_API_in_Lightning__c"/>
+                        </div>
+                    </div>
+                    <div class="slds-vertical-tabs" id="cnx-integrations-tabs">
+                        <ul class="slds-vertical-tabs__nav" role="tablist" aria-orientation="vertical">
+                            <c:TabSelector tabId="19" label="Custom Toolbars" isActive="true"/>
+                            <c:TabSelector tabId="20" label="Integration Settings"/>
+                            <c:TabSelector tabId="21" label="Verint Settings" addon="verint"/>
+                            <c:TabSelector tabId="22" label="Calabrio Cloud Settings" addon="calabrioCloud"/>
+                            <c:TabSelector tabId="23" label="Calabrio On-Prem Settings" addon="calabrioOnPrem"/>
+                            <c:TabSelector tabId="24" label="Realtime View Settings"/>
+                        </ul>
+                        <c:TabContent tabId="19" label="Custom Toolbars" isActive="true">
+                            <c:CustomToolbarsMappingTable configWrapper="{!cnxConfigWrapper}" field="cnx__Integrations_Custom_Toolbars__c" iconName="custom_apps"/>
+                        </c:TabContent>
+                        <c:TabContent tabId="20" label="Integration Settings">
+                            <c:ConfigMappingTable configWrapper="{!cnxConfigWrapper}" field="cnx__Integration_Settings__c" iconName="settings" isSortable="false" labelKey="Identifier" labelValue="Settings" requireKey="false" requireValue="false" rowLimit="5"/>
+                        </c:TabContent>
+                        <c:TabContent tabId="21" label="Verint Settings">
+                            <div class="slds-form__row">
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_VP_User_Login_Required__c"/>
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_VP_User_ID_Appendix__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_VP_Recording_Link_Field__c"/>
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_VP_Meta_Data_Keys__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_VP_Recording_Server__c"/>
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_VP_Query_Server__c"/>
+                            </div>
+                        </c:TabContent>
+                        <c:TabContent tabId="22" label="Calabrio Cloud Settings">
+                            <div class="slds-form__row">
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_CC_User_Login_Required__c"/>
+                                <div class="slds-form__item"></div>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_CC_User_ID_Field__c"/>
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_CC_User_ID_Appendix__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_CC_Recording_Link_Field__c"/>
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_CC_Meta_Data_Keys__c"/>
+                            </div>
+                        </c:TabContent>
+                        <c:TabContent tabId="23" label="Calabrio On-Prem Settings">
+                            <div class="slds-form__row">
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_CP_User_Login_Required__c"/>
+                                <div class="slds-form__item"></div>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_CP_User_ID_Field__c"/>
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_CP_User_ID_Appendix__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_CP_Login_Username__c"/>
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_CP_Login_Password__c" type="password"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_CP_Recording_Link_Field__c"/>
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_CP_Meta_Data_Keys__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:TextField configWrapper="{!cnxConfigWrapper}" field="cnx__RT_CP_Recording_Server__c"/>
+                                <div class="slds-form__item"></div>
+                            </div>
+                        </c:TabContent>
+                        <c:TabContent tabId="24" label="Realtime View Settings">
+                            <div class="slds-form__row">
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Realtime_HideQueueView__c"/>
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Realtime_HideTeamView__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Realtime_ShowStateChangeTime__c"/>
+                                <c:ComboBoxField configWrapper="{!cnxConfigWrapper}" field="cnx__Realtime_SortAgentNameBy__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:NumberField configWrapper="{!cnxConfigWrapper}" field="cnx__Realtime_HighNumOfCallsThreshold__c"/>
+                                <c:NumberField configWrapper="{!cnxConfigWrapper}" field="cnx__Realtime_CriticalNumOfCallsThreshold__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:NumberField configWrapper="{!cnxConfigWrapper}" field="cnx__Realtime_HighWaitTimeThreshold__c"/>
+                                <c:NumberField configWrapper="{!cnxConfigWrapper}" field="cnx__Realtime_CriticalWaitTimeThreshold__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:ToggleField configWrapper="{!cnxConfigWrapper}" field="cnx__Realtime_CallAgentID__c"/>
+                                <c:CheckboxGroup configWrapper="{!cnxConfigWrapper}" field="cnx__Realtime_FilterMask__c"/>
+                            </div>
+                            <div class="slds-form__row">
+                                <c:NumberField configWrapper="{!cnxConfigWrapper}" field="cnx__Realtime_RefreshTimeQueue__c" step="0.5" displayAsDouble="true"/>
+                                <c:NumberField configWrapper="{!cnxConfigWrapper}" field="cnx__Realtime_RefreshTimeTeam__c" step="0.5" displayAsDouble="true"/>
+                            </div>
+                            <c:ConfigMappingTable configWrapper="{!cnxConfigWrapper}" field="cnx__Realtime_Click_To_Dial_Queue__c" iconName="description" labelKey="Queue Peripheral Number" labelValue="Number" placeholders="[]"/>
+                        </c:TabContent>
+                    </div>
+                </c:Card><!-- End INTEGRATIONS Card -->
+            </div>
+        </div>
+    </body>
+</html>
+</apex:page>

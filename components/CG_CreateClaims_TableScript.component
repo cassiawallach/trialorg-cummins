@@ -1,0 +1,557 @@
+<apex:component controller="CG_CL_CreateClaims_Table">
+
+    <!-- Global CSS & Faviconv -->
+    <link rel="stylesheet" href="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/bootstrap3/css/CMI-bootstrap.css')}"/>   
+    <link rel="stylesheet" href="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/css/component_specific/CMI-global.css')}"/> 
+    <link rel="stylesheet" href="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/css/component_specific/CMI-hometable.css')}"/>             
+    <link rel="stylesheet" href="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/css/component_specific/CMI-myjobs.css')}"/>                           
+    <link rel="stylesheet" href="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/css/component_specific/bootstrap-datepicker.css')}"/>                           
+    <link rel="stylesheet" href="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/css/component_specific/CMI-Mini-Chevrons.css')}"/> 
+    <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/css/component_specific/jquery-ui.min.css')}"/>
+    <link rel="stylesheet" href="{!URLFOR($Resource.font_awesome, 'font-awesome/css/font-awesome.css')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/jquery-1.11.2.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/bootstrap-datepicker.js')}"/>  
+    <apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/bootstrap3/js/bootstrap.js')}"/>  
+
+    <apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/responsive-tabs.js')}" /> 
+    <apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/app.js')}" /> 
+
+    <apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/Css_header2_scripts.js')}"/>       
+    <apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/jquery-ui.min.js')}"/>
+
+    <apex:includeScript value="{!URLFOR($Resource.css_angularjs, '/angular.js')}" /> 
+    <apex:includeScript value="{!URLFOR($Resource.css_angularjs, '/angular.min.js')}" />
+    <apex:includeScript value="{!URLFOR($Resource.css_angularjs, '/CSS_AngularPagination.js')}" /> 
+    <script type="text/javascript">
+        function dateFormat(inputDate , dtlocale){                                  
+            if(dtlocale == 'dd/MM/yyyy'){                    
+                return inputDate.split("/").reverse().join("-");
+            }
+            else
+            {                    
+                var dateParts = inputDate.split(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+                return dateParts[3] + "-" + dateParts[1] + "-" + dateParts[2];
+            }
+        }
+    </script>
+    <script>
+
+
+        var myapp = angular.module('myapp', ['ui.bootstrap']);
+
+        myapp.filter('jsonDate', ['$filter', function ($filter) {
+            return function (input, format) {
+                //return (input) ? $filter('date')(parseInt(input.substr(6)), format) : '';
+                return (input) ? $filter('date')(input,format) : '';
+            };
+        }])    
+
+        myapp.controller('claimsController', ['$scope','$filter','$window',function($scope,$filter,$window){
+            $scope.account = {};        
+            $scope.items = [];
+            $scope.itemsCopy=$scope.items;
+            $scope.account.Name ='';
+            $scope.account.Assigned_To ='';
+            $scope.account.Website ='';
+            $scope.account.Fax ='';
+            $scope.account.Id ='';
+            $scope.account.JobLocationCode = '';
+            $scope.index='';
+            $scope.acttab = "0";
+            $scope.currentPage = 1; 
+            $scope.pageSize = 20;
+            $scope.DisableManualClaimsButton = false;
+            $scope.EnableManualClaimsButton = true;
+            $scope.showHideFirstRowFirstDateField = false;
+            //$scope.showHideFirstRowInput = false;
+          // $scope.locName='';
+           
+            $scope.paged = function (valLists, pageSize) {
+                retVal = [];
+                for (var i = 0; i < valLists.length; i++) {
+                    if (i % pageSize === 0) {
+
+                        retVal[Math.ceil((i+1) / pageSize)] = [valLists[i]];
+                    } else {
+
+                        retVal[Math.ceil((i+1) / pageSize)].push(valLists[i]);
+                    }
+
+                }
+
+                return retVal;
+            }
+
+
+            $scope.$watch(function () {
+                $scope.filteredList = $scope.$eval("items | filter:search");
+                $scope.ItemsByPage = $scope.paged($scope.filteredList, $scope.pageSize);
+
+            });
+
+            $scope.range = function (input, total) {
+                var ret = [];
+                if (!total) {
+                    total = input;
+                    input = 0;
+                }
+                for (var i = input; i < total; i++) {
+                    if (i != 0 && i != total - 1) {
+                        ret.push(i);
+                    }
+                }
+                return ret;
+            }   
+
+            $scope.menu = [
+
+                {
+                    tab: "One",
+                    nom: "{!$Label.CSS_View_all}"
+                }, 
+                {
+                    tab: "Two",
+                    nom: "{!$Label.CSS_Draft}"
+                },
+                {
+                    tab: "Three",
+                    nom: "{!$Label.CSS_Submitted}"
+                }          
+            ]
+
+            $scope.selectItem = function(item) {
+
+                if (item.tab=='One') {
+                    $scope.acttab = "0";
+                    var statusVal = null;
+
+                }
+
+                if (item.tab=='Two') {
+                    var statusVal = 'Draft';
+                    $scope.acttab = "1";
+                }
+
+                if (item.tab=='Three') {
+                    var statusVal = 'Submitted';
+                    $scope.acttab = "2";
+                }
+                var selectedLocation = '{!defaultLoc}';
+                $scope.currentPage = 1;
+                Visualforce.remoting.Manager.invokeAction(
+                    'CG_CL_CreateClaims_Table.CustomSearchJobs', 
+                    selectedLocation,statusVal, function(result, event) {  
+                        console.log('result' + ' ' + result );
+                        $scope.indx=result.lastIndexOf("rccnt-");
+                        $scope.strResult=result.substring(0,$scope.indx);
+                        $scope.items = JSON.parse($scope.strResult.replace(/(&amp\;)/g,'&').replace(/(&quot\;)/g,'"').replace(/(&#39\;)/g,'\''));
+
+                        $scope.recCount=result.substring(result.lastIndexOf("rccnt-")+6,result.length);
+                        $scope.$apply();
+                    });
+                $scope.loadingImage = false;
+            }
+
+            $scope.fieldValues = {
+              //  "selectOne" : "{!$Label.CSS_WS_Selection_One}",   
+                "All" : "All",
+                "CreatedAfter" :"{!$Label.CSS_Claims_Created_After}",
+                "Customer" : "{!$Label.CSS_Customer_Name}",
+                "GuidanzJobnumber" : "Guidanz Job number",
+                "ShopWorkOrder" : "{!$Label.css_shop_work_order}",
+                "PSN" : "PSN",
+                "UnitNumber" : "Unit Number",
+                "VINassetSN" : "VIN / Asset Serial Number",
+                "Status" : "{!$Label.CSS_Status}"
+                //"SubStatus" : "SubStatus"
+            }
+
+            $scope.statusValues = {
+                "selectOne" : "-- Select One --",
+                "Closed" : "Closed", 
+                "Intake Complete" : "Intake Complete", 
+                "Job Plan" : "Job Plan", 
+                "Repair": "Repair", 
+                "Review" : "Review", 
+                "Triage & Diagnosis" : "Triage & Diagnosis", 
+                "Triage & Diagnosis/Repair" : "Triage & Diagnosis/Repair"
+            }
+
+            $scope.SubStatusValues = {
+                "selectOne" : "-- Select One --",
+                "None" : "None", 
+                "Escalated" : "Escalated", 
+                "Estimate Needs Update" : "Estimate Needs Update",
+                "Ready for Claim Creation" : "Ready for Claim Creation",
+                "Repair Complete" : "Repair Complete", 
+                "Repair Scheduled" : "Repair Scheduled",
+                "Troubleshooting Complete" : "Troubleshooting Complete", 
+                "Unit/Vehicle on Lot" : "Unit/Vehicle on Lot", 
+                "Waiting on Customer" : "Waiting on Customer", 
+                "Waiting on Factory": "Waiting on Factory", 
+                "Waiting on Estimate/Approval" : "Waiting on Estimate/Approval", 
+                "Waiting on Parts" : "Waiting on Parts", 
+                "Waiting on Tech Availability" : "Waiting on Tech Availability", 
+                "Waiting on Unit/Vehicle" : "Waiting on Unit/Vehicle", 
+                "Work in Progress" : "Work in Progress"                  
+            }
+
+
+var dLocale;
+            $scope.getOptionsField = function(item) {
+
+                if($scope.option2=== undefined){
+                }
+                else{                       
+                    var fieldKey = $scope.option2;
+                    console.log("fieldKey", fieldKey);//Getting KEY
+                    if(fieldKey != 'selectOne') {
+                        if(fieldKey == "All" || fieldKey == "GuidanzJobnumber" || fieldKey == "Customer" || fieldKey == "ShopWorkOrder" || 
+                           fieldKey == "UnitNumber" || fieldKey == "VINassetSN" || fieldKey == "PSN") {
+
+                            $scope.showHideSecondRowInput = true; 
+                            $scope.showHide2StatusOptions = false;
+                            $scope.showHide2SubStatusOptions = false;
+                            $scope.showHideFirstRowFirstDateField = false;
+                            $scope.selectedFirstRowFirstDate  = '';
+                            $scope.showHideFirstRowInput = false;
+                            $scope.status2  = '';
+                            $scope.substatus2 = '';
+                            $scope.secondRowInputText='';
+                        }else if(fieldKey == "CreatedAfter"){
+                            $scope.utcFirstDate= "";
+                            $scope.vFieldValue1 = $scope.option1;
+                            $scope.showHideFirstRowInput = false;
+                            $scope.showHideFirstRowFirstDateField = true;
+                            $scope.selectedFirstRowFirstDate  = '';
+                            $scope.showHide2StatusOptions = false;
+                            $scope.showHide2SubStatusOptions = false;
+                            $scope.showHideSecondRowInput = false; 
+                        }else if(fieldKey == "Status") {
+
+                            $scope.showHideSecondRowInput = false; 
+                            $scope.showHide2StatusOptions = true;
+                            $scope.showHide2SubStatusOptions = false;
+                            $scope.showHideFirstRowFirstDateField = false;
+                            $scope.selectedFirstRowFirstDate  = '';
+                            $scope.showHideFirstRowInput = false;
+                            $scope.substatus2 = '';
+                            $scope.status2  = '-- Select One --';
+                            $scope.secondRowInputText='';
+                        }else if(fieldKey == "SubStatus") {
+
+                            $scope.showHideSecondRowInput = false;
+                            $scope.showHide2StatusOptions = false;
+                            $scope.showHide2SubStatusOptions = true;
+                            $scope.showHideFirstRowFirstDateField = false;
+                            $scope.selectedFirstRowFirstDate  = '';
+                            $scope.showHideFirstRowInput = true;
+                            $scope.substatus2  = '-- Select One --';
+                            $scope.secondRowInputText='';
+
+
+                        }else {
+
+                            $scope.showHideSecondRowInput = true; 
+                            $scope.showHide2StatusOptions = false;
+                            $scope.showHide2SubStatusOptions = false;
+                        }
+                    }
+                    else {
+                        $scope.status2  = '';
+                        $scope.substatus2  = '-- Select One --';
+                        $scope.secondRowInputText='';
+                    }
+                }
+            };
+
+            $scope.clearRow =function(item){
+                $scope.showHideSecondRowInput = true;
+                $scope.option2  = 'All';
+            }
+
+            $window.onload=function(){
+
+                var selectedLocation = '{!defaultLoc}';
+                //alert(selectedLocation);
+                $scope.currentPage = 1;
+                $scope.loadingImage = true;
+                if(selectedLocation != null) {
+                    Visualforce.remoting.Manager.invokeAction(
+                        'CG_CL_CreateClaims_Table.CustomSearchJobs', 
+                        selectedLocation,null, function(result, event) {  
+                            console.log("result" + ' ' + result);
+                            $scope.indx=result.lastIndexOf("rccnt-");
+                            $scope.strResult=result.substring(0,$scope.indx);
+                            $scope.items = JSON.parse($scope.strResult.replace(/(&amp\;)/g,'&').replace(/(&quot\;)/g,'"').replace(/(&#39\;)/g,'\''));
+
+                            $scope.recCount=result.substring(result.lastIndexOf("rccnt-")+6,result.length);
+                            $scope.$apply();
+                        });
+                    $scope.loadingImage = false;
+                } 
+                hideAutoClaimBtnOnLoad(); // disable/enable the auto claim button 
+                $scope.items=$scope.ItemsByPage[0];
+                console.log('**items**'+$scope.items);
+                // $scope.sort('Sub_Status');
+            }
+            $scope.SearchClaims = function(selectedLocation) 
+            {
+                 $scope.soqlQuery = ' ';    
+                
+                if (selectedLocation == '-All-'){
+                    $scope.DisableManualClaimsButton = true;
+                    $scope.EnableManualClaimsButton = false;
+                 }
+                else{
+                    $scope.DisableManualClaimsButton = false;
+                    $scope.EnableManualClaimsButton = true;
+                }
+                
+                
+                var secondRowInputText = $scope.secondRowInputText;
+                /**************** SEARCH QUERY  *****************/
+                if(secondRowInputText == undefined) {
+                    secondRowInputText ='';
+                    $scope.secondRowInputText = secondRowInputText;
+                }
+                
+                 console.log('secondRowInputText' + secondRowInputText);               
+                console.log('$scope.secondRowInputText' + $scope.secondRowInputText);
+                
+                /**************** SEARCH QUERY  *****************/
+                if($scope.option2  != 'selectOne') 
+                {
+ 
+                    if($scope.option2 == "All" ||  $scope.option2 == "Customer" || $scope.option2 == "GuidanzJobnumber" || $scope.option2 == "ShopWorkOrder" || 
+                       $scope.option2 == "UnitNumber" || $scope.option2 == "VINassetSN"  || $scope.option2 == "PSN")
+                    {
+                       $scope.vFieldValue2 = $scope.option2;
+                        
+                        if($scope.option2 === 'All') 
+                        {
+                            $scope.option2 = 'All';
+                        }  
+                        else if($scope.option2 === 'Customer') 
+                        {
+                            $scope.option2 = 'Customer_Name__c';
+                        } else if($scope.option2 === 'GuidanzJobnumber') 
+                        {
+                            $scope.option2 = 'Name';
+                        } else if($scope.option2 === 'ShopWorkOrder') 
+                        {
+                            $scope.option2 = 'Shop_Work_Order__c';
+                        } else if($scope.option2 === 'UnitNumber') 
+                        {
+                            $scope.option2 = 'Unit_Number__c';
+                        }else if($scope.option2 === 'VINassetSN')
+                        {
+                            $scope.option2 = 'VIN__c';   
+                        }
+                        else if($scope.option2 === 'PSN')
+                        {
+                            $scope.option2 = 'ESN__c';   
+                        }
+                     //+ '%\' OR CreatedDate LIKE  \'%' + $scope.secondRowInputText
+                        if($scope.secondRowInputText !== '' && $scope.secondRowInputText !== null)
+                        {
+                             if($scope.option2 === 'All')
+                                 $scope.soqlQuery += 'Customer_Name__c LIKE  \'%' + $scope.secondRowInputText + '%\' OR Name LIKE  \'%' + $scope.secondRowInputText + '%\' OR Shop_Work_Order__c LIKE  \'%' + $scope.secondRowInputText + '%\' OR Unit_Number__c LIKE  \'%' + $scope.secondRowInputText + '%\' OR VIN__c LIKE  \'%' + $scope.secondRowInputText + '%\' OR ESN__c LIKE  \'%' + $scope.secondRowInputText  + '%\' OR Status__c LIKE  \'%' + $scope.secondRowInputText + '%\' ';
+                              else
+                                $scope.soqlQuery +=  $scope.option2 + ' LIKE  \'%' + $scope.secondRowInputText + '%\' ';
+                        }
+                        else{
+                            if($scope.option2 === 'All')
+                            {
+                               $scope.soqlQuery +=  $scope.option2 + ' = ' + $scope.secondRowInputText + ' ';
+                            }
+                            else
+                            {
+                                console.log('$scope.secondRowInputText' + $scope.secondRowInputText);
+                            $scope.soqlQuery +=  $scope.option2 + ' = ' + $scope.secondRowInputText + '\'\'';
+                            }
+                        }
+                        console.log('$scope.soqlQuery 364' + $scope.soqlQuery);
+                    } 
+
+                    
+                    else if($scope.option2 === 'CreatedAfter') 
+                    {   
+                      
+                       $scope.vFieldValue2 = $scope.option2;
+                         $scope.option2 = 'CreatedDate';
+                        if($scope.selectedFirstRowFirstDate != null && $scope.selectedFirstRowFirstDate !='') 
+                        {
+                            var dLocale = '{!datebyLocaleValue}';
+                            console.log('dLocale 375' + dLocale);
+                            dLocale = dLocale.replace('mm','MM');
+                            $scope.sDate = $filter('date')($scope.selectedFirstRowFirstDate,dLocale);                
+                            $scope.utcFirstDate = dateFormat($scope.sDate,dLocale);
+                            //$scope.utcFirstDate = $filter('date')(new Date($scope.selectedFirstRowFirstDate),'yyyy-MM-dd');         
+                        //  alert('$scope.utcFirstDate' + $scope.utcFirstDate);
+                            $scope.soqlQuery = 'DAY_ONLY(' + $scope.option2 + ') >= ' + $scope.utcFirstDate;
+                            console.log('$scope.soqlQuery 381' +  '  ' + $scope.soqlQuery);
+                        }
+                        else{
+                            $scope.soqlQuery += 'DAY_ONLY(' + $scope.option2 + ') >= ' + '2020-04-29' ;
+                         console.log("$scope.soqlQuery CD null" + ' ' +  $scope.soqlQuery);
+                        }
+                    }
+
+                    else if($scope.option2 === 'Status') 
+                    {
+                        //alert("")
+                        $scope.vFieldValue2 = $scope.option2;
+                        if($scope.status2 != null && $scope.status2 != '-- Select One --' && $scope.status2 != '') 
+                        {
+                            $scope.soqlQuery += 'Status__c =  \'' + $scope.status2 + '\' ';
+                            console.log("$scope.soqlQuery" + ' ' +  $scope.soqlQuery);
+                        }
+                        else
+                        {
+                            $scope.soqlQuery += 'Status__c = ' + '\'\''; 
+                            console.log("$scope.soqlQuery" + ' ' +  $scope.soqlQuery);
+                        }
+                    }
+                    else if($scope.option2 === 'SubStatus')
+                    {
+
+                        $scope.vFieldValue2 = $scope.option2;
+                        if($scope.substatus2 != null && $scope.substatus2 != '-- Select One --' && $scope.substatus2 != '') 
+                        {
+                            $scope.soqlQuery += 'Sub_Status__c =  \'' + $scope.substatus2 + '\' ';
+
+                        }
+                        else
+                        {
+                            $scope.soqlQuery = ' '; 
+                        }
+                   }
+                    else
+                    {
+                        $scope.vFieldValue2 = $scope.option2;
+                        $scope.soqlQuery = ' ';        
+
+                    }
+                }
+                
+                else
+                {
+                    $scope.vFieldValue2 = $scope.option2;
+                    $scope.soqlQuery = ' ';        
+
+                }
+                /**************** SEARCH QUERY  *****************/ 
+                $scope.acttab="0";
+                $scope.currentPage = 1;
+                $scope.loadingImage = true;
+                if(selectedLocation != null) {
+                    //alert(selectedLocation);
+                    //alert($scope.soqlQuery);
+                    Visualforce.remoting.Manager.invokeAction(
+                        'CG_CL_CreateClaims_Table.CustomSearchJobs', 
+                        selectedLocation,$scope.soqlQuery,function(result, event) {  
+                            console.log("result" + ' ' + result);
+                            $scope.indx=result.lastIndexOf("rccnt-");
+                            $scope.strResult=result.substring(0,$scope.indx);
+                            $scope.items = JSON.parse($scope.strResult.replace(/(&amp\;)/g,'&').replace(/(&quot\;)/g,'"').replace(/(&#39\;)/g,'\''));
+
+                            $scope.recCount=result.substring(result.lastIndexOf("rccnt-")+6,result.length);
+                            $scope.$apply();
+                        });
+                    $scope.loadingImage = false;
+                }
+              
+                if($scope.vFieldValue2 != null && $scope.vFieldValue2 != '')
+                    $scope.option2 =$scope.vFieldValue2;
+                else 
+                    $scope.option2 = 'selectOne';
+            } 
+
+            //Below code is for sorting columns
+            $scope.sort = function (sortBy) {
+               $scope.resetAll();
+
+                $scope.columnToOrder = sortBy;
+
+                console.log("sortBy" + '  ' +   sortBy);
+                console.log("$scope.reverse" + '  ' + $scope.reverse);
+
+                if (sortBy === 'RecentVisit'){
+                    $scope.items = $filter('orderBy')($scope.items, ['Repeat_Visit', 'RecentVisit', !'LastSaved_sort'], $scope.reverse);
+                    if ($scope.reverse) iconName = 'fa fa-caret-up fa-lg';
+                    else iconName = 'fa fa-caret-down fa-lg';
+                    $scope.Header[8] = iconName;
+                }
+                /* else if (sortBy === 'Sub_Status'){
+                    $scope.items = $filter('orderBy')($scope.items, ['Sub_Status', !'LastSaved_sort'], $scope.reverse);
+                    if ($scope.reverse) iconName = 'fa fa-caret-up fa-lg';
+                    else iconName = 'fa fa-caret-down fa-lg';
+                    $scope.Header[0] = iconName;
+
+                } */
+                else
+                {
+                    console.log('insideelse');
+                    $scope.items = $filter('orderBy')($scope.items, $scope.columnToOrder, $scope.reverse);
+                   if ($scope.reverse) iconName = 'fa fa-caret-down fa-lg';
+                    else iconName = 'fa fa-caret-up fa-lg';                    
+
+
+                    if (sortBy === 'LastSaved_sort') {
+                        $scope.Header[1] = iconName;
+                      } 
+                    if (sortBy === 'Customer_Name') {
+                        $scope.Header[7] = iconName;
+                      //  alert('sortBy' + ' ' + sortBy );
+                    //alert('$scope.items' + ' ' + $scope.items );
+                    //alert('$scope.reverse' + ' ' + $scope.reverse );
+                    //alert('iconName' + ' ' + iconName );
+                    //alert('$scope.Header[7]' + ' ' + $scope.Header[7] );
+
+                       } 
+                    if (sortBy === 'name'){
+                        $scope.Header[2] = iconName;
+                    }
+                    if (sortBy === 'Shop_s_Work_Order'){
+                        $scope.Header[3] = iconName;
+                    }
+                    if (sortBy === 'Unit_Number'){
+                        $scope.Header[4] = iconName;
+                    }
+                    if (sortBy === 'Service_Model'){
+                        $scope.Header[5] = iconName;
+                    }
+                    if (sortBy === 'Status'){
+                        $scope.Header[6] = iconName;
+                    }
+                    if (sortBy === 'Sub_Status') {
+                        $scope.Header[0] = iconName;
+                      } 
+                    if (sortBy === 'Assigned'){
+                        $scope.Header[9] = iconName;
+                    }
+                    if (sortBy === 'Date_In_sort'){
+                        $scope.Header[10] = iconName;
+                    }                   
+                    if (sortBy === 'Created_Time_sort'){
+                        $scope.Header[11] = iconName;
+                    }
+                    if (sortBy === 'Job_Location'){
+                        $scope.Header[12] = iconName;
+                    }                    
+                }
+                $scope.reverse = !$scope.reverse;
+                console.log("$scope.reverse" + '  ' +   $scope.reverse);
+
+
+            };
+
+            $scope.resetAll = function () {
+                //   $scope.items=$scope.itemsCopy;
+                $scope.filteredList = $scope.items;
+                $scope.Header = ['', '', '', '', '', '', '', '', '', ''];
+            }
+        }])
+    </script>  
+</apex:component>

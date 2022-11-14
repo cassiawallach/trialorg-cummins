@@ -1,0 +1,302 @@
+<aura:component implements="lightning:isUrlAddressable,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,lightning:availableForFlowScreens" 
+                access="global"
+                controller="FSL_GetSolutions">   
+    
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="Solution" type="String"/>
+    <aura:attribute name="SolutionId" type="String"/>
+    <aura:attribute name="overViewDetail" type="object"/>
+    <aura:attribute name="openSection" type="String"/>
+    <aura:attribute name="knowledgeList" type="list"/>
+    <aura:attribute name="childevevalue" type="String"/>
+    <aura:attribute name="comment" type="String" default=''/>
+    <aura:attribute name="commentvalueval" type="String"/>
+    <aura:attribute name="activeSections" type="string"  />
+    <aura:attribute name="SoluId" type="String"/>
+    <aura:attribute name="parentsol" type="String"/>
+    <aura:attribute name="parentuserstamp" type="String"/>
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+    <aura:attribute name="childSol" type="boolean" default="false"/>
+    <aura:attribute name="errorMsg" type="String"/>
+    <aura:attribute name="isMileageErr" type="boolean" default="false"/>
+    <aura:attribute name="isHoursErr" type="boolean" default="false"/>
+    <aura:attribute name="mileageNum" type="Integer"/>
+    <aura:attribute name="hoursNum" type="Decimal"/>
+    <aura:attribute name="value" type="String"/> 
+    <aura:attribute name="hidelaunchinsite" type="boolean" default="false"/> 
+    <aura:attribute name="openModel" type="boolean" /><!--added by vinod yelala for accessibility checklist-->
+    <aura:attribute name="openModelCmp" type="boolean" /><!--added by vinod yelala for accessibility checklist-->
+    <aura:attribute name="showSolComp" type="boolean" default="false"/><!--added by vinod to show sol comps  4-25-->
+    <aura:attribute name="selectIndx" type="Integer"/>
+    <aura:attribute name="selectComps" type="List"/>
+    <aura:attribute name="deSelectedSolComps" type="List"/>    
+    <aura:attribute name="selectedParts" type="List"/>
+    <aura:attribute name="deSelectedParts" type="List"/>
+    <aura:attribute name="cssSolComps" type="List"/>
+    <aura:attribute name="partIdReplsRsn" type="List"/>
+     <aura:attribute name="roleName" type="string" />  <!-- Added by Priyanka for VGRS2-15: 11/11/2021 -->
+    <!--added by vinod for repair radio buttons-->
+    <aura:attribute name="showSolComps" type="Boolean" />
+    <aura:attribute name="hideAddFailureBtn" type="Boolean"/>
+    <aura:attribute name="showspinner" type="Boolean"/> 
+    <aura:attribute name="FAULTCODEID" type="String"/> 
+    <aura:attribute name="SRTType" type="String" default="Diagnostic"/>
+    <!--Ends repair radio buttons-->
+    <!-- Road 101 START - Commenting Road 7 & 56 changes by Murali
+        <aura:attribute name = "NextToggle" type = "String" default = ""/> -->
+    <aura:attribute name = "NextToggle" type = "String" default = ""/> <!--Road 106/107 by Murali for reverting Road 101 changes 11/29/2021 -->
+    <aura:attribute name="isAutoOpen" type="Boolean" default = "false"/> <!--Road 106 changes by Murali -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" access="global"/> 
+    <aura:handler name="sampleCmpEvent" event="c:FSL_RadiobuttonDisplaySolutionsEvent" action="{!c.Showsolutioncomponent2}"/>
+    <!--added by vinod yellala for event-->
+    <aura:handler name="AddSolComps" event="c:FSLAddSelectedSolComp" action="{!c.collectSolComps}"/>
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <!-- Added By Rajashekar to track Solution id Diagnistic Audit Trail -->
+    <aura:handler name="change" value="{!v.SoluId}" action="{!c.handleValueChange}"/>
+    <aura:handler name="change" value="{!v.comment}" action="{!c.handleChange}"/>
+    <!--added by Mani  PHEON - 33 -->
+    <aura:attribute name="isreloads" type="boolean" default="false"/>
+    <!--added by Mani  PHEON - 33 -->
+    <aura:attribute name="ShowDisSols" type="string"/>
+     <aura:registerEvent name="appEvent" type="c:EVL_ContinueTorepEvnt"/>
+    <aura:handler name="cmpEvent1" event="c:EVL_TDSCompEvent" action="{!c.doInit}"/>
+    
+        <aura:registerEvent name="EVLPathChange" type="c:EVL_PathChange"/>
+  <!-- 
+    <aura:method name="sampleMethodDisSol" action="{!c.doAction}"
+                        description="Sample method with parameters"> 
+        <aura:attribute name="recordId" type="string"/>
+        
+        
+    </aura:method> -->
+    
+    <aura:method name="displaySol" action="{!c.doAction}"
+                        description="sample Fault code Id's"> 
+        <aura:attribute name="faultCodeId" type="string"/>
+        
+    </aura:method>    
+   
+    <!--added by Sriprada -->
+    <aura:if isTrue="{!v.ShowDisSols != null}">
+    <div class="c-container">
+         <div class="slds-spinner_container slds-hide " aura:id="mySpinner">
+            <div  role="status" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+            <aura:if isTrue="{!v.overViewDetail.faultCode != ''}">
+            <table class="slds-table slds-table_bordered slds-table_cell-buffer slds-p-horizontal_small slds-p-top">
+                <tbody> <br/>
+                    <h1 class ="slds-text-color_error slds-text-heading_small"><strong>{!$Label.c.css_jo_label}</strong></h1><br/>
+                    <tr class="slds-p-horizontal_small">
+                        <b> {!$Label.c.CSS_Fault_Code}: </b> {!v.overViewDetail.faultCode}
+                    </tr><br/>
+                    <tr class="slds-p-horizontal_small">
+                        <b> {!$Label.c.css_Description}: </b> {!v.overViewDetail.description}
+                    </tr><br/>
+                    <tr class="slds-p-horizontal_small">
+                        <b> {!$Label.c.css_Location}: </b> {!v.overViewDetail.compLocation}
+                    </tr> <br/>
+                    <tr class="slds-p-horizontal_small">
+                        <b> {!$Label.c.FSL_FC_SPN}: </b> {!v.overViewDetail.spn}
+                    </tr><br/>
+                    <tr class="slds-p-horizontal_small">
+                        <b> {!$Label.c.FSL_FC_FMI}: </b> {!v.overViewDetail.fmi}
+                    </tr><br/>
+                    <tr class="slds-p-horizontal_small">
+                        <b> {!$Label.c.CSS_Lamp}: </b> {!v.overViewDetail.lamp}
+                    </tr><br/>
+                    <tr class="slds-p-horizontal_small slds-grow slds-cell-wrap" style="word-wrap: break-word;" >
+                        <b> {!$Label.c.css_Fault_Code_Description}: </b> {!v.overViewDetail.circuitDescription}
+                    </tr><br/>
+                    <tr class="slds-p-horizontal_small">
+                        <b> {!$Label.c.css_Engine}: </b> {!v.overViewDetail.engine}
+                    </tr><br/>
+                    <tr class="slds-p-horizontal_small">
+                        <b> {!$Label.c.CSS_Reason}: </b> {!v.overViewDetail.reason}
+                    </tr><br/>
+                    <tr class="slds-p-horizontal_small">
+                        <b> {!$Label.c.CSS_Effect}: </b> {!v.overViewDetail.effect} 
+                    </tr><br/>
+                    <tr class="slds-p-horizontal_small ">
+                        <b> {!$Label.c.css_Troubleshooting}: </b> 
+        <!--<b class="slds-text-link" onclick="{!c.FCOverview}">Click here to see complete FC Overview </b>-->
+            <a href="{!v.overViewDetail.url}" target="_blank"><b>{!$Label.c.FSL_FC_Overview}</b></a>
+                   </tr> <br/> 
+                </tbody>
+            </table> </aura:if> <!-- Code ends here-->
+        
+        
+        <lightning:accordion allowMultipleSectionsOpen="false" activeSectionName="{!v.activeSections}" onsectiontoggle="{!c.setLPTsListView}" > 
+        <!--
+			I tried this but it is not working. ===> activeSectionName="B" ===> use the name="{!kwnitem.solname}" 
+			I tried to reload Knowledge list then it will auto moved to next solution -> this one is working now.
+		-->
+            
+            <br/>   <h1 class="slds-truncate slds-p-horizontal_small slds-text-color_error slds-text-heading_small" title="Title">
+                <strong>Diagnostic Solutions, Troubleshooting and Tests</strong>
+            <strong class="slds-float_right">Diagnostic Target Time</strong> 
+            </h1>
+            <br/>
+            <aura:iteration items="{!v.knowledgeList}" var="kwnitem" indexVar="index">
+                
+                <!--  <lightning:accordion aura:id="accordion" activeSectionName="{!v.kwnitem[0].Title}">-->
+                <!--    name={!kwnitem.name} -->
+                <!--Road 106/107 by Murali for reverting Road 101 changes 11/29/2021 -->
+                <!--<lightning:accordionSection label="{!kwnitem.solname}" name="{!kwnitem.solname}" aura:id="accidn"> --> <!--Added by Murali for Road 7 Changes 10/20/2021 -->
+                <lightning:accordionSection class="{!kwnitem.nestedSolVal != null ? 'mleft':''}" label="{!kwnitem.solname}" name="{!kwnitem.solname}" aura:id="accidn">
+                    <aura:set attribute="actions">
+                        <b style="color:red">{!kwnitem.diagTargetTimeOrMsg}</b>
+                    </aura:set>
+                    <!--  <lightning:textarea type="hidden" aura-id="idarticle" label="Comments" value="{!kwnitem.solname}"/> -->
+                    <!--<p>This is the content area for Solution {!kwnitem.kurlName}.</p>-->
+                    <div><br/>
+                        <b><u><h1>Verification:</h1></u></b><br/>
+                        <aura:unescapedHtml value="{!kwnitem.karticle}" />
+                    </div>
+                    
+                    <aura:if isTrue="{!v.hidelaunchinsite}">
+                        <div>
+                            <!-- Starts Added by vinod for accessibility checklist SRT-->
+                            <c:EVL_AccessibilityChecklist recordId="{!v.recordId}" isOpen="{!v.openModel}"
+                                                      cssSolId="{!kwnitem.cssSolId}" SRTType="{!v.SRTType}"
+                                                      selectedRowOnParent="{!v.selectIndx}"
+                                                      currentRow="{!index}"/>
+                            <!--c:FSLAccessbltyChecklist recordId="{!v.recordId}" isOpen="{!v.openModel}"
+                                                      cssSolId="{!kwnitem.cssSolId}" 
+                                                      selectedRowOnParent="{!v.selectIndx}"
+                                                      currentRow="{!index}"/--><!--added current row attribute 9/5-->                            
+                            <!-- Ends Added by vinod for accessibility checklist SRT-->
+                            <br/>
+                            <!--Flag to show for respective performed diagnostic response //added by mallika-->
+                            <aura:if isTrue="{!kwnitem.soldiagnostic == 'Most likely the solution. Repair recommended.'}">
+                                <b class="slds-m-top--medium" style="font-size: 15px;">{!$Label.c.FSL_Previous_Selection}: </b> {!$Label.c.FSL_Most_Likely}
+                                <img src="{!$Resource.passed_png}" width="30" height="30" alt="img"/><br/><br/>
+                            </aura:if>
+                            <aura:if isTrue="{!kwnitem.soldiagnostic == 'Not the solution. Continue troubleshooting.'}">
+                                <b class="slds-m-top--medium" style="font-size: 15px;">{!$Label.c.FSL_Previous_Selection}: </b> {!$Label.c.FSL_Not_the_Solution}
+                                <img src="{!$Resource.not_passed_png}" width="30" height="30"/><br/><br/>
+                            </aura:if>
+                            <aura:if isTrue="{!kwnitem.soldiagnostic == 'Could not perform the solution verification'}">
+                                <b class="slds-m-top--medium" style="font-size: 15px;">{!$Label.c.FSL_Previous_Selection}: </b> {!$Label.c.CSS_Could_not_perform_the_solution_verification}
+                                <img src="{!$Resource.not_answered_png}" width="30" height="30"/><br/><br/>
+                            </aura:if>
+                            <!--Starts added by Vinod - FSL-539 - to display solution components and parts on click of most likely radio button-->
+                            
+                            <!--  <lightning:radioGroup name="radioGroup"
+                                                  label="DOES THIS LOOK LIKE SOLUTION ?"
+                                                  options="{!v.options}"
+                                                  value="{!v.value}"
+                                                  type="radio"
+                                                  required ="true"
+                                                  aura:id="surveyButtons"
+                                                  messageWhenValueMissing="{!index}"
+                                                  onchange = "{!c.Showsolutioncomponent2}"/> -->
+                            <c:FSL_RadiobuttonDisplaySolutions selectedIdx="{!index}"/><!--Added Ravikanth -->
+                            <br/>
+                            <lightning:input aura:id="hiddenRowIndx" value="{!index}" class="slds-hide"/>
+                            <!--<aura:if isTrue="{!and(v.showSolComp, v.value == 'Most likely the solution. Repair recommended.')}">-->
+                            <!--{!v.selectIndx==index}
+                            INDX{!index}
+                            SINDX{!v.selectIndx}
+                            childevevalue={!v.childevevalue}
+                            2nd{!v.childevevalue=='Repair Successful with additional parts/procedures.'}
+                            3rd{!v.childevevalue=='Repair performed but didnot resolve the root cause.'}
+                            {!and(v.showSolComps, v.selectIndx==index)}
+                           showSolComps: {!v.showSolComps}-->
+                            <aura:if isTrue="{!and(v.showSolComps, v.selectIndx==index)}">  
+                                <!-- {!kwnitem.kurlName} ***{!kwnitem.urlName}***{!v.recordId}***{!v.selectIndx}***{!index} -->
+                                <c:FSLSolutionComponents cssSolId="{!kwnitem.kurlName}" urlName="{!kwnitem.urlName}" recordId="{!v.recordId}"
+                                                         selectedRowOnParent="{!v.selectIndx}" currentRow="{!index}"
+                                                         hideAddFailureBtn="{!v.hideAddFailureBtn}" roleName = "{!v.roleName}"/>
+                                <aura:if isTrue="{!index== v.selectIndx}">
+                                    <!--   <lightning:textarea aura:Id="commId1" name="input1" label="Comments" value="{!v.comment}"/> <br/> -->
+                                    <!-- <aura:if isTrue="{v.Solutions.Diagnostic_Notes__c == null}"/>-->
+                                    <!-- <lightning:inputField aura:Id="commId1" label="Comments" value="{!v.Solutions.Diagnostic_Notes__c}"/><br/>-->
+                                </aura:if>
+                            </aura:if>
+                            <!--Ends added by Vinod - FSL-539 - to display solution components and parts on click of most likely radio button-->
+                            <br/>
+                            <!--<aura:if isTrue="{!and(v.value == 'Not the solution. Continue troubleshooting.',index== v.selectIndx)}">-->
+                            <!--<aura:if isTrue="{!v.childevevalue == 'Not the solution. Continue troubleshooting.'}">  
+                                 <lightning:textarea aura:Id="commId2" name="input1" label="Comments" value="{!v.comment}"/>  <br/>
+                            </aura:if>-->
+                            <!-- <aura:if isTrue="{!and(v.value == 'Could not perform the solution verification',index== v.selectIndx)}">-->
+                            <!-- <aura:if isTrue="{!v.childevevalue == 'Could not perform the solution verification'}">
+                                 <lightning:textarea aura:Id="commId3" name="input1" label="Comments" value="{!v.comment}"/>  <br/>
+                            </aura:if>-->
+                            
+                            <lightning:textarea aura:Id="commId3" 
+                                                name="input1" 
+                                                label="Comments" 
+                                                value="{!v.comment}"
+                                               
+                                                />  <br/>
+                        </div>
+                        <!-- Road 101 START - Commenting Road 7 & 56 changes by Murali
+                        <lightning:button label="Save" name="{!index}" onclick="{!c.updateSol}" />  Road 101 END -->
+                        <!--Road 106/107 by Murali for reverting Road 101 changes 11/29/2021 -->
+                        <lightning:button label="Save" name="{!index}" onclick="{!c.updateSol}" /> 
+                        <!-- <ui:outputText value="{!v.Solutions.Diagnostic_Notes__c}"/>-->
+                        <!-- <aura:if isTrue="{!v.Solutions.Diagnostic_Notes__c != ''}"> <ui:outputText value="{!v.Solutions}"/></aura:if>-->
+                        
+                        <!--Sruthi start moving the logic inside the IF Condition-->
+                        <!--<c:FSL_RAP SolutionId="{!v.SolutionId}" recordId="{!v.recordId}" Solution="{!v.Solution}"/> -->
+                        <aura:if isTrue="{! kwnitem.kurlName != null }" >
+                            <c:FSL_RAP SolutionId="{!kwnitem.kurlName}" recordId="{!v.recordId}" Solution="{!kwnitem.solname}"/>
+                        </aura:if>
+                        <!--Sruthi End -->
+                    </aura:if><br/><br/>
+                    
+                   <button type="button" class="slds-button slds-button_neutral" onclick="{!c.handleRepairCont}" id="{!kwnitem.kurlName}">Continue to Repair</button>
+                   <div onclick="{!c.updateSol}" data-value="soldata">
+                        <!--    <lightning:button label="Save" iconName="utility:save" iconPosition="left"  variant="destructive" value="soldata"/> -->
+                    </div>
+                    
+                    <!-- -->
+                    <!--Use "slds-m-around_xx-large" class to add standard X-Large padding to the component--> 
+                    <div class="slds-m-around_xx-large">
+                        <!--Use aura:if tag to display Model Box, on the bese of conditions. [isOpen boolean attribute] -->   
+                        <aura:if isTrue="{!v.isOpen}">
+                            <!--###### MODAL BOX Start######--> 
+                            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                                <div class="slds-modal__container">
+                                    
+                                    <!--###### MODAL BOX BODY Part Start######-->
+                                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                        
+                                        <center><p><b>{!v.errorMsg} </b>
+                                            </p></center>
+                                        <aura:if isTrue="{!v.isHoursErr}">
+                                            <br/>
+                                            <lightning:input type="number" name="input7" label="Product Hours" value="{!v.hoursNum}" step="0.1"/>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.isMileageErr}">
+                                            <br/>
+                                            <lightning:input type="number" name="input8" label="Product Mileage" value="{!v.mileageNum}" step="0"/>
+                                        </aura:if>
+                                    </div>
+                                    <!--###### MODAL BOX FOOTER Part Start ######-->
+                                    <footer class="slds-modal__footer">
+                                        <lightning:button variant="brand" 
+                                                          label="Close"
+                                                          title="Close"
+                                                          onclick="{! c.closeWind }"/>
+                                    </footer>
+                                </div>
+                            </section>
+                            <div class="slds-backdrop slds-backdrop_open"></div>
+                            <!--###### MODAL BOX Part END Here ######-->
+                            
+                        </aura:if>
+                    </div>
+                    <!-- -->
+                </lightning:accordionSection>
+                <!--   </lightning:accordion>-->
+            </aura:iteration>
+        </lightning:accordion>
+    </div> 
+    </aura:if>
+</aura:component>

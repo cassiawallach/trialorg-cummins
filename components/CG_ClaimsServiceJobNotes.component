@@ -1,0 +1,280 @@
+<apex:component controller="CSS_NotesCaptureClass" allowDML="true">
+   <!-- <apex:attribute name="ClaimsSFDCId" description="ESN Num" type="Id" assignTo="{!ClaimsID}" />-->
+    <script type="text/javascript">
+
+        function setNoteType(input, textid, ntype, nlabel)
+        {
+            // alert('nlabel' + nlabel);   
+            if (ntype=='WRITERNOTES'){
+                document.getElementById('{!$Component.inputNotes}').value=document.getElementById('{!$Component.SWdefault}').value;
+            }
+            if (ntype=='TECHNICIANNOTES'){
+                document.getElementById('{!$Component.inputNotes}').value=document.getElementById('{!$Component.TCdefault}').value;
+            }
+            if (ntype=='SUPERVISORNOTES'){
+                document.getElementById('{!$Component.inputNotes}').value=document.getElementById('{!$Component.SUdefault}').value;
+            }
+            if (ntype=='JOURNALNOTES'){
+                document.getElementById('{!$Component.inputNotes}').value=document.getElementById('{!$Component.EXdefault}').value;
+            }
+            //95973
+            if (ntype=='PARTSPROFESSIONAL'){
+                document.getElementById('{!$Component.inputNotes}').value=document.getElementById('{!$Component.PPdefault}').value;
+            } 
+
+
+            //document.getElementById('{!$Component.inputNotes}').value=document.getElementById('{!$Component.SWdefault}').value);
+            //document.getElementById('inputNotes').value=document.getElementById('{!$Component.SWdefault}').value);
+            document.getElementById(textid).value=ntype;
+            document.getElementById('nlbl').value=nlabel;
+            //   alert('nlabel popup' + nlabel);
+            // document.getElementById(cntr).value= 1000-document.getElementById(cntr).value.length;
+            document.getElementById('NotesCounter').value='4000';
+        }
+        function textCounter1(field,field2,maxlimit)
+        {
+            var countfield = document.getElementById(field2);
+            if ( field.value.length > maxlimit ) 
+            {
+                field.value = field.value.substring( 0, maxlimit );
+                return false;
+            } else 
+            {
+                countfield.value = maxlimit - field.value.length;
+            }
+
+            //NotesCounter.value='4000';
+        }
+
+    </script>
+    <apex:attribute name="sJobID" type="Id" assignTo="{!JobID}" description="Service Job Id"/>
+    <!-- <apex:attribute name="vsJobID123" type="Id" assignTo="{!vsJobID}" description="Service Job Id"/>-->
+
+    <apex:attribute name="AddNotes" type="Id" description="Service Job Id"/>
+    <apex:attribute name="status" type="string" description="status"/> <!----65797------>
+
+    <apex:inputHidden value="{!SWLNBody}" id="SWdefault" />
+    <apex:inputHidden value="{!TCLNBody}" id="TCdefault" />
+    <apex:inputHidden value="{!SULNBody}" id="SUdefault"/>
+    <apex:inputHidden value="{!EXLNBody}" id="EXdefault"/>
+    <apex:inputHidden value="{!PPLNBody}" id="PPdefault"/>
+
+    <!--<apex:attribute name="sNoteType" type="String" assignTo="{!NotesType}" description="Service Job Id"/>-->
+    <apex:inputHidden id="sNoteType" value="{!NotesType}"/>
+
+<!-- <apex:outputPanel id="ServiceNotesSection">
+                <div class="col-sm-3">
+                    <apex:outputLabel style="font-size:14px;" value="Service Notes" />
+                </div>
+                <div class="col-sm-9 col-xs-12" styleClass="css_ipfiel_size" align="Right">
+                    <b>{!$Label.css_Sort} : </b><select>
+                    <option>{!$Label.css_Oldest_To_Newest}</option>
+                    <option>{!$Label.css_Newest_To_Oldest}</option>
+                    </select>
+                </div>
+                <div class="clearfix"></div> 
+
+                <hr style="border-top:1px solid #111;margin-top:10px !important;margin-bottom:5px !important;"/> 
+
+                <apex:outputPanel >
+                    <br/><br/>
+                    <apex:outputLabel styleClass="col-sm-4 col-xs-12 cmi-tar" value="{!$Label.CG_Service_Writer}:"/>
+                    <div class="clearfix"></div>
+                    <br/>
+                    <apex:outputLabel styleClass="col-sm-4 col-xs-12 cmi-tar" value="{!$Label.CG_Technician_Notes}:"/>
+                    <div class="clearfix"></div>
+                    <br/>
+                    <apex:outputLabel styleClass="col-sm-4 col-xs-12 cmi-tar" value="{!$Label.CG_Supervisor_Status_Notes}:"/>
+                    <div class="clearfix"></div>
+                    <br/>
+                    <apex:outputLabel styleClass="col-sm-4 col-xs-12 cmi-tar" value="{!$Label.CG_Customer_Approved_Journal}:"/>
+                    <div class="clearfix"></div>
+                    <br/>
+                    <apex:outputLabel styleClass="col-sm-4 col-xs-12 cmi-tar" value="{!$Label.CG_Parts_Professional}:"/>
+                    <div class="clearfix"></div>
+                    <br/>
+                </apex:outputPanel>
+            </apex:outputPanel>  -->
+    <apex:outputPanel id="notesDisplay">
+               
+              <!--74193 start --> 
+                   <div class="col-sm-3">
+                    <apex:outputLabel style="font-size:14px;" value="Service Notes" />
+                    </div>
+                  <div class="col-sm-9 col-xs-12" styleClass="css_ipfiel_size" align="right">
+                     <b>{!$Label.css_Sort} : </b> <apex:selectList value="{!notesdesc}"  size="1" styleClass="css_ipfiel_size">
+                      <apex:selectOptions value="{!Sortvalues}" ></apex:selectOptions>
+                      <apex:actionSupport event="onchange" action="{!getNotes}" reRender="notesDisplay" />
+                      </apex:selectList>
+                  </div>
+                  <br/>
+                  <!--74193 End -->
+                 <!-- <hr style="display:block;clear:both; background-color:#111; height: 1px;margin-top:10px !important;margin-bottom:10px !important;" />-->
+       <!-- <hr style="border-top:2px solid #eee; height: 1px; margin-top:10px !important;margin-bottom:10px !important;"/>-->
+        
+        <hr style="border-top:2px solid #eee;margin:20px 1px"/> 
+
+                  
+                  <br/>
+              <div class="form-horizontal" role="form">
+                  
+                  
+                 <div class="col-sm-4 col-xs-12 cmi-tar">
+                    <div >
+                        <apex:outputLabel value="{!$Label.CSS_service_writer_CSR_journal}" />
+                    </div>
+                     <!-- <apex:outputPanel rendered="{!IF(status == 'Closed',false, true)}"><!----65797
+                    <div>
+                    <a class="{!IF($Setup.css_header_nav__c.AddNotesTechDisable__c, 'css_disableedt', 'css_enableedt')}" data-backdrop="static" data-target="#NotesPopup" data-toggle="modal" onclick="setNoteType(this,'{!$Component.sNoteType}', 'WRITERNOTES', 'Service Writer/CSR Journal');">+{!$Label.css_Add1}</a>    
+                    </div>
+                     </apex:outputPanel> -->
+                </div>
+                <apex:outputpanel rendered="{!IF(SWriterNotes.size==0,true,false)}" styleclass="col-sm-8 col-xs-12 " style="height:150px !important;"></apex:outputpanel>
+                <div class="col-sm-8 col-xs-12 ">
+                    
+                     <apex:repeat value="{!SWriterNotes}" var="sw"> 
+                            <div class="col-sm-12"> 
+                               <apex:outputLabel value="{!sw.nfrstName} {!sw.nlastname}"/> 
+                            </div>
+                            <div class="col-sm-12">
+                               <!-- <apex:outputLabel value="{!$Label.css_job_modified}:" style="font-weight:normal;"/>-->
+                                <apex:outputLabel value="{!$Label.CSS_Last_Saved}:" style="font-weight:normal;"/>&nbsp;
+                                <apex:outputLabel value="{!sw.nLastModified}" style="font-weight:normal;"/><br/>&nbsp;
+                            </div>    
+                            <div class="col-sm-12" style="word-break: break-all;">        
+                                <apex:outputText value="{!sw.nBody}"/>  <br/><br/>
+                             <!--    <div text-alignment="justified" align="center"  draggable="false" ></div>  -->
+                             </div>
+                        </apex:repeat>
+                    </div>
+            </div>
+           <div class="clearfix"></div>
+             <div class="form-horizontal" role="form">           
+               <div class="col-sm-4 col-xs-12 cmi-tar">
+                    <div >
+                        <apex:outputLabel value="{!$Label.Technician_Notes_Internal}" />
+                    </div>
+                   <!-- <apex:outputPanel rendered="{!IF(status == 'Closed',true, true)}"><!----65797
+                    <div >
+                        <a data-target="#NotesPopup" data-backdrop="static" data-toggle="modal" onclick="setNoteType(this,'{!$Component.sNoteType}', 'TECHNICIANNOTES','Technician Notes (Internal)');">+ {!$Label.css_Add1}</a>    
+                    </div>
+                   </apex:outputPanel> -->
+                </div>
+                <apex:outputpanel rendered="{!IF(TechNotes.size==0,true,false)}" styleclass="col-sm-8 col-xs-12 " style="height:150px !important;"></apex:outputpanel>
+                <div class="col-sm-8 col-xs-12 ">
+             
+                    <apex:repeat value="{!TechNotes}" var="tn"> 
+                            <div class="col-sm-12"> 
+                               <apex:outputLabel value="{!tn.nfrstName} {!tn.nlastname}"/> 
+                               <!--  <apex:outputLabel value="{!wj.CreatedDate}"/> -->
+                            </div>
+                            <div class="col-sm-12">
+                               <!-- <apex:outputLabel value="{!$Label.css_job_modified}:" style="font-weight:normal;"/>-->
+                                <apex:outputLabel value="{!$Label.CSS_Last_Saved}:" style="font-weight:normal;"/>&nbsp;
+                                <apex:outputLabel value="{!tn.nLastModified}" style="font-weight:normal;"/><br/>&nbsp;
+                            </div>
+                            <div class="col-sm-12" style="word-break: break-all;">        
+                                <apex:outputText value="{!tn.nBody}"/>  <br/><br/>
+                             </div>
+                        </apex:repeat>
+                </div>
+            </div>
+               <div class="clearfix"></div>
+            <div class="form-horizontal" role="form">           
+               <div class="col-sm-4 col-xs-12 cmi-tar">
+                   <div>
+                        <apex:outputLabel value="{!$Label.CSS_Supervisor_Status_Notes}" />
+                    </div>
+                    
+                    <!--  <apex:outputPanel rendered="{!IF(status == 'Closed',false, true)}">  <!----65797
+                    <div>
+                        <a class="{!IF($Setup.css_header_nav__c.AddNotesTechDisable__c, 'css_disableedt', 'css_enableedt')}" data-target="#NotesPopup"  data-backdrop="static" data-toggle="modal" onclick="setNoteType(this,'{!$Component.sNoteType}', 'SUPERVISORNOTES', 'Supervisor Status Notes');">+ {!$Label.css_Add1}</a>        
+                    </div>
+                   </apex:outputPanel> -->
+                </div>
+                <apex:outputpanel rendered="{!IF(SupNotes.size==0,true,false)}" styleclass="col-sm-8 col-xs-12 " style="height:150px !important;"></apex:outputpanel>
+                <div class="col-sm-8 col-xs-12 ">
+                 
+                    <apex:repeat value="{!SupNotes}" var="sn"> 
+                            <div class="col-sm-12"> 
+                               <apex:outputLabel value="{!sn.nfrstname} {!sn.nlastname}"/> 
+                            </div>
+                            <div class="col-sm-12">
+                               <!-- <apex:outputLabel value="{!$Label.css_job_modified}:" style="font-weight:normal;"/>-->
+                                <apex:outputLabel value="{!$Label.CSS_Last_Saved}:" style="font-weight:normal;"/>&nbsp;
+                                <apex:outputLabel value="{!sn.nLastModified}" style="font-weight:normal;"/><br/>&nbsp;
+                            </div>
+                            <div class="col-sm-12" style="word-break: break-all;">        
+                                <apex:outputText value="{!sn.nBody}"/>  <br/><br/>
+                             </div>
+
+                    </apex:repeat>
+                </div>            
+            </div>
+               <div class="clearfix"></div>
+
+           <div class="form-horizontal" role="form">           
+               <div class="col-sm-4 col-xs-12 cmi-tar">
+                    <div >
+                        <apex:outputLabel value="{!$Label.CSS_Customer_Approved_Journal_External}" />
+                    </div>
+                  <!--  <apex:outputPanel rendered="{!IF(status == 'Closed',false, true)}"><!----65797
+                    <div>
+                        <a class="{!IF($Setup.css_header_nav__c.AddNotesTechDisable__c, 'css_disableedt', 'css_enableedt')}" data-backdrop="static" data-target="#NotesPopup" data-toggle="modal" onclick="setNoteType(this,'{!$Component.sNoteType}', 'JOURNALNOTES', 'Customer Approved Journal (External)');">+ {!$Label.css_Add1}</a>
+                    </div>
+                   </apex:outputPanel> -->
+                </div>
+                    <apex:outputpanel rendered="{!IF(ExtJournalNotes.size==0,true,false)}" styleclass="col-sm-8 col-xs-12 " style="height:150px !important;"></apex:outputpanel>
+                  <div class="col-sm-8 col-xs-12 ">
+                
+                    <apex:repeat value="{!ExtJournalNotes}" var="en"> 
+                            <div class="col-sm-12"> 
+                               <apex:outputLabel value="{!en.nfrstname} {!en.nlastname}"/> 
+                            </div>
+                            <div class="col-sm-12">
+                               <!-- <apex:outputLabel value="{!$Label.css_job_modified}:" style="font-weight:normal;"/>-->
+                                <apex:outputLabel value="{!$Label.CSS_Last_Saved}:" style="font-weight:normal;"/>&nbsp;
+                                <apex:outputLabel value="{!en.nLastModified}" style="font-weight:normal;"/><br/>&nbsp;
+                            </div>
+                            <div class="col-sm-12" style="word-break: break-all;">        
+                                <apex:outputText value="{!en.nBody}"/>  <br/><br/>
+                           </div>
+                        </apex:repeat>
+                </div>
+            </div>
+            <div class="clearfix"></div>
+
+           <div class="form-horizontal" role="form">           
+               <div class="col-sm-4 col-xs-12 cmi-tar">
+                    <div >
+                        <apex:outputLabel value="{!$Label.CSS_Parts_Professional_Notes}" />
+                    </div>
+                    <!--<apex:outputPanel rendered="{!IF(status == 'Closed',false, true)}"><!----65797
+                    <div>
+                        <a class="{!IF($Setup.css_header_nav__c.AddNotesTechDisable__c, 'css_disableedt', 'css_enableedt')}" data-backdrop="static" data-target="#NotesPopup" data-toggle="modal" onclick="setNoteType(this,'{!$Component.sNoteType}', 'PARTSPROFESSIONAL', 'Parts Professional');">+ {!$Label.css_Add1}</a>
+                    </div>
+                   </apex:outputPanel> -->
+                </div>
+                <apex:outputpanel rendered="{!IF(PartsProfNotes.size==0,true,false)}" styleclass="col-sm-8 col-xs-12 " style="height:150px !important;"></apex:outputpanel>
+                  <div class="col-sm-8 col-xs-12 ">
+                   
+                      <apex:repeat value="{!PartsProfNotes}" var="pp"> 
+                            <div class="col-sm-12"> 
+                               <apex:outputLabel value="{!pp.nfrstname} {!pp.nlastname}"/> 
+                            </div>
+                            <div class="col-sm-12">
+                               <!-- <apex:outputLabel value="{!$Label.css_job_modified}:" style="font-weight:normal;"/>-->
+                                <apex:outputLabel value="{!$Label.CSS_Last_Saved}:" style="font-weight:normal;"/>&nbsp;
+                                <apex:outputLabel value="{!pp.nLastModified}" style="font-weight:normal;"/><br/>&nbsp;
+                            </div>
+                            <div class="col-sm-12" style="word-break: break-all;">        
+                                <apex:outputText value="{!pp.nBody}"/>  <br/><br/>
+                           </div>
+                        </apex:repeat>
+                     </div>
+            </div>
+                <div class="clearfix"></div>
+
+    </apex:outputPanel>
+    
+</apex:component>

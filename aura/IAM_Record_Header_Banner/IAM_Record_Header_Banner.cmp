@@ -1,0 +1,1148 @@
+<aura:component controller="IAM_AccountsController"  implements="force:hasSObjectName,forceCommunity:availableForAllPageTypes,flexipage:availableForAllPageTypes,force:hasRecordId" access="global">	
+			<!-- PLEASE DO NOT CHANGE BUTTONS. LOT OF FUNCTIONALITY DEPENDS UPON BUTTON NAME.there are apex classes with these button names.-->
+			
+			<meta http-equiv="cache-control" content="max-age=0" />
+			<aura:attribute name="ObjectName" type="String" />  
+			<aura:attribute name="IsFromVF" type="String" default="false"/>  
+			<aura:attribute name="setPswrd" type="Boolean" /> 
+			<aura:attribute name="Unlock" type="Boolean" /> 
+    		<aura:attribute name="Profile" type="String" /> <!--variable to store profile of a user -->
+			<aura:attribute name="errorMessage" type="String" />
+			<aura:attribute name="successMessage" type="String" />
+    		<aura:attribute name="GuidanzMobileFT" type="List"/><!--List to Store all the roles for Guidanz Field Test Application-->
+			<aura:attribute name="IsInternalAccount" type="boolean" default="false"/>
+			<aura:attribute name="userSubEndDate" type="Date"/><!-- Store user subscriptions end date -->
+			<aura:attribute name="assignedCount" type="Integer"/><!--Store assigned count to user -->
+			<aura:attribute name="assignedCountPaid" type="Integer"/><!--Store paid assigned count to user -->
+			<aura:attribute name="isCountApp" type="Boolean" default="false"/>
+			<aura:attribute name="UserRole" type="String" default="None"/><!--variable to store user role name-->
+			<aura:attribute name="NPBUDiagnosticsFT" type="List"/> <!--List to Store all the roles for Field Test NPBU Diagnostics Application-->
+		   <aura:handler name="init" value="{!this}" action="{!c.getsName}" />
+		   <aura:attribute name="sObjInfo" type="sObject" />    
+		   <aura:attribute name="GDPRoles" type="List"/><!--List to Store all the roles for Global Dealer Portal Application-->
+		   <aura:attribute name="CumminsAPIPortalRoles" type="List"/><!--List to Store all the roles for Cummins API Portal Application @Suresh -->
+		   <aura:attribute name="fluidRegist" type="List"/><!--List to Store all the roles for Fluid Registration Application-->
+		 	<!-- List to store Guidanz Service Portal Roles -->
+			 <aura:attribute name="GuidanzServicePRoles" type="List"/>
+		   <aura:handler name="init" value="{!this}" action="{!c.getsObjInfo}" />
+		   <aura:handler name="change" value="{!v.selectedValue}" action="{!c.RefreshValue}"/><!--Handler to check if selected subscription is null and perform necessary action-->
+		 	<aura:attribute name="Guidanz" type="List"/><!--List to Store all the roles for Guidanz Application-->
+    		<aura:attribute name="MarketPlace" type="List"/><!--List to Store all the roles for MarketPlace Application-->
+			<aura:attribute name="FluidWatch" type="List" /><!--List to Store all the roles for Fluidwatch Application-->
+			<aura:attribute name="RSWRoles" type="List"/><!--List to Store all the roles for RSW Application-->
+            <aura:attribute name="ConnectedSolution" type="List"/><!--List to Store all the roles for ConnectedSolution-->
+    		<aura:attribute name="usertype" type="String" />
+    <aura:attribute name="FleetguardFit" type="List"/>
+		   <aura:attribute name="ShowSaveButton" type="Integer" default="0"/> <!--variable to diaply save button depending upon the integer value-->
+		   <aura:attribute name="RefreshIDMApplication" type="Boolean" default="false"/>
+		   <aura:attribute name="SelectedIDMApplication" type="String[]"/><!--variable to store the selected multi checkbox application and pass to apex controller-->
+		   <aura:registerEvent name="appEvent" type="c:IAM_Application_Table_Event2"/>
+		   <aura:handler name="cmpEvent" event="c:IAM_Application_Table_Event" action="{!c.handleIDMEvent}"/>
+		 <aura:handler name="cmEvent" event="c:IAM_Application_Table_appMap_Handle" action="{!c.appMapStorage}"/>
+			
+			<!--<aura:handler event="force:refreshView" action="{!c.doInt}" />-->
+    		<aura:attribute name="contactStatus" type="String"/>
+		   <aura:handler event="c:IAM_PageReload" action="{!c.doInt}" />
+			<aura:handler event="c:IAM_ShowError_Toast" action="{!c.showError}" />
+			<aura:handler event="c:IAM_ShowSuccess_Toast" action="{!c.showSuccessToast}" />
+			<aura:handler event="c:IAM_ShowErrorMessages" action="{!c.showErrorMessages}" />
+			
+			<aura:attribute name="rejectionReason" type="String" /> <!--Amarnath Mishra added for Cancellation reason -->
+			<aura:attribute name="comments" type="String"/>	<!--Amarnath Mishra added for Cancellation reason -->
+			<aura:attribute name="mailto" type="String" default="mailto:"/>
+			<aura:attribute name="appMap" type="map"/>
+    		<aura:attribute name="appMaps" type="map"/>
+			<aura:attribute name="displayModal" type="boolean" default="false" />    
+			<aura:attribute name="displayErrorModal" type="boolean" default="false" />
+    		<aura:attribute name="showRoleModular" type="boolean" default="false" /><!--variable to show the role and Modular fields for Cumaps application-->    
+			<aura:attribute name="cumpasError" type="string"  />
+    		<aura:attribute name="IsInternalUser" type="boolean" default="false"/>
+    		<aura:attribute name="IsReclaim" type="boolean" default="false" />
+			<aura:attribute name="IsConfirmModel" type="Boolean" default="false"/>
+    		<aura:attribute name="IsAppActive" type="boolean" default="false" />
+    		<aura:attribute name="showAssignWorkGroup" type="boolean" default="false" />
+    		<aura:attribute name="showRemoveWorkGroup" type="boolean" default="false" />
+   		    <aura:attribute name="UsrHasPerm" type="boolean" default="false" />
+  			<aura:attribute name="IsLegacy" type="boolean" default="false" />
+    		<aura:attribute name ="conPorRecordId" type="String" /><!--Amarnath Mishra added for the Issue D-2854 -->
+    		<aura:attribute name ="showEditLink" type="boolean" default="false" />
+    		<aura:attribute name="ConUid" type="String"/>
+    		<!-- attributes to show load snipper Added by Amar start-->
+    		<aura:handler event="aura:waiting" action="{!c.showSpinner}"/>
+    		<aura:handler event="aura:doneWaiting" action="{!c.hideSpinner}"/>
+    		<aura:attribute name="Spinner" type="boolean" default="false"/>
+    		<!-- attributes to show load snipper Added by Amar end-->
+    		<aura:attribute name="applicationName" type="String"/>
+			<aura:attribute name="showSaveOnAssignSubscription" type="boolean" default="false"/>
+    		<!--Amar added new attribute for the UAT Defect# D-3190 --> 
+    		<aura:attribute name="condition" type="Boolean" default="false" />
+    
+    		<!-- Code display load spinner starts Added by Amar -->
+    		<aura:if isTrue="{!v.Spinner}">
+                <div aura:id="spinnerId" class="slds-is-relative">
+                    <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a"></div>
+                        <div class="slds-spinner__dot-b"></div>
+                    </div>
+                </div>
+ 			</aura:if>
+    		<!-- Code display load spinner ends -->
+			<!--Code to display Deactivate modal for Assigning Subscription--> 
+    
+			<aura:if isTrue="{!v.IsConfirmModel}">
+               <div class="slds-modal slds-modal--Medium slds-fade-in-open"  aria-hidden="false" id="DeActive" role="dialog" style="height:160px">
+		  <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+			<div class="slds-modal__container">
+			  <header class="slds-modal__header">
+				
+				<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate" Style="font-weight:bolder">Confirmation</h2>
+			  </header>
+			  <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+				<p>Are you sure you want to make changes ?</p>
+			  </div>
+			  <footer class="slds-modal__footer">
+				<button class="slds-button slds-button_neutral" onclick="{!c.closeConfirmModel}">Cancel</button>
+				<lightning:button class="slds-button slds-button_neutral" variant="neutral"  value="OK" label="OK"  onclick="{!c.saveAssignSubscription}" />
+			  </footer>
+			</div>
+		  </section>
+		  <div class="slds-backdrop slds-backdrop_open"></div>
+		</div>
+			</aura:if> 
+		 <!--end of code to display Deactivate modal for Assigning Subscription-->     
+		   <!--Code to display Deactivate modal--> 
+			<aura:if isTrue="{!v.displayModal}">
+				<div class="slds-modal slds-modal--Medium slds-fade-in-open"  aria-hidden="false" id="DeActive" role="dialog" style="height:160px">
+		  <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+			<div class="slds-modal__container">
+			  <header class="slds-modal__header">
+				
+				<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate" Style="font-weight:bolder">Warning</h2>
+				</header>
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+				<aura:if isTrue="{!(v.ObjectName=='Contact')}">
+					<p>{!$Label.c.IAM_Deactivate_Application}</p>
+				</aura:if>	
+				<aura:if isTrue="{!(v.ObjectName=='IAM_Contact_Provisioning__c')}">
+					<p>{!$Label.c.IAM_Deactivate_User_Feature_and_Access}</p>
+				</aura:if>
+				
+				<aura:if isTrue="{!(v.ObjectName=='IAM_Application__c')}">
+					<p>{!$Label.c.IAM_Deactivate_Application_Record}</p>
+				</aura:if>
+				
+				<p>{!$Label.c.IAM_Sure_About_Deactivation}</p>
+				
+				<lightning:select name="rejectionReason" label="Please select a reason" value="{!v.rejectionReason}" required="true">
+						<option value="">--Select--</option>
+                    	<option value="No Longer at Location">No Longer at Location</option>
+						<option value="Requested Removal">Requested Removal</option>
+						<option value="Cancellation Comments">Cancellation Comments</option>	
+						<option value="Other">Other</option>
+						
+				</lightning:select>
+				
+				<lightning:textarea name="comment" required="true" placeholder="Please write comments" label="Required comments with a maximum length of 200 characters" maxlength="200" messageWhenTooLong="A maximum of 200 characters are allowed in this comment."  value="{!v.comments}"/>
+			  </div>
+			  <footer class="slds-modal__footer">
+				<button class="slds-button slds-button_neutral" onclick="{!c.hideModal}">Cancel</button>
+				<aura:if isTrue="{!(v.ObjectName=='Contact')}">
+					<lightning:button class="slds-button slds-button_neutral" variant="neutral"  value="De-Activate" label="{!$Label.c.IAM_Deactivate}"  onclick="{!c.getdeactivate}" />
+				</aura:if>	
+				<aura:if isTrue="{!(v.ObjectName=='IAM_Contact_Provisioning__c')}">
+					<lightning:button variant="neutral" label="{!$Label.c.IAM_Deactivate}" value="Deactivate"  onclick="{!c.appInactivate}" />
+				</aura:if>
+				<aura:if isTrue="{!(v.ObjectName=='IAM_Application__c')}">
+					<lightning:button variant="neutral" label="{!$Label.c.IAM_Deactivate}" value="Deactivate"  onclick="{!c.appAccountInactivate}" />
+				</aura:if>
+			  </footer>
+			</div>
+		  </section>
+		  <div class="slds-backdrop slds-backdrop_open"></div>
+		</div>
+			</aura:if> 
+		 <!--end of code to display Deactivate modal-->   
+			
+			 <!--code to display Error Modal -->
+			<aura:if isTrue="{!v.displayErrorModal}">
+				<div class="slds-modal slds-modal--Medium slds-fade-in-open"  aria-hidden="false" id="Warning" role="dialog" style="height:160px">
+		  <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+			<div class="slds-modal__container">
+			  <header class="slds-modal__header">
+				
+				<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate" style="font-weight:bolder">Warning</h2>
+			  </header>
+			  <div class="slds-modal__content slds-p-around_medium slds-text-color_error" id="modal-content-id-1">
+				<p>{!v.errorMessage}</p>
+				  <br/>
+				   
+					<p style="color:#3e3e3c">Please click on close  button to close the warning.</p>
+					  
+			  </div>
+			  <footer class="slds-modal__footer">
+				<button class="slds-button slds-button_neutral" onclick="{!c.hideError}">Close</button>
+			  </footer>
+			</div>
+		  </section>
+		  <div class="slds-backdrop slds-backdrop_open"></div>
+		</div>
+			</aura:if>
+			<!--End of code to display Error Modal--> 
+			
+			<!--Code to display the record header depending upon the Object Name-->
+			<aura:renderIf isTrue="{!(v.ObjectName=='Account')}">
+			<div class="slds-page-header" role="banner"> 
+		  <div class="slds-grid">
+			<div class="slds-col slds-has-flexi-truncate">
+			  <div class="slds-media">
+				<div class="slds-media__figure">
+					<lightning:icon iconName="standard:account" size="large" alternativeText="Account"  />
+				</div>
+				<div class="slds-media__body">
+				  <p class="slds-text-heading">Account</p>
+					<h1 class="slds-page-header__title slds-m-right--small slds-truncate slds-align-middle" title="Record Title">{!v.sObjInfo.Name}</h1>
+				</div>
+			  </div>
+			</div>
+			<div class="slds-col slds-no-flex slds-align-bottom">
+			  <div class="slds-button-group" role="group">
+				 <lightning:button class="slds-button slds-button_neutral" variant="neutral"  value="Edit" label="{!$Label.c.IAM_Access_Edit}"  onclick="{!c.editRecord}" />
+				  <lightning:button class="slds-button slds-button_neutral" variant="neutral"  value="Generate Service Agreement" label="{!$Label.c.IAM_Generate_Service_Agreement}"  onclick="{!c.getCDAINFO}" />
+				  <lightning:button class="slds-button slds-button_neutral" variant="neutral"  value="Send to PC" label="{!$Label.c.IAM_Send_to_PC}"  onclick="{!c.getSendToPC}" />
+				  <lightning:button class="slds-button slds-button_neutral" variant="neutral"  value="Activate" label="{!$Label.c.IAM_Activate}"  onclick="{!c.getSendToPC}" />
+				  <lightning:button class="slds-button slds-button_neutral" variant="neutral" value="De-Activate" label="{!$Label.c.IAM_Deactivate}"  onclick="{!c.getSendToPC}" />
+				  <lightning:button class="slds-button slds-button_neutral" variant="neutral"  value="Generate User ID" label="{!$Label.c.IAM_Generate_User_ID}"  onclick="{!c.getUserName}" />
+			  </div>
+			</div>
+		  </div>
+		  <ul class="slds-grid slds-page-header__detail-row">
+			<li class="slds-col--padded slds-size--1-of-4">
+			  <p class="slds-text-heading--label slds-truncate" title="Field 1">Account Status</p>
+			  <p class="slds-text-body--regular slds-truncate" title="Account Status">{!v.sObjInfo.CMI_Account_Status__c}</p>
+			</li>
+			<li class="slds-col--padded slds-size--1-of-4">
+			  <p class="slds-text-heading--label slds-truncate" title="Field2">Cummins Customer ID</p>
+			  <p class="slds-text-body--regular slds-truncate" title="Cummins Customer ID">{!v.sObjInfo.CMI_Cummins_Customer_Id__c}</p>
+			</li>
+			<li class="slds-col--padded slds-size--1-of-4">
+			  <p class="slds-text-heading--label slds-truncate" title="Field 3">CDA Status</p>
+			  <p class="slds-text-body--regular slds-truncate" title="CDA Status">{!v.sObjInfo.CMI_CDA_Status__c}</p>
+			</li>
+			<li class="slds-col--padded slds-size--1-of-4">
+			  <p class="slds-text-heading--label slds-truncate" title="Field 4">Care Service Level</p>
+			  <p class="slds-text-body--regular slds-truncate" title="Care Service Level">{!v.sObjInfo.CMI_Care_Service_Level__c}</p>
+			</li>
+		  </ul> 
+		</div>
+		</aura:renderIf>
+		<aura:renderIf isTrue="{!(v.ObjectName=='Contact')}">
+			 <div class="slds-page-header" role="banner"> 
+		  <div class="slds-grid">
+			<div class="slds-col slds-has-flexi-truncate">
+			  <div class="slds-media">
+				<div class="slds-media__figure">
+					<lightning:icon iconName="standard:contact" size="large" alternativeText="Contact"  />
+				</div>
+				<div class="slds-media__body">
+				  <p class="slds-text-heading">Contact</p>
+					<h1 class="slds-page-header__title slds-m-right--small slds-truncate slds-align-middle" title="Record Title">{!v.sObjInfo.Name}</h1>
+				</div>
+			  </div>
+			</div>
+			<div class="slds-col slds-no-flex slds-align-bottom">
+			  <div class="slds-button-group" role="group">
+                  <!-- Amarnath Mishra added new logic for the IAM_Cummins_Care profile 10-28-2019 -->
+                  <aura:renderIf isTrue="{!(v.condition == true )}">
+                    
+					<aura:renderIf isTrue="{!(v.Unlock==True)}">
+						<lightning:button variant="neutral" value="Unlock" label="{!$Label.c.IAM_Unlock}"  onclick="{!c.resetPasswrd}" />
+					</aura:renderIf>
+					<!--<aura:renderIf isTrue="{!and(v.contactStatus == 'Active', v.IsLegacy ==true &amp;&amp; v.IsInternalUser == false)}">
+						<lightning:button variant="neutral" value="Reset Password" label="{!$Label.c.IAM_Reset_Password}"  onclick="{!c.resetPasswrd}" />
+					</aura:renderIf>-->
+                    <aura:renderIf isTrue="{!(v.contactStatus== 'Active' &amp;&amp; v.IsInternalUser == false &amp;&amp;  v.IsLegacy ==false)}">
+						<lightning:button variant="neutral" value="Reset Password" label="{!$Label.c.IAM_Reset_Password}"  onclick="{!c.resetPasswrd}" />
+				    </aura:renderIf>
+                    <aura:renderIf isTrue="{!and(v.IsInternalUser == false , v.IsLegacy ==true)}">    
+                      <lightning:button variant="neutral" value="Set Password" label="Set Password"  onclick="{!c.navigate}" />  
+					</aura:renderIf>
+                    
+					<aura:set attribute="else">
+                        
+				  <!-- Amarnath Mishra updated the logic of button visibility 07-05-2019 -->
+					<aura:renderIf isTrue="{!and(v.IsInternalUser ==true,v.contactStatus == 'Active')}">
+						<lightning:button variant="neutral" value="Assign App" label="{!$Label.c.IAM_Assign_AppFeature}"  onclick="{!c.updateSelect}" />
+						<lightning:button variant="neutral" value="Assign Workgrp" label="{!$Label.c.IAM_Assign_Work_group}"  onclick="{!c.showWrkGrpPopUp}" />
+						<lightning:button variant="neutral" value="Remove Workgrp" label="{!$Label.c.IAM_Remove_Work_group}"  onclick="{!c.showRemoveWrkGrpPopUp}" />
+					</aura:renderIf>
+                  
+					<aura:renderIf isTrue="{!and(v.contactStatus == 'Reclaim', v.IsLegacy ==true &amp;&amp; v.IsInternalUser == false)}">
+						<lightning:button variant="neutral" value="Assign App" label="{!$Label.c.IAM_Assign_AppFeature}"  onclick="{!c.updateSelect}" />
+						<lightning:button variant="neutral" value="Edit" label="{!$Label.c.IAM_Access_Edit}"  onclick="{!c.editRecord}" />
+						<!--<lightning:button variant="neutral" value="Assign App" label="{!$Label.c.IAM_Assign_AppFeature}"  onclick="{!c.updateSelect}" />
+						<lightning:button variant="neutral" value="Assign Workgrp" label="{!$Label.c.IAM_Assign_Work_group}"  onclick="{!c.showWrkGrpPopUp}" />
+						<lightning:button variant="neutral" value="Remove Workgrp" label="{!$Label.c.IAM_Remove_Work_group}"  onclick="{!c.showRemoveWrkGrpPopUp}" />-->
+					</aura:renderIf>
+                    <aura:renderIf isTrue="{!and(v.contactStatus == 'Active', v.IsLegacy ==true &amp;&amp; v.IsInternalUser == false)}">
+						<lightning:button variant="neutral" value="Edit" label="{!$Label.c.IAM_Access_Edit}"  onclick="{!c.editRecord}" />
+						<lightning:button variant="neutral" value="Assign App" label="{!$Label.c.IAM_Assign_AppFeature}"  onclick="{!c.updateSelect}" />
+						<lightning:button variant="neutral" value="Assign Workgrp" label="{!$Label.c.IAM_Assign_Work_group}"  onclick="{!c.showWrkGrpPopUp}" />
+						<lightning:button variant="neutral" value="Remove Workgrp" label="{!$Label.c.IAM_Remove_Work_group}"  onclick="{!c.showRemoveWrkGrpPopUp}" />
+					</aura:renderIf>
+					<aura:renderIf isTrue="{!(v.contactStatus== 'Active' &amp;&amp; v.IsInternalUser == false &amp;&amp;  v.IsLegacy ==false)}">
+						<lightning:button variant="neutral" value="Edit" label="{!$Label.c.IAM_Access_Edit}"  onclick="{!c.editRecord}" />
+						<lightning:button variant="neutral" value="De-Activate" label="{!$Label.c.IAM_Deactivate}"  onclick="{!c.showModal}" />
+						<lightning:button variant="neutral" value="Assign App" label="{!$Label.c.IAM_Assign_AppFeature}"  onclick="{!c.updateSelect}" />
+						<lightning:button variant="neutral" value="Assign Workgrp" label="{!$Label.c.IAM_Assign_Work_group}"  onclick="{!c.showWrkGrpPopUp}" />
+						<lightning:button variant="neutral" value="Remove Workgrp" label="{!$Label.c.IAM_Remove_Work_group}"  onclick="{!c.showRemoveWrkGrpPopUp}" />
+						<lightning:button variant="neutral" value="Reset Password" label="{!$Label.c.IAM_Reset_Password}"  onclick="{!c.resetPasswrd}" />
+				    </aura:renderIf>
+					
+					<aura:renderIf isTrue="{!and(v.contactStatus== 'Inactive',v.IsInternalUser == false)}">
+						<lightning:button variant="neutral" value="Edit" label="{!$Label.c.IAM_Access_Edit}"  onclick="{!c.editRecord}" />
+						<lightning:button variant="neutral" value="Activate" label="{!$Label.c.IAM_Activate}"  onclick="{!c.getContName}" />
+					</aura:renderIf>
+                  <aura:renderIf isTrue="{!and(v.contactStatus== 'Pending',v.IsInternalUser == false)}">
+						<lightning:button variant="neutral" value="Edit" label="{!$Label.c.IAM_Access_Edit}"  onclick="{!c.editRecord}" />
+						<lightning:button variant="neutral" value="Activate" label="{!$Label.c.IAM_Activate}"  onclick="{!c.getContName}" />
+					</aura:renderIf>
+					<aura:renderIf isTrue="{!(v.Profile != $Label.c.IAM_CIHR_Platform)}"> 
+                    <aura:renderIf isTrue="{!and(v.IsInternalUser == false , v.IsLegacy ==true)}">    
+                      <lightning:button variant="neutral" value="Set Password" label="Set Password"  onclick="{!c.navigate}" />  
+					</aura:renderIf>
+                       </aura:renderIf>
+						
+					<aura:renderIf isTrue="{!(v.Unlock==True)}">
+						<lightning:button variant="neutral" value="Unlock" label="{!$Label.c.IAM_Unlock}"  onclick="{!c.resetPasswrd}" />
+					</aura:renderIf>
+                    </aura:set>
+					</aura:renderIf> 
+			  </div>
+			</div>
+		  </div>
+		 
+		</div>
+			</aura:renderIf>    
+			<aura:renderIf isTrue="{!(v.ObjectName=='IAM_Contact_Provisioning__c')}">
+			 <div class="slds-page-header" role="banner"> 
+		  <div class="slds-grid">
+			<div class="slds-col slds-has-flexi-truncate">
+			  <div class="slds-media">
+				<div class="slds-media__figure">
+					<lightning:icon iconName="custom:custom16" size="large" alternativeText="Account"  />
+				</div>
+				<div class="slds-media__body">
+				  <p class="slds-text-heading">User Feature And Access</p>
+					<h1 class="slds-page-header__title slds-m-right--small slds-truncate slds-align-middle" title="Record Title">{!v.sObjInfo.Name}</h1>
+				</div>
+			  </div>
+			</div>
+			<div class="slds-col slds-no-flex slds-align-bottom">
+			  <div class="slds-button-group" role="group">
+                  <!-- Added below renderIf for D-2863 -->
+                  <aura:renderIf isTrue="{!(v.IsAppActive == True)}">
+                <lightning:button variant="neutral" label="{!$Label.c.IAM_Access_Edit_Role}" onclick="{!c.editRole}" />
+				<aura:renderIf isTrue="{!(v.showEditRole)}">
+					 <c:IAM_Edit_Role contactProvisioningId="{!v.recordId}" showEditRole="{!v.showEditRole}" applicationName ="{!v.applicationName}"/>
+				</aura:renderIf>
+				 <lightning:button variant="neutral" value="De-Activate" label="{!$Label.c.IAM_Deactivate}"  onclick="{!c.showModal}" />
+			      </aura:renderIf>
+                 <aura:renderIf isTrue="{!or(v.Profile == $Label.c.IAM_System_Administrator_Label,v.Profile == $Label.c.IAM_System_Admin_Label)}">
+				 	<lightning:button variant="neutral" label="{!$Label.c.IAM_Access_Edit}" onclick="{!c.editRecord}" />
+                 </aura:renderIf> 
+                 <!--
+				 <lightning:button variant="neutral" label="{!$Label.c.IAM_Deactivate}" value="Deactivate"  onclick="{!c.appInactivate}" /> 
+				 -->
+                </div>
+			</div>
+		  </div>
+				
+		</div>
+		</aura:renderIf>
+		 
+		<!--code for record banner for Account application object-->    
+		<aura:renderIf isTrue="{!(v.ObjectName=='IAM_Application__c')}">
+			 <div class="slds-page-header" role="banner"> 
+		  <div class="slds-grid">
+			<div class="slds-col slds-has-flexi-truncate">
+			  <div class="slds-media">
+				<div class="slds-media__figure">
+					<lightning:icon iconName="custom:custom47" size="large" alternativeText="Account Features And Access"  />
+				</div>
+				<div class="slds-media__body">
+				  <p class="slds-text-heading">Account Features And Access</p>
+					<h1 class="slds-page-header__title slds-m-right--small slds-truncate slds-align-middle" title="Record Title">{!v.sObjInfo.Name}</h1>
+				</div>
+			  </div>
+			</div>
+			<div class="slds-col slds-no-flex slds-align-bottom">
+			  <div class="slds-button-group" role="group">
+                 <aura:renderIf isTrue="{!and(v.IsAppActive == True,v.UsrHasPerm == True &amp;&amp; v.Profile != $Label.c.IAM_CIHR_Platform)}">
+				 <lightning:button variant="neutral" label="{!$Label.c.IAM_Access_Edit}"  onclick="{!c.editRecord}" />
+			     </aura:renderIf>
+                  <aura:renderIf isTrue="{!and(v.IsAppActive == True,v.UsrHasPerm == True)}">
+				  <lightning:button variant="neutral" label="Assign Role To Users" value="Assign Subscription" onclick="{!c.ShowSubscription}"/> <!-- Assign Subscription-->
+                  </aura:renderIf>
+                  <aura:renderIf isTrue="{!and(v.sObjInfo.IAM_Free_Subscription__c==True,v.IsAppActive == True &amp;&amp; v.UsrHasPerm==True)}">
+                     <lightning:button variant="neutral" value="De-Activate" label="{!$Label.c.IAM_Deactivate}"  onclick="{!c.showModal}" /> 
+				  </aura:renderIf>                   
+                       <!--<aura:renderIf isTrue="{!or(v.UserRole=='Customer_Approver',v.UserRole=='PC_Admin',v.UserRole=='FE_Admins')}">-->
+                  <aura:renderIf isTrue="{!(v.sObjInfo.IAM_Application_Name__c==$Label.c.IAM_AppName_ConnectedSolutions)}">
+                   <lightning:button variant="neutral" label="{!$Label.c.IAM_Send_to_PC}"  value="Send To PC" onclick="{!c.getSendToPCApp}"/>
+				   <lightning:button variant="neutral" label="{!$Label.c.IAM_Generate_Service_Agreement}" value="Generate Service Agreement" onclick="{!c.generateCDAApp}" />
+                   <lightning:button variant="neutral" label="{!$Label.c.IAM_Activate}" value="Activate" onclick="{!c.activateAppDA}" />   
+				 </aura:renderIf>
+				 <!-- <lightning:button variant="neutral" label="{!$Label.c.IAM_Deactivate}" value="Deactivate"  onclick="{!c.appAccountInactivate}" /> -->
+			  
+               </div>
+			</div>
+		  </div>
+				
+		</div>
+		</aura:renderIf>    
+			
+		<!--End of code to disply header of the object-->
+
+			 <aura:attribute name="ServiceId" type="String"/>
+            <aura:attribute name="showServiceId" type="boolean" default="false"/>
+			<!--Attribute to dispaly assaignapplication pop up-->
+			<aura:attribute name="showAppAssaign" type="boolean" default="false"/>
+			<aura:attribute name="typeofApplication" type="string" default="None"/>
+			<!-- end of declearing attributes-->
+			<aura:attribute name="showEditRole" type="boolean" default="false"/>
+			<aura:renderIf isTrue="{!v.showAppAssaign}">
+		 <!--code to display Application Assaignment section -->
+			<div class="slds-modal slds-modal_small slds-fade-in-open"  aria-hidden="false" id="AppAssign" role="dialog" style="height:160px">
+		  <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+			<div class="slds-modal__container">
+			  <header class="slds-modal__header">
+                  <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" onclick="{!c.hideApp}">X</button>
+				  <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate" style="font-weight: bolder">Assign App/Feature</h2>
+			  </header>
+				
+				
+			  <!-- part to seperate the to show wether free applicaiton or Subscribed application-->
+			  
+			  <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                  <lightning:select aura:id="typeofApp" name="Type of Application" label="{!$Label.c.IAM_Type_of_Application}" value="{!v.typeofApplication}" required="true">
+					  <option value="None">None</option> 
+                      <option value="Subscribed">Subscribed</option>
+					<option value="Free">Admin Managed</option>
+				</lightning:select>   
+                 <aura:renderIf isTrue="{!(v.typeofApplication=='Subscribed')}">
+				 <!--<div class="slds-page-header" style="padding-top: 1px; padding-bottom: 1px;, padding-right: 9px;, padding-left: 10px;">
+                 <h3 style="font-size: 1rem;" title="">Subscribed applications</h3>
+				 </div>--> 
+				   <!--section to display error and Success messages-->
+					<aura:renderIf isTrue="{!(subAppError!=null)}">
+					<div class="slds-m-top_medium slds-text-color_error slds-text-align_center">  
+					<ui:outputText value="{!v.subAppError}"/>
+					</div> 
+					</aura:renderIf>
+					<aura:renderIf isTrue="{!(subAppSuccess!=null)}">
+					<div class="slds-m-top_medium slds-text-color_success slds-text-align_center">  
+					<ui:outputText value="{!v.subAppSuccess}"/>
+					</div> 
+					</aura:renderIf>
+					<!--end of the section-->
+				  <!--attribute to show Error Message when there are no Subscriptions purchased-->
+				  <aura:renderIf isTrue="{!(v.subPresent!=null)}">
+				   <div class="slds-m-top_medium slds-text-color_error slds-text-align_center">   
+				  <ui:outputText value="{!v.subPresent}" />
+				  </div>
+				  </aura:renderIf>
+				  <!--end of that code-->
+				  <aura:renderIf isTrue="{!(v.subPresent==null)}">
+				<lightning:select name="mySelect" label="{!$Label.c.IAM_Select_Subscription}" class="slds-combobox-picklist" aura:id="mySelect" value="{!v.selectedValue}" onchange="{!c.diplaySelected}" required="true"> <!-- Pratima Removed the : (colon) from label-->
+				<aura:iteration items="{!v.options}" var="item">
+					<option text="{!item.label}" value="{!item.value}" selected="{!item.selected}" />
+				</aura:iteration>
+				</lightning:select>
+				  <aura:renderIf isTrue="{!(v.selectedValue!='None')}">
+					<!--Iterate the mapCompany this code is to display list as a table and read values from it commented for now but need to work afterwards-->
+					  <table class="slds-table slds-table_bordered slds-table_cell-buffer">
+						<thead>
+						<tr class="slds-text-title_caps">
+						<th scope="col">
+						<div class="slds-truncate" title="Application Name">Application Name</div>
+						</th>
+						</tr>
+						</thead>
+						<aura:iteration items="{!v.keyList}" var="key" >
+						<c:IAM_Application_Table map="{!v.companyMap}" key="{!key}" />
+						</aura:iteration>
+					  </table>
+					<!--  commenting for D-3115	 <aura:renderIf isTrue="{!(v.showServiceId==True)}">
+                      <lightning:input type="string" aura:id="ServiceId" value="{!v.ServiceId}" label="Service Training ID" class="widthToInput" name="ServiceId" required="false" />
+                      </aura:renderIf>		-->					  
+				 </aura:renderIf>
+				 <aura:renderIf isTrue="{!or(or(v.selectedValue == $Label.c.IAM_GuidanzMobileFleetCount, v.selectedValue == $Label.c.IAM_GuidanzMobileZapitCount), v.selectedValue == $Label.c.IAM_GuidanzMobileZapitOEMCount)}">
+					<lightning:input type="number" label="Assign Units"
+						name="assignedCountPaid" value="{!v.assignedCountPaid}" 
+						required="true" class="compWidth"/>
+				 </aura:renderIf>
+                   <!-- Below render-if for D-2818 -->  
+				<aura:renderIf isTrue="{!(v.noApp!=null)}">
+					<div class="slds-m-top_medium slds-text-color_error slds-text-align_center">  
+					<ui:outputText value="{!v.noApp}"/>
+					</div>
+					</aura:renderIf> 
+				</aura:renderIf>
+                </aura:renderIf><!--End of render if to show Subscribed applications only-->
+				</div>				
+				
+				  <!-- Section to display application related fields in the Module-->
+				  
+				  <!-- End of the section-->
+				<aura:renderIf isTrue="{!(v.typeofApplication=='Free')}">
+				<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+				 <!--<div class="slds-page-header" style="padding-top: 1px; padding-bottom: 1px;, padding-right: 9px;, padding-left: 10px;">
+				 <h3 style="font-size: 1rem;" title="">Free applications</h3>
+				 </div> -->
+					<!--section to display error and Success messages-->
+					<aura:renderIf isTrue="{!(freeAppError!=null)}">
+					<div class="slds-m-top_medium slds-text-color_error slds-text-align_center">  
+					<ui:outputText value="{!v.freeAppError}"/>
+					</div> 
+					</aura:renderIf>
+					<aura:renderIf isTrue="{!(freeAppSuccess!=null)}">
+					<div class="slds-m-top_medium slds-text-color_success slds-text-align_center">  
+					<ui:outputText value="{!v.freeAppSuccess}"/>
+					</div> 
+					</aura:renderIf>
+					<!--end of the section-->
+				   <aura:renderIf isTrue="{!(v.appPresentFree!=null)}">
+					<div class="slds-m-top_medium slds-text-color_error slds-text-align_center">  
+					<ui:outputText value="{!v.appPresentFree}"/>
+					</div>
+					</aura:renderIf>
+					<div class="slds-grid slds-wrap">
+					  <div class="slds-col slds-size_6-of-12">
+					<!--below section is to display free apps list-->
+					<aura:renderIf isTrue="{!(v.appPresentFree==null)}">
+					<lightning:select name="mySelectFree" label="{!$Label.c.IAM_Select_Application}" class="slds-combobox-picklist" aura:id="mySelectFree" value="{!v.selectedAppFree}" required="true" onchange="{!c.getModularandRoleValues}"> <!-- Pratima Removed the : (colon) from label-->
+					
+					<aura:iteration items="{!v.appOptionsfree}" var="item">
+					<option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+					</aura:iteration>
+					</lightning:select>    
+					
+					</aura:renderIf>
+						</div>  </div>
+					<!--End of the application list-->
+					<!--below section is for product connectivity-->
+					
+				  <aura:renderIf isTrue="{!(v.selectedAppFree==$Label.c.IAM_AppName_ConnectedSolutions)}">
+					   <div class="slds-grid slds-wrap">
+				   <div class="slds-col slds-size_3-of-12 slds-p-top_small">  
+				 <!-- <lightning:input aura:id="PCfield" label="PC Role" name="Role" value="{!v.PCRole}" required="True" />-->
+					   <lightning:select aura:id="PCfield" label="User Role" name="PC_Role" value="{!v.PCRole}" required="true">
+							<option value="" text="--Select--" />
+								<aura:iteration items="{!v.ConnectedSolution}" var="per">
+							<option value="{!per.value}" text="{!per.label}" />  
+							</aura:iteration>
+						</lightning:select>
+                       </div>
+                      <aura:renderIf isTrue="{!((v.IsFromVF == 'false'))}">    
+                          <div class="slds-col slds-size_10-of-12 slds-p-top_small"> 
+                           	<lightning:input aura:id="PCfield" label="Customer List" value="{!v.CustList}" name="CList" required="True" pattern="(^ALL$)|([1-9]*$)|^[0-9]+(,[0-9]+)*$" messageWhenPatternMismatch="Please enter keyword ALL or number with Comma separation. Do not place any comma after last number"/>
+                          </div>
+                      </aura:renderIf>    
+						  <aura:renderIf isTrue="{!(v.custError!=null)}">
+					  <div class="slds-form-element__help slds-has-error slds-form-element__help slds-text-color_error">  
+					<ui:outputText value="{!v.custError}"/>
+					</div>
+                    </aura:renderIf>          
+				  
+					  <!--<div class="slds-col slds-size_4-of-12 slds-p-top_small">
+				   <lightning:input type="number" aura:id="PCfield" value="{!v.session}" label="Session Timeout" name="session" required="True" />
+						   </div>-->
+                      </div>
+                    </aura:renderIf>
+																													
+																																										
+				  <!--End of product connectivity-->
+				  <!--below section  is for RLS-->
+				  <aura:renderIf isTrue="{!(v.selectedAppFree==$Label.c.IAM_AppName_RLS)}">
+				   
+				  <lightning:select aura:id="rlsRole" name="RLSRole" label="{!$Label.c.IAM_RLS_Role}" value="{!v.rlsRole}" required="true">
+					<option value="RLS Admin">RLS Admin</option>
+					<option value="Customer Admin">Customer Admin</option>
+					<option value="Customer User">Customer User</option>
+				 </lightning:select>   
+				  <lightning:input aura:id="rlsRole" label="{!$Label.c.IAM_RLS_Customer_Number}" name="RLSNumber" value="{!v.rlsNumber}" required="true" onchange="{c.displayclist}"/>
+				  <lightning:input aura:id="rlsRole" Type="email"  label="{!$Label.c.IAM_RLS_Group_Admin_Email}" name="RLSEmail"  value="{!v.rlsEmail}" required="true"/>
+				  </aura:renderIf>
+				  <!--End of RLS section-->  
+				  
+                    
+				  <!--below section  is for Cumpas 2.0 applicatoin-->
+				  <aura:renderIf isTrue="{!(v.selectedAppFree==$Label.c.IAM_AppName_Cumpas)}">
+                      
+                  <aura:renderIf isTrue="{!(v.cumpasError==null)}">    
+                  <lightning:checkboxGroup aura:id="cumpasr" name="Roles/features" label="{!$Label.c.IAM_Roles_Features}" options="{! v.rolesCumpas }" value="{! v.selectedRoleCm }"  onchange="{!c.selectoptionvalueRoles}" required="true"/> 
+				  <lightning:checkboxGroup aura:id="cumpasm" name="Modules" label="{!$Label.c.IAM_Modules}" options="{! v.modularOptions }" value="{! v.selectedModular }"  onchange="{!c.selectoptionvalueRoles}" required="true"/>
+		          </aura:renderIf>
+                  </aura:renderIf>
+                  <aura:renderIf isTrue="{!(v.cumpasError!=null)}">
+      			  <div class="slds-m-top_medium slds-text-color_error slds-text-align_center">  
+					<ui:outputText value="{!v.cumpasError}"/>
+					</div>	
+    			  </aura:renderIf>    
+				  
+				  <!--End of Cumpas section--> 
+                  <!--picklist value to display Guidanz Mobile Field Test application values-->
+                   
+                    <aura:renderIf isTrue="{!and(v.selectedAppFree==$Label.c.IAM_App_GuidanzMobileFieldTest, v.GuidanzMobileFT != null)}">
+                        <lightning:select aura:id="FTField" label="{!$Label.c.IAM_Roles_Features}" 
+                                          name="{!$Label.c.IAM_Roles_Features}" 
+										  value="{!v.selectedRoleCm}" required="true" class="compWidth"
+										  onchange="{!c.getRole}">
+							<option value="" text="--Select--" />
+							<aura:iteration items="{!v.GuidanzMobileFT}" var="per">
+								<option value="{!per.value}" text="{!per.label}" />  
+							</aura:iteration>
+						</lightning:select>
+                        
+						<aura:renderIf isTrue="{!v.isCountApp}">
+							<lightning:input type="number" label="Assign Units"
+										name="assignedCount" value="{!v.assignedCount}" 
+										required="true" class="compWidth"/>
+                            <aura:set attribute="else">
+                            	<aura:renderIf isTrue="{!and(and(!empty(v.selectedRoleCm),v.IsInternalUser), v.IsInternalAccount)}">
+                                    <lightning:input type="date" label="Subscription End Date"
+                                                 name="subEndDate" value="{!v.userSubEndDate}" 
+                                                 required="true" class="compWidth"/>
+                                </aura:renderIf>
+                            </aura:set>
+                    	</aura:renderIf>
+					</aura:renderIf>     
+                        
+                        
+                        <!--<aura:renderIf isTrue="{!and(v.IsInternalUser, v.IsInternalAccount)}">
+                        	<lightning:input type="date" label="Subscription End Date"
+                                         name="subEndDate" value="{!v.userSubEndDate}" 
+                                         required="true" class="compWidth"/>
+                        </aura:renderIf>-->
+						<!--End of Guidanz Mobile Field Test--> 
+						<aura:renderIf isTrue="{!and(v.selectedAppFree==$Label.c.IAM_FT_NPBU_Diagnostics, v.NPBUDiagnosticsFT != null)}">
+                        <lightning:select aura:id="FTField" label="{!$Label.c.IAM_Roles_Features}" 
+                                          name="{!$Label.c.IAM_Roles_Features}" 
+                                          value="{!v.selectedRoleCm}" required="true" class="compWidth">
+							<option value="" text="--Select--" />
+							<aura:iteration items="{!v.NPBUDiagnosticsFT}" var="per">
+								<option value="{!per.value}" text="{!per.label}" />  
+							</aura:iteration>
+						</lightning:select>
+                        <aura:renderIf isTrue="{!and(v.IsInternalUser, v.IsInternalAccount)}">
+                        	<lightning:input type="date" label="Subscription End Date"
+                                         name="subEndDate" value="{!v.userSubEndDate}" 
+                                         required="true" class="compWidth"/>
+                        </aura:renderIf>
+						<!--End of Field Test NPBU Diagnostics --> 
+                        
+					</aura:renderIf>
+					 
+                   
+                    
+                    
+                    <!--picklist value to display guidan application values-->
+                   
+                  <aura:renderIf isTrue="{!and(v.selectedAppFree==$Label.c.IAM_AppName_Guidanz,v.Guidanz!=null)}">
+                  <lightning:checkboxGroup aura:id="Guidanz" name="Roles/features" label="{!$Label.c.IAM_Roles_Features}" options="{! v.Guidanz }" value="{! v.selectedRoleCm }" required="true"/>    
+                  </aura:renderIf> 
+                  
+                    <!-- End for Guidanz application-->
+                   <!--picklist value to display MarketPlace application values-->
+				  <aura:renderIf isTrue="{!and(v.selectedAppFree==$Label.c.IAM_OSM_App_Name,v.MarketPlace!=null)}">
+                  		<lightning:checkboxGroup aura:id="MarketPlace" name="Roles/features" label="{!$Label.c.IAM_Roles_Features}" options="{! v.MarketPlace }" value="{! v.selectedRoleCm }" required="true"/>    
+                  </aura:renderIf>
+                  
+					<!-- End for MarketPlace application-->
+					<aura:renderIf isTrue="{!and(v.selectedAppFree==$Label.c.IAM_FluidWatch,v.FluidWatch!=null)}">
+						<lightning:checkboxGroup aura:id="Fw" name="Roles/features" label="{!$Label.c.IAM_Roles_Features}"
+							options="{!v.FluidWatch }" value="{!v.selectedRoleCm }" required="true" />
+					</aura:renderIf>
+					<!-- End for fluidwatch application-->
+                    <!--Picklist value to display Fleetgaurd values-->
+                    <aura:renderIf isTrue="{!and(v.selectedAppFree==$Label.c.IAM_AppName_FleetguardFit,v.FleetguardFit!=null)}">
+                  		<lightning:checkboxGroup aura:id="FleetguardFit" name="Roles/features" label="{!$Label.c.IAM_Roles_Features}" options="{! v.FleetguardFit }" value="{! v.selectedRoleCm }" required="true"/>    
+                  </aura:renderIf>  
+                    <!-- End of the addition-->
+                    
+                    
+                  <!--Fix - D-3194 - picklist value to display RSW application values-->
+				  <aura:renderIf isTrue="{!and(v.selectedAppFree==$Label.c.IAM_RSW_App,v.RSWRoles!=null)}">
+                  		<lightning:checkboxGroup aura:id="RSW" name="Roles/features" label="{!$Label.c.IAM_Roles_Features}" options="{! v.RSWRoles }" value="{! v.selectedRoleCm }" required="true"/>    
+                  </aura:renderIf>
+                  
+                  <!-- End for RSW application-->  
+				  <!--Picklist value to display Global Dealer Portal values-->
+				  <aura:renderIf isTrue="{!and(v.selectedAppFree==$Label.c.IAM_AppName_GlobalDealerPortal,v.GDPRoles!=null)}">
+					<lightning:checkboxGroup aura:id="GDP" name="Roles/features" label="{!$Label.c.IAM_Roles_Features}" options="{! v.GDPRoles }" value="{! v.selectedRoleCm }" required="true"/>    
+			</aura:renderIf>  
+			  <!-- End of the Global Dealer Portal addition-->
+			  <!-- Start - Dispaly Fluid Registration Roles -->
+			  <aura:renderIf isTrue="{!and(v.selectedAppFree==$Label.c.IAM_AppName_FluidRegistraion, v.fluidRegist!=null)}">
+				<lightning:checkboxGroup aura:id="fluidReg" name="Roles/features" label="{!$Label.c.IAM_Roles_Features}" options="{!v.fluidRegist }" value="{!v.selectedRoleCm }" required="true"/>    
+			</aura:renderIf>
+			  <!-- End - Fluid Registration Roles --> 
+			  		<!-- Start - Dispaly Guidanz Service Portal Roles -->
+					  <aura:renderIf isTrue="{!and(v.selectedAppFree==$Label.c.IAM_AppName_GuidanzServicePortal, v.GuidanzServicePRoles!=null)}">
+						<lightning:checkboxGroup aura:id="GUIServiceP" name="Roles/features" label="{!$Label.c.IAM_Roles_Features}" options="{!v.GuidanzServicePRoles }" value="{!v.selectedRoleCm }" required="true"/>    
+					</aura:renderIf>
+			  		<!-- End - Dispaly Guidanz Service Portal Roles -->
+				<!--Start - Display Cummins API Portal picklist values-->
+			<aura:renderIf isTrue="{!and(v.selectedAppFree==$Label.c.IAM_Application_Name_Cummins_API_Portal,v.CumminsAPIPortalRoles!=null)}">
+				<lightning:checkboxGroup aura:id="CumminsAPI" name="Roles/features" label="{!$Label.c.IAM_Roles_Features}" options="{! v.CumminsAPIPortalRoles }" value="{! v.selectedRoleCm }" required="true"/>    
+			</aura:renderIf>  
+		  <!-- End of the Cummins API Portal addition-->
+				</div>
+			   </aura:renderIf>
+			  <footer class="slds-modal__footer">
+				
+				<!--Since we commented this section now we need to write this logic in regular save button. --> 
+			   <!--<aura:renderIf isTrue="{! v.ShowSaveButton>0}">
+			   <button class="slds-button slds-button_neutral" onclick="{!c.SaveSubscribedApp}">Save2</button>
+			   </aura:renderIf>-->
+				<button class="slds-button slds-button_neutral" onclick="{!c.hideApp}">Close</button>
+                 <!-- <aura:renderIf isTrue="{!or(v.selectedAppFree!='None',v.ShowSaveButton>0)}"> 
+                 <button class="slds-button slds-button_brand" onclick="{!c.saveApp}">Save</button>
+				</aura:renderIf> -->
+				<aura:renderIf isTrue="{!and(v.selectedAppFree!='None',v.selectedAppFree!=$Label.c.IAM_AppName_Cumpas)}"> 
+                 <button class="slds-button slds-button_brand" onclick="{!c.saveApp}">Save</button>
+				</aura:renderIf>
+				<aura:renderIf isTrue="{!and(v.selectedAppFree==$Label.c.IAM_AppName_Cumpas,v.ShowSaveButton>0  &amp;&amp; v.typeofApplication=='Free')}"> 
+                 <button class="slds-button slds-button_brand" onclick="{!c.saveApp}">Save</button>
+				</aura:renderIf>
+                  <aura:renderIf isTrue="{!and(v.typeofApplication=='Subscribed',v.ShowSaveButton>0)}"> 
+                 <button class="slds-button slds-button_brand" onclick="{!c.saveApp}">Save</button>
+				</aura:renderIf>
+			  </footer>
+			</div>
+		  </section>
+		  <div class="slds-backdrop slds-backdrop_open"></div>
+		</div>
+		</aura:renderIf>    
+			<!--End of code to display app assign Modal-->
+			
+			 <aura:attribute name="options" type="List" /><!--this variable is to diplay Subscription names-->
+			<aura:attribute name="selectedValue" type="String"/><!--this is to hold the selected value in the picklist-->
+			<!--<aura:handler name="init" value="{!this}" action="{!c.updateSelect}" />--><!-- this is to call controller to auto fill the values-->
+			<aura:attribute name="appOptionsSub" type="List"/><!--Variable to store subscription application name and to display them on the UI-->
+			<aura:attribute name="selectedAppSub" type="String" /><!--Attribute to Store the selected app value-->
+			<aura:attribute name="subPresent" type="String"/><!--Attribute to set the display section in App assign Modale-->
+			<aura:attribute name="roleOptions" type="List"/><!--Variable to store Role name and to display them on the UI-->
+			<aura:attribute name="selectedRole" type="String"/><!--Attribute to Store the selected Role value-->
+			<aura:attribute name="appOptionsfree" type="List"/><!--Variable to store free application name and to display them on the UI-->
+			<aura:attribute name="selectedAppFree" type="String" /><!--Attribute to Store the selected free app value-->
+			<aura:attribute name="appPresentFree" type="String"/><!--Attribute to set the display section in App assign Modale for free applications-->
+			<aura:attribute name="noApp" type="String"/> <!-- D-2818 -->
+			<!--End of Error Attributes section-->
+		   
+			
+			<!--Attributes to display Error messages-->
+			<aura:attribute name="custError" type="String" /><!--Attribute to display error for RLS and PC customer List-->
+			<aura:attribute name="subAppError" type="String" /><!--Attribute to display why subscription apps did not get displayed-->
+			<aura:attribute name="freeAppError" type="String" /><!--Attribute to display why free app did not get stored-->
+			<aura:attribute name="subAppSuccess" type="String" /><!--Attribute to display why subscription apps on Success displayed-->
+			<aura:attribute name="freeAppSuccess" type="String" /><!--Attribute to display why free app onSuccess get stored-->
+			<!--End of Error Attributes section-->
+			
+			<!--Attributes to store the value of the pc,Cumpas 2.0 and RLS application-->
+			<aura:attribute name="PCRole" type="String"/>
+			<aura:attribute name="CustList" type="String"/>
+			<aura:attribute name="session" type="String"/>
+			<aura:attribute name="rlsRole" type="String"/>
+			<aura:attribute name="rlsNumber" type="String"/>
+			<aura:attribute name="rlsEmail" type="String"/>
+			<aura:attribute name="modularOptions" type="List"/><!--attribute to dispaly modular ooptions-->
+			<aura:attribute name="cumpasRoles" type="List"/><!--attribute to display cumpasRoles-->
+			<aura:attribute name="selectedModular" type="List"/><!--List to store selected value in multi checkbox modular-->
+    		<aura:attribute name="selectedRoleCm" type="List"/><!--Attribute to store Cumpas roles values-->
+			<aura:attribute name="selectedcumRole" type="String"/><!--String to store selected role for the user-->
+    		<aura:attribute name="rolesCumpas" type="List"/><!--List to Store all the roles for Cumpas Application-->
+    		<!--End of the Attributes section-->
+			<!--Attributes to display new Modal for multi select of roles-->
+			<aura:attribute name="keyList" type="List"/>
+			<aura:attribute name="companyMap" type="map"/>    
+			<!--End of Attributes-->
+			
+			<!--Modal to show error message on contact-->    
+			<!--Attributes needed to diaply the error message-->
+			<aura:attribute name="errorContact" type="string"/>
+			<aura:attribute name="errorContactFlag" type="Boolean" default="false"/>
+    		<aura:attribute name="successContactFlag" type="Boolean" default="false"/>
+			<!--end of attributes section-->
+			<!-- Amarnath Mishra added for the Issue# 542 -->
+			<aura:if isTrue="{!v.successContactFlag}">
+				<div class="slds-modal slds-modal--Medium slds-fade-in-open"  aria-hidden="false" id="Warning" role="dialog" style="height:160px">
+		  <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+			<div class="slds-modal__container">
+			  <header class="slds-modal__header">
+				<button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" onclick="{!c.hideContactError}">X</button>
+				<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate" style="font-weight:bolder">Success</h2>
+			  </header>
+			  <div class="slds-modal__content slds-p-around_medium slds-text-color_success" style="font-size:16px;" id="modal-content-id-1">
+				<p>{!v.errorContact}</p>
+				  
+			  </div>
+			  <footer class="slds-modal__footer">
+				<button class="slds-button slds-button_neutral" onclick="{!c.hideContactError}">Close</button>
+			  </footer>
+			</div>
+		  </section>
+		  <div class="slds-backdrop slds-backdrop_open"></div>
+		</div>
+			</aura:if>
+			
+			
+			<aura:if isTrue="{!v.errorContactFlag}">
+				<div class="slds-modal slds-modal--Medium slds-fade-in-open"  aria-hidden="false" id="Warning" role="dialog" style="height:160px">
+		  <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+			<div class="slds-modal__container">
+			  <header class="slds-modal__header">
+				<button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" onclick="{!c.hideContactError}">X</button>
+				<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate" style="font-weight:bolder">Warning</h2>
+			  </header>
+			  <div class="slds-modal__content slds-p-around_medium slds-text-color_error" id="modal-content-id-1">
+				<p>{!v.errorContact}</p>
+				  <br/>
+				   <aura:renderIf isTrue="{!(v.IsFromVF != true)}">
+				  		<aura:renderIf isTrue="{!v.showEditLink}">    
+							<p><a href="javascript:void(0)" onclick="{!c.doOpentheRecord}">{!$Label.c.IAM_duplicate_application_errorlink}</a></p>
+							<br/>
+                         </aura:renderIf>
+                  </aura:renderIf> 
+					 
+			  </div>
+			  <footer class="slds-modal__footer">
+				<button class="slds-button slds-button_neutral" onclick="{!c.hideContactError}">Close</button>
+			  </footer>
+			</div>
+		  </section>
+		  <div class="slds-backdrop slds-backdrop_open"></div>
+		</div>
+			</aura:if>
+			
+			<!--end of modal-->
+			
+			
+			<!--Modal to show error message on Contact Provisioning-->    
+			<!--Attributes needed to diaply the error message-->
+			<aura:attribute name="errorContactProvisioning" type="string"/>
+			<aura:attribute name="errorContactProvisioningFlag" type="Boolean" default="false"/>
+			<!--end of attributes section-->
+			<aura:if isTrue="{!v.errorContactProvisioningFlag}">
+				<div class="slds-modal slds-modal--Medium slds-fade-in-open"  aria-hidden="false" id="Warning" role="dialog" style="height:160px">
+		  <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+			<div class="slds-modal__container">
+			  <header class="slds-modal__header">
+				<button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" onclick="{!c.hideContactProvisioningError}">X</button>
+				<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate" style="font-weight:bolder">Warning</h2>
+			  </header>
+			  <div class="slds-modal__content slds-p-around_medium slds-text-color_error" id="modal-content-id-1">
+				<p>{!v.errorContactProvisioning}</p>
+				  <br/>
+				   
+					<p style="color:#3e3e3c">Please click on close  button to close the warning.</p>
+					  
+			  </div>
+			  <footer class="slds-modal__footer">
+				<button class="slds-button slds-button_neutral" onclick="{!c.hideContactProvisioningError}">Close</button>
+			  </footer>
+			</div>
+		  </section>
+		  <div class="slds-backdrop slds-backdrop_open"></div>
+		</div>
+			</aura:if>
+			
+			<!--end of modal-->
+			<!--Attributes needed to diaply the error message-->
+			<aura:attribute name="errorAccountProvisioning" type="string"/>
+			<aura:attribute name="errorAccountProvisioningFlag" type="Boolean" default="false"/>
+			<!--end of attributes section-->
+			<aura:if isTrue="{!v.errorAccountProvisioningFlag}">
+				<div class="slds-modal slds-modal_medium slds-fade-in-open"  aria-hidden="false" id="Warning" role="dialog" style="height:160px">
+		  <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+			<div class="slds-modal__container">
+			  <header class="slds-modal__header">
+				<button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" onclick="{!c.hideAccountProvisioningError}">X</button>
+				<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate" style="font-weight:bolder">Warning</h2>
+			  </header>
+			  <div class="slds-modal__content slds-p-around_medium slds-text-color_error" id="modal-content-id-1">
+				<p>{!v.errorAccountProvisioning}</p>
+				  <br/>
+				   
+					<p style="color:#3e3e3c">Please click on close  button to close the warning.</p>
+					  
+			  </div>
+			  <footer class="slds-modal__footer">
+				<button class="slds-button slds-button_neutral" onclick="{!c.hideAccountProvisioningError}">Close</button>
+
+				</footer>
+			</div>
+		  </section>
+		  <div class="slds-backdrop slds-backdrop_open"></div>
+		</div>
+			</aura:if>
+			<!--end of modal-->
+    	<aura:attribute name="showWorkGrp" type="Boolean" default="false"/><!--Variable to store value to display wrkGrp popup-->
+		<aura:attribute name="showRemoveWorkGrp" type="Boolean" default="false"/><!--Variable to store value to display remove wrkGrp popup-->
+    	<aura:attribute name="allAccounts" type="Account[]"/>
+		<aura:attribute name="wrkGrpAccounts" type="Account[]"/>
+    	<aura:attribute name="mydata" type="Object"/>
+    	<!--Variables for setting up table in modal-->
+    	<aura:attribute name="selectedRowsCount" type="Integer" default="0"/>
+		<aura:attribute name="maxRowSelection" type="Integer" default="500"/>
+		<aura:attribute name="columns" type="List"/>
+		<aura:attribute name="wrkGrpcolumns" type="List"/>
+		<aura:attribute name="selectedRegion" type="String" default="None"/> 
+		<aura:attribute name="primaryWrkGrp" type="String" default="--Select--"/>
+		<aura:attribute name="AllSecondryWrkGrp" type="String" default="--Select--"/>
+		<aura:attribute name="selectedType" type="String" default="--Select--"/>
+		<aura:attribute name="regionsToDisplay" type="string[]" default="--Select--"/>
+		<aura:attribute name="typeToDisplay" type="string[]" default="--Select--"/>
+		<aura:attribute name="selectedDistributor" type="String" default="--Select--"/> 
+		<aura:attribute name="DistributorsToDisplay" type="Account[]" />
+		<aura:attribute name="selectedRowsList" type="List"/>
+		<aura:attribute name="selectedRowsDetails" type="Object" />
+			<!--End of variables-->
+			
+		<!--Code to display assign Wrok group Modal-->
+		<aura:renderIf isTrue="{!(v.showWorkGrp)}">	
+
+			<div role="dialog" tabindex="-1" aria-labelledby="wrkgrp" class="slds-modal slds-fade-in-open slds-modal_medium">
+				<div class="slds-modal__container">
+				<div class="slds-modal__header">
+					<button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" onclick="{!c.closeWrkGrp}">X</button>
+					<h2 id="wrkgrp" class="slds-text-heading--medium">Assign Work GroupID</h2>
+				</div>
+
+				<div class="slds-modal__content slds-p-around--large">
+				<h4 style="color: black;font-weight: bolder;padding-left:20px;">Already Assigned WorkGroupIds</h4>
+				<div id="table-scroll">
+					<table class="tableslds">
+						<br/>
+							<tr>
+								<td style="padding-left:19px;">
+									<div style="display:flex">
+									<div>Primary WorkGroup Id:</div>
+									<div style="padding-left:12%;"><ui:outputText value="{!v.primaryWrkGrp}"/> </div>
+									</div>
+								</td>
+							</tr>
+							<hr class="newColor"/>					
+							<tr>
+								<td style="padding-left:19px;">
+								<div style="display:flex">
+									<div style="white-space: nowrap;">Secondary WorkGroup Ids:</div>
+									<div style="padding-left:10%;"><ui:outputText value="{!v.AllSecondryWrkGrp}"/> </div>
+									 </div>
+								</td>
+							</tr>
+							<br/>
+					</table>
+				</div>
+				<br/>
+				<lightning:select aura:id="region" name="Select a Region" label="{!$Label.c.IAM_Select_a_Region}" value="{!v.selectedRegion}" required="true" onchange="{!c.getDistributors}">
+					<aura:iteration items="{!v.regionsToDisplay}" var="item">
+						<option text="{!item.label}" value="{!item.value}" selected="{!item.selected}"/>
+					</aura:iteration>
+				</lightning:select>
+
+				<!--picklist to display distributors under that location-->
+				<aura:renderIf isTrue="{!(v.selectedRegion!='None')}">
+					<lightning:select aura:id="region" name="Select a Distributor" label="{!$Label.c.IAM_Select_a_Distributor}" value="{!v.selectedDistributor}" required="true" onchange="{!c.getLocType}">
+						<aura:iteration items="{!v.DistributorsToDisplay}" var="account">
+							<option value="{!account.Id}">{!account.Name}</option>
+						</aura:iteration>
+					</lightning:select>
+				</aura:renderIf>
+				<!--End of picklist-->
+
+				<!--picklist to display Location type-->
+				<aura:renderIf isTrue="{!(v.selectedDistributor!='None')}">
+					<lightning:select aura:id="type" name="Select a Location Type" label="{!$Label.c.IAM_Select_location_type}" value="{!v.selectedType}" required="true" onchange="{!c.ShowWrkGrp}">
+						<aura:iteration items="{!v.typeToDisplay}" var="item">
+							<option value="{!item}">{!item}</option>
+						</aura:iteration>
+					</lightning:select>
+				</aura:renderIf>
+				<!--End of picklist-->
+				<!--Code block to display all the accounts  a table-->
+				<aura:renderIf isTrue="{!(v.selectedDistributor!='None')}">
+					<div style="height: 300px">
+						<h1>Selected Rows: {! v.selectedRowsCount }</h1>
+						<lightning:datatable
+						columns="{! v.columns }"
+						data="{! v.allAccounts }"
+						keyField="id"
+						maxRowSelection="{! v.maxRowSelection }"
+						onrowselection="{! c.updateSelectedText }"/>
+					</div>
+					<!--End of the table selection-->
+				</aura:renderIf>      
+				</div>
+				<div class="slds-modal__footer">
+					<button class="slds-button slds-button--neutral" onclick="{!c.closeWrkGrp}" >Cancel</button>
+                    <aura:renderIf isTrue="{!(v.showAssignWorkGroup == true)}">
+					<button class="slds-button slds-button--brand" onclick="{!c.assignWrkGrp}">Assign WorkGroup</button>
+					</aura:renderIf>
+				</div>
+				</div>
+			</div>
+			<div class="slds-backdrop slds-backdrop--open"></div>
+		</aura:renderIf>
+		<!--End of Work group id-->
+		
+		
+		<!--Code to display remove assign Wrok group Modal-->
+		<aura:renderIf isTrue="{!(v.showRemoveWorkGrp)}">	
+			<div role="dialog" tabindex="-1" aria-labelledby="remwrkgrp" class="slds-modal slds-fade-in-open slds-modal_medium">
+				<div class="slds-modal__container">
+					<div class="slds-modal__header">
+						<button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" onclick="{!c.closeRemWrkGrp}">X</button>
+						<h2 id="remwrkgrp" class="slds-text-heading--medium">Remove Work GroupID</h2>
+					</div>
+					<div class="slds-modal__content slds-p-around--large" style="height:650px">
+						<!--Code block to display all the accounts  a table-->
+						
+						<div style="height: 300px">
+							<h1>Selected Rows: {! v.selectedRowsCount }</h1>
+							<lightning:datatable
+							columns="{! v.wrkGrpcolumns}"
+							data="{! v.wrkGrpAccounts }"
+							keyField="id"
+							maxRowSelection="{! v.maxRowSelection }"
+							onrowselection="{! c.updateSelectedText }"/>
+						</div>
+						<!--End of the table selection-->
+					</div>	 
+				
+					<div class="slds-modal__footer">
+						<button class="slds-button slds-button--neutral" onclick="{!c.closeRemWrkGrp}" >Cancel</button>
+						<aura:renderIf isTrue="{!(v.showRemoveWorkGroup == true)}">
+							<button class="slds-button slds-button--brand" onclick="{!c.removeWrkGrp}">Remove WorkGroup</button>
+						</aura:renderIf>
+					</div>
+				</div>	
+			</div>
+			<div class="slds-backdrop slds-backdrop--open"></div>
+		</aura:renderIf>
+		<!--End of remove Work group id-->	
+   <!--Code regarding multiple subscription assignment.-->
+    <aura:attribute name="subscriptionAssign" type="boolean" default="False"/> 
+    <!--<aura:attribute name="optionsToSelect" type="List" default="[]"/>
+    <aura:attribute name="values" type="List" default="[]"/>-->
+    <aura:attribute name="optionsToSelect" type="List" default="[]"/>
+    <aura:attribute name="values" type="List" default="[]"/>
+    <aura:attribute name="oldValues" type="List" default="[]"/>
+    <aura:attribute name="selectedSubRole" type="String" default="None" />
+    <aura:attribute name="RolesToDisplay" type="String[]" default="[]"/>
+    <aura:attribute name="RolesToSelect" type="Boolean" default="false"/>
+    <aura:attribute name="errorMessageSub" type="String" />
+    <aura:attribute name="errorMsgdispaly" type="Boolean" default="false"/>
+    <aura:attribute name="errorForContact" type="String" />
+    <aura:attribute name="errorForContactFlag" type="Boolean" default="false"/>
+    <aura:attribute name="dualListFlag" type="Boolean" default="false"/>
+    <aura:attribute name="record" type="String" />
+    <aura:attribute name="SelectedContacts" type="String"/>
+	<aura:attribute name="IsMaxContacts" type="Integer"/>
+    <aura:registerEvent name="appEvent1" type="c:IAM_PicklistValueChange"/>
+     <aura:handler event="c:IAM_DualListValueChange" action="{!c.setSelectedContacts}"/>
+    <!--picklist to display Role-->
+    
+ 	<aura:renderIf isTrue="{!(v.subscriptionAssign)}">
+     <div class="wk_static">      
+      <div class="slds-modal slds-modal--Medium slds-fade-in-open"  aria-hidden="false" id="DeActive" role="dialog" style="height:160px">
+		  <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+			<div class="slds-modal__container">
+			  <header class="slds-modal__header">
+				
+				<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate" Style="font-weight:bolder">Assign Subscription</h2>
+				<aura:If isTrue="{!(v.applicationName != $Label.c.IAM_AppName_guidanzmobile)}">
+					<aura:If isTrue="{!(v.IsMaxContacts>40)}">
+					  <div class="slds-p-around_medium slds-text-color_error slds-text-align_center" >
+                      <p><b>{!v.errorMessageSub}</b></p>
+      			  	  </div>
+                    <aura:set attribute="else">
+        				<div class="slds-p-around_medium slds-text-color_success slds-text-align_center" >
+							<p><b>{!v.errorMessageSub}</b></p>  
+			  	  		</div>
+    				</aura:set>
+                	</aura:If>
+                </aura:If>
+			  </header>
+			  <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1"> 
+                 <aura:renderIf isTrue="{!(errorMsgdispaly)}">
+                  <div class="slds-p-around_medium slds-text-color_error slds-text-align_center" >
+					<p>{!v.errorMessageSub}</p>
+				  <br/>	  
+			  	  </div>
+                 </aura:renderIf> 
+                  
+				<aura:renderIf isTrue="{!(v.RolesToSelect)}">
+					<lightning:select aura:id="Roletype" name="Select a Role" label="Select a Role" value="{!v.selectedSubRole}" required="true"  onchange="{!c.getSubscriptionCompnent}">
+						<aura:iteration items="{!v.RolesToDisplay}" var="item">
+							<option value="{!item}">{!item}</option>
+						</aura:iteration>
+					</lightning:select>
+				</aura:renderIf>
+				<!--End of picklist-->
+                <aura:renderIf isTrue="{!(v.applicationName == $Label.c.IAM_AppName_Cumpas)}">
+					<lightning:select aura:id="modularity" name="Select a Modularity" label="Select a Modularity" value="{!v.selectedModular}" required="true" onchange="{!c.evaluateShowSaveButtonCumpas}">
+						<aura:iteration items="{!v.modularOptions}" var="item">
+							<option value="{!item}">{!item}</option>
+						</aura:iteration>
+					</lightning:select>
+				</aura:renderIf>
+                 
+				<aura:renderIf isTrue="{!(v.applicationName == $Label.c.IAM_AppName_ConnectedSolutions)}">
+					<div>
+                           <lightning:input aura:id="CustomerList" label="Customer List" value="{!v.CustList}" name="CList" required="true" pattern="(^ALL$)|([1-9]*$)|^[0-9]+(,[0-9]+)*$" messageWhenPatternMismatch="Please enter keyword ALL or number with Comma separation. Do not place any comma after last number" onchange="{!c.evaluateShowSaveButton}"/>
+                    </div>
+				</aura:renderIf>  
+                 
+    
+	<aura:renderIf isTrue="{!(v.selectedSubRole!='None')}">	
+        <aura:renderIf isTrue="{!(v.errorForContactFlag)}">
+        <div class="slds-p-around_medium slds-text-color_error slds-text-align_center">
+		<p>{!v.errorForContact}</p>
+		<br/>	  
+		</div>
+        </aura:renderIf>
+        <aura:renderIf isTrue="{!(v.dualListFlag)}">
+        <!--<lightning:dualListbox name="multipleOptions"  
+                           label= "Select Users" 
+                           sourceLabel="Available" 
+                           selectedLabel="Selected" 
+                           options="{!v.optionsToSelect}" 
+                           value="{!v.values}" 
+                           onchange="{! c.handleChange }"/>-->
+         <c:IAM_Dual_List_Component recordId="{!v.record}" selectedRole="{!v.selectedSubRole}" selectedModularity="{!v.selectedModular}"/>   
+        </aura:renderIf>  
+		</aura:renderIf>
+			  </div>
+	  <footer class="slds-modal__footer">
+				
+		  <lightning:button class="slds-button slds-button_neutral" variant="neutral"  value="Close" label="Close"  onclick="{!c.closeSubscription}" />
+          
+          <aura:renderIf isTrue="{!(v.showSaveOnAssignSubscription)}">
+			<aura:If isTrue="{!and(v.IsMaxContacts>40,v.applicationName != $Label.c.IAM_AppName_guidanzmobile)}" >
+				<aura:set attribute="else">
+          			<lightning:button class="slds-button slds-button_neutral" variant="Brand"  value="Save" label="Save"  onclick="{!c.openConfirmModel}" />
+				</aura:set>
+		  </aura:If>
+          </aura:renderIf>    
+			  </footer>
+			</div>   
+		  </section>
+	   <div class="slds-backdrop slds-backdrop_open"></div>
+		</div>
+	   </div>
+	</aura:renderIf>		    
+              
+    <!--End of Multiple code subscription assignment-->
+		</aura:component>

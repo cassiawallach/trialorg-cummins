@@ -1,0 +1,538 @@
+<apex:page controller="disco.Ctl_TemplateBuilder" showHeader="false" sidebar="false" standardStylesheets="false"
+applyBodyTag="false" applyHtmlTag="false" docType="html-5.0" action="{!checkTemplate}">
+    <apex:variable var="isLocal" value="false" />
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<head>
+    <title>{!thisTemplate.name} Builder</title>
+    <apex:includeScript value="{!$Resource.disco__customModalJS}"/>
+    <!-- Local Host Load --> 
+    <apex:outputPanel rendered="{!isLocal = 'true'}" layout="none">
+        <base href="https://localhost:9006/form-builder/" />
+        <link rel="stylesheet" href="/lib/bootstrap-3.4.1/css/bootstrap.min.css" />
+        <link rel="stylesheet" href="/dist/site.css"/>
+        <link rel="stylesheet" href="/dist/form-builder-app.css"/>
+        <link rel="stylesheet" href="/lib/spectrum/spectrum.css"/>  
+        <link rel="stylesheet" href="/lib/quill/quill.snow.css"/> 
+    </apex:outputPanel> 
+
+    <!-- Static Resource Load -->
+    <apex:outputPanel rendered="{!isLocal = 'false'}" layout="none">
+        <link rel="stylesheet" href="{!URLFOR($Resource.bootstrap_3_4_1, 'css/bootstrap.min.css')}" />
+        <link rel="stylesheet" href="{!URLFOR($Resource.ngApp, 'site.css')}"/>
+        <link rel="stylesheet" href="{!URLFOR($Resource.ngApp, 'form-builder-app.css')}"/>
+        <link rel="stylesheet" href="{!URLFOR($Resource.ngApp, 'spectrum.css')}"/>
+        <link rel="stylesheet" href="{!URLFOR($Resource.ngApp, 'quill.snow.css')}"/>
+    </apex:outputPanel> 
+    
+    <!-- Preview Form CSS -->
+    <apex:styleSheet value="{!$Resource.disco__completeFormCSS}"/>
+    <apex:styleSheet value="{!$Resource.disco__forms_css}"/>
+    <!-- Lightning Design -->
+    <apex:styleSheet value="{!URLFOR($Resource.disco__SLDS250, '/assets/styles/salesforce-lightning-design-system-vf.min.css')}" />
+    
+    <meta http-equiv="x-ua-compatible" content="ie=edge"/>
+    <meta name="viewport" content="width=device-width"/>
+
+    <!-- MY JS -->
+    <script>
+    // global vars that need to be on this page because they use merge fields
+    var CTL_VARS = {};
+    CTL_VARS.vfr = {};
+    CTL_VARS.vfr.saveFormVFR = '{!JSENCODE($RemoteAction.Ctl_TemplateBuilder.saveFormTemplate)}';
+    CTL_VARS.vfr.updatePrefsVFR = '{!JSENCODE($RemoteAction.Ctl_TemplateBuilder.updateUserPreferences)}';
+    CTL_VARS.vfr.updateShowAdvFeatures = '{!JSENCODE($RemoteAction.Ctl_TemplateBuilder.updateShowAdvFeatures)}';
+    CTL_VARS.vfr.publishTemplate = '{!JSENCODE($RemoteAction.Ctl_TemplateBuilder.publishTemplate)}';
+    CTL_VARS.vfr.previewItems = '{!JSENCODE($RemoteAction.Ctl_TemplateBuilder.previewItems)}';
+    CTL_VARS.vfr.convertLogicToJSON = '{!JSENCODE($RemoteAction.Ctl_TemplateBuilder.convertLogicToJSON)}';
+    CTL_VARS.vfr.uploadImage = '{!JSENCODE($RemoteAction.Ctl_TemplateBuilder.uploadImage)}';
+    CTL_VARS.vfr.validateWhere = '{!JSENCODE($RemoteAction.Ctl_TemplateBuilder.checkWhereClause)}';
+    CTL_VARS.vfr.validateSimpleWhere = '{!JSENCODE($RemoteAction.Ctl_TemplateBuilder.checkSimpleWhereClause)}';
+    CTL_VARS.vfr.managedTemplateFormData = '{!JSENCODE($RemoteAction.Ctl_TemplateBuilder.managedTemplateFormData)}';
+    CTL_VARS.vfr.buildMaps = '{!JSENCODE($RemoteAction.Ctl_TemplateBuilder.buildJSONFieldLinkMaps)}';
+    CTL_VARS.vfr.getFFsize = '{!JSENCODE($RemoteAction.Ctl_TemplateBuilder.ffSize)}';
+    CTL_VARS.templateID = '{!JSENCODE(thisTemplate.id)}';
+    CTL_VARS.templateName = '{!JSENCODE(thisTemplate.name)}';
+    CTL_VARS.relsAllowingInserts = '{!JSENCODE(thisTemplate.Rels_Allowing_Inserts__c)}'.split(',').filter(function(x){return x;}); // exclude empty string
+    CTL_VARS.namespace = '{!JSENCODE(namespace)}';
+    CTL_VARS.premiumDisabled = '{!JSENCODE(IF(premiumDisabled,"true","false"))}';
+    CTL_VARS.fieldLinkCount = '{!JSENCODE(TEXT(fieldLinkCount))}';
+    CTL_VARS.totalQuestionCount = '{!JSENCODE(TEXT(totalQuestionCount))}';
+    CTL_VARS.templateImageMetadataEnabled = '{!JSENCODE(IF(isTemplateImageMetadataEnabled,"true","false"))}' == "true";
+    CTL_VARS.templateImageFields = JSON.parse('{!JSENCODE(templateImageFields)}');
+    var ns = '{!JSENCODE(namespace)}'; // going to use this a lot so its nice to have it as short as possible
+    var newFormWithoutName = '{!JSENCODE(newFormWithoutName)}';
+    var logoPath = '{!JSENCODE($Resource.ng_youreka_logo_png)}';
+    var discoIconPath = "{!JSENCODE($Resource.youreka_discovery_png)}";
+    var isLightningExp = typeof sforce !== 'undefined'; // navigation with the possibility of LightingExp 
+
+    // Contains environment variables used when preview mode is triggered and form render looks for
+    // these variables
+    var sfEnv = {};
+    sfEnv.VFR = {};
+    sfEnv.isPreview = true;
+    sfEnv.isFormDetail = false;
+    sfEnv.isLightningExp = '{!JSENCODE($User.UITheme)}' == 'Theme4d' ? true : false;
+    sfEnv.thisForm = {};
+    sfEnv.taskWhatIdContainsForm = '{!JSENCODE(IF(taskWhatIdContainsForm,"true","false"))}' == "true" ? true : false;
+    sfEnv.namespace = '{!JSENCODE(namespace)}';
+    sfEnv.SLDS_PATH = '{!JSENCODE($Resource.SLDS250)}';
+    var managedTemplateList = JSON.parse('{!JSENCODE(managedTemplatesJSONString)}');
+
+    // For use with Preview
+    sfEnv.VFR.findMatchingLookupRecords = '{!JSENCODE($RemoteAction.Ctl_TemplateBuilder.findMatchingRecords)}';
+    sfEnv.VFR.retrieveFieldValues = '{!JSENCODE($RemoteAction.Ctl_TemplateBuilder.retrieveFieldValues)}';
+    sfEnv.countryPickLists = '{!JSENCODE(IF(countryPickListsOn,"true","false"))}' == "true" ? true : false;
+    sfEnv.stateCountryMap = JSON.parse('{!JSENCODE(stateCountryMapStr)}'); 
+    sfEnv.nonInheritedLinkedSectionRecords = []; // this can just be an empty array for preview
+    sfEnv.indentPngsURL = "{!$Resource.question_indent_pngs}";
+    sfEnv.exCompactOptionsURL = "{!$Resource.ex_compact_options}";
+    sfEnv.exLargeOptionsURL = "{!$Resource.ex_large_options}";
+    sfEnv.imageGallery = JSON.parse('{!JSENCODE(galleryPhotosJSON)}');
+    sfEnv.orgId = '{!$Organization.Id}';
+    sfEnv.isPremiumOrTrial = '{!JSENCODE(IF(isPremiumOrTrial,"true","false"))}' == "true" ? true : false;
+    sfEnv.einsteinModels = JSON.parse('{!JSENCODE(einsteinModelsJSON)}');
+    sfEnv.onboardingBgPath = '{!JSENCODE($Resource.onboarding_background)}';
+	sfEnv.gmtOffsetInSeconds = {!gmtOffsetInSeconds};
+
+    // For use with Template Builder
+    var countryPickLists = sfEnv.countryPickLists;
+    var linkedSectionIndexes = {}; // global storage for linked section indexes / FOR PREVIEW - used in formDisplayApp
+    
+
+    var formData = JSON.parse('{!JSENCODE(formDataJSON)}');
+    
+    var Slideout = undefined; // avoid reference error in form display load
+    //Visualforce.remoting.timeout = 120000;
+    // actual preview VFR call
+    function executePreview() {
+        // Pull in formDisplayApp module to execute loading of form for form preview
+        // var _formDisplay = require('../../formDisplayApp/index');
+
+        Visualforce.remoting.Manager.invokeAction(  
+            CTL_VARS.vfr.previewItems,
+            CTL_VARS.templateID,
+            function(result, event) {
+
+                // if there was an error
+                if (event.type=='exception') {              
+                    console.log('error result:', result);
+                    $('#previewStatus').hide();     
+                    window.openCustomModal({bodyStringArray: [JSON.stringify(result)]});
+                }
+                // if there was no error continue
+                else {
+                    var sections;
+                    var template;
+                    // Iterate over all sections and their questions to add answer to each question
+                    if(result[0].hasOwnProperty('sections')) {
+                        sections = result[0].sections;
+                        template = result[0].theTemplate;
+                        for(var j = 0; j < sections.length; j++){
+                            if (sections[j].sectionType !== 'Linked') {
+                                for(var i = 0; i < sections[j].allQuestions.length; i++){
+                                    var question = sections[j].allQuestions[i];
+                                    // Create fake answer with no value to be attached to the question
+                                    var answers = [];
+                                    var answer = {};
+                                    answer[ns+"Question__c"] = question.question.Id;
+                                    answer.Id = "AAA"+i+"Q"+j;
+                                    answer.Name = "A-000183";
+                                    answer[ns+'Form__c'] = 'F-011';
+                                    answer[ns+'Checkbox_Answer__c'] = false;
+                                    answers.push(answer);
+
+                                    question.answers = answers;
+                                    question.question.answers = answers;
+                                }
+                            }
+                        }
+                    }
+                    // Set environment variable with the result's value
+                    sfEnv.previewForm = result;
+                    sfEnv.thisForm = {Id:'F-011', Name:'F-00000001'};
+                    
+                    // open modal
+                    $('#fade').show();
+                    $('#previewStatus').show();
+                    $('.js-preview-close-btn').show();
+                    
+
+                    $('#preview-size-group button').click(function(event){
+                        $('#preview-size-group button').removeClass('slds-button_success');
+                        $(this).addClass('slds-button_success');
+
+                        if (event.target.id === 'preview-phone-btn') {
+                            $('#previewStatus').addClass('phone-size').removeClass('web-size tablet-size');
+                        } else if (event.target.id === 'preview-tablet-btn') {
+                            $('#previewStatus').addClass('tablet-size').removeClass('phone-size web-size');
+                        } else {
+                            $('#previewStatus').removeClass('phone-size tablet-size');
+                        }
+                    });
+
+                    // Call function loacted in formDisplayApp - index.js
+                    // Loads form preview into modal
+                    window.previewOpen();
+                }
+            }
+        );  
+    }
+    
+    
+    </script>
+    <!-- <apex:includeScript value="{!$Resource.builderAppBundle_js}"/> -->
+
+    <script>
+        // workaround since JSENCODE won't take booleans
+        var yourekaDisabled = '{!JSENCODE(IF(yourekaDisabled,"true", "false"))}';
+        var hasCRUDFLS = '{!JSENCODE(IF(hasCRUDFLS,"true", "false"))}';
+        var isDccScheduled = '{!JSENCODE(IF(isDccScheduled,"true", "false"))}';
+        var isTemplateBuilderUser = '{!JSENCODE(IF(isTemplateBuilderUser,"true", "false"))}' === 'true' ? true : false; // For use in JS
+        var domain = window.location.href.split('apex/')[0];
+        var fullLogoPath = domain + logoPath.slice(1); // used in VF component
+        
+        if (yourekaDisabled === 'true' || isDccScheduled === 'false') {
+            if (isLightningExp) {
+                sforce.one.navigateToURL('/apex/'+ sfEnv.namespace +'GetStarted');
+            } else {
+                var pathName = window.location.pathname;
+                if (pathName.indexOf('apex') > -1) {
+                    sfEnv.pathStart = 'apex/';
+                } else {
+                    var noLeadingSlash = pathName.slice(1);
+                    sfEnv.pathStart = noLeadingSlash.slice(0,noLeadingSlash.indexOf('/') + 1);
+                }
+                window.location.href='/'+sfEnv.pathStart+sfEnv.namespace+'GetStarted';
+            }
+        }
+    </script>
+</head>
+    <body class="slds-scope" ng-app="Youreka.FormBuilder" ng-controller="MainCtrl">
+        <div id="custom-modal-container"/>
+        <!-- CRUD/FLS errors (can't be a directive or VF component since it has to load the apex:pagemessages for content) -->
+        <apex:outputPanel layout="none" rendered="{!NOT(HasCRUDFLS)}">
+            <div class="page-error-cont">
+                <div class="alertError">
+                    <apex:messages />
+                </div>
+                <button ng-click="cancel()" type="button" class="btn cancelBtn cancelUpdate">Cancel</button>
+            </div>
+        </apex:outputPanel>
+
+        <apex:outputPanel layout="none" rendered="{!AND(NOT(yourekaDisabled),hasCRUDFLS)}">
+
+            <!-- form status not drafting error -->
+            <apex:outputPanel layout="block" styleClass="builderPageIntro alertErrorContainer" rendered="{!AND(thisTemplate.disco__Status__c!='Drafting',isTemplateBuilderUser)}">
+                <div class="page-error-cont">
+                    <div class="alertError">
+                        You cannot modify a Form Template that is not in Drafting Stage.
+                    </div>
+                    <button ng-click="cancel()" type="button" class="btn cancelBtn cancelUpdate">Cancel</button>
+                </div>
+            </apex:outputPanel>
+
+            <apex:outputPanel layout="block" styleClass="builderPageIntro alertErrorContainer" rendered="{!!isTemplateBuilderUser}">
+                <div class="page-error-cont">
+                    <div class="alertError">
+                        The Template Builder User License is required in order to access the Template Builder.
+                    </div>
+                    <button ng-click="cancel()" type="button" class="btn cancelBtn cancelUpdate">Cancel</button>
+                </div>
+            </apex:outputPanel>
+
+            <apex:outputPanel rendered="{!AND(thisTemplate.disco__Status__c=='Drafting',isDccScheduled,isTemplateBuilderUser)}">
+                <div id="initLoader">
+                    <div aria-hidden="false" role="dialog" class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            <div class="slds-modal__content OR-modal_loading">
+                                <div class="slds-spinner_large OR-spinner">
+                                    <img class="slds-m-top_large" src="{!URLFOR($Resource.SLDS250, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+                                </div>
+                                <div>
+                                    <h3 class="modal-title slds-text-heading_medium slds-m-vertical_large slds-text-align_center">Loading...</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </div>
+                <div id="formBuilderCont">
+                    
+                    <!-- header with graphic and links -->
+                    <c:FormBuilderHeader />
+                    
+                    <!-- warning message if premium will expire -->
+                    <c:PremiumExpiration />
+                    
+                    <div class="ng-cloak">
+                        <!-- Template Name -->
+                        <div class="slds-m-top_medium slds-m-bottom_large slds-m-left_large">
+                            <h2 class="slds-text-heading_large" style="display:inline;">
+                                <apex:outputText value="{{template.name}}"/>
+                            </h2>
+                            <span class="slds-badge managed slds-m-around_small" ng-class="{'badge-managed-template': template.managedTemplate}">{{template.managedTemplate ? 'Managed' : 'Standard'}}</span>
+                            <a class="edit-text-link" ng-click="openRenameTemplateModal(true);" title="Edit Title">
+                                <svg aria-hidden="true" class="slds-icon slds-icon-text-default OR-icon-default slds-icon_small">
+                                    <use xlink:href="{{SLDS_PATH + '/assets/icons/utility-sprite/svg/symbols.svg#edit'}}"></use>
+                                </svg>
+                            </a>
+                        </div>
+                        <div class="builderPageIntro slds-col slds-size_1-of-1">
+                            <div class="slds-m-left_large slds-m-right_large slds-m-top_large">
+                                <!-- Progress Tracker -->
+                                <span class="progress-tracker" ng-show="template.showAdvancedFeatures">
+                                    <c:FormBuilderProgressBar currStep="designer"/>
+                                </span>
+                                <span class="progress-tracker" ng-hide="template.showAdvancedFeatures">
+                                    <div id="progress-bar" class="slds-tabs_path" role="application tablist">
+                                        <ul class="slds-tabs_path__nav" role="presentation">
+                                            <li class="slds-tabs_path__item OR-tabs slds-is-current OR-is-current adv-feat-only-tab" role="presentation">
+                                                <span class="slds-tabs_path__link default-cursor" aria-selected="false" tabindex="0" role="tab" aria-live="assertive">
+                                                    <span class=" default-cursor">Form Template Designer</span>
+                                                </span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </span>
+
+                                <!-- Intro Text -->
+                                <div class="helper-text slds-grid" ng-show="template.showAdvancedFeatures && !template.hideHelperIntro">
+
+                                    <div class="slds-col slds-size_11-of-12">
+                                        <p>Welcome to the Youreka Form Template Designer! Together, we're going to design a new Form Template.</p>
+                                        <ol class="helper-text-list">
+                                            <li>
+                                                Let's start by dragging a new <span class="highlight-helper-text" ng-mouseover="highlightNewSection=true" ng-mouseleave="highlightNewSection=false">Section</span>
+                                                or a new <span class="highlight-helper-text" ng-mouseover="highlightNewLinkedSection=true" ng-mouseleave="highlightNewLinkedSection=false">Linked Section</span> down into the workspace. <span class="highlight-helper-text" ng-mouseover="highlightNewLinkedSection=true" ng-mouseleave="highlightNewLinkedSection=false">Linked Sections</span> are sections that you can link to Salesforce Objects that have lookups to the Form Object. You cannot drag questions from other sections into <span class="highlight-helper-text" ng-mouseover="highlightNewLinkedSection=true" ng-mouseleave="highlightNewLinkedSection=false">Linked Sections</span>.
+                                            </li>
+                                            <li>
+                                                Now, let's drag a new <span class="highlight-helper-text" ng-mouseover="highlightNewQuestion=true" ng-mouseleave="highlightNewQuestion=false">Question</span> down into our new section.
+                                            </li>
+                                            <li>
+                                                You've got the hang of it now! Keep adding sections and questions until your template is complete, 
+                                                then click <span class="highlight-helper-text" ng-mouseover="highlightSaveAndContinue=true" ng-mouseleave="highlightSaveAndContinue=false">Continue</span>.
+                                            </li>
+                                            <li>
+                                                To learn more tips &amp; tricks, check out our knowledge base at <a href="https://support.youreka.io/" target="_blank">https://support.youreka.io</a>.
+                                            </li>
+                                        </ol>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-12 flexbox-center">
+                                        <button type="button" class="slds-button slds-button_icon-inverse" ng-click="dismissIntroHelp()">
+                                          <svg aria-hidden="true" class="slds-button__icon slds-button__icon_large">
+                                            <use xlink:href="{{SLDS_PATH + '/assets/icons/action-sprite/svg/symbols.svg#close'}}"></use>
+                                          </svg>
+                                          <span class="slds-assistive-text">Close</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- END Progress Tracker -->
+                                <!-- Button Row -->
+                                <div class="button-row-background_dark OR-row_top-border" sticky="true"> 
+                                    <section class="slds-grid button-row">
+                                        <div class="slds-col slds-size_1-of-3 no-slds-col">
+                                             <div class="slds-clearfix">
+                                                <div class="slds-float_left">
+                                                     <div class="slds-button-group slds-m-around_small" id="allowNewContainer" role="group">
+                                                        <button type="button" id="templatePropsBtn" class="slds-button slds-button_neutral" ng-click="templateProperties(template);" ng-class="{'btnError':template.allowNewRecordsError}">
+                                                            <span>Properties
+                                                                <span class="default-text-color" ng-if="template.allowNewRecordsError" uib-popover="Some required fields are missing for relationships that allow new field link records. Click for more details." popover-trigger="mouseenter"
+                                                                popover-placement="right" popover-append-to-body="true">
+                                                                    <svg aria-hidden="true" class="slds-icon slds-icon-text-error slds-icon_medium" >
+                                                                    <use xlink:href="{{SLDS_PATH + '/assets/icons/utility-sprite/svg/symbols.svg#warning'}}"></use>
+                                                                </svg>
+                                                                </span>
+                                                            </span>
+                                                        </button>     
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 no-slds-col slds-text-align_center">
+                                            <div id="quickPrevGroup" class="slds-button-group slds-m-around_small flex-center" role="group">
+                                                <button id="quickSaveBtn" type="button" ng-click="quickSave('formBuilder')" class="slds-button slds-button_neutral">
+                                                    Save
+                                                </button>
+                                                 
+                                                <button id="savePrevBtn" type="button" ng-click="saveAndPreview('formBuilder')" class="slds-button slds-button_neutral">
+                                                    Preview
+                                                </button>
+                                                
+                                            </div>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3 no-slds-col">
+                                            <div class="slds-clearfix">
+                                                <div class="slds-float_right">
+                                                    <div id="closeSaveGroup" class="slds-button-group slds-m-around_small" role="group">
+                                                        <button id="closeBtn" type="button" ng-click="cancel()" class="slds-button slds-button_neutral">
+                                                            Close
+                                                        </button>
+                                                        <button id="saveContBtn" type="button" ng-click="saveAndContinue('formBuilder')"  ng-class="highlightSaveAndContinue ? 'glow' : ''" class="slds-button slds-button_brand saveAndContinueBtn"
+                                                        ng-show="template.showAdvancedFeatures">
+                                                            <span class="dont-wrap">Continue
+                                                            <svg aria-hidden="true" class="slds-icon slds-icon-text-default OR-icon-default slds-icon_x-small">
+                                                                <use xlink:href="{{SLDS_PATH + '/assets/icons/utility-sprite/svg/symbols.svg#chevronright'}}"></use>
+                                                            </svg></span>
+                                                        </button>
+                                                        <button id="publishBtn" type="button" ng-click="publish('formBuilder')" class="slds-button slds-button_brand saveAndContinueBtn"
+                                                        ng-hide="template.showAdvancedFeatures">
+                                                            <svg aria-hidden="true" class="slds-icon slds-icon-text-default OR-icon-default slds-icon_x-small">
+                                                                <use xlink:href="{{SLDS_PATH + '/assets/icons/utility-sprite/svg/symbols.svg#magicwand'}}"></use>
+                                                            </svg>
+                                                            Publish
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+                                </div>
+                                <!-- END Continue / Preview Button Row -->
+                                <div class="draggable-items-bar" ng-view="true">
+                                    <!-- APP CONTENT -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </apex:outputPanel>
+        </apex:outputPanel>
+
+        <div id="fade"></div>
+        <!-- FORM PREVIEW MODAL -->
+        <div id="previewStatus" class="tb-modal">
+            <div id="preview-size-group" class="slds-button-group slds-m-around_small flex-center" role="group">
+                <button id="preview-web-btn" type="button" class="slds-button slds-button_neutral slds-button_success">
+                    Web
+                </button>
+                <button id="preview-phone-btn" type="button" class="slds-button slds-button_neutral">
+                    Phone
+                </button>
+                <button id="preview-tablet-btn" type="button" class="slds-button slds-button_neutral">
+                    Tablet
+                </button>
+           </div>
+            <div class="containerBox container" id="completeFormPage" >
+                <div id="savingStatus">
+                    <h2 class='loader'>Loading...</h2>
+                </div>
+                <form class="form-horizontal" id="mainForm">
+                    <div class="buttons-fixed">
+                        <div class="slds-grid">
+                            <div class="slds-col_padded slds-size_1-of-12"></div>
+                            <div class="nav-container slds-col_padded slds-size_10-of-12">
+                                <div class="pagination-container js-pagination-container"></div>
+                            </div>
+                            <div class="slds-col_padded slds-size_1-of-12">
+                                <div class="slds-clearfix">
+                                    <div class="slds-float_right">
+                                        <span class="js-preview-close-btn slds-button slds-button_inverse">Close</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="currentPageContainer">
+                        <div class="slds-box slds-theme_info slds-theme_alert-texture slds-m-top_medium" role="alert" id="loadingMessage">
+                            <h2>Loading...</h2>
+                        </div>
+                        <div class="slds-box slds-theme_error slds-theme_alert-texture slds-m-top_medium slds-m-bottom_x-large js-no-sections" role="alert" style="display:none;">
+                            <h2>No sections added to this form.</h2>
+                        </div>
+                        <div id="formContent">
+                            <!-- javascript inserts form content -->
+                        </div>
+                        
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- END FORM PREVIEW MODAL -->
+
+        <!-- FORM BUILDER APP SCRIPTS  -->
+        <apex:outputPanel rendered="{!isLocal = 'false'}" layout="none">
+            <script src="{!URLFOR($Resource.svg4everybody, '/svg4everybody/svg4everybody.min.js')}"></script>
+            <script src="{!$Resource.babelpolyfill}"></script>
+        </apex:outputPanel>
+
+         <!-- Local Host Load -->
+        <apex:outputPanel rendered="{!isLocal = 'true'}" layout="none">
+            <script src="/lib/lodash-3.10.1/lodash.min.js"></script>
+            <script src="/lib/jquery-1.11.3/jquery.min.js"></script>
+            <script src="/lib/quill/quill.js"></script>
+            <script src="/lib/jquery-ui-1.12.1/jquery-ui.min.js"></script>            
+            <script src="/lib/angular-1.4.8/angular.min.js"></script>
+            <script src="/lib/angular-1.4.8/angular-route.min.js"></script>
+            <script src="/lib/angular-1.4.8/angular-animate.min.js"></script>
+            
+            <script src="/lib/ui-bootstrap-0.14.3/ui-bootstrap-tpls.min.js"></script>
+            <script src="/lib/ui-sortable-0.13.4/sortable.min.js"></script>
+            <script src="/lib/sticky.min.js"></script>
+
+            <script src="/lib/babelpolyfill.js"></script>
+            <script src="/lib/svg4everybody.min.js"></script>
+            <script src="/lib/spectrum/spectrum.js"></script>
+            <script src="/lib/math_exp.js"></script>
+            <script src="/lib/purify.min.js"></script>
+            <script src="/dist/common-module.js"></script>
+            <script src="/dist/form-builder-app.js"></script>
+            <script src="/dist/form-builder-templates.js"></script>
+        </apex:outputPanel>
+            
+        <!-- Static Resource Load -->
+        <apex:outputPanel rendered="{!isLocal = 'false'}" layout="none">
+            <script src="{!URLFOR($Resource.ngApp, 'lodash.min.js')}"></script>
+            <script src="{!URLFOR($Resource.ngApp, 'jquery.min.js')}"></script>
+            <script src="{!URLFOR($Resource.ngApp, 'quill.js')}"></script>
+            <script src="{!URLFOR($Resource.jquery_ui_1_12_1, 'jquery-ui.min.js')}"></script>
+            <script src="{!URLFOR($Resource.ngApp, 'angular.min.js')}"></script>
+            <script src="{!URLFOR($Resource.ngApp, 'angular-route.min.js')}"></script>
+            <script src="{!URLFOR($Resource.ngApp, 'angular-animate.min.js')}"></script>
+
+            <script src="{!URLFOR($Resource.ngApp, 'ui-bootstrap-tpls.min.js')}"></script>
+            <script src="{!URLFOR($Resource.ngApp, 'sortable.min.js')}"></script>
+            <script src="{!URLFOR($Resource.ngApp, 'sticky.min.js')}"></script>
+            <script src="{!URLFOR($Resource.ngApp, 'spectrum.js')}"></script>
+            <script src="{!URLFOR($Resource.ngApp, 'math_exp.js')}"></script>
+            <script src="{!$Resource.purify_min_js}"></script>
+            
+            <script src="{!URLFOR($Resource.ngApp, 'common-module.js')}"></script>
+            <script src="{!URLFOR($Resource.ngApp, 'form-builder-app.js')}"></script>
+            <script src="{!URLFOR($Resource.ngApp, 'form-builder-templates.js')}"></script>
+        </apex:outputPanel>
+            
+
+        <!-- FORM PREVIEW SCRIPTS -->
+        <!-- Localhost Load -->
+        <apex:outputPanel rendered="{!isLocal = 'true'}" layout="none">
+            <script src="https://localhost:9005/formDisplayApp/dist/bundle.js"></script>
+            <script src="https://localhost:9005/formDisplayApp/dist/preview-lib/json2.min.js"></script>
+            <script src="https://localhost:9005/formDisplayApp/dist/preview-lib/jquery.signaturepad.js"></script>
+            <script src="https://localhost:9005/formDisplayApp/dist/preview-lib/bootstraptransition.js"></script>
+            <script src="https://localhost:9005/formDisplayApp/dist/preview-lib/bootstrapcollapse.js"></script>
+            <script src="https://localhost:9005/formDisplayApp/dist/preview-lib/bootstrap-3.4.1/js/bootstrap.min.js"></script>
+            <script src="https://localhost:9005/formDisplayApp/dist/preview-lib/moment.js"></script>
+            <script src="https://localhost:9005/formDisplayApp/dist/preview-lib/timepicker.js"></script>
+        </apex:outputPanel>
+            
+
+        <!-- Static Resource Load -->
+        <apex:outputPanel rendered="{!isLocal = 'false'}" layout="none">
+            <script src="{!$Resource.formDisplayAppBundle_js}" />
+            <script src="{!URLFOR($Resource.esig, '/sigpad/assets/json2.min.js')}"/>
+            <script src="{!URLFOR($Resource.esig, 'sigpad/jquery.signaturepad.js')}"/>
+            <script src="{!$Resource.bootstraptransition}"/>
+            <script src="{!$Resource.bootstrapcollapse}"/>
+            <script src="{!URLFOR($Resource.bootstrap_3_4_1, 'js/bootstrap.min.js')}" />
+            <script src="{!$Resource.momentJS}"/>
+            <script src="{!$Resource.timepicker}"/>
+        </apex:outputPanel>
+            
+            <script>
+                $(document).ready(function() { 
+                    svg4everybody(); // init
+                });
+            </script>
+    </body>
+</html>
+</apex:page>

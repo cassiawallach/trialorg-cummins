@@ -1,0 +1,138 @@
+<template>
+    <template if:true={ScreenLoaded}>
+        <c-dbu_page-loader></c-dbu_page-loader>
+      </template>
+     <!--Use template if:true to display/hide popup based on isModalOpen value-->  
+     <template if:true={isModalOpen}>
+        <!-- Modal/Popup Box LWC starts here -->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- Modal/Popup Box LWC header here -->
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={closeModal}>
+                        <lightning-icon icon-name="utility:close"
+                            alternative-text="close"
+                            variant="inverse"
+                            size="small" ></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Pick up from store </h2>
+                </header>
+                <!-- Modal/Popup Box LWC body starts here -->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    
+                    <h2 class="slds-text-heading_medium slds-hyphenate slds-p-vertical_medium">Search here for your nearest pickup store location </h2>
+                    <p class="slds-p-bottom_medium">At this time only one pick up location per order.</p>
+                    <form class="searchForm" >
+      
+                        <lightning-input type="search" class="searchField f-medium dWindow"  placeholder="Search by store name, location, zip code" onkeypress={searchOnEnter}
+                         value={strSearchAccName}  onchange={updateSeachKey}  
+                         >
+                        </lightning-input> 
+            
+                        <lightning-input type="search" class="searchField f-medium mWindow"  placeholder="Search by store name, location, zip code" onkeypress={searchOnEnter}
+                         value={strSearchAccName}  onchange={updateSeachKey}  
+                         >
+                        </lightning-input> 
+                      
+                        <span class="searchIcon icon-search"  onclick={handleSearch}>
+                           
+                        
+                     </span>
+                   
+                        
+                  </form>
+                    <lightning-map map-markers={storeLocationsToDisplay} list-view="hidden">
+                    </lightning-map>
+                    <div>
+                       <!-- <template if:true={showTable}> -->
+                        <table
+                            class="slds-table slds-table_bordered slds-border_left slds-border_right mapTable">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th class="" scope="col"  valign="top">
+                                        <p title="Name">{label.dbu_ReturnMapStoreName}</p>
+                                    </th>
+                                    <th class="timings" scope="col"  valign="top">
+                                        <p class="slds-truncate" title="Some Custom Column">{label.dbu_ReturnMapOpenHours}<br/>{label.dbu_checkoutPage_Business_Hours}</p>
+                                    </th>
+                                    <!-- <th class="" scope="col"  valign="top">
+                                        <p class="slds-truncate" title="Some Custom Column">{label.dbu_ReturnMapDistance}</p>
+                                    </th> -->
+                                </tr>
+                            </thead>
+                            <tbody>
+
+                                <template for:each={storeLocationsToDisplay} for:item="acc">
+                                    <tr key={acc.id}>
+                                        <td>
+                                            <label> {acc.description}, </label><br>
+                                            {acc.location.Street},{acc.location.City}, {acc.location.State},
+                                            {acc.location.PostalCode},{acc.location.Country}
+
+                                        </td>
+                                        <td> 
+                                            {acc.businessHrs}
+                                        </td>
+                                        <!-- <td>
+                                            <div if:true={acc.distance}>
+                                                {acc.distance}&nbsp;miles
+                                            </div>
+                                        </td> -->
+                                        <td>
+
+                                            <!-- <div class="myRadio">
+                                                <input type="radio" name="input2" id={acc.id}
+                                                    value={acc.id} onclick={getSelectedStore}/><label for={acc.id}>{label.dbu_ReturnSelectBtnLabel}</label>
+
+                                            </div> -->
+
+                                            <div class="myRadio">
+                                                <input type="radio" name="gsearchaddress" id={acc.id} value="true" />
+                                                <label onclick={storeLocationSelected} data-accid={acc.id}
+                                                    data-accdesc={acc.description} data-acccity={acc.location.City}
+                                                    data-accstreet={acc.location.Street} data-accstate={acc.location.State}
+                                                    data-acccountry={acc.location.Country} data-acczipcode={acc.location.PostalCode}
+                                                    data-phone={acc.Phone} data-storelocationcode={acc.storeLocationCode} data-timezone={acc.timeZone} data-zone={acc.zone} data-businesshrs = {acc.businessHrs}
+                                                    for={acc.id}>{label.dbu_ReturnSelectBtnLabel}</label>
+            
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    <!-- </template> -->
+                    </div>
+                   
+                    <div class="slds-grid slds-wrap slds-m-bottom_large mapPagination">
+                        <div class="slds-col slds-size_6-of-12 slds-large-size_6-of-12">
+                            <a class="prevLink" style="display:none;"
+                                onclick={prevPage}>{label.dbu_ReturnPrev}</a> 
+                            <a class="nextLink" onclick={nextPage}>{label.dbu_ReturnNext}</a>
+                        </div>
+                        <div class="slds-col slds-size_6-of-12 slds-large-size_6-of-12 showing">
+                         {label.dbu_ReturnShowingPage} <strong>{currentPageNumber} </strong>
+                        </div>
+                    </div>
+               
+                    <button class="slds-button slds-button_outline-brand" onclick={closeModal} title="Cancel">Cancel</button>
+                    <template if:false={activateApplybutton}>
+                        <button class="slds-button slds-button_brand" onclick={handleApply} title="Apply" disabled>Apply</button>
+                    </template>
+                    <template if:true={activateApplybutton}>
+                        <button class="slds-button slds-button_brand" onclick={handleApply} title="Apply">Apply</button>    
+                    </template>
+                    
+               
+                </div>
+                <!-- Modal/Popup Box LWC footer starts here -->
+                <!-- <footer class="slds-modal__footer">
+                    <button class="slds-button slds-button_neutral" onclick={closeModal} title="Cancel">Cancel</button>
+                    <button class="slds-button slds-button_brand" onclick={submitDetails} title="OK">OK</button>
+                </footer> -->
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

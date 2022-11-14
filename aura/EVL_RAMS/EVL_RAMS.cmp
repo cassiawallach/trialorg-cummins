@@ -1,0 +1,49 @@
+<aura:component controller="EVL_TDSController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,lightning:availableForFlowScreens">
+    <!-- Sriprada : Apex controller changed from EVL_CL_ServiceOrder_LightningPath to EVL_TDSController for re using the methods -->
+    
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="faultCodes" type="String"/>
+    <aura:attribute name="SelectTabId" type="String" default="trouble"/>
+    <aura:attribute name="showTabContent" type="boolean" default="false"/>
+    <aura:attribute name="errSolMsg" type="Boolean" default="false"/>
+    
+    <aura:handler name="cmpEvent" event="c:EVL_RAMSEvent" action="{!c.handleComponentEvent}"/>
+    <aura:handler event="c:EVL_ContinueTorepEvnt" action="{!c.handleApplicationEvent}"/>
+    <aura:registerEvent name="cmpEvent" type="c:EVL_TDSCompEvent"/>
+    <aura:attribute name="faultID" type="Boolean" default="false"/>
+    <aura:attribute name="RepairErrMsg" type="Boolean" default="false"/>
+    <aura:attribute name="showTable" type="boolean" default="true"/><!-- Added by shirisha 08/25/2022 ROAD-556-->
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:if isTrue="{!v.showTabContent}">
+        <lightning:tabset variant="scoped" onselect="{!c.tabSelected}"  selectedTabId="{!v.SelectTabId}"  aura:id="setOfTabs">
+            
+            <lightning:tab label="{!$Label.c.EVL_Repair_and_Maintenance}" id="trouble">
+                
+                <c:EVL_LaunchInsite recordId="{!v.recordId}"/><br/><br/>
+                <aura:if isTrue="{!v.showTable}"><!-- Added by shirisha 08/25/2022 ROAD-556 -->
+                    <c:EVL_Repair_SolutionTable recordId="{!v.recordId}" />
+                </aura:if> 
+                
+            </lightning:tab>
+            <lightning:tab label="{!$Label.c.FSL_Solutions}" id="solution"> 
+                <aura:if isTrue="{! v.errSolMsg }">  <!-- Added by Sriprada for VGRS2-6 : 10/19/2021 -->
+                    <div style="text-align:center;color:red;bold"><br/>&nbsp;<b>{!$Label.c.EVL_RepairSolErrMsg}</b><br/></div>
+                    
+                </aura:if> 
+                <aura:if isTrue="{! v.RepairErrMsg }">  
+                    <div style="text-align:center;color:red;bold"><br/>&nbsp;<b>{!$Label.c.EVL_RepairErrorMessage}</b><br/></div>
+                </aura:if>  <!-- Code Ends here - VGRS2-6 : 10/19/2021 -->
+                <aura:if isTrue="{!! v.faultID }">  
+                    <!--   <c:FSL_FaultCodeOverview recordId="{!v.recordId}" aura:id="solOverview" /> --> <!--Commented by Sriprada for VGRS2-6 : 10/19/2021 -->
+                    <c:EVL_RepairDisplaySolution recordId="{!v.recordId}" aura:id="displaySolutions" />
+                </aura:if>
+                
+                
+            </lightning:tab>
+        </lightning:tabset>
+    </aura:if>
+    <aura:if isTrue="{!! v.showTabContent}">
+        <div style="text-align:center;color:red;"><br/>&nbsp;<b>{!$Label.c.EVL_Repair_Closed_Message}</b><br/></div>
+    </aura:if>
+</aura:component>

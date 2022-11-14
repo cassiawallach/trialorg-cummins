@@ -1,0 +1,419 @@
+<!--**********************************************************************
+Name:CG_ClaimsFC
+Copyright Â© 2018  Cummins
+======================================================
+======================================================
+Purpose:                                                            
+-------  
+We are using this Page for Claims Failures & Campaigns Page
+======================================================
+======================================================
+History                                                               
+-------                                                            
+VERSION  AUTHOR                          DATE                DETAIL 
+1.0      Anvesh Sama                  10/31/2017          Initial Version
+2.0 --   Rajesh Pasupuleti            01/22/2018          Added CG_ClaimsOverview component
+1.0 -    Surender M                   02/12/2018          Added Consolidated Claim
+***********************************************************************-->
+<apex:page Controller="CG_CL_ClaimsFC" showHeader="false" standardStylesheets="false" docType="html-5.0">
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content=""/>
+    <meta name="author" content="Cummins Inc."/>
+    <meta name="copyright" content="(C)2016 Cummins Inc., Box 3005, Columbus, IN 47202-3005 U.S.A."/>
+    <title>{!$Label.css_Cummins_Service_System} | {!$Label.css_Warranty_Claim} </title>
+
+    <c:CSS_Standard_IntakeStyles /> 
+    <c:css_ExtraStyles />
+
+    <script>
+        function showEditErrorPopup(){
+            $('#loadingModal').modal(
+                {backdrop: 'static',
+                 keyboard: false,
+                 show:true
+                });
+            //rerenderModalPopup();
+        }
+
+        function HideEditErrorPopup(){
+             $('#loadingModal').modal('hide');
+        }
+
+        function hideResolvePopUp(){
+            document.getElementById('j_id0:Intakefrm:resolvepopup').style.display = "None";
+        }
+
+    </script>
+
+    <style>
+        table.failureAndCampaigns th {
+            text-align: center;
+        }
+
+        table.failureAndCampaigns td {
+            border-left:0px;
+        }
+
+        table.failureAndCampaigns > tbody > tr:nth-of-type(odd) {
+            background : #f9f9f9;
+        }
+
+        table.failureAndCampaigns > tbody > tr:nth-of-type(even){
+            background : #e2e2e2;
+        }
+    </style>
+
+    <div class="container-fluid1" >
+        <apex:composition template="CSS_STDTemplate" />
+        <apex:define name="body">
+
+            <apex:form id="Intakefrm"> 
+                <apex:message />
+                <div>
+                    <ul class="nav nav-tabs desk-tabs" id="JobDetailTab" style="background-color: #eee;">
+                        <li><a href="" data-toggle="tab" style="color:#888;" class="not-active">{!$Label.css_Intake}</a></li>
+                        <li><a href="" style="color:#888;" class="not-active">{!$Label.css_Triage} &amp; {!$Label.css_Diagnosis}</a></li>
+                        <li><a href="" style="color:#888;" class="not-active">{!$Label.css_Job_Plan}</a></li>
+                        <li><a href="" style="color:#888;" class="not-active">{!$Label.css_Repairs}</a></li>
+                        <li class="active"><a href="#Claims" style="color:#888;">{!$Label.css_Warramnty_Claim}</a></li>
+                        <li><a href="" style="color:#888;" class="not-active">{!$Label.css_Invoice}</a></li>
+                    </ul>
+                    <ul class="nav nav-tabs mob-tabs" id="JobDetailTab" style="background-color: #eee;">
+                        <li class="active"><a href="#intake" data-toggle="tab">{!$Label.css_Intake}</a></li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane active" id="Claims">
+                            <div>
+                                <div class="intakechevs" style="padding-top:1px;text-align:center;">
+                                    <!-- START - Chevrons -->
+                                    <div class="col-sm-12 col-md-12 col-xs-12" style="padding-top:1px;text-align:center;" >
+                                        <ul class="intakechevs">
+
+                                            <li class="first-child">
+                                                <apex:commandLink styleclass="sopen-first" action="{!nvClaimsIntake}" rerender="popupShowHide,msgsDisp"  onClick="showEditErrorPopup();" oncomplete="HideEditErrorPopup();" style="border-top:{!IF(claimsRec.ODM_Status__c == 'ERROR','None',IF(claimsRec.ODM_Status__c == 'YTBV','None',IF((claimsRec.ODM_Status__c == 'PASSED' || claimsRec.ODM_Status__c == 'WARN' || claimsRec.ODM_Status__c == 'NA'),'None','0px')))};
+                                                                                                                                                                                                                                    border-bottom:{!IF(claimsRec.ODM_Status__c == 'ERROR','None',IF(claimsRec.ODM_Status__c == 'YTBV','None',IF((claimsRec.ODM_Status__c == 'PASSED' || claimsRec.ODM_Status__c == 'WARN' || claimsRec.ODM_Status__c == 'NA'),'None','0px')))}">
+                                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.CSS_Warranty}&nbsp; <br/>{!$Label.css_jo_label}" escape="false" />
+                                                </apex:commandLink>
+                                            </li>
+
+                                            <li>
+                                                <apex:commandLink styleclass="sopen" action="{!nvClaimsWC}" rerender="popupShowHide,msgsDisp" onClick="showEditErrorPopup();" oncomplete="HideEditErrorPopup();">
+                                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.CSS_Warranty_Coverage}" escape="false"/>
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">2</div>
+                                                    </div>
+                                                </apex:commandLink>
+                                            </li> 
+
+                                            <li>
+                                                <apex:commandLink styleclass="sopen" action="{!nvClaimsVH}" rerender="popupShowHide,msgsDisp" onClick="showEditErrorPopup();" oncomplete="HideEditErrorPopup();">
+                                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.css_vhist_chev}" escape="false"/>
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">3</div>
+                                                    </div>
+                                                </apex:commandLink>
+                                            </li>  
+
+
+                                              <!--Commented as part of GSSC-377 -->
+                                            <!--<li>
+                                                <apex:commandLink styleclass="sopen" action="{!nvClaimsCC}" rerender="popupShowHide,msgsDisp" onClick="showEditErrorPopup();" oncomplete="HideEditErrorPopup();">
+                                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.css_cuco_chev}" escape="false" />
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">4</div>
+                                                    </div>
+                                                </apex:commandLink>
+                                            </li> -->
+
+
+                                            <li>
+                                                <apex:commandLink styleclass="sactive" rerender="popupShowHide,msgsDisp" onClick="showEditErrorPopup();" oncomplete="HideEditErrorPopup();" style="border-top:{!IF(claimsRec.Failures_ODM_Status__c == 'ERROR','None',IF(claimsRec.Failures_ODM_Status__c == 'YTBV','None',IF((claimsRec.Failures_ODM_Status__c == 'PASSED' || claimsRec.Failures_ODM_Status__c == 'WARN' || claimsRec.Failures_ODM_Status__c == 'NA'),'None','0px')))};
+                                                                                                                                                                                                                    border-bottom:{!IF(claimsRec.Failures_ODM_Status__c == 'ERROR','None',IF(claimsRec.Failures_ODM_Status__c == 'YTBV','None',IF((claimsRec.Failures_ODM_Status__c == 'PASSED' || claimsRec.Failures_ODM_Status__c == 'WARN' || claimsRec.Failures_ODM_Status__c == 'NA'),'None','0px')))}">                                                        
+                                                    <span class="chev_rmb_img_active"/>
+                                                    <apex:outputtext styleClass="chev_text_active" value="{!$Label.CSS_FailuresAndCampaigns}" escape="false" />
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">2</div>
+                                                    </div>
+                                                </apex:commandLink>
+                                            </li>
+                                            <!--Added below code as per Silicon Valley sprint #154239,By RAJESH 20th Aug 2018-->          
+                                            <apex:outputPanel rendered="{!IF(psncheck == true,true,false)}">
+                                                <li>
+                                                    <apex:actionRegion ><apex:commandLink styleclass="sopen" action="{!nvClaimsPSN}" onClick="showEditErrorPopup();" reRender="popupShowHide,msgsDisp" oncomplete="HideEditPopup();"><!--onClick="showEditPopup();" -->
+                                                        <apex:outputtext styleClass="chev_text_open" value="{!$Label.css_MultiPSN}" escape="false" />
+                                                        <div class="chev-mobile-text">
+                                                            <div class="txt_numb">2</div>
+                                                        </div>
+                                                        </apex:commandLink></apex:actionRegion>
+                                                </li>
+                                            </apex:outputPanel>
+                                            <apex:outputPanel rendered="{!IF(psncheck == false,true,false)}">
+                                                <li>
+                                                    <apex:actionRegion ><apex:commandLink styleclass="sdisable" onClick="false" >
+                                                        <apex:outputtext styleClass="chev_text_disable" value="{!$Label.css_MultiPSN}" escape="false" />
+                                                        <div class="chev-mobile-text">
+                                                            <div class="txt_numb">2</div>
+                                                        </div>
+                                                        </apex:commandLink></apex:actionRegion>
+                                                </li>
+                                            </apex:outputPanel>
+                                            <!--End-->
+                                            <li>
+                                                <apex:commandLink styleclass="sopen" action="{!nvClaimsPOC}" rerender="popupShowHide,msgsDisp" onClick="showEditErrorPopup();" oncomplete="HideEditErrorPopup();" style="border-top:{!IF(claimsRec.Parts_ODM_Status__c == 'ERROR','None',IF(claimsRec.Parts_ODM_Status__c == 'YTBV','None',IF((claimsRec.Parts_ODM_Status__c == 'PASSED' || claimsRec.Parts_ODM_Status__c == 'WARN' || claimsRec.Parts_ODM_Status__c == 'NA'),'None','0px')))};
+                                                                                                                                                                                                                                        border-bottom:{!IF(claimsRec.Parts_ODM_Status__c == 'ERROR','None',IF(claimsRec.Parts_ODM_Status__c == 'YTBV','None',IF((claimsRec.Parts_ODM_Status__c == 'PASSED' || claimsRec.Parts_ODM_Status__c == 'WARN' || claimsRec.Parts_ODM_Status__c == 'NA'),'None','0px')))}">
+                                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.CSS_PartsandOC}" escape="false" />
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">2</div>
+                                                    </div>
+                                                </apex:commandLink>
+                                            </li>
+                                            <li>
+                                                <apex:commandLink styleclass="sopen" action="{!nvClaimsSRTs}" rerender="popupShowHide,msgsDisp" onClick="showEditErrorPopup();" oncomplete="HideEditErrorPopup();" style="border-top:{!IF(claimsRec.SRTs_ODM_Status__c == 'ERROR','None',IF(claimsRec.SRTs_ODM_Status__c == 'YTBV','None',IF((claimsRec.SRTs_ODM_Status__c == 'PASSED' || claimsRec.SRTs_ODM_Status__c == 'WARN' || claimsRec.SRTs_ODM_Status__c == 'NA'),'None','0px')))};
+                                                                                                                                                                                                                                        border-bottom:{!IF(claimsRec.SRTs_ODM_Status__c == 'ERROR','None',IF(claimsRec.SRTs_ODM_Status__c == 'YTBV','None',IF((claimsRec.SRTs_ODM_Status__c == 'PASSED' || claimsRec.SRTs_ODM_Status__c == 'WARN' || claimsRec.SRTs_ODM_Status__c == 'NA'),'None','0px')))}">
+                                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.CSS_SRTs}" escape="false" />
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">2</div>
+                                                    </div>
+                                                </apex:commandLink>
+                                            </li>
+                                            <li>
+                                                <apex:commandLink styleclass="sopen" action="{!nvClaimsJobNotes}" rerender="popupShowHide,msgsDisp" onClick="showEditErrorPopup();" oncomplete="HideEditErrorPopup();">
+                                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.CSS_JobandNotes}" escape="false" />
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">2</div>
+                                                    </div>
+                                                </apex:commandLink>
+                                            </li>
+                                            <li>
+                                                <apex:commandLink styleclass="sopen-last" action="{!nvClaimsVS}" rerender="popupShowHide,msgsDisp" onClick="showEditErrorPopup();" oncomplete="HideEditErrorPopup();">
+                                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.CSS_VerifyandSubmit}" escape="false"/>
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">6</div>
+                                                    </div>
+                                                </apex:commandLink>
+                                            </li> 
+                                        </ul>
+                                    </div>
+
+                                </div>  
+                                <div class="container-fluid">
+                                    <apex:outputPanel id="joboverviewpnl">
+                                        <div class="col-md-12">
+                                            <div class="row">
+                                                <c:CG_ClaimsOverview ClaimId="{!claimsRec.id}" claimRecord="{!claimsRec}" JobId="{!claimsRec.CSS_Job__c}" JobIdDealer="{!claimsRec.Dealer_Service_Job__c}" />
+                                            </div>
+                                        </div>
+                                    </apex:outputPanel>
+                                </div>
+                                <div class="container-fluid">
+                                    <apex:outputPanel id="jobodmerror" rendered="{!IF(claimsRec.Id != null && claimsRec.Status__c == 'Draft',true,false)}">
+                                        <div class="col-md-12">
+                                            <div class="row">
+                                                <c:CG_ClaimsODMMessages pgName="CG_ClaimsFC"/>
+                                            </div>
+                                        </div>
+                                    </apex:outputPanel>
+                                </div>
+                                <apex:outputpanel id="esnChangedPnlJP" style="margin-left:20px" rendered="{!psnRec.CoverageFlag__c}">
+                                    <apex:outputLabel id="esnChangedLblJP"><span style="color:red">{!$Label.CSS_esnChanged_ChkWarranty}</span></apex:outputLabel>
+                                </apex:outputpanel>
+                                <hr style="border-top:2px solid #eee;"/>
+
+                                <div style="text-align:center;font-size: 15px;">
+                                    <apex:outputPanel rendered="{!If(claimsRec.Information_Only_Claim__c == true,true,false)}" id="redClaim" >
+                                        <apex:outputText value="{!$Label.CSS_Information_Claim}" style="color:red"/>
+                                    </apex:outputPanel> 
+                                </div>
+
+                                <apex:outputText value="{!fcErrorMessage}" id="fcErrMsg" rendered="{!IF(fcErrorMessage != null && fcErrorMessage != '',true,false)}"/>
+                                <div class="panel-body" width="100%">                    
+                                    <div class="col-md-12" style="margin-top:2%">                        
+                                        <div class="row">
+                                            <div class="col-sm-9">
+                                                <apex:outputPanel rendered="{!warrantyFailure}" id="warrantyfailurepanel">
+                                                    <apex:outputText style="color:red;font-weight:bold;" value="{!$Label.CSS_WarrantyWebserviceFailureMessage}"/> &nbsp;
+                                                    <apex:commandLink value="{!$Label.CSS_Retry}" action="{!retry}" status="callAccountCodestatus" styleclass="saveButton" reRender="warrantyfailurepanel" oncomplete="window.location.reload()"/>
+                                                </apex:outputPanel>
+                    
+                                                <apex:actionStatus startText="retrying..." id="callAccountCodestatus">
+                                                    <apex:facet name="start">Retrying... <img src="/img/loading.gif" /></apex:facet>
+                                                    <apex:facet name="stop"></apex:facet>
+                                                </apex:actionStatus>
+                                           
+                                             <c:CG_ClaimsFailuresOverviewComponentPopup />
+                                               
+                                                <!--c:CG_ClaimsFailuresOverviewComp /-->
+                                                <c:CG_ClaimsCampaignsTRPsATCs mainController="{!controllerRef}" />                                                
+                                            </div>                                             
+                                            <!--Added pgname attribuite in CG_ClaimsHelpfulResource component for story #115022 'Walkiing dead' By RAJESH -->
+                                            <div class="one-fourth right col-md-3 col-xs-12" style="margin-top:1px;padding: 0;">
+                                                <c:CG_ClaimsHelpfulResource pgname="ClaimsFC"/>                                                                                 
+                                            </div>
+                                            <!---------------End-------------------------------->
+                                        </div>
+                                    </div>  
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Tabs end -->
+                </div>
+
+
+
+                <!----Loading Pop Up----->
+                <div class="modal fade" id ="loadingModal" role="dialog">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Cummins_Service_System} </h4>
+                            </div>
+                            <div class="clearfix"></div> 
+                            <div class="modal-body"> 
+                                <b>{!$Label.CSS_Validation_Msg}</b><br/><br/>
+                                <b>{!$Label.CSS_Refresh_Msg}</b><br/><br/>
+                                <!--<img src="/img/loading.gif" style="float:center"/>-->
+
+
+                            </div>
+                            <div class="modal-body">
+                                <apex:image url="{!$Resource.LoadingImg}" width="50" height="50" style="align:center"/>  
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!----Loading Pop Up----->
+
+                <!----Resolve Error Pop Up----->
+                 <!-- For story 181418 Zootopia -->
+                <apex:outputpanel id="popupShowHide"> 
+                    <script>
+                        var showErrorPopup = '{!showErrorPopup}';
+                        if(showErrorPopup == 'true')
+                            $('#resolvepopup').modal('show');
+                    </script>
+                </apex:outputpanel>
+                
+                <apex:outputPanel id="msgsDisp">
+                    <div class="modal fade" id ="resolvepopup" role="dialog" data-backdrop="static" data-keyboard="false">
+                        <div class="modal-dialog" style="width:800px;height:350px;">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Cummins_Service_System} </h4>
+                                </div>
+                                <div class="modal-body" style="padding:0px">
+                                    <div class="col-sm-11" style="margin:20px 35px;">
+                                        <div>There are errors on this page, please refer to the Warranty Validation Error section for more error messages. </div><br/>
+                                        <div style="border:1px solid black;overflow-y:scroll;height:210px;background:#F8F8F8">
+                                            <apex:repeat value="{!ODMFailurePageDisplayMsgs}" var="ODMDisplay">
+                                                 <div>{!ODMDisplay.type}:
+                                                 <span style="display:{!IF(ODMDisplay.partSRTCode == null, 'none', 'inline')}">
+                                                        {!ODMDisplay.partSRTCode}:
+                                                    </span>
+                                                 {!ODMDisplay.description}</div>
+                                            </apex:repeat>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                                        <apex:commandButton value="{!$Label.CSS_Resolve_Error}" styleClass="saveButton" action="{!resolveErrorNow}" rerender="none" onComplete="hideResolvePopUp();"/>
+                                    </div>
+                                    <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                                        <apex:commandLink value="{!$Label.CSS_Continue}" action="{!continueNext}" styleClass="cancelButton"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </apex:outputPanel>
+                <!----Resolve Error Pop Up----->
+
+                <!--Start Code for Bottom Chevaron and Button -->               
+                <div class="row" style="margin:0px;">
+             <!------------------Commented by RAJESH 24th Dec 2019-as per story GSSC-377-------------------------------------------------------        
+                    <div class="pull-left btncrumbslft" style="margin-left: 20px;margin-top:20px;">
+                        <ul class="desk-ulist">
+                            <li>
+                                &nbsp;
+                            </li>
+                            <li>
+                                <apex:commandLink styleclass="sopen" id="Bccsave" action="{!nvClaimsCC}" rerender="msgsDisp,popupShowHide" onClick="showEditErrorPopup();" oncomplete="HideEditErrorPopup();">
+                                    <span class="chev_ccc_img_open"/>
+                                    <apex:outputtext styleClass="chev_text_open" id="Bin_cc_chev" value="{!$Label.css_cuco_chev}" escape="false" />
+                                    <div class="chev-mobile-text">
+                                        <div class="txt_numb">4</div>
+                                    </div>
+                                </apex:commandLink>
+                            </li>
+                            <li>
+                                &nbsp;
+                            </li>
+                        </ul>
+                    </div>
+                <!----------------------------------------------------------------------------------------------------->    
+                     <!------------------------Bottom Button for View History button start-------------------------->
+                    <div class="pull-left btncrumbslft" style="margin-left: 20px;margin-top:20px;">
+                        <ul class="desk-ulist">
+                            <li>
+                                &nbsp;
+                            </li>
+                            <li>
+                                <apex:commandLink styleclass="sopen" id="cusavebottom" action="{!nvClaimsVH}">
+                                    <span class="chev_vh_img_open"/>
+                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.css_vhist_chev}" escape="false"/>
+                                </apex:commandLink> 
+                            </li>
+                            <li>
+                                &nbsp;
+                            </li>
+                        </ul>
+                    </div>
+                    <!------------------------Bottom Button for View History button end-------------------------->
+                    
+                    
+                    <div class="pull-right btncrumbs" style="margin-right: 60px;">
+                        <ul class="desk-ulist">
+                            <li>
+                                &nbsp;
+                            </li>
+                            <li>
+                                <apex:outputPanel rendered="{!IF(psncheck == true,true,false)}">
+                                    <!-- <apex:outputPanel rendered="{!IF(claimsRec.CSS_PSNs__r[0].Multi_PSN_Claim__c == true,true,false)}"> -->
+                                    <apex:commandLink styleclass="sopen" id="Bpsnsave" action="{!nvClaimsPSN}" rerender="msgsDisp,popupShowHide" onClick="showEditErrorPopup();" oncomplete="HideEditErrorPopup();">
+                                        <!-- <span class="chev_cpoc_img_open"/>-->
+                                        <apex:outputtext styleClass="chev_text_open" id="Bin_PSN_chev" value="{!$Label.css_MultiPSN}" escape="false" />
+                                        <div class="chev-mobile-text">
+                                            <div class="txt_numb">2</div>
+                                        </div> 
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                                <!-- <apex:outputPanel rendered="{!IF(claimsRec.CSS_PSNs__r[0].Multi_PSN_Claim__c == true,false,true)}"> -->
+                                <apex:outputPanel rendered="{!IF(psncheck == true,false,true)}">    
+                                    <apex:commandLink styleclass="sopen" id="Bpsnsave1" action="{!nvClaimsPOC}" rerender="msgsDisp,popupShowHide" onClick="showEditErrorPopup();" oncomplete="HideEditErrorPopup();">
+                                        <!-- <span class="chev_cpoc_img_open"/>-->
+                                        <apex:outputtext styleClass="chev_text_open" id="Bin_PSN_chev1" value="{!$Label.CSS_PartsandOC}" escape="false" />
+                                        <div class="chev-mobile-text">
+                                            <div class="txt_numb">2</div>
+                                        </div> 
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                            </li>
+
+                            <li>
+                                &nbsp;
+                            </li>
+                        </ul>
+                    </div>
+
+                </div> <br/><br/>
+                <!-- <div style="text-align:center;">
+<apex:commandButton value="{!$Label.css_save_btn}" action="{!pgSave}" styleclass="btn-intake btn-intake-footer m-btn-width" ></apex:commandButton>
+</div><div class="clearfix"></div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-->
+                <!--End Bottom Chevaron and Button -->
+
+            </apex:form>
+        </apex:define>
+    </div>
+</apex:page>

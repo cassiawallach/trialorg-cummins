@@ -1,0 +1,1 @@
+.cuf-content {        padding: 0 0rem !important;        }        .slds-p-around--medium {        padding: 0rem !important;        }        .slds-modal__content {        overflow-y: scroll !important;        height: unset !important;        max-height: unset !important;        }            .modal-footer {        display:none !important;        }

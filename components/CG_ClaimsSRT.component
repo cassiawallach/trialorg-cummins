@@ -1,0 +1,204 @@
+<apex:component controller="CG_CL_claimsSRT" id="claimsSRT" layout="none" access="global" allowDML="true">
+    <apex:attribute name="RedirectPage5" type="string" description="Page Name" assignTo="{!pageRef}"/>
+    <apex:attribute name="totaldiagSRT" type="String" description="Total Diagnosis SRT"/>
+    <!--<apex:attribute name="totaldigSRT" type="String" description="Total Diagnosis SRT"/>-->
+    <apex:attribute name="totalrepSRT" type="String" description="Total repair SRT"/>
+    <apex:attribute name="totalcampSRT" type="String" description="Total Camp SRT"/>
+    <apex:attribute name="totaltrpSRT" type="String" description="Total TRP SRT"/>
+    <apex:attribute name="totalatcSRT" type="String" description="Total ATC SRT"/>
+    <apex:attribute name="totalnon" type="String" description="Total ATC SRT"/>
+    <apex:attribute name="totalSRTs" type="String" description="Total ATC SRT"/>
+    <apex:attribute name="mainController" description="Main Controller Type" type="CG_CL_ClaimsIntake" assignTo="{!mainContr}"/>
+    <apex:attribute name="techTimeReadonly" type="Boolean" description="Show technician in read only format" default="true"/>  
+
+    <script>
+        function qtyPressSrt(e,compId){
+            var technicianTimeVal= document.getElementById(compId.id).value;
+            if(((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105)) || ((e.which == 190 || e.which == 110) && !(technicianTimeVal.includes('.'))))
+            {
+            } 
+            else 
+            {
+                return false;
+            }        
+        }
+//<!--Added blockSpecialCharactersActtt function below for block the special characters on quantity as per defect GSSC-636,-BY RAJESH 20th Feb 2020-->
+        function blockSpecialCharactersActtt(e,compId){
+            if((e.which > 47 && e.which <=57) || e.which == 9 || e.which == 11 ||  e.which == 0 || e.which == 8 || e.which == 46 ) 
+            {
+            } 
+            else 
+            {
+                return false;
+            }  
+            
+        }    
+
+            
+        
+        function validateActtt(compId){
+            var technicianTime= document.getElementById(compId.id).value;
+            var techTimelength=document.getElementById(compId.id).value.length;
+            var techTimesplit = [];
+            
+            if(technicianTime.includes('.')){
+                techTimesplit = technicianTime.split(".");
+                var declength = techTimesplit[1].length;
+                if(declength > 1){    
+                    var newStr = technicianTime.substring(0, technicianTime.length-1);
+                    document.getElementById(compId.id).value = newStr;
+                    return false;    
+                }
+
+            }
+            else {
+                if(techTimelength == 5)
+                {
+                    var newStr1 = technicianTime.substring(0, technicianTime.length-1);
+                    var newStr2 = newStr1/10;
+                    document.getElementById(compId.id).value = newStr2;
+                }
+            }
+            if(techTimelength == 4 && !technicianTime.includes('.')){
+                var result = Number(document.getElementById(compId.id).value)/10;
+                document.getElementById(compId.id).value=result;
+            }
+        }
+    </script>
+
+    <fieldset class="cmi_field_set">
+        <legend class="fs_legend">{!$Label.CSS_SRTs}</legend>
+        <div class="form-horizontal" role="form"> 
+
+            <div class="col-md-4 col-xs-12 fset-label">
+                <apex:outputLabel value="{!$Label.CG_Claims_Total_Diag_SRT}"></apex:outputLabel></div>
+            
+           
+           
+            <div class="col-sm-6">{!totaldiagSRT}</div>
+            <div class="clearfix"></div>
+
+            <div class="col-md-4 col-xs-12 fset-label">
+                <apex:outputLabel value="{!$Label.CG_Claims_Total_Rep_SRT}"></apex:outputLabel></div>
+
+            <div class="col-sm-6">{!totalrepSRT}</div>
+            <div class="clearfix"></div>
+
+            <div class="col-md-4 col-xs-12 fset-label">
+                <apex:outputLabel value="{!$Label.CG_Claims_Total_Camp_SRT}"></apex:outputLabel></div>
+
+            <div class="col-sm-6">{!totalcampSRT}</div>
+            <div class="clearfix"></div>
+
+            <div class="col-md-4 col-xs-12 fset-label">
+                <apex:outputLabel value="{!$Label.CG_Claims_Total_TRP_SRT}"></apex:outputLabel></div>
+
+            <div class="col-sm-6">{!totaltrpSRT}</div>
+            <div class="clearfix"></div>
+
+            <div class="col-md-4 col-xs-12 fset-label">
+                <apex:outputLabel value="{!$Label.CG_Claims_Total_ATC_SRT}"></apex:outputLabel></div>
+
+            <div class="col-sm-6">{!totalatcSRT}</div>
+            <div class="clearfix"></div>
+
+            <div class="col-md-4 col-xs-12 fset-label">
+                <apex:outputLabel value="{!$Label.CG_Claims_Total_NON_SRT}"></apex:outputLabel></div>
+
+            <div class="col-sm-6">{!totalnon}</div>
+            <div class="clearfix"></div>
+
+            <div class="col-md-4 col-xs-12 fset-label">
+                <apex:outputLabel value="{!$Label.CG_TotalSRTHours}"></apex:outputLabel></div>
+
+            <div class="col-sm-6">{!totalSRTs}</div>
+            <div class="clearfix"></div>
+        
+            <apex:outputPanel rendered="{!IF(techTimeReadonly == true,false,true)}">
+                <div class="col-sm-4 cmi-tar" style="word-wrap: break-word;padding-right:3px;">
+                    <label>{!$ObjectType.CSS_Job_Order__c.Fields.Actual_Technician_Time__c.Label}</label>
+                         <apex:outputPanel rendered="{!IF((isClaimEnabled),true,false)  }">
+                             <span class="glyphicon-asterisk" style="color:red;"></span>
+                        </apex:outputPanel>
+                </div>  
+                
+               <!--GSSC-37 Making Actual Technician time read only -Start-->
+               <apex:outputPanel rendered="{!IF(((ClaimsRec.Status__c == 'Draft' && ClaimsRec.Pending_Authorization__c !='Not Authorized')||ClaimsRec.id=null) && ($User.isClaimReadOnly__c !=true), true,false)}">
+                <div class="col-sm-4">
+<!--Added onkeypress="return blockSpecialCharactersActtt(event,this)" function below for block the special characters on quantity as per defect GSSC-636,-BY RAJESH 20th Feb 2020-->
+                    <apex:inputField style="width:100px;padding:0px;" styleClass="{!IF((mainContr.ClaimsRec.Actual_Technician_Time__c ==null && mainContr.isWarrCustomer==true && mainContr.ClaimsRec.Id == null),'showRedBorder col-sm-5',IF((mainContr.ClaimsRec.Actual_Technician_Time__c ==null && mainContr.ClaimsRec.Id != null), 'showRedBorder col-sm-5', 'col-sm-5'))}" value="{!mainContr.claimsRec.Actual_Technician_Time__c}"  onkeydown="return qtyPressSrt(event,this)" onkeyup="validateActtt(this)" html-maxlength="5" id="acttt" onkeypress="return blockSpecialCharactersActtt(event,this)" />
+                </div>
+                </apex:outputPanel>
+                
+                 <!--<apex:outputPanel rendered="{!IF(isClaimEnabled && cId != null && mainContr != null && mainContr.claimsRec != null && mainContr.claimsRec.Actual_Technician_Time__c == null, true, false)}">-->
+                  <apex:outputPanel rendered="{!IF(isClaimEnabled && cId != null && mainContr != null && mainContr.claimsRec != null && mainContr.claimsRec.Information_Only_Claim__c == false && mainContr.claimsRec.Actual_Technician_Time__c == null, true, false)}"> <!--As per story 173516
+                    <!--div class="col-sm-4"-->
+                       <!-- <apex:outputLabel value="{!$Label.CSS_Enter_Value}" style="color:red"/>-->
+                    <!--/div-->
+                </apex:outputPanel>
+                
+                <apex:outputPanel rendered="{!IF((ClaimsRec.Status__c != 'Draft' && ClaimsRec.id!=null)||($User.isClaimReadOnly__c ==true),true, false)}">
+                    <div class="col-sm-4">
+                        <apex:outputField value="{!mainContr.claimsRec.Actual_Technician_Time__c}"    html-placeholder="000.0" html-maxlength="5" id="actttRO"/>
+                    </div>
+                </apex:outputPanel>
+                
+                 <!--GSSC-37 Making Actual Technician time read only-End-->
+                
+               
+                 <div class="clearfix"></div>
+            </apex:outputPanel>
+           
+            
+            <!--<apex:outputPanel rendered="{!mainContr.isDealer}"><!--rendered="{!IF(techTimeReadonly == true,false,true)}"--><!--Sneha commented outputPanel for removing Actual Time For Diagnostic and Actual Time For Repair Fields #GSSC-206 Start-->
+                <!--<div class="col-sm-4 col-xs-12 fset-label">
+                    <apex:outputLabel value="{!$ObjectType.CSS_Claims__c.Fields.Actual_Time_for_Diagnostics__c.Label}">
+
+                    </apex:outputLabel>
+                </div> 
+               <apex:outputPanel >
+                <div class="col-sm-4">
+                    <apex:inputField style="width:100px;padding:0px" value="{!mainContr.claimsRec.Actual_Time_for_Diagnostics__c}"  onkeydown="return qtyPressSrt(event,this)" onkeyup="validateActtt(this)" html-maxlength="5" id="actFD"/>
+                </div>
+                </apex:outputPanel>
+                
+                 <div class="clearfix"></div>
+            </apex:outputPanel>
+            
+            
+                        <apex:outputPanel rendered="{!mainContr.isDealer}" ><!--rendered="{!IF(techTimeReadonly == true,false,true)}"-->
+                <!--<div class="col-sm-4 col-xs-12 fset-label">
+                    <apex:outputLabel value="{!$ObjectType.CSS_Claims__c.Fields.Actual_Time_for_Repair__c.Label}">
+
+                    </apex:outputLabel>
+                </div> 
+               <apex:outputPanel >
+                <div class="col-sm-4">
+                    <apex:inputField style="width:100px;padding:0px;" value="{!mainContr.claimsRec.Actual_Time_for_Repair__c}"  onkeydown="return qtyPressSrt(event,this)" onkeyup="validateActtt(this)" html-maxlength="5" id="actFR"/>
+                </div>
+                </apex:outputPanel>
+                
+                 <div class="clearfix"></div>
+            </apex:outputPanel>--> <!--Sneha commented outputPanel for removing Actual Time For Diagnostic and Actual Time For Repair Fields #GSSC-206 End -->
+            
+         <!--   <apex:outputLabel value="{!$ObjectType.CSS_Claims__c.Fields.Actual_Time_for_Diagnostics__c.Label}">
+                         <apex:outputPanel rendered="{!IF(isClaimEnabled, true,false)}">
+                        </apex:outputPanel>
+                    </apex:outputLabel>
+             <apex:outputLabel value="{!$ObjectType.CSS_Claims__c.Fields.Actual_Time_for_Repair__c.Label}">
+                         <apex:outputPanel rendered="{!IF(isClaimEnabled, true,false)}">
+                        </apex:outputPanel>
+                    </apex:outputLabel>-->
+            <div class="clearfix"></div>
+            <div><br/></div>
+            <div class="col-sm-4 control-label"></div>
+            <apex:outputPanel rendered="{!IF(((ClaimsRec.Status__c == 'Draft' && ClaimsRec.Pending_Authorization__c !='Not Authorized' && !ClaimsRec.PACCAR_Flag__c && !claimsRec.PACCAR_Auth_Required__c && claimsRec.Parts_Warranty_Claim_Only__c && (claimsRec.CSS_Job__c != null || claimsRec.Dealer_Service_Job__c != null)) || (ClaimsRec.id!=null && !ClaimsRec.PACCAR_Flag__c && !claimsRec.PACCAR_Auth_Required__c && claimsRec.Parts_Warranty_Claim_Only__c && (claimsRec.CSS_Job__c != null || claimsRec.Dealer_Service_Job__c != null))), true,false)}">
+            <div class="col-sm-8 col-xs-12">  
+                <apex:commandLink value="{!$Label.css_View_SRT_Detail}" style="text-decoration:underline" action="{!save}"></apex:commandLink>
+            </div>
+            </apex:outputPanel>
+            
+        </div>
+
+    </fieldset>  
+</apex:component>

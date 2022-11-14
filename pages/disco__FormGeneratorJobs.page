@@ -1,0 +1,326 @@
+<apex:page showHeader="true" sidebar="true" controller="disco.Ctl_FormGeneratorJobs" action="{!redirectOnDisabled}">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<head>
+	<apex:styleSheet value="{!URLFOR($Resource.disco__SLDS250, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+	<apex:includeScript value="{!URLFOR($Resource.disco__jquery_3_6_0, 'jquery.min.js')}"/>
+	<script src="{!$Resource.customModalJS}"></script>
+	<script src="https://cdn.datatables.net/1.10.15/js/jquery.dataTables.js"></script>
+	<script src="https://cdn.datatables.net/select/1.2.2/js/dataTables.select.js"></script>
+	<link rel="stylesheet" href="https://cdn.datatables.net/1.10.15/css/jquery.dataTables.min.css"/>
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/select/1.2.2/css/select.dataTables.min.css"/>
+	<style>
+		.slds-scope table#job-table.slds-table_cell-buffer tr td.slds-truncate[title="Controls"] {
+			padding-left: 0.5rem;
+			font-size: 0.9em;
+		}
+
+		.slds-scope section.slds-card {
+			overflow: hidden;
+		}
+
+		/* SLDS Styles */
+		#job-table_filter label input { 
+			padding: 0 1rem 0 0.75rem;
+			line-height: 1.875rem;
+			min-height: calc(1.875rem + (1px * 2));
+			border: 1px solid #dddbda;
+			border-radius: 0.25rem;
+			transition: border 0.1s linear, background-color 0.1s linear;
+		}
+
+		.slds-scope table.slds-table thead tr th {
+			border-bottom: none;
+		}
+		.slds-scope table.dataTable.no-footer.slds-table {
+			border-bottom: 1px solid #dddbda;
+		}
+
+		.slds-scope table.dataTable .warning-icon {
+			display: none;
+			position: absolute;
+			top: 12px;
+			left: 4px;
+			fill: #d4504c;
+		}
+		.slds-scope table.dataTable .has-error .warning-icon {
+			display: block;
+		}
+
+		.slds-scope table.dataTable .slds-button-group {
+			margin-left: 20px;
+		}
+
+		.slds-scope table.dataTable .slds-button-group button.slds-button {
+			padding: 0 0.5rem;
+		}
+
+		.slds-scope table.dataTable tr td:first-of-type {
+			overflow: visible;
+		}
+
+		.slds-scope table.dataTable td.slds-truncate {
+			vertical-align: text-bottom;
+		}
+
+		.slds-scope table.dataTable tr.is-running :not(button) {
+			color: #009900;
+			font-weight: bold;
+		}
+
+		.slds-scope table.dataTable tr td button.slds-button {
+			font-weight: normal;
+		}
+
+		#job-table_wrapper #job-table_length {
+			padding: 14px 12px 10px 26px;
+		}
+
+		#job-table_wrapper #job-table_filter {
+			padding: 7px;
+		}
+
+		#job-table_wrapper #job-table_info {
+			padding-left: 10px;
+		}
+
+		#job-table_wrapper table {
+			table-layout: fixed !important; /* override jq datatables*/
+			word-wrap:break-word;
+		}
+
+	</style>
+	<script type="text/javascript">
+		var ns = '{!JSENCODE(namespace)}';
+		var sfEnv = {};
+		sfEnv.VFR = {};
+		sfEnv.VFR.deleteJob = '{!$RemoteAction.Ctl_FormGeneratorJobs.deleteJob}';
+		sfEnv.VFR.updateActiveStatus = '{!$RemoteAction.Ctl_FormGeneratorJobs.updateActiveStatus}';
+		sfEnv.templateID = '{!JSENCODE(templateID)}';
+		sfEnv.isLightningExp = '{!JSENCODE($User.UITheme)}' === 'Theme4d';
+		sfEnv.userAuthorized = '{!JSENCODE(IF(userAuthorized,"true","false"))}' == "true" ? true : false;
+	</script>
+</head>
+<body>
+	<div class="slds-scope">
+		<div id="custom-modal-container"/>
+		<apex:pageMessages />
+		<!-- / PAGE HEADER -->
+		<apex:outputPanel layout="none" rendered="{!userAuthorized}">
+			<div class="slds-page-header" role="banner">
+				<div class="slds-grid">
+					<div class="slds-col">
+						<div class="slds-media">
+							<div class="slds-media__figure">
+								<svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon--large">
+									<use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/action-sprite/svg/symbols.svg#description')}"></use>
+								</svg>
+							</div>
+							<div class="slds-media__body">
+								<p class="slds-text-heading_label">Form Generator Jobs</p>
+								<h1 class="slds-text-heading_medium"><apex:outputText value="{!templateName}"/></h1>
+							</div>
+						</div>
+					</div>
+					<div class="slds-col slds-no-flex slds-align-middle slds-button-group">
+						<button type="button" class="slds-button slds-button_neutral back-button">Return to Template</button>
+						<button type="button" class="slds-button slds-button_brand create-new">Create New Job</button>
+					</div>
+				</div>
+			</div>
+			<section class="slds-card">
+				<table id="job-table" class="slds-table slds-table_bordered">
+					<thead>
+					    <tr class="slds-text-title_caps">
+					    	<th scope="col">
+						       	<div class="slds-truncate slds-text-align_center" title="Actions">Actions</div>
+						    </th>
+						    <th scope="col">
+						       	<div class="slds-truncate" title="Active">Active</div>
+						    </th>
+					      	<th scope="col">
+						       	<div class="slds-truncate" title="Name">Name</div>
+						    </th>
+						    <th scope="col">
+						        <div class="slds-truncate" title="Schedule State">Status</div>
+						    </th>
+						    <th scope="col">
+						        <div class="slds-truncate" title="Assignment">Assignment</div>
+						    </th>
+						    <th scope="col">
+						        <div class="slds-truncate" title="Frequency">Frequency</div>
+						    </th>
+						    <th scope="col">
+						        <div class="slds-truncate" title="Start Date">Start Date</div>
+						    </th>
+						    <th scope="col">
+						        <div class="slds-truncate" title="Last Run Date">Last Run</div>
+						    </th>
+						    <th scope="col">
+						        <div class="slds-truncate" title="End Date">End Date</div>
+						    </th>
+					    </tr>
+				  </thead>
+				  <tbody>
+				  	<apex:repeat var="fgjInfo" value="{!formGenJobInfos}">
+				  		<tr class="gen-job-row-{!fgjInfo.Id} {!IF(fgjInfo.active && (fgjInfo.status == 'Current' || fgjInfo.status == 'Future'),'is-running','')} {!IF(fgjInfo.hadErrorOnLastRun,'has-error','')}">
+							<td class="slds-truncate">
+								<svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon_x-small warning-icon" title="Error on Last Run">
+									<use xlink:href="{!URLFOR($Resource.SLDS250, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+								</svg>
+				  				<div class="slds-button-group" role="group">
+									<button type="button" class="slds-button slds-button--neutral edit-button" data-job-id="{!fgjInfo.Id}">Edit</button>
+									<button type="button" class="slds-button slds-button--neutral delete-button" data-job-id="{!fgjInfo.Id}">Del</button>
+								</div>
+							</td>
+							<td class="slds-truncate slds-text-align_center" data-sfid="{!fgjInfo.Id}" title="Active" data-order="{!fgjInfo.active}">
+								<span class="slds-hide sorting-text">{!fgjInfo.active}</span>	
+								<apex:outputPanel rendered="{!fgjInfo.active}">
+									<span class="slds-checkbox">
+										<input id="cb-{!fgjInfo.Id}" class="active-cb" type="checkbox" data-job-id="{!fgjInfo.Id}" checked="checked"/>
+										<label class="slds-checkbox__label" for="cb-{!fgjInfo.Id}">
+				    						<span class="slds-checkbox_faux"></span>
+				  						</label>
+				  					</span>
+								</apex:outputPanel>
+		  						<apex:outputPanel rendered="{!NOT(fgjInfo.active)}">
+			  						<span class="slds-checkbox">
+										<input id="cb-{!fgjInfo.Id}" class="active-cb" type="checkbox" data-job-id="{!fgjInfo.Id}"/>
+										<label class="slds-checkbox__label" for="cb-{!fgjInfo.Id}">
+				    						<span class="slds-checkbox_faux"></span>
+				  						</label>
+				  					</span>
+								</apex:outputPanel>
+							</td>
+							<td class="slds-truncate" data-sfid="{!fgjInfo.Id}" title="Name">{!fgjInfo.Name}</td>
+							<td class="slds-truncate" title="Schedule Status">{!fgjInfo.status}</td>
+				  			<td class="slds-truncate" title="Assignment Type">{!fgjInfo.assignment}</td>
+							<td class="slds-truncate" title="Frequency">{!fgjInfo.frequency}</td>
+							<td class="slds-truncate" title="Start Date">{!fgjInfo.startDate}</td>
+							<td class="slds-truncate" title="Last Run Date">{!fgjInfo.lastRunDate}</td>
+							<td class="slds-truncate" title="End Date">{!fgjInfo.endDate}</td>
+						</tr>
+				  	</apex:repeat>
+				  </tbody>
+				</table>
+			</section>
+		</apex:outputPanel>
+	</div>
+	<script type="text/javascript">		
+		$(document).ready(function(){
+			var $dataTable = $('#job-table').DataTable({
+					bAutoWidth: false,
+					order: [[ 3, "asc" ],[ 2, "asc" ]],
+					aoColumnDefs: [
+			          	{ 'bSortable': false, 'aTargets': [ 0 ] }
+			        ],
+					aoColumns: [
+			    		{ sWidth: "11.3%" },
+			    		{ sWidth: "5.9%" },
+			    		{ sWidth: "13.8%" },
+			    		{ sWidth: "6.3%" },
+			    		{ sWidth: "19.8%" },
+			    		{ sWidth: "12.2%" },
+			    		{ sWidth: "8.2%" },
+			    		{ sWidth: "14.1%" },
+			    		{ sWidth: "8.2%" }
+			  		]
+			  	});
+
+			$('.back-button').click(function(){
+				var url = '/apex/'+ ns +'FormTemplateDetail?id='+sfEnv.templateID;
+				navigate(url);
+			});
+
+			$('.create-new').click(function(){
+				var url = '/apex/'+ ns +'FormGenerator?templateID='+sfEnv.templateID;
+				navigate(url);
+			});
+
+			$('#job-table').on('click','.active-cb',function(){
+				var jobId = $(this).data('job-id');
+				updateActive(jobId);
+			});
+
+			$('#job-table').on('click','.edit-button',function(){
+				var jobId = $(this).data('job-id');
+				editJob(jobId);
+			});
+
+			$('#job-table').on('click','.delete-button',function(){
+				var jobId = $(this).data('job-id');
+				deleteJob(jobId);
+			});
+
+			function updateActive(jobId){
+				var $checkbox = $('.active-cb[data-job-id='+jobId+']');
+				var newActiveStatus = $checkbox.prop('checked');
+				if(jobId) {
+					Visualforce.remoting.Manager.invokeAction(
+		            	sfEnv.VFR.updateActiveStatus,
+		            	jobId,
+		            	newActiveStatus,
+		            	function(result, event){
+		            		if(result.indexOf('success:') > -1) {
+		            			var status = result.split(':')[1];
+		            			$checkbox.closest('td').attr('data-order', newActiveStatus);
+		            			$checkbox.closest('tr').find('[title="Schedule Status"]').text(status);
+		            			if(newActiveStatus && (status === 'Current' || status === 'Future')){
+		            				$checkbox.closest('tr').addClass('is-running');
+		            			} else {
+		            				$checkbox.closest('tr').removeClass('is-running');
+		            			}
+		            			$dataTable.row($checkbox.closest('tr')).invalidate().draw(false);
+		            		} else {
+								console.log(`There was an issue updating the active status of job: ${jobId} - ${result}`);
+		            			$checkbox.val(!newActiveStatus);
+								window.openCustomModal({bodyStringArray:[`There was an issue updating the active status of job: ${jobId}`,result]});
+		            		}
+		            	});
+				}
+			}
+		});
+
+
+		function editJob(jobId){
+			var url = '/apex/'+ ns +'FormGenerator?templateID='+sfEnv.templateID+'&formGenJobID='+jobId;
+			navigate(url);
+		}
+
+		function deleteJob(jobId){
+			if (jobId) {
+				const data = {
+					bodyStringArray:['Are you sure you want to delete this Form Generation Job?'],
+					showCancelButton: true
+				};
+				window.openCustomModal(data)
+					.then(() => {
+						Visualforce.remoting.Manager.invokeAction(
+							sfEnv.VFR.deleteJob,
+							jobId,
+							function(result, event){
+								if(result !== 'success') {
+									console.log(`Form Generation Job could not be deleted: ${event.message}`); // eslint-disable-line no-console
+									window.openCustomModal({bodyStringArray:['Form Generation Job could not be deleted:',event.message]});
+								} else {
+									$('.gen-job-row-'+jobId).hide();
+								}
+							});
+					})
+					.catch(() => {
+						// do nothing
+					});
+			}
+		}
+
+		function navigate(url){
+			if (sfEnv.isLightningExp) {
+				sforce.one.navigateToURL(url);
+			}
+			else {
+				window.location.href = url;
+			}
+		}
+	</script>
+</body>
+</html>
+</apex:page>

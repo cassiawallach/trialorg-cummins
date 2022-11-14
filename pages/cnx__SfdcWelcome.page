@@ -1,0 +1,110 @@
+<apex:page showHeader="false" sidebar="false" applyHtmlTag="false" applyBodyTag="false">
+    <apex:outputPanel layout="none">
+        <style>
+            html            { min-height: 100%; box-sizing: border-box; }
+            body            { margin: 10px; background-image: none; background-color: transparent; height: 100% }
+
+            ul              { padding: 5px 0 10px 15px; }
+            li              { padding-bottom: 1px;}
+            h2 ~ ul         { margin-top: 3px; }
+
+            #footer-logo    { height: 26px; background: no-repeat right; background-size: 64px 26px; background-image: url({!URLFOR($Resource.CnxSfdcResources, 'images/bs-logo_cmyk.svg')});}
+        </style>
+        <h1>Congratulations</h1>
+        <p>The b+s Connects for Cisco Contact Center package has been successfully installed.</p>
+        <h2>Next steps:</h2>
+        <ul type="square" class="level01">
+            <li>Create a <b>Softphone Layout</b> for your users in <b>Setup | Feature Settings | Service | Call Center | Softphone Layouts</b></li>
+            <li>Assign Users to Salesforce <b>Call Center</b>
+                <ul>
+                    <li>Navigate to: <b>Setup | Feature Settings | Service | Call Center | Call Centers</b></li>
+                    <li>Open the <b>Call Center</b> by clicking on the Name</li>
+                    <li>Click <b>Manage Call Center Users</b> at the bottom of the page</li>
+                    <li>Use the <b>Add More Users</b> or <b>Remove Users</b> to manage your Call Center users</li>
+                </ul>
+            </li>
+            <li>Configure Finesse URL's in default <b>b+s Configuration</b>
+                <ul>
+                    <li>Open the App Launcher
+                        <img src='{!URLFOR($Resource.CnxSfdcResources, "images/app-launcher.png")}' />
+                    </li>
+                    <li>Open <b>All Items | b+s Configurations</b></li>
+                    <li>Switch view from <b>Recenty Viewed</b> to <b>View All Configurations</b></li>
+                    <li>Open <b>Default Configuration</b></li>
+                    <li>In section <b>Finesse</b> configure <b>Finesse URL A</b> and <b>Finesse URL B</b></li>
+                </ul>
+            </li>
+            <li>Assign license for this package to the users</li>
+        </ul>
+        <h2>Further steps:</h2>
+        <ul>
+            <li>Take the next steps to complete the installation and basic configuration and learn more about b+s Connects for Cisco Contact Center:
+                <a href="https://www.bucher-suter.com/connects-setup-flow/">b+s Connects – next steps</a>
+            </li>
+            <li>For Finesse 11.0 or older: See Installation Guide or
+                <a href="https://www.bucher-suter.com/company/contact/">contact Bucher + Suter</a>
+            </li>
+            <li>For Finesse SSO: See Installation Guide or
+                <a href="https://www.bucher-suter.com/company/contact/">contact Bucher + Suter</a>
+            </li>
+            <li>Further details can be found in the Installation Guide</li>
+        </ul>
+        <h2>Downloads</h2>
+        <ul type="square">
+            <li>
+                <a href="{!URLFOR($Resource.CnxSfdcResources, 'downloads/ConnectsGadget.zip')}">Connects Gadget (to copy on Finesse server)</a>
+            </li>
+            <li>
+                <a id="finesseSsoFrameLink" href="#">Generated Finesse SSO Frame (to copy on Finesse server)</a>
+            </li>
+            <li>
+                <a href="{!URLFOR($Resource.CnxSfdcResources, 'downloads/releaseNotesOpenSource.pdf')}" target="_blank">Open Source information</a>
+            </li>
+        </ul>
+        <div id="footer-logo"></div>
+        <script>
+            // Checks on how to detect browsers are copied from Bowser (a browser detector)
+            // [https://github.com/lancedikson/bowser/blob/master/src/parser-browsers.js].
+            var isIE = /msie|trident/i.test(navigator.appVersion);
+            var isEdge = /edg([ea]|ios)/i.test(navigator.appVersion);
+            window.onload = generateFinesseFrameDownload;
+            function generateFinesseFrameDownload () {
+                var req = new XMLHttpRequest();
+                req.open('GET', '{!URLFOR($Resource.CnxSfdcResources, "downloads/finesseSSOFrame.html")}');
+                req.setRequestHeader('Accept', 'text/html');
+                req.onreadystatechange = handleStateUpdate;
+                req.send();
+
+                function  handleStateUpdate (req) {
+                    if (req.currentTarget && req.currentTarget.readyState === 4) {
+                        var linkElement = document.getElementById('finesseSsoFrameLink');
+                        if (req.currentTarget.status === 200) {
+                            var data = req.currentTarget.response;
+                            var fileName = 'finesseSSOFrame.html';
+                            var fileContent = data.replace('https://sfdcurlplaceholder', window.location.origin);
+                            if (isIE || isEdge) {
+                                // Workaround for Internet Explorer and Microsoft Edge. As of May 2019, Internet
+                                // Explorer and Microsoft Edge do not support Data URI with HTML content.
+                                // [https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs#Browser_compatibility]
+                                // Workaround source from
+                                // https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/samples/hh779016(v=vs.85)
+                                linkElement.addEventListener('click', function () {
+                                    window.navigator.msSaveBlob(new Blob([fileContent]), fileName);
+                                    return false;
+                                });
+                            } else {
+                                linkElement.setAttribute('href', 'data:text/html;charset=utf-8,' + encodeURIComponent(fileContent));
+                                linkElement.setAttribute('download', fileName);
+                                // Fix for FIN-6151, if the target attribute is not present, Salesforce overrides the
+                                // href (as of July 2019).
+                                linkElement.setAttribute('target', '_blank');
+                            }
+                        } else if (req.currentTarget.status >= 400) {
+                            alert('Finesse SSO Frame download not available!');
+                        }
+                    }
+                }
+            }
+        </script>
+    </apex:outputPanel>
+</apex:page>

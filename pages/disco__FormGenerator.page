@@ -1,0 +1,584 @@
+<apex:page showHeader="true" sidebar="true" controller="disco.Ctl_FormGenerator" action="{!redirectOnDisabled}">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<head>
+	<apex:styleSheet value="{!URLFOR($Resource.disco__SLDS250, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+	<apex:includeScript value="{!URLFOR($Resource.disco__jquery_3_6_0, 'jquery.min.js')}"/>
+	<apex:styleSheet value="{!URLFOR($Resource.disco__jquery_ui_1_12_1, 'jquery-ui.min.css')}" />
+	<apex:includeScript value="{!URLFOR($Resource.disco__jquery_ui_1_12_1, 'jquery-ui.min.js')}"/>
+	<script type="text/javascript">
+		var ns = '{!JSENCODE(namespace)}';
+		var sfEnv = {};
+		sfEnv.templateID = '{!JSENCODE(templateID)}';
+		sfEnv.isNotPublished = '{!JSENCODE(IF(isNotPublished,"true","false"))}' == "true" ? true : false;
+		sfEnv.isManagedTemplate = '{!JSENCODE(IF(isManagedTemplate,"true","false"))}' == "true" ? true : false;
+		sfEnv.userID = '{!JSENCODE($User.Id)}';
+		sfEnv.isLightningExp = '{!JSENCODE($User.UITheme)}' === 'Theme4d';
+		sfEnv.objFieldsMap = JSON.parse('{!JSENCODE(objFieldsMapJSON)}');
+		sfEnv.objLookupMap = JSON.parse('{!JSENCODE(objLookupMapJSON)}');
+		sfEnv.VFR = {};
+		sfEnv.VFR.retrieveUsers = '{!$RemoteAction.Ctl_FormGenerator.retrieveUsers}';
+		sfEnv.VFR.createFormGenJob = '{!$RemoteAction.Ctl_FormGenerator.createFormGenJob}';
+		sfEnv.VFR.updateFormGenJob = '{!$RemoteAction.Ctl_FormGenerator.updateFormGenJob}';
+		sfEnv.VFR.validateQuery = '{!$RemoteAction.Ctl_FormGenerator.validateQuery}';
+		sfEnv.queriedFormGenJob = JSON.parse('{!JSENCODE(formGenJobJSON)}');
+		sfEnv.sldsCloseIcon = '{!URLFOR($Resource.SLDS100, "assets/icons/utility-sprite/svg/symbols.svg#close")}';
+		sfEnv.allowNewRels = '{!JSENCODE(allowNewRelationships)}';
+	</script>
+	<style>
+		.slds-scope div.slds-form-element div.slds-form-element__control {
+			display: flex;
+		}
+
+		.slds-scope div.slds-form-element div.slds-form-element__control.slds-hide {
+			display: none; /* prevent this from being overrided */
+		}
+
+		.slds-scope div.slds-form-element.assign.by-specific-user {
+			max-width: 336px;
+		}
+		.slds-scope div.slds-form-element div.slds-form-element__control .slds-select_container{
+			min-width: 336px;
+		}		
+		.slds-scope div.slds-form-element div.slds-form-element__control .slds-select_container.field-select {
+			min-width: 400px;
+		}		
+
+		.slds-form-element__control .slds-select_container,
+		.slds-form-element__control .slds-select_container select.slds-form-element__help {
+			margin: 0;
+		}
+
+		body div.slds-scope.update-mode  {
+			border: 1px solid #dddbda;
+			box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.1);
+			border-radius: 0.25rem;
+		}
+
+		body div.slds-scope.update-mode .slds-page-header,
+		body div.slds-scope.update-mode .slds-card {
+			border: unset;
+			box-shadow: unset;
+		}
+
+		.slds-form-element.date,
+		.slds-form-element.date.slds-show {
+			width: 166px;
+			display: inline-block;
+		}
+
+		.slds-scope .slds-form-element.date.slds-hide {
+			display: none;
+		}
+
+		.field-map-container .slds-form-element {
+			display: inline-block;
+		}
+
+		button.next-button[disabled] {
+			cursor: not-allowed;
+		}
+
+		section.slds-card button.validate-query.is-valid,
+		section.slds-card button.validate-query.is-valid:hover {
+			background-color: #4bca81;
+			border-color: #4bca81;
+		}
+
+		.slds-scope div.query-valid-msg {
+			color: #4bca81
+		}
+
+		.simple-query {
+			counter-reset: logic-counter;
+		}
+
+		.simple-query .logic-row:before {
+			content: counters(logic-counter,".");
+			counter-increment: logic-counter;
+			padding: 2em 0.5em;
+		}
+
+		.simple-query .logic-row .validate-simple-query {
+			width: calc(50% - 22px);
+		}
+
+		.simple-query .logic-row .validate-simple-query input.slds-input.time-input {
+			display: none;
+		}
+
+		.simple-query .logic-row .validate-simple-query input.slds-input.main-input,
+		.simple-query .logic-row .validate-simple-query.has-time input.slds-input.time-input {
+			display: inline-block;
+		}
+
+		.simple-query .logic-row .validate-simple-query.has-time input.slds-input {
+			width: 50%;
+		}
+
+		.simple-query .logic-row .is-boolean .gt,
+		.simple-query .logic-row .is-boolean .gte,
+		.simple-query .logic-row .is-boolean .lt,
+		.simple-query .logic-row .is-boolean .lte {
+			display: none;
+		}
+
+		.results-display {
+			opacity: 0;
+			max-height: 0;
+		    transition: all 1s ease-in;
+		    overflow: hidden;
+		    border: 1px solid #dddbda;
+			border-radius: 4px;
+		}
+
+		.results-display.fade-in {
+			opacity: 1;
+			max-height: 200px;
+			overflow: scroll;
+		}
+
+		.slds-form-element.slds-has-error button {
+			background-color: rgb(194, 57, 52);
+			border-color: rgb(194, 57, 52);
+		}
+
+		.periodicity-controls input[type="number"] {
+			max-width: 146px;
+		}
+
+		#once-date-radio {
+			position: absolute;
+			left: -20px;
+			bottom: 16px;
+		}
+
+		.ui-autocomplete {
+			margin-top: 0.125rem;
+			margin-bottom: 0.125rem;
+			border: 1px solid #dddbda;
+			border-radius: 0.25rem;
+			padding: 0.25rem 0;
+			background: white;
+			-webkit-box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.16);
+			box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.16);
+			-webkit-transform: translateX(-50%);
+			transform: translateX(-50%);
+		}
+
+		body ul.ui-autocomplete.ui-widget li.ui-menu-item.ui-state-focus {
+			border: 0px solid transparent;
+			background-color: #f3f2f2 !important;
+		}
+
+		div.modal .slds-spinner_large {
+			margin: auto;
+		}
+
+		.slds-scope .slds-modal__content:first-child {
+			border-top-right-radius: 0.25rem;
+			border-top-left-radius: 0.25rem;
+		}
+
+		.job-name-display {
+			min-height: 20px;
+			transition: all 1s ease;
+			opacity: 0;
+		}
+
+		.job-name-display.visible {
+			opacity: 1;
+		}
+
+		.periodicity-controls .slds-form-element {
+			vertical-align: top;
+		}
+	</style>
+</head>
+	<body>
+		<div class="slds-scope">
+			<apex:pageMessages />
+			<!-- / PAGE HEADER -->
+			<div class="slds-page-header" role="banner">
+				<div class="slds-grid">
+					<div class="slds-col">
+						<div class="slds-media">
+							<div class="slds-media__figure">
+								<svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon_large">
+									<use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/action-sprite/svg/symbols.svg#description')}"></use>
+								</svg>
+							</div>
+							<div class="slds-media__body">
+								<p class="slds-text-heading_label">Form Generator</p>
+								<h1 class="slds-text-heading_medium"><apex:outputText value="{!templateName}"/></h1>
+								<h4 class="slds-text-heading_x-small job-name-display js-job-name-display"></h4>
+							</div>
+						</div>
+					</div>
+					<div class="slds-col slds-no-flex slds-align-middle slds-button-group js-back-buttons">
+						<button type="button" class="slds-button slds-button_neutral js-cancel-btn">Cancel</button>
+						<button type="button" class="slds-button slds-button_neutral js-return-btn">Return to Template</button>
+					</div>
+				</div>
+			</div>
+			<!-- / ERROR PAGE -->
+			<section class="slds-p-horizontal_x-large slds-card slds-p-vertical_large slds-m-top_small error-page slds-hide">
+				<div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
+				  	<span class="slds-assistive-text">error</span>
+				  	<span class="slds-icon_container slds-icon-utility-error slds-m-right_x-small" title="Description of icon when needed">
+					    <svg class="slds-icon slds-icon_x-small" aria-hidden="true">
+					      	<use xlink:href="{!URLFOR($Resource.SLDS100, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+					    </svg>
+				  	</span>
+				  	<h2 class="error-msg"></h2>
+				</div>
+			</section>
+
+			<!-- / PAGE CARD 0-->
+			<section class="slds-p-horizontal_x-large slds-card slds-p-vertical_large slds-m-top_small js-page js-page-0 slds-hide">
+				<div class="slds-text-heading_small slds-border_bottom">
+					Form Generator Job Status
+				</div>
+				<div class="slds-m-vertical_large">
+					A Form Generation Job must be active to create forms.
+				</div>
+				<div class="slds-form-element slds-m-vertical_large">
+					<label for="active-checkbox" class="slds-form-element__label">
+						Active
+					</label>
+					<div class="slds-form-element__control">
+                        <input type="checkbox" id="active-checkbox" name="active"/>
+                    </div>
+				</div>
+	 		</section>
+
+			<!-- / PAGE CARD 1-->
+			<section class="slds-p-horizontal_x-large slds-card slds-p-vertical_large slds-m-top_small js-page js-page-1">
+				<div class="slds-text-heading_small slds-border_bottom">
+					Name Your Form Generator Job
+				</div>
+				<div class="slds-m-vertical_large">
+					For example, indicate for what purpose and/or group these forms are being generated.
+				</div>
+				<div class="slds-form-element slds-m-vertical_large">
+					<label for="jobName" class="slds-form-element__label">
+						<abbr class="slds-required" title="required">*</abbr>Form Generator Job Name
+					</label>
+					<div class="slds-form-element__control">
+                        <input type="text" id="jobName" name="jobName" class="slds-input" />
+                        <button type="button" class="slds-button slds-button_brand slds-m-left_small js-wizard-view js-page-change" data-page="1" data-direction="forward">Next</button>
+                    </div>
+					<span id="nameObjectError" class="slds-form-element__help slds-has-error slds-hide js-errors">This field is required</span>
+				</div>
+	 		</section>
+
+			<!-- / PAGE CARD 2-->
+			<section class="slds-p-horizontal_x-large slds-card slds-p-vertical_large slds-m-top_small js-page js-page-2 slds-hide">
+				<div class="slds-text-heading_small slds-border_bottom">
+					Select Your Primary Object
+				</div>
+				<div class="slds-m-vertical_large">
+					This is the Field Link Object to which all the other Field Links on the Template will related.
+				</div>
+				<div class="slds-form-element slds-m-vertical_large">
+					<label for="primaryObject" class="slds-form-element__label">
+						<abbr class="slds-required" title="required">*</abbr>Primary Object 
+						
+					</label>
+					<div class="slds-form-element__control">
+						<div class="slds-select_container field-select">
+							<select name="primaryObject" class="slds-select" required=""></select>
+						</div>
+						<span id="primaryObjectError" class="slds-form-element__help slds-hide js-errors">This field is required</span>
+					</div>
+				</div>
+				<div class="slds-x-small-buttons_horizontal slds-text-align_right js-wizard-view">
+					<button type="button" class="slds-button slds-button_neutral js-page-change" data-page="2" data-direction="back">Back</button>
+					<button type="button" class="slds-button slds-button_brand slds-m-left_small next-button js-next-button js-page-change " data-page="2" data-direction="forward">Next</button>
+				</div>
+	 		</section>
+
+	 		<!-- / PAGE CARD 3-->
+	 		<section class="slds-p-horizontal_x-large slds-card slds-p-vertical_large slds-m-top_small js-page js-page-3 slds-hide">
+				<div class="slds-text-heading_small slds-border_bottom">
+					Map Field Link Fields
+				</div>
+				<div class="slds-m-vertical_large map-fields-instructions">
+					Select the fields on your primary object (<span class="js-primary-object-name"></span>) that should be filled into the following lookups on the Form object for the other field links on the Template.
+				</div>
+				<div class="slds-m-vertical_large field-map-container js-field-map-container">
+					<!-- JS inserts -->
+				</div>
+				<div class="slds-x-small-buttons_horizontal slds-text-align_right js-wizard-view">
+					<button type="button" class="slds-button slds-button_neutral js-page-change" data-page="3" data-direction="back">Back</button>
+					<button type="button" class="slds-button slds-button_brand slds-m-left_small next-button js-next-button js-page-change" data-page="3" data-direction="forward">Next</button>
+				</div>
+	 		</section>
+
+	 		<!-- / PAGE CARD 4-->
+	 		<section class="slds-p-horizontal_x-large slds-card slds-p-vertical_large slds-m-top_small js-page js-page-4 slds-hide">
+				<div class="slds-text-heading_small slds-border_bottom">
+					Build Your Query
+				</div>
+				<div class="slds-m-vertical_large">
+					This query selects with <span class="js-primary-object-name"></span> Objects for which forms will be generated. If the "Query Value" field is left empty, the query will be compared against "null".
+				</div>
+                <div class="slds-form-element slds-m-vertical_large">
+					<label for="queryType" class="slds-form-element__label">
+                        <abbr class="slds-required" title="required">*</abbr>Query Type
+                    </label>
+                    <div class="slds-form-element__control">
+                        <div class="slds-select_container">
+                            <select name="queryType" id="query-type" class="slds-select">
+                                <option value="Simple">Simple</option>
+                                <option value="Advanced">Advanced</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-m-top_x-small query-element simple-query slds-m-top_medium js-simple-query-rows" >
+                	<!-- JS Inserts -->
+                </div>
+            	<div class="slds-form-element query-element simple-query query-logic slds-m-bottom_medium">
+            		<label for="simpleQueryLogic" class="slds-form-element__label slds-m-top_x-small js-simple-query-logic">
+                        <abbr class="slds-required" title="required">*</abbr>Simple Query Logic
+                    </label>
+                    <div class="slds-form-element__control js-simple-query-logic">
+                        <input type="text" id="simpleQueryLogic" name="simpleQueryLogic" class="slds-input" placeholder="Example: (1 AND 2) OR (2 AND 3)" />
+                    </div>
+                </div>
+                <div class="slds-x-small-buttons_horizontal slds-text-align_center query-element simple-query">
+                    <button id="simpleValidate" class="slds-button slds-button_neutral add-row" type="button">
+                    	Add Row
+                	</button>
+                </div>
+                <div class="slds-form-element slds-is-required query-element js-advanced-query slds-m-vertical_medium">
+                    <label for="whereClause" class="slds-form-element__label slds-m-top_x-small">
+                        <abbr class="slds-required" title="required">*</abbr>Advanced WHERE Clause
+                    </label>
+                    <div class="slds-form-element__control">
+                        <input type="text" id="whereClause" name="whereClause" class="slds-input"/>
+                    </div>
+                </div>
+                <div class="query-valid-msg js-query-valid-msg slds-text-align_center slds-m-top_medium slds-hide">Query is valid.</div>
+                <div class="slds-form-element slds-is-required results-display js-results-display slds-m-vertical_medium">
+                	<table id="where-responses" class="slds-table slds-table_bordered slds-table_cell-buffer">
+						<thead>
+							<tr class="slds-text-title_caps">
+						    	<th scope="col">
+							       	<div class="slds-truncate" title="Example Results">Example Results <span class="results-count"></span></div>
+							    </th>
+							</tr>
+						</thead>
+						<tbody>
+						</tbody>
+                    </table>
+                </div>
+                <div class="slds-x-small-buttons_horizontal slds-text-align_right">
+					<button type="button" class="slds-button slds-button_neutral js-page-change js-wizard-view" data-page="4" data-direction="back">Back</button>
+					<button id="simpleValidate" class="slds-button slds-button_brand validate-query js-validate-query simple-query" type="button">
+                        Validate
+                    </button>
+                    <button id="whereValidate" class="slds-button slds-button_brand slds-m-left_small validate-query js-validate-query js-advanced-query" type="button" >
+                        Validate
+                    </button>
+					<button id="query-next" type="button" class="slds-button slds-button_neutral js-page-change js-wizard-view" data-page="4" data-direction="forward">Next</button>
+				</div>
+	 		</section>
+
+	 		<!-- / PAGE CARD 5-->
+	 		<section class="slds-p-horizontal_x-large slds-card slds-p-vertical_large slds-m-top_small js-page js-page-5 slds-hide">
+				<div class="slds-text-heading_small slds-border_bottom">
+					Assign Your Forms
+				</div>
+				<div class="slds-m-vertical_large">
+					Select the User Reference Field on the Primary Object (<span class="js-primary-object-name"></span>) Object that should be used to assign the form.
+				</div>
+				<div class="slds-form-element slds-m-vertical_large">
+					<label for="assign-type" class="slds-form-element__label">
+                        <abbr class="slds-required" title="required">*</abbr>Assignment Criteria
+                    </label>
+                    <div class="slds-form-element__control">
+                        <div class="slds-select_container">
+                            <select name="assign-type" id="assign-type" class="slds-select">
+                                <option value="Object Field">Assign Form By Field</option>
+                                <option value="User">Specific User</option>
+                                <option value="Me">Me</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+				<div class="slds-form-element slds-m-vertical_large js-assign by-field">
+					<label for="assignment" class="slds-form-element__label">
+                        <abbr class="slds-required" title="required">*</abbr>Assign Form By Field
+                    </label>
+                    <div class="slds-form-element__control">
+                        <div class="slds-select_container field-select">
+                            <select name="assignment" id="assignment-by-field" class="slds-select js-assignment-by-field">
+                                <!-- JS inserts -->
+                            </select>
+                        </div>
+                    </div>
+				</div>
+				<div class="slds-form-element slds-m-vertical_large js-assign by-specific-user js-by-specific-user slds-hide">
+					<label for="assignment-by-user" class="slds-form-element__label">
+                        <abbr class="slds-required" title="required">*</abbr>Assign Specific User
+                    </label>
+                    <div class="slds-form-element__control ui-widget">
+                    	<input type="text" id="assignment-by-user" class="slds-input"/>
+                    	<input type="hidden" id="user-id"/>
+                    </div>
+				</div>
+				<div class="slds-x-small-buttons_horizontal slds-text-align_right js-wizard-view">
+					<button type="button" class="slds-button slds-button_neutral js-page-change" data-page="5" data-direction="back">Back</button>
+					<button type="button" class="slds-button slds-button_brand js-page-change" data-page="5" data-direction="forward">Next</button>
+				</div>
+	 		</section>
+
+	 		<!-- / PAGE CARD 6-->
+	 		<section class="slds-p-horizontal_x-large slds-card slds-p-vertical_large slds-m-top_small js-page js-page-6 slds-hide">
+				<div class="slds-text-heading_small slds-border_bottom">
+					Schedule Frequency
+				</div>
+				<div class="slds-m-vertical_large">
+					Select when forms should be generated.
+				</div>
+                <div class="slds-form-element slds-m-vertical_large">
+					<label for="frequency" class="slds-form-element__label">
+                        <abbr class="slds-required" title="required">*</abbr>Frequency
+                    </label>
+                    <div class="slds-form-element__control">
+                        <div class="slds-select_container">
+                            <select name="frequency" id="frequency" class="slds-select">
+                                <option value="Once">Once</option>
+                                <option value="Days Interval">Days Interval</option>
+                                <option value="Monthly">Monthly</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="js-once-controls">
+	  				<div class="slds-form-element date js-now-element">
+						<div class="slds-form-element__control">
+						    <input type="radio" id="now-radio" name="once-date" value="now" checked="true"/>
+	  						<label class="slds-form-element__label slds-m-left_small" for="now-radio">Now</label>
+						</div>
+	                </div>
+	  				<div class="slds-form-element date">
+	  					<input type="radio" id="once-date-radio" name="once-date" value="date" class="js-wizard-view"/>
+	  					<label class="slds-form-element__label" for="once-date">Date</label>
+						<div class="slds-form-element__control">
+						    <input class="slds-input" id="once-date" type="date"/>
+						</div>
+						<span id="onceDateError" class="slds-form-element__help slds-hide js-errors">This field is required</span>
+	                </div>
+	            </div>
+	            <div class="periodicity-controls js-periodicity-controls">
+	                <div class="slds-form-element slds-m-vertical_large js-day-interval-control">
+					  	<div class="slds-form-element__control slds-input-has-fixed-addon">
+					    	<span class="slds-form-element__addon" id="fixed-text-addon-pre">
+					    		<abbr class="slds-required" title="required">*</abbr>Every
+					    	</span>
+					    	<input aria-labelledby="fixed-text-label fixed-text-addon-pre fixed-text-addon-post" class="slds-input js-day-interval" type="number" />
+					    	<span class="slds-form-element__addon" id="fixed-text-addon-post">days.</span>
+	  					</div>
+	  					<span id="dateIntervalError" class="slds-form-element__help slds-hide slds-p-left_large slds-m-left_xx-large js-errors">This field is required</span>
+	  				</div>
+	  				<div class="slds-form-element date">
+	  					<label class="slds-form-element__label" for="start-date-repeated">
+	  						<abbr class="slds-required" title="required">*</abbr>Start Date
+	  					</label>
+						<div class="slds-form-element__control">
+						    <input class="slds-input" id="start-date-repeated" type="date"/>
+						</div>
+						<span id="startDateError" class="slds-form-element__help slds-hide js-errors">This field is required</span>
+	                </div>
+	                <div class="slds-form-element date">
+	  					<label class="slds-form-element__label" for="end-date-repeated">
+		  					<abbr class="slds-required" title="required">*</abbr>End Date
+		  				</label>
+						<div class="slds-form-element__control">
+						    <input class="slds-input" id="end-date-repeated" type="date"/>
+						</div>
+						<span id="endDateError" class="slds-form-element__help slds-hide js-errors">This field is required</span>
+	                </div>	            	
+	            </div>
+				<div class="slds-x-small-buttons_horizontal slds-text-align_right">
+					<button type="button" class="slds-button slds-button_neutral js-wizard-view js-page-change" data-page="6" data-direction="back">Back</button>
+					<button type="button" class="slds-button slds-button_brand js-generate-button schedule">Save &amp; Activate</button>
+				</div>
+	 		</section>
+
+	 		<!-- / PAGE CARD 7-->
+	 		<section class="slds-p-horizontal_x-large slds-card slds-p-vertical_large slds-m-top_small js-page js-page-7 slds-text-align_center js-wizard-view slds-hide">
+				<div class="slds-text-heading_large slds-m-around_x-large js-success-header">
+					<!-- JS inserts -->
+				</div>
+				<div class="slds-text-heading_large slds-m-around_medium js-success-message">
+					<!-- JS inserts -->
+				</div>
+				<div class="slds-col slds-no-flex slds-align-middle slds-button-group">
+					<button type="button" class="slds-button slds-button_neutral js-cancel-btn">Return to Jobs List</button>
+					<button type="button" class="slds-button slds-button_neutral js-return-btn">Return to Template</button>
+				</div>
+	 		</section>
+		</div>
+		<div class="slds-scope">
+			<div class="modal js-modal slds-hide">        
+	            <!-- saving modal -->
+	            <div id="savingStatus" role="dialog" class="slds-modal slds-fade-in-open slds-hide">
+				    <div class="slds-modal__container">
+				      	<div class="slds-modal__content slds-p-around_medium slds-text-align_center" id="modal-content-id-1">
+	                    	<div class="slds-spinner_large OR-spinner-align_center slds-m-top_large">
+	                          	<img src="{!JSENCODE($Resource.SLDS250) + '/assets/images/spinners/slds_spinner_brand.gif'}" alt="Saving..." />
+	                        </div>
+	                        <h3 class="saveText modal-title slds-text-heading_medium slds-m-top_large slds-text-align_center slds-m-bottom_large">Saving...</h3>
+				    	</div>
+				  	</div>
+				</div>
+
+				<!-- error modal -->
+	            <div id="error-modal" role="dialog" class="slds-modal slds-fade-in-open slds-hide">
+				    <div class="slds-modal__container">
+				    	<header class="slds-modal__header">
+				        	<h2 class="slds-text-heading_medium"><!-- JS Inserts --></h2>
+				      	</header>
+				      	<div class="slds-modal__content slds-p-around_medium">
+				        	<!-- JS Inserts -->
+				      	</div>
+				      	<footer class="slds-modal__footer">
+				        	<button class="slds-button slds-button_brand js-modal-ok">Close</button>
+				      	</footer>
+				  	</div>
+				</div>
+
+	            <!-- confirmation modal -->
+				<div id="confirm-modal" role="dialog" class="slds-modal slds-fade-in-open slds-hide">
+				    <div class="slds-modal__container">
+				      	<header class="slds-modal__header">
+				        	<h2 class="slds-text-heading_medium">Unsaved Changes</h2>
+				      	</header>
+				      	<div class="slds-modal__content slds-p-around_medium">
+				        	<p>There are unsaved changes. Are you sure you want to leave this page?</p>
+				      	</div>
+				      	<footer class="slds-modal__footer">
+				        	<button class="slds-button slds-button_neutral js-modal-cancel">Cancel</button>
+				        	<button class="slds-button slds-button_brand js-modal-ok">OK</button>
+				      	</footer>
+			    	</div>
+			  	</div>
+			  	<div class="slds-backdrop slds-backdrop_open slds-hide"></div>
+	        </div>
+	    </div>
+	    <script src="{!$Resource.filter_logic_js}"></script>
+		<script src="{!$Resource.formGeneratorJS}"></script>
+		<!-- IE Support for SVGS-->
+		<script src="{!URLFOR($Resource.svg4everybody, '/svg4everybody/svg4everybody.min.js')}"></script>
+		<script>
+			// Init SVG Support
+			$(document).ready(function() { 
+				svg4everybody();
+			});
+		</script>
+	</body>
+</html>
+</apex:page>

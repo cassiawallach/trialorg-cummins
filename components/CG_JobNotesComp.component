@@ -1,0 +1,868 @@
+<apex:component controller="CG_CL_ClaimsJobNotesComp" allowDML="true">
+    
+    <style>
+        .cmi_narrativetextarea {
+        border: 1px solid #d3d3d3;
+        overflow-x: hidden;
+        overflow-y: scroll;
+        height: 100px;  
+        }
+        
+        .cmi_viewmore-icon-2 {
+        border-left: 6px solid #606060 !important;
+        }
+        .cmi_viewmore-icon-open{
+        border-top: 6px solid #606060 !important;
+        border-left:6px solid transparent !important;
+        }
+        h4, .h4 {
+        font-size: 17px !important;
+        }
+        
+        
+    </style>
+    
+    
+    <script>
+    
+    function getUrlVars() {
+        var vars = {};
+        var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+            vars[key] = value;
+        });
+        return vars;
+    }
+    
+    var URLClaimId = getUrlVars()["LineItemClaimId"];
+    var pageName = getUrlVars()["ChevronClick"];
+    //  console.log('URLClaimId>>' +URLClaimId);
+    //    console.log('pageName>>' +pageName);
+    
+    </script>
+    
+    <script type="text/javascript">
+    /* $(document).ready(function () {
+                                $("#SaveJobNote").one('click', function (event) {  
+                                    event.preventDefault();
+                                    $(this).prop('disabled', true);
+                                });
+                            });*/
+    $("#Savebtn").on("click", function(event) {
+        alert("This will be displayed only once.");
+        $(this).off(event);
+    });
+    
+    </script>
+    <script>
+    function switchMenu(obj, obj1, obj2, obj3) {
+        var el = document.getElementById(obj);
+        if (el.style.display != 'none') {
+            el.style.display = 'none';
+        } else {
+            el.style.display = '';
+        }
+        var e2 = document.getElementById(obj1);
+        if (e2.style.display != 'none') {
+            e2.style.display = 'none';
+        } else {
+            e2.style.display = '';
+        }
+        var e3 = document.getElementById(obj2);
+        if (e2.style.display != 'none') {
+            e3.style.display = 'none';
+        } else {
+            e3.style.display = '';
+        }
+        var e4 = document.getElementById(obj3);
+        if (e4.style.display != 'none') {
+            e4.style.display = 'none';
+        } else {
+            e4.style.display = '';
+        }
+    }
+    
+    </script>
+    
+    <script>
+    $(document).ready(function(){
+        $(".cmi_viewmore-icon-2, .cmi_viewmore-2 .text").on('click',function(){
+            var parent = $(this).parents('.cmi_viewmore-2')[0];
+            $(parent).find(".cmi_viewmore-body-2").toggleClass("cmi_viewmore-show");
+            $(parent).find(".cmi_viewmore-icon-2").toggleClass("cmi_viewmore-icon-open");
+        });
+    });
+    </script> 
+    <apex:actionRegion >
+        <apex:outputPanel id="warrantyAdminPanel">
+            <div class="col-sm-3">
+                <apex:outputLabel style="font-size:14px;" value="{!$Label.CSS_ClaimNotes}" />
+            </div>
+            <!-- <div class="col-sm-9 col-xs-12" styleClass="css_ipfiel_size" align="Right">
+<b> {!$Label.css_Sort}: </b>
+<apex:selectList value="{!notesdesc}" size="1">
+<apex:selectOptions value="{!Sortvalues}"></apex:selectOptions>
+<apex:actionSupport event="onchange" action="{!claimsNotesSOQL}" reRender="warrantyAdminPanel"
+/>
+</apex:selectList>
+</div> commented as part of story GSSC 150-->
+            <div class="clearfix"></div>
+            <apex:outputPanel id="sendNotesErrorMsg">
+                <apex:outputPanel rendered="{!IF(sendNotesError== true,true,false)}">
+                    <div class="col-sm-10">
+                        <apex:outputLabel style="font-size:12px;color:red;" value="{!$Label.CG_SendNotesErrMsg}" />
+                    </div>
+                </apex:outputPanel>
+            </apex:outputPanel>
+            <div class="clearfix"></div>
+            
+            <!--   Anvesh added  for POC -- Begin 
+<div class="panel-group cmi_generic-accordion" id="expandAllAccordion">                                   
+<div class="panel panel-default">
+<apex:repeat value="{!lstclaimWrapper}" var="wrap" id="theRepeathead">
+<div class="panel-heading1" style="border:1px solid #a9a9a9;padding:10px 15px;margin:10px 50px;">
+<div class="cmi_viewmore-2" id="{!wrap.claimid}1">
+<h4 class="panel-title hover">
+<a class="accordion-toggle hover">
+<span class=" cmi_viewmore-icon-2 column-left" id="{!wrap.claimid}2" style="margin:0px;"></span>
+<div class="text" style="cursor:pointer;">
+<div id="{!wrap.claimid}3">{!$Label.CSS_Account_Code}:{!wrap.accountcode} </div>
+</div>
+</a>
+</h4>
+
+<div class="cmi_viewmore-body-2" id="{!wrap.claimid}4" aria-expanded="true" style="padding:10px;">
+Campaign 65  first accordian Campaign 65  first accordian Campaign 65  first accordianCampaign 65  first accordian Campaign 65  first accordian
+Campaign 65  first accordian Campaign 65  first accordian Campaign 65  first accordian
+</div>
+</div>
+</div>
+
+<script>
+
+var claimid = '{!wrap.claimid}';
+console.log('claimid>>' +claimid );
+console.log('URLClaimId>>' +URLClaimId);
+
+if(claimid == URLClaimId){
+    console.log('inside equlas>>');
+    $('#{!wrap.claimid}4').toggleClass("cmi_viewmore-show");
+    $('#{!wrap.claimid}2').toggleClass("cmi_viewmore-icon-open");
+}
+
+</script>
+</apex:repeat>
+</div>
+</div>
+
+<!--   Anvesh added  for PC -- End -->
+            
+            
+            <!-- GSSC 150 --->
+            
+            <div id="details-accordian" class="panel-collapse collapse in" aria-expanded="true">
+                <apex:outputPanel id="claimsNoteaccId">
+                    <apex:repeat value="{!lstclaimWrapper}" var="wrap" id="theRepeathead">
+                        <apex:outputPanel rendered="{!IF(wrap.claimStatus != 'Draft' && wrap.claimStatus != 'Submitted',true,false)}">
+                            <div class="panel-heading1" style="border:1px solid #a9a9a9;padding:10px 15px;margin:10px 50px;">
+                                <div class="cmi_viewmore-2" id="{!wrap.claimid}1">
+                                    <h4 class="panel-title hover">
+                                        <a class="accordion-toggle hover">
+                                            <span class="cmi_viewmore-icon-2 column-left" id="{!wrap.claimid}2" style="margin:0px;"></span>
+                                            <div id="{!wrap.claimid}3" class="text" style="cursor:pointer;font-weight:bold">
+                                                <div class="col-sm-4">{!$Label.CSS_Account_Code}:{!wrap.accountcode} </div>
+                                                <div class="col-sm-4">{!$Label.CG_ClaimId}:{!wrap.claimid}</div>
+                                                <div class="col-sm-3">{!$Label.CSS_Status}:{!wrap.claimStatus}</div>
+                                                <div class="clearfix"></div>
+                                            </div>
+                                        </a>
+                                    </h4>
+                                    <div id="{!wrap.claimid}4" class="cmi_viewmore-body-2" aria-expanded="true">
+                                        <div class="panel-body">
+                                            <div class="hidden-xs">
+                                                <div class="row">
+                                                    <br/>
+                                                    <div class="col-md-12 col-xs-12" style="margin:0px 0px;">
+                                                        <u><div class="cmi_accordion-title"><b>{!$Label.CG_ServiceProviderResponse}</b></div></u><br/> <br/>
+                                                    </div>
+                                                    <div class="col-md-12 col-xs-12">
+                                                        <apex:outputPanel id="notesinput" rendered="{!IF(($User.isClaimReadOnly__c ==true),true,false)}">
+                                                            <apex:outputText value="{!NotesBody}" />
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c !=true && wrap.claimStatus != 'Paid'),true,false)}">
+                                                            <apex:inputTextarea id="SPNotesId" style="min-height:100px;resize: none; border-style: groove;" html-maxlength="1000"
+                                                                                value="{!wrap.SPResponse}" rows="1" cols="20" />
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c !=true && wrap.claimStatus == 'Paid'),true,false)}">
+                                                            <apex:inputTextarea id="inputNotes1" style="min-height:100px;resize: none; border-style: groove;" html-maxlength="1000"
+                                                                                value="{!wrap.SPResponse}" rows="1" cols="20" disabled="true"/>
+                                                        </apex:outputPanel>
+                                                    </div>
+                                                    <div class="clearfix"></div>
+                                                    <div align="left" >
+                                                        <div class="col-md-12 col-xs-12" style="margin:10px 0px;">
+                                                            <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c !=true && wrap.claimStatus != 'Paid'),true,false)}">
+                                                                <apex:commandButton value="{!$Label.css_save_btn}" 
+                                                                                    id="SaveJobNote" action="{!saveSPResponse}" styleClass="saveButton" reRender="notesSection,sendNotesErrorMsg,SPNotesId" status="saveClaimNotes" oncomplete="enableWASaveButton(this,{!sendNotesError})">
+                                                                    <apex:param name="clSubId" value="{!wrap.claimid}" assignTo="{!claimSubID}" />
+                                                                </apex:commandButton>
+                                                                <apex:actionStatus startText="Saving..." id="saveClaimNotes">
+                                                                    <apex:facet name="start">Saving... <img src="/img/loading.gif" /></apex:facet>
+                                                                    <apex:facet name="stop"></apex:facet>
+                                                                </apex:actionStatus>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c !=true && wrap.claimStatus == 'Paid'),true,false)}">
+                                                                <apex:commandButton value="{!$Label.css_save_btn}"
+                                                                                    id="SaveJobNote1" styleClass="cmi_lighttealbutton" disabled="true">
+                                                                    <apex:param name="clSubId" value="{!wrap.claimid}" assignTo="{!claimSubID}" />
+                                                                </apex:commandButton>
+                                                            </apex:outputPanel>
+                                                        </div>
+                                                    </div>
+                                                    <br/>
+                                                    <div class="clearfix"></div>
+                                                    <div align="left">
+                                                        <apex:outputPanel id="notesSection">
+                                                            <apex:outputPanel rendered="{!IF((wrap.claimSubNotes != null && wrap.claimSubNotes.size>0) , true, false)}">
+                                                                
+                                                                <apex:repeat value="{!wrap.claimSubNotes}" var="CN">
+                                                                    <div class="col-md-12 col-xs-12">
+                                                                        <apex:outputText style="font-weight:bold;" value="{!$Label.CG_AdjudicatorNote}: " rendered="{!IF(CONTAINS(UPPER(CN.noteTitle),UPPER('Adjudicator')),true,false)}"/>
+                                                                        <apex:outputText style="font-weight:bold;" value="{!$Label.CG_ServiceProviderResponse}: " rendered="{!IF(CONTAINS(CN.noteTitle,'Service Provider Response'),true,false)}"/>
+                                                                        <apex:outputText style="font-weight:bold;" value="{!CN.lastSaveDate}: " />
+                                                                        <apex:outputLabel style="font-weight:normal;" value="{!LEFT(CN.noteBody,2000)}" escape="false" />  <br/><br/>
+                                                                    </div>
+                                                                    
+                                                                    <!--<div class="col-sm-12" style="word-break: break-all;">
+<br/>
+<apex:outputText value="{!LEFT(CN.noteBody,2000)}" escape="false" />  <br/><br/>
+</div>-->
+                                                                </apex:repeat>
+                                                                
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </apex:outputPanel>
+                        <script>
+                        // For story GSSC-151
+                        var wrapClaimid = '{!wrap.claimid}';
+                        var pendingSPResponseVar = '{!wrap.pendingSPResponse}';
+                        
+                        console.log('wrapClaimid>>' +wrapClaimid );
+                        console.log('URLClaimId>>' +URLClaimId);
+                        console.log('pendingSPResponseVar>>' + pendingSPResponseVar);
+                        console.log('pageName>>' + pageName);
+                        
+                        if(pageName == 'CG_ClaimsIntake' && pendingSPResponseVar == 'true'){
+                            console.log('inside pageName>>' + pageName);
+                            $('#{!wrap.claimid}4').toggleClass("cmi_viewmore-show");
+                            $('#{!wrap.claimid}2').toggleClass("cmi_viewmore-icon-open");
+                        }
+                        
+                        if(pageName != 'CG_ClaimsIntake' && wrapClaimid == URLClaimId){
+                            console.log('inside not pageName>>');
+                            $('#{!wrap.claimid}4').toggleClass("cmi_viewmore-show");
+                            $('#{!wrap.claimid}2').toggleClass("cmi_viewmore-icon-open");
+                        }
+                        </script>
+                    </apex:repeat>
+                </apex:outputPanel>
+            </div>
+            
+            <!--GSSC 150 ---->
+            
+            
+            
+            <!--<hr style="border-top:2px solid #eee;margin:20px 1px" />
+
+<div class="col-sm-3 col-xs-12 cmi-tar">
+<apex:outputLabel value="{!$Label.CG_Warranty_Admin}:" id="warrantyAdmin" /> <br/>
+<a href="#/" data-backdrop="static" data-target="#ClaimsNotesPopup" data-toggle="modal"
+onclick="noteTypeWA(this,'Warranty Admin:');">+ {!$Label.css_Add1}</a>
+</div>
+<div class="col-sm-9 col-xs-12">
+<apex:repeat value="{!WarrantyAdminWrapper}" var="CN">
+<div class="col-sm-12">
+<apex:outputLabel value="{!CN.nfrstName} {!CN.nlastname}  " />
+</div>
+<div class="col-sm-12">
+<apex:outputLabel style="font-weight:normal;" value="{!$Label.CSS_Last_Saved}:" /> &nbsp;
+<apex:outputLabel style="font-weight:normal;" value="{!CN.nLastModified}" />
+</div>
+
+<div class="col-sm-12" style="word-break: break-all;">
+
+<br/>
+<apex:outputText value="{!LEFT(CN.nBody,4000)}" escape="false"
+/> <br/><br/>
+</div>
+</apex:repeat>
+</div> commented as part of story gssc 150-->
+            <div class="clearfix"></div>
+        </apex:outputPanel>
+        <div class="panel-body">
+            <!--commented as part of story no GSSC-291-->
+            <!--<apex:outputpanel id="plusimageA0">
+<apex:outputpanel onclick="switchMenu('{!$Component.FourCsDataPanel}','{!$Component.minusimageA0}','{!$Component.plusimageA0}','{!$Component.minusimageA10}')"
+title="Expand - View More">
+<div class="cmi_viewallsolutions-icon"></div><a style="font-weight:bold;text-decoration:underline;"> {!$Label.css_View_more} </a>
+</apex:outputpanel>
+</apex:outputpanel>
+
+<apex:outputpanel id="minusimageA0" style="display:none;">
+<apex:outputpanel onclick="switchMenu('{!$Component.FourCsDataPanel}','{!$Component.plusimageA0}','{!$Component.minusimageA0}','{!$Component.minusimageA10}')"
+title="Collapse - View More">
+<span class="glyphicon glyphicon-minus" style="border-top:5px solid #007c7c !important;"></span>
+<a style="font-weight:bold;text-decoration:underline;"><i class="" /> {!$Label.css_View_less}</a>
+</apex:outputpanel>
+</apex:outputpanel>-->
+            <apex:actionFunction name="saveCauseaf" rerender="" action="{!saveCause}" status="saveCauseNotes"/>
+            <apex:actionFunction name="saveCauseafauto" rerender="" action="{!saveCause}" status="saveCauseNotes1"/>
+            
+            <apex:actionFunction name="saveCorrectionaf" rerender="" action="{!saveCorrection}" status="saveCorrectionNotes" />
+            <apex:actionFunction name="saveCorrectionafauto" rerender="" action="{!saveCorrection}" status="saveCorrectionNotes1" />
+            
+            <apex:actionFunction name="saveComplaintafauto" rerender="" action="{!saveComplaint}" status="saveComplaintNotes1" />
+            <apex:actionFunction name="saveComplaintaf" rerender="" action="{!saveComplaint}" status="saveComplaintNotes"/>
+            
+            <apex:actionFunction name="saveCoverageaf" rerender="" action="{!saveCoverage}" status="saveCoverageNotes"/>
+            <apex:actionFunction name="saveCoverageafauto" rerender="" action="{!saveCoverage}" status="saveCoverageNotes1"/>
+            <apex:outputPanel id="FourCsDataPanel">
+                <div style="margin-top:10px;margin-left:10px">
+                    <apex:outputLabel value="Narratives" />
+                </div>
+                <hr style="border-top:2px solid #eee;margin-top:10px !important;margin-bottom:8px !important;"
+                    />
+                <fieldset class="cmi_field_set" style="border: 1px solid grey;margin-top: 20px;margin-left:10px;">
+                    <h4><b>4C's</b></h4>
+                    <div class="row" style="margin-bottom:20px;">
+                        <div class="col-sm-12">
+                            <div class="col-sm-2 col-xs-12">
+                                <h4 style="margin:0px;"><b>{!$Label.CSS_Complaint}:</b></h4>
+                            </div>
+                            
+                            
+                            <div>
+                                <!-- Auto claim -->
+                                <!-- Commented as part of the story GSSC-291 - START-->
+                                <!--<apex:outputPanel rendered="{!IF(ClaimsRec.CSS_Job__c != null, true, false)}">
+                                    <div class="col-sm-10 col-xs-12">
+                                        <apex:outputPanel rendered="{!NOT($Setup.css_header_nav__c.RSWButtonEnable__c)}">
+                                            <div class="col-sm-9">                                    
+                                                <apex:outputLabel value="{!jobComplaintModifiedBy}" rendered="{!IF(jobComplaintModifiedBy != null, true, false)}"/>
+                                                <div>
+                                                    <apex:outputLabel style="font-weight:normal;"
+                                                                      value="{!$Label.CSS_Last_Saved}: {!jobComplaintModifiedDate}"
+                                                                      rendered="{!IF(jobComplaintModifiedBy != null, true, false)}"/>
+                                                </div>
+                                                <apex:outputLabel style="font-weight:normal;" value="{!ClaimsRec.JobEditComplaint__c}"/>
+                                            </div>
+                                        </apex:outputPanel>
+                                        <div class="clearfix"> </div>
+                                        <apex:outputPanel rendered="{!IF(ClaimsRec.Status__c != 'Draft', true, false)}">
+                                            <div class="cmi_narrativetextarea" style="word-wrap:break-word;max-width:1000px;margin:0px 18px;padding:0px;">
+                                                <apex:outputField value="{!ClaimsRec.EditComplaint__c}" /> 
+                                            </div>
+                                        </apex:outputPanel>
+                                        <!-- added as part of GSSC-291-->
+                                        
+                                        <!--<apex:outputPanel rendered="{!IF(ClaimsRec.Status__c == 'Draft' && $User.isClaimReadOnly__c !=true, true, false)}">
+                                            
+                                            <apex:inputTextarea id="inputNotesComplaint1" value="{!ClaimsRec.EditComplaint__c}" 
+                                                                style="word-wrap:break-word;min-height:100px;overflow-x:hidden; overflow-y:scroll; resize: none; border-style: groove;"
+                                                                onchange="saveComplaintafauto();" rows="1"
+                                                                cols="20" />
+                                            
+                                            
+                                            
+                                        </apex:outputPanel>
+                                        
+                                        <apex:actionStatus startText="Saving..." id="saveComplaintNotes1">
+                                            <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                            <apex:facet name="stop"></apex:facet>
+                                        </apex:actionStatus> 
+                                        
+                                    </div>
+                                </apex:outputPanel>
+                                
+                                <!-- Manual claim -->
+                                
+                                <!--apex:outputPanel rendered="{!IF(ClaimsRec.CSS_Job__c == null, true, false)}"> <!-- Commented as part of the story GSSC-291 - END-->
+                                    <div class="col-sm-10 col-xs-12">
+                                        <apex:outputPanel rendered="{!IF(ClaimsRec.Status__c != 'Draft' || $User.isClaimReadOnly__c == true, true, false)}">
+                                            <div class="cmi_narrativetextarea" style="word-wrap:break-word;max-width:1000px;padding:0px;">
+                                                <!-- <apex:outputText value="{!ClaimsRec.EditComplaint__c}"/>-->
+                                                <apex:outputField value="{!ClaimsRec.Claims_General_Symptoms__c}"/>
+                                                
+                                            </div>
+                                        </apex:outputPanel>
+                                        <!-- added as part of GSSC-291-->
+                                        
+                                        <apex:outputPanel rendered="{!IF((ClaimsRec.Status__c == 'Draft'|| ClaimsRec.id == null)&& $User.isClaimReadOnly__c !=true, true, false)}">
+                                            <apex:outputPanel rendered="{!IF(ClaimsRec.CSS_Job__c == null && ClaimsRec.Dealer_Service_Job__c == null, true, false)}">
+                                                <apex:inputTextarea id="inputNotesComplaint1" value="{!ClaimsRec.Claims_General_Symptoms__c}" 
+                                                                    style="word-wrap:break-word;min-height:100px; overflow-x:hidden; overflow-y:scroll; resize: none; border-style: groove;"
+                                                                    rows="1" onchange="saveComplaintaf();"
+                                                                    cols="20" /> 
+                                            </apex:outputPanel>
+                                            <apex:outputPanel rendered="{!IF(ClaimsRec.CSS_Job__c != null || ClaimsRec.Dealer_Service_Job__c != null, true, false)}">
+                                                <apex:inputTextarea id="inputNotesComplaint2" value="{!ClaimsRec.EditComplaint__c}" 
+                                                                    style="word-wrap:break-word;min-height:100px; overflow-x:hidden; overflow-y:scroll; resize: none; border-style: groove;"
+                                                                    rows="1" onchange="saveComplaintaf();"
+                                                                    cols="20" />
+                                            </apex:outputPanel>
+                                            
+                                            
+                                        </apex:outputPanel>
+                                        <apex:actionStatus startText="Saving..." id="saveComplaintNotes">
+                                            <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                            <apex:facet name="stop"></apex:facet>
+                                        </apex:actionStatus>      
+                                    </div>
+                                    
+                                <!--/apex:outputPanel><!-- Commented as part of the story GSSC-291-->
+                                
+                                
+                            </div>
+                            <div class="clearfix"></div> <br/>
+                            
+                            <div style="margin-bottom:20px;">
+                                <div class="col-sm-2 col-xs-12">
+                                    <h4 style="margin:0px;"><b>{!$Label.CSS_Cause}:</b></h4>
+                                    
+                                </div>
+                                <div>
+                                    
+                                    <!-- Auto Claim -->
+                                    <!-- Commented as part of the story GSSC-291 - START-->
+                                    <!--apex:outputPanel rendered="{!IF(ClaimsRec.CSS_Job__c != null, true, false)}">
+                                        <div class="col-sm-10 col-xs-12">
+                                            
+                                            <apex:outputPanel rendered="{!NOT($Setup.css_header_nav__c.RSWButtonEnable__c)}">
+                                                <div class="col-sm-9" >
+                                                    <apex:outputLabel value="{!jobCauseModifiedBy}" rendered="{!IF(jobCauseModifiedBy != null, true, false)}"/>
+                                                    <div>
+                                                        <apex:outputLabel style="font-weight:normal;" value="{!$Label.CSS_Last_Saved}: {!jobCauseModifiedDate}" rendered="{!IF(jobCauseModifiedBy != null, true, false)}"/>
+                                                    </div>
+                                                    <apex:outputLabel style="font-weight:normal;" value="{!ClaimsRec.JobEditCause__c}"/>
+                                                </div>
+                                            </apex:outputPanel>
+                                            <div class="clearfix"> </div>
+                                            <apex:outputPanel rendered="{!IF(ClaimsRec.Status__c != 'Draft', true, false)}">
+                                                
+                                                <div class="cmi_narrativetextarea" style="word-wrap:break-word;max-width:1000px;margin:0px 18px;padding:0px;">
+                                                    <apex:outputField value="{!ClaimsRec.EditCause__c}"> </apex:outputField> <br/> 
+                                                </div>
+                                            </apex:outputPanel>
+                                            <!-- added as part of GSSC-291-->
+                                            <!--apex:outputPanel rendered="{!IF((ClaimsRec.Status__c == 'Draft'|| ClaimsRec.id=null)&& $User.isClaimReadOnly__c !=true, true, false)}">
+                                                
+                                                <apex:inputTextarea id="inputNotesCause1" value="{!ClaimsRec.EditCause__c}" 
+                                                                    style="word-wrap:break-word;min-height:100px; overflow-x:hidden; overflow-y:scroll; resize: none; border-style: groove;"
+                                                                    onchange="saveCauseafauto();" rows="1"
+                                                                    cols="20" /> 
+                                                
+                                                
+                                            </apex:outputPanel>
+                                            <apex:actionStatus startText="Saving..." id="saveCauseNotes1">
+                                                <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                                <apex:facet name="stop"></apex:facet>
+                                            </apex:actionStatus>
+                                            
+                                        </div>
+                                        
+                                    </apex:outputPanel>
+                                    
+                                    <!-- Manual claim -->
+                                    
+                                    <!--apex:outputPanel rendered="{!IF(ClaimsRec.CSS_Job__c == null, true, false)}"><!-- Commented as part of the story GSSC-291 - END-->
+                                        <div class="col-sm-10 col-xs-12" >
+                                            
+                                            <apex:outputPanel rendered="{!IF(ClaimsRec.Status__c != 'Draft' || $User.isClaimReadOnly__c == true, true, false)}">
+                                                <div class="cmi_narrativetextarea" style="word-wrap:break-word;max-width:1000px;padding:0px;">
+                                                    <apex:outputField value="{!ClaimsRec.EditCause__c}" />
+                                                </div>
+                                            </apex:outputpanel>
+                                            
+                                            <apex:outputPanel rendered="{!IF((ClaimsRec.Status__c == 'Draft'|| ClaimsRec.id==null)&& $User.isClaimReadOnly__c !=true, true, false)}">
+                                                
+                                                <apex:inputTextarea id="inputNotesCause2" value="{!ClaimsRec.EditCause__c}" 
+                                                                    style="word-wrap:break-word;min-height:100px; overflow-x:hidden; overflow-y:scroll; resize: none; border-style: groove;"
+                                                                    onchange="saveCauseaf();" rows="1"
+                                                                    cols="20" /> 
+                                                
+                                            </apex:outputPanel>
+                                            <apex:actionStatus startText="Saving..." id="saveCauseNotes">
+                                                <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                                <apex:facet name="stop"></apex:facet>
+                                            </apex:actionStatus>
+                                        </div>
+                                        
+                                    <!--/apex:outputPanel> <!-- Commented as part of the story GSSC-291-->
+                                    
+                                </div>
+                            </div>
+                            
+                            <div class="clearfix"></div> <br/>
+                            
+                            <div style="margin-bottom:20px;">
+                                <div class="col-sm-2 col-xs-12">
+                                    <h4 style="margin:0px;"><b>{!$Label.CSS_Coverage}:</b></h4>
+                                    
+                                </div>
+                                <!-- Auto Claim -->
+                                <!-- Commented as part of the story GSSC-291 - START-->
+                                <!--apex:outputPanel rendered="{!IF(ClaimsRec.CSS_Job__c != null, true, false)}">
+                                    <div class="col-sm-10 col-xs-12">
+                                        <apex:outputPanel rendered="{!NOT($Setup.css_header_nav__c.RSWButtonEnable__c)}">
+                                            <div class="col-sm-9">
+                                                <apex:outputLabel value="{!jobCoverageModifiedBy}" rendered="{!IF(jobCoverageModifiedBy != null, true, false)}"
+                                                                  />
+                                                <div>
+                                                    <apex:outputLabel style="font-weight:normal;"
+                                                                      value="{!$Label.CSS_Last_Saved}: {!jobCoverageModifiedDate}"
+                                                                      rendered="{!IF(jobCoverageModifiedBy != null, true, false)}"
+                                                                      /> </div>
+                                                <apex:outputLabel value="{!ClaimsRec.JobEditCoverage__c}" style="font-weight:normal;"/>
+                                            </div>
+                                        </apex:outputPanel>
+                                        <div class="clearfix"> </div>
+                                        <apex:outputPanel rendered="{!IF(ClaimsRec.Status__c != 'Draft', true, false)}">
+                                            <div class="cmi_narrativetextarea" style="word-wrap:break-word;max-width:1000px;margin:0px 18px;padding:0px;">
+                                                <apex:outputField value="{!ClaimsRec.EditCoverage__c}"> </apex:outputField> <br/>
+                                            </div>
+                                        </apex:outputPanel>
+                                        
+                                        
+                                        <!-- added as part of GSSC-291-->
+                                        <!--apex:outputPanel rendered="{!IF((ClaimsRec.Status__c == 'Draft'|| ClaimsRec.id=null)&& $User.isClaimReadOnly__c !=true, true, false)}">
+                                            <apex:inputTextarea id="inputNotesCoverage1" value="{!ClaimsRec.EditCoverage__c}" 
+                                                                style="word-wrap:break-word;min-height:100px; overflow-x:hidden; overflow-y:scroll; resize: none; border-style: groove;"
+                                                                onchange="saveCoverageafauto();" rows="1"
+                                                                cols="20" /> 
+                                        </apex:outputPanel>
+                                        
+                                        
+                                        <apex:actionStatus startText="Saving..." id="saveCoverageNotes1">
+                                            <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                            <apex:facet name="stop"></apex:facet>
+                                        </apex:actionStatus>
+                                    </div>
+                                </apex:outputPanel>
+                                
+                                <!-- Manual claim -->
+                                <!--apex:outputPanel rendered="{!IF(ClaimsRec.CSS_Job__c == null, true, false)}"><!-- Commented as part of the story GSSC-291 - END-->
+                                    <div class="col-sm-10 col-xs-12">
+                                        
+                                        
+                                        <apex:outputPanel rendered="{!IF(ClaimsRec.Status__c != 'Draft' || $User.isClaimReadOnly__c == true, true, false)}">
+                                            <div class="cmi_narrativetextarea" style="word-wrap:break-word;max-width:1000px;padding:0px;">
+                                                <apex:outputField value="{!ClaimsRec.EditCoverage__c}" />
+                                            </div>
+                                        </apex:outputPanel>
+                                        
+                                        <!-- added as part of GSSC-291-->
+                                        <apex:outputPanel rendered="{!IF((ClaimsRec.Status__c == 'Draft'|| ClaimsRec.id==null)&& $User.isClaimReadOnly__c !=true, true, false)}">
+                                            <apex:inputTextarea id="inputNotesCoverage2" value="{!ClaimsRec.EditCoverage__c}" 
+                                                                style="word-wrap:break-word;min-height:100px; overflow-x:hidden; overflow-y:scroll; resize: none; border-style: groove;"
+                                                                onchange="saveCoverageaf();" rows="1"
+                                                                cols="20" /> 
+                                        </apex:outputPanel> 
+                                        
+                                        <apex:actionStatus startText="Saving..." id="saveCoverageNotes">
+                                            <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                            <apex:facet name="stop"></apex:facet>
+                                        </apex:actionStatus>
+                                    </div>
+                                <!--/apex:outputPanel><!-- Commented as part of the story GSSC-291-->
+                                
+                                
+                            </div>
+                            <div class="clearfix"></div> <br/>
+                            <div>
+                                <div class="col-sm-2 col-xs-12">
+                                    <h4 style="margin:0px;"><b>{!$Label.CSS_Correction}:</b>
+                                        <apex:outputPanel rendered="{!IF(dealerCustomer,true,false)}">
+                                            <span class="asterisk1" >*</span>
+                                        </apex:outputPanel>
+                                    </h4>
+                                    
+                                </div>
+                                
+                                <!-- Auto Claim -->
+                                <!-- Commented as part of the story GSSC-291 - START-->
+                                <!--apex:outputPanel rendered="{!IF(ClaimsRec.CSS_Job__c != null, true, false)}">
+                                    <div class="col-sm-10 col-xs-12">
+                                        <apex:outputPanel rendered="{!NOT($Setup.css_header_nav__c.RSWButtonEnable__c)}">
+                                            <div class="col-sm-9">
+                                                <apex:outputLabel value="{!jobCorrectionModifiedBy}" rendered="{!IF(jobCorrectionModifiedBy != null, true, false)}"
+                                                                  />
+                                                <div>
+                                                    <apex:outputLabel value="{!$Label.CSS_Last_Saved}: {!jobCorrectionModifiedDate}"
+                                                                      rendered="{!IF(jobCorrectionModifiedBy != null, true, false)}"
+                                                                      style="font-weight:normal;" />
+                                                </div>
+                                                <apex:outputLabel value="{!ClaimsRec.JobEditCorrection__c}" style="font-weight:normal;"/>
+                                                
+                                            </div>
+                                        </apex:outputPanel>
+                                        <div class="clearfix"> </div>
+                                        <apex:outputPanel rendered="{!IF(ClaimsRec.Status__c != 'Draft', true, false)}">
+                                            <div class="cmi_narrativetextarea" style="word-wrap:break-word;max-width:1000px;margin:0px 18px;padding:0px;">
+                                                <apex:outputField value="{!ClaimsRec.EditCorrection__c}"> </apex:outputField>
+                                                <br/>
+                                            </div>
+                                        </apex:outputPanel>
+                                        <!-- added as part of GSSC-291-->
+                                        <!--apex:outputPanel rendered="{!IF((ClaimsRec.Status__c == 'Draft'|| ClaimsRec.id=null)&& $User.isClaimReadOnly__c !=true, true, false)}">
+                                            <apex:inputTextarea id="inputNotesCorrection1" value="{!ClaimsRec.EditCorrection__c}" 
+                                                                style="word-wrap:break-word;min-height:100px; overflow-x:hidden; overflow-y:scroll; resize: none; border-style: groove;"
+                                                                onchange="saveCorrectionafauto();" rows="1"
+                                                                cols="20" /> 
+                                        </apex:outputPanel>
+                                        <apex:actionStatus startText="Saving..." id="saveCorrectionNotes1">
+                                            <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                            <apex:facet name="stop"></apex:facet>
+                                        </apex:actionStatus>
+                                    </div>
+                                </apex:outputPanel>-->
+                                
+                                <!-- Manual claim -->
+
+                                <!--apex:outputPanel rendered="{!IF(ClaimsRec.CSS_Job__c == null, true, false)}"--> <!-- Commented as part of the story GSSC-291 - END-->
+                                    <div class="col-sm-10 col-xs-12">
+                                        <!--<div class="col-sm-8">-->
+                                        <apex:outputPanel rendered="{!IF(ClaimsRec.Status__c != 'Draft' || $User.isClaimReadOnly__c == true, true, false)}">
+                                            <div class="cmi_narrativetextarea" style="word-wrap:break-word;max-width:1000px;padding:0px;">
+                                                <!--  <apex:repeat >-->
+                                                <apex:outputField value="{!ClaimsRec.EditCorrection__c}" />
+                                                <!-- </apex:repeat>-->
+                                            </div>
+                                        </apex:outputPanel>
+                                        <!-- added as part of GSSC-291-->
+                                        <apex:outputPanel rendered="{!IF((ClaimsRec.Status__c == 'Draft'|| ClaimsRec.id==null)&& $User.isClaimReadOnly__c !=true, true, false)}">
+                                            <apex:inputTextarea id="inputNotesCorrection2" value="{!ClaimsRec.EditCorrection__c}" 
+                                                                style="word-wrap:break-word;min-height:100px; overflow-x:hidden; overflow-y:scroll; resize: none; border-style: groove;"
+                                                                rows="1" onchange="saveCorrectionaf();"
+                                                                cols="20" /> 
+                                        </apex:outputPanel>
+                                        
+                                        <apex:actionStatus startText="Saving..." id="saveCorrectionNotes">
+                                            <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                            <apex:facet name="stop"></apex:facet>
+                                        </apex:actionStatus>
+                                    </div>
+                                <!--/apex:outputPanel--> <!-- Commented as part of the story GSSC-291-->
+                                
+                            </div>
+                            <div class="clearfix"></div><br/>
+                            
+                            <!-- STORY -145260 'Modern Family' Non-SRT Details START -->
+                            <div>
+                                <div class="col-sm-2 col-xs-12" >
+                                    <h4 style="margin:0px;white-space: nowrap;margin-left:-10%"><b>{!$Label.CSS_Non_SRT_details}:</b></h4>
+                                </div>
+                                <!--<div class="col-sm-10 col-xs-12">
+<div class="col-sm-9 cmi_narrativetextarea" style="word-wrap:break-word;width:50%;margin:0px 18px;padding:0px;">
+<apex:outputText value="{!LEFT(nonSRTnotes,2000)}" escape="false"/>
+</div>
+<div class="col-sm-2">
+<a id="edit" href="#" data-toggle="modal" data-target="#nonsrtpopup"><i class="cmi_intake_help"></i></a>
+</div>
+</div>-->
+                                <div class="col-sm-8">
+                                    <div class="cmi_narrativetextarea" style="word-wrap:break-word;max-width:1000px;padding:0px;">
+                                        <apex:outputText value="{!LEFT(nonSRTnotes,2000)}" escape="false"/>
+                                    </div>
+                                </div>
+                                <div class="col-sm-2">
+                                    <a id="edit" href="#" data-toggle="modal" data-target="#nonsrtpopup"><i class="cmi_intake_help"></i></a>
+                                </div>
+                            </div>
+                            <!-- STORY -145260 Non-SRT Details END -->
+                            
+                        </div>
+                        <!--</div>-->
+                    </div>
+                </fieldset>
+                
+                <br/> <br/>
+                <!---Adding componet for Service Notes -->
+                <c:CG_ClaimsServiceJobNotes sJobID="{!claimsRec.CSS_Job__c}" rendered="{!IF(claimsRec.CSS_Job__c!=null || claimsRec.Dealer_Service_Job__c != null,true,false)}"
+                                            />
+                
+            </apex:outputPanel>
+        </div>
+        
+        
+        <!-- Non SRT Popup Start  -->
+        <div class="modal fade" id="nonsrtpopup" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <Button title="Close the popup" class="cross_butten" data-dismiss="modal" />
+                        <h4 class="modal-title" style="color: #FFFFFF;"> {!$Label.css_customer} - {!$Label.css_Cummins_Service_System}
+                        </h4>
+                    </div>
+                    <div class="modal-body">
+                        
+                        <div class="form-group">
+                            <div class="col-sm-12 col-xs-12">
+                                <div class="intake_help1 intake_help-popup"></div>
+                                <div class="col-sm-11 col-xs-12">
+                                    <b> {!$Label.CSS_Non_SRT_details} </b>{!$Label.CSS_Non_SRT_Popup}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="clearfix"></div>
+                        <hr/>
+                        
+                        <div class="col-sm-12" align="center" draggable="false">
+                            <button type="button" class="cancelButton" data-dismiss="modal">{!$Label.css_Ok}</button>
+                            
+                        </div> <br/>
+                        <div class="clearfix"></div>
+                        <div class="clearfix"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Non SRT Popup END -->
+        
+        
+        
+        
+        
+        
+        <!-- ClaimsNotes Popup Begin -->
+        <!--<apex:outputPanel id="rerenderWApopup">
+<div class="modal fade" id="ClaimsNotesPopup" role="dialog" data-backdrop="static"
+data-keyboard="false">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Cummins_Service_System}</h4>
+</div>
+<div class="modal-body">
+<div>
+<apex:outputLabel value="{!$Label.CSS_ClaimNotes}" />
+</div>
+<div class="col-sm-12" style="margin-top:10px;">
+<div class="col-sm-4 col-xs-12 cmi-tar">
+<textarea id="WAdmin" readonly="readonly" style="font-weight: bold;word-wrap:break-word; word-break:break-all;resize: none; border-style: none;"
+/>
+</div>
+<div class="col-sm-8 col-xs-12">
+<apex:inputTextarea id="inputNotes" style="min-height:200px; overflow-x:hidden; overflow-y:scroll; resize: none; border-style: groove;"
+value="{!NotesBody}" onkeyup="textCounter(this,'NotesCounter11',4000);"
+rows="1" cols="20" />
+</div>
+</div>
+<div class="clearfix"></div>
+<div align="center">
+{!$Label.css_Remaining_Characters} <input type="text"
+value="4000" readonly="readonly" size="4" id="NotesCounter11"
+style="border:none;" />
+</div>
+<hr/>
+<div align="center">
+<div class="col-sm-offset-3 col-sm-3">
+<apex:commandButton value="{!$Label.css_save_btn}" onclick="DisableWASaveButton(this);"
+id="SaveJobNote" action="{!saveNotes}" styleClass="saveButton"
+reRender="warrantyAdminPanel, rerenderWApopup" onComplete="return hidePopup(this); return false;"
+/> &nbsp;&nbsp;&nbsp;&nbsp;
+</div>
+<div class="col-sm-3">
+<button type="button" class="cancelButton" data-dismiss="modal">{!$Label.css_Cancel}</button>
+</div>
+</div>
+<br/>
+</div>
+</div>
+</div>
+</div>
+</apex:outputPanel>-->
+    </apex:actionRegion>
+    <!-- ClaimsNotes Popup End -->
+    
+    <script>
+    //Added textCounter script for increase and decrease the counter as per story #135259 'Walking dead' -By RAJESH
+    function textCounter(field, field2, maxlimit) {
+        var countfield = document.getElementById(field2);
+        if (field.value.length > maxlimit)  {
+            field.value = field.value.substring(0, maxlimit);
+            return false;
+        } else  {
+            countfield.value = maxlimit - field.value.length;
+        }
+    }
+    //End
+    
+    </script>
+    <script>
+    function DisableWASaveButton(claimblescompId) {
+        claimblescompId.disabled = true;
+    }
+    
+    function enableWASaveButton(claimblescompId,c) { 
+        if(c==true){                
+            claimblescompId.disabled = false;
+        }else{
+            <apex:repeat value="{!lstclaimWrapper}" var="local"> 
+                local.SPResponse='';
+            </apex:repeat>
+        }
+    }
+    function hidePopup(e) {
+        $('#ClaimsNotesPopup').modal('hide');
+        $('body').removeClass('modal-open');
+        $('.modal-backdrop').remove();
+        return false;
+    }
+    
+    function noteTypeWA(Ele, Text) {
+        document.getElementById('{!$Component.inputNotes}').value = '';
+        document.getElementById('WAdmin').value = Text;
+        document.getElementById('NotesCounter11').value = '4000';
+    }
+    
+    </script>
+    
+    <script>
+    function noteType(Text, CValue, RCID) {
+        
+        if (Text == 'Complaint') {
+            document.getElementById('{!$Component.inputNotesComplaint}').value = CValue;
+            document.getElementById('{!$Component.inputNotesComplaintM}').value = CValue;
+            
+            document.getElementById(RCID).value = 4000 - CValue.length;
+        }
+        if (Text == 'Cause') {
+            document.getElementById('{!$Component.inputNotesCause}').value =
+                CValue;
+            document.getElementById(RCID).value = 4000 - CValue.length;
+        }
+        if (Text == 'Coverage') {
+            document.getElementById('{!$Component.inputNotesCoverage}').value =
+                CValue;
+            document.getElementById(RCID).value = 4000 - CValue.length;
+        }
+        if (Text == 'Correction') {
+            document.getElementById('{!$Component.inputNotesCorrection}').value =
+                CValue;
+            document.getElementById(RCID).value = 4000 - CValue.length;
+        }
+    }
+    
+    </script>
+    
+    
+    
+    
+</apex:component>

@@ -1,0 +1,407 @@
+<apex:component controller="CG_CL_OverlapSRT" allowDML="true" >
+    <apex:attribute name="IsCataClaim" description="IfCataclaim" type="boolean"/>  
+    <apex:attribute name="IsDealerClaim" description="IfDealerClaim" type="boolean"/>  
+
+    <style>
+        .cmi_jobplan-table1 thead th, .cmi_jobplan-table1 td {
+            text-align:center;
+        }
+    </style>
+    <script>
+        function callActionEnableJS(checkbox,elem,accountCode){
+            //alert('in callActionEnableJS accountCode>>:'+accountCode);
+            if(checkbox.checked){
+                callActionEnable(true,elem,accountCode);
+            }
+            else{
+                callActionEnable(false,elem,accountCode);
+            }
+        }
+        function validateAdjOH(compId,overlapHrs){            
+            var adjHours= document.getElementById(compId.id).value;
+            var adjHoursLength=document.getElementById(compId.id).value.length;
+            var adjHoursSplit = [];
+            var adjHoursParse = parseFloat(adjHours);            
+            if(adjHoursParse > overlapHrs) {
+                document.getElementById(compId.id).value=overlapHrs;   
+            }
+            else if(adjHours.includes('.')){
+                adjHoursSplit = adjHours.split(".");
+                var declength = adjHoursSplit[1].length;
+                if(declength > 1){                
+                    var newStr = adjHours.substring(0, adjHoursLength-1);
+                    console.log("adjHoursLength" + '' + adjHoursLength);
+                    console.log("newStr" + '' + newStr);
+                    document.getElementById(compId.id).value = newStr;
+                    return false;    
+                }
+            }
+            else {
+                if(adjHoursLength == 5)
+                {
+                    var newStr1 = adjHours.substring(0, adjHours.length-1); 
+                    var newStr2 = newStr1/10;
+                    document.getElementById(compId.id).value = newStr2;
+                }
+            }
+            if(adjHoursLength == 4 && !adjHours.includes('.')){
+                var result = Number(document.getElementById(compId.id).value)/10;
+                document.getElementById(compId.id).value=result;
+            }
+        }
+        function adjOHPress(e,compId){
+            var technicianTimeVal= document.getElementById(compId.id).value;
+            if(((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105)) || ((e.which == 190 || e.which == 110) && !(technicianTimeVal.includes('.'))))
+            {
+
+            } 
+            else 
+            {
+                return false;
+            }     
+        }
+        function DisableButton(buttonId){
+            buttonId.disabled=true;
+        }
+        function EnableButton(buttonId){
+            buttonId.disabled=false;
+        }
+
+        $(document).ready(function(){
+            //var elem = $('input[type="checkbox"]');
+            $('.overlapcheck').click(function() {
+
+                $(this).closest('td').append('<img src="/img/loading.gif" id="spinner" style="margin-left:10px;position:absolute;"/>');
+
+            });
+
+
+
+        });
+
+        function updateJavascript(){
+
+            //var elem = $('input[type="checkbox"]');
+            $('.overlapcheck').click(function() {
+
+                $(this).closest('td').append('<img src="/img/loading.gif" id="spinner" style="margin-left:10px;position:absolute;"/>');
+
+            });
+
+
+
+        }
+
+        function removeSpinner(){
+            $("#spinner").remove();
+        }
+
+    </script>
+    <script>
+        /* GSSC-289 Begin */
+        function ClaimsSRTNotesPopupOlap(stepId){
+            console.log('stepId ' + stepId);
+            ClaimsSRTNotesOlapWS(stepId);
+        }
+
+        function afterWScallSRTNotesClaimsOlap(){
+            $('#ClaimsSRTNotesOlapPopup').modal('show');
+        }
+        /* GSSC-289 End */
+    </script>  
+
+
+    <apex:outputPanel >
+        <div class="panel-group cmi_generic-accordion" style="margin-top:20px">  
+            <div class="panel panel-default">
+                <div class="panel-heading" id="accordion1-overview2">
+                    <h4 class="panel-title">
+                        <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordionSRT" data-target="#overlap-accordian" ><!--onclick="overlapsrtinvokeAction(); return false;" -->
+                            <span class="glyphicon glyphicon-plus"></span>
+                            <div class="cmi_accordion-title">{!$Label.css_overlaps}</div>
+                        </a>
+                    </h4>
+                </div>
+                <apex:actionFunction name="overlapsrtinvokeAction" action="{!loadOverlapSRTs}" rerender="overLaptabl" status="callSRTPartsStatus" />
+                <!--GSSC-289 begin-->
+                <apex:actionFunction name="ClaimsSRTNotesOlapWS" action="{!callClaimsAccessStepDetailsOlap}" reRender="reRenderClaimsNotesOlapWS">
+                    <apex:param name="idStepClaimsOlap" value="" assignTo="{!lineItemStepIdClaimsOlap}"/>
+                </apex:actionFunction>
+                <!--GSSC-289 end--> 
+
+                <div id="overlap-accordian" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <!-- overlap desktop code start -->
+                        <div class="hidden-xs">
+                            <div class="row " style="margin-top:20px"> 
+                                <div class="col-md-12">
+                                    <apex:actionStatus startText="requesting..." id="callSRTPartsStatus">
+                                        <apex:facet name="start">Loading... <img src="/img/loading.gif" /></apex:facet>
+                                        <apex:facet name="stop"></apex:facet>
+                                    </apex:actionStatus>
+                                    <br/> 
+
+
+                                    <apex:outputPanel id="opOverLapData">
+                                        <apex:outputpanel id="errorMsgId" >
+                                            <div style="text-align:left;">
+                                                <b><apex:outputText value="{!$Label.CG_Please_enter_value}" rendered="{!errorMsgFlag}" style="color:red;" escape="false" /></b>
+                                            </div>
+                                        </apex:outputpanel>
+                                        <table class="mytable table table-bordered table-striped cmi_jobplan-table1" cellpadding="0" cellspacing="0">
+                                            <apex:repeat value="{!accountCodeWithOverlapMap}" var="accountCode">
+                                                <thead>
+
+                                                    <tr>
+                                                        <td colspan="7">
+                                                            <!--p style="font-weight: bold;font-size: 14px;text-align: left;margin-bottom:0px">{!$Label.CSS_Fault_Code_Symptom} - {!dR.fautCodeName}{!dR.symptomName}</p-->
+                                                            <p style="font-weight: bold;font-size: 14px;text-align: left;margin-bottom:0px">{!$Label.CSS_Account_Code}: {!accountCode}</p>
+                                                        </td>
+                                                    </tr>
+
+                                                </thead>
+                                                <thead>
+                                                    <tr>
+                                                        <th>{!$Label.css_SRT_Code}</th>
+                                                        <th>{!$Label.CSS_Overlaps_with_SRT}</th>
+                                                        <th>{!$Label.css_overlap_hours}</th>
+                                                        <th>{!$Label.CSS_Override}</th>
+                                                        <th>{!$Label.CSS_Total_Adjusted_Hours}</th>
+                                                        <th>{!$Label.CSS_Notes}</th>
+                                                        <th>{!$Label.CSS_Override_Reason}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody> 
+                                                    <apex:repeat value="{!accountCodeWithOverlapMap[accountCode]}" var="OSRT" id="overlapRepeat">
+
+                                                        <apex:variable var="rCount" value="{!0}"/>
+                                                        <apex:repeat value="{!OSRT.subSRTWrapper}" var="OSRT_sub">
+
+                                                            <tr>
+                                                                <td rowspan="{!OSRT.subSRTWrapper.size}" style="display:{!IF(rCount==0,'','none')}">
+                                                                    <apex:outputtext value="{!OSRT.SRT_Code}" /><br/> 
+                                                                    <!--GSSC-289 Begin-->
+                                                                    <apex:outputPanel >
+                                                                        <apex:commandLink value="{!OSRT.srtDescription}" style="text-decoration:underline;" onclick="ClaimsSRTNotesPopupOlap('{!OSRT.stepId}')" status="SpinnigNotesPopupClaimsDiag" reRender="none" oncomplete="afterWScallSRTNotesClaimsOlap()">
+                                                                            <span class="cmi_eyeIcon"/>
+                                                                        </apex:commandLink>
+
+                                                                        <apex:actionStatus id="SpinnigNotesPopupClaimsDiag">
+                                                                            <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                                                            <apex:facet name="stop"></apex:facet>
+                                                                        </apex:actionStatus>
+                                                                      <!--GSSC-289  End-->
+                                                                    </apex:outputPanel>
+                                                                </td>
+
+                                                                <td rowspan="{!OSRT.subSRTWrapper.size}" style="display:{!IF(rCount==0,'','none')}">
+                                                                    <apex:outputtext value="{!OSRT_sub.overlapWithSRT}" /><br/>
+                                                                    <!--GSSC-289 Begin-->
+                                                                    <apex:outputPanel > 
+                                                                        <apex:commandLink value="{!OSRT_sub.OverlapsrtDescription}" style="text-decoration:underline;" onclick="ClaimsSRTNotesPopupOlap('{!OSRT_sub.OverlapstepID}')" status="SpinnigNotesPopupClaimsDiag1" reRender="none" oncomplete="afterWScallSRTNotesClaimsOlap()">
+                                                                            <span class="cmi_eyeIcon"/>
+                                                                        </apex:commandLink>
+                                                                    </apex:outputPanel>
+
+                                                                   <apex:actionStatus id="SpinnigNotesPopupClaimsDiag1">
+                                                                        <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                                                        <apex:facet name="stop"></apex:facet>
+                                                                    </apex:actionStatus>
+                                                                    <!--GSSC-289 End-->
+                                                                </td>
+                                                                <td>
+                                                                    <apex:outputtext value="{!OSRT_sub.SRT_OverlapHrs}" />
+                                                                </td>
+                                                                <td rowspan="{!OSRT.subSRTWrapper.size}" style="display:{!IF(rCount==0,'','none')}">
+                                                                    <!--Original Override Checkbox-->
+                                                                    <!--<apex:inputCheckbox styleClass="overlapcheck" onclick="callActionEnableJS(this,'{!OSRT.SRT_Code}','{!accountCode}')" id="opAdjOLOverride" value="{!OSRT_sub.overide}" />-->
+                                                                    <!--On cata dealer claim checkbox should be read only-->
+                                                                    <!--Added isClaimReadOnly__C condition as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->        
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                        <apex:inputCheckbox value="{!OSRT_sub.overide}" disabled="true"/>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">    
+                                                                        <apex:outputPanel rendered="{!IF(IsCataClaim=false || IsDealerClaim=false || CONTAINS($UserRole.Name,'Factory'),true,false)}">
+                                                                            <apex:inputCheckbox styleClass="overlapcheck" onclick="callActionEnableJS(this,'{!OSRT.SRT_Code}','{!accountCode}')" id="opAdjOLOverrideenab" value="{!OSRT_sub.overide}" />
+                                                                        </apex:outputPanel> 
+                                                                        <apex:outputPanel rendered="{!IF(IsCataClaim= true && IsDealerClaim=true && Not CONTAINS($UserRole.Name,'Factory'),true,false) }">
+                                                                            <apex:inputCheckbox styleClass="overlapcheck" onclick="callActionEnableJS(this,'{!OSRT.SRT_Code}','{!accountCode}')" id="opAdjOLOverridedis" value="{!OSRT_sub.overide}" disabled="true"/>
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>
+                                                                    <!--END-- as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->             
+                                                                </td>
+                                                                <td>
+                                                                    <apex:outputpanel id="opAdjOLHrs">
+
+                                                                        <!--This below original outputpanel is for read only-->
+                                                                        <!--Orginal Code start-->
+                                                                        <!--<apex:outputpanel rendered="{!IF(OSRT_sub.enableHrsReason == false,true,false)}">
+<apex:outputtext value="{!OSRT_sub.SRT_AdjOverlapHrs}" />
+</apex:outputpanel>
+
+<apex:outputpanel rendered="{!IF(OSRT_sub.enableHrsReason == true,true,false)}">
+<apex:inputtext value="{!OSRT_sub.SRT_AdjOverlapHrs}" maxlength="5" style="width:50px" id="enableReasonEditable" onkeyup="validateAdjOH(this,'{!OSRT_sub.SRT_OverlapHrs}');" onkeydown="return adjOHPress(event,this)"/>
+</apex:outputpanel>-->
+                                                                        <!--Orginal Code End-->
+
+                                                                        <apex:outputpanel rendered="{!IF(OSRT_sub.enableHrsReason == false,true,false)}">
+                                                                            <apex:outputtext value="{!OSRT_sub.SRT_AdjOverlapHrs}" />
+                                                                        </apex:outputpanel>
+
+                                                                        <apex:outputpanel rendered="{!IF(OSRT_sub.enableHrsReason == true,true,false)}">
+                                                                            <!--<apex:inputtext value="{!OSRT_sub.SRT_AdjOverlapHrs}" maxlength="5" style="width:50px" id="enableReasonEditable" onkeyup="validateAdjOH(this,'{!OSRT_sub.SRT_OverlapHrs}');" onkeydown="return adjOHPress(event,this)"/>-->
+                                                                            <apex:outputPanel rendered="{!IF(IsCataClaim= true && IsDealerClaim=true && Not CONTAINS($UserRole.Name,'Factory'),true,false) }">
+                                                                                <apex:outputtext value="{!OSRT_sub.SRT_AdjOverlapHrs}" />  
+                                                                                </apex:outputpanel>  
+
+                                                                            <apex:outputPanel rendered="{!IF(IsCataClaim= false || IsDealerClaim=false || CONTAINS($UserRole.Name,'Factory'),true,false)}">
+                                                                                <apex:inputtext value="{!OSRT_sub.SRT_AdjOverlapHrs}" maxlength="5" id="enableReasonEditable" onkeyup="validateAdjOH(this,'{!OSRT_sub.SRT_OverlapHrs}');" onkeydown="return adjOHPress(event,this)" style="{!IF((OSRT_sub.adjHrsFlag==true),'width:50px;border: 2px solid red !important','width:50px;')}"/>
+                                                                                </apex:outputpanel>
+                                                                        </apex:outputpanel>
+
+                                                                    </apex:outputpanel>    
+                                                                </td>
+                                                                <td>
+                                                                    <apex:outputpanel id="opAdjOLReason">
+                                                                        <!--This below original outputpanel is for read only-->
+                                                                        <!--Orginal Code start-->
+                                                                        <!--<apex:outputpanel rendered="{!IF(OSRT_sub.enableHrsReason == false,true,false)}">
+<apex:outputtext value="{!OSRT_sub.SRT_OverrideReason}" style="height:50px"/>
+</apex:outputpanel>
+
+<apex:outputpanel rendered="{!IF(OSRT_sub.enableHrsReason == true,true,false)}">
+<apex:inputtextArea value="{!OSRT_sub.SRT_OverrideReason}" html-maxlength="140" style="width:150px;resize:none;" />
+</apex:outputpanel>-->
+                                                                        <!--Orginal Code End-->
+
+
+                                                                        <apex:outputpanel rendered="{!IF(OSRT_sub.enableHrsReason == false,true,false)}">
+                                                                            <apex:outputtext value="{!OSRT_sub.SRT_OverrideReason}" style="height:50px"/>
+                                                                        </apex:outputpanel>
+
+                                                                        <apex:outputpanel rendered="{!IF(OSRT_sub.enableHrsReason == true,true,false)}">
+                                                                            <!--<apex:inputtextArea value="{!OSRT_sub.SRT_OverrideReason}" html-maxlength="140" style="width:150px;resize:none;" />-->
+                                                                            <apex:outputPanel rendered="{!IF(IsCataClaim= true && IsDealerClaim=true && Not CONTAINS($UserRole.Name,'Factory'),true,false) }">
+                                                                                <apex:outputtext value="{!OSRT_sub.SRT_OverrideReason}" style="{!IF((OSRT_sub.notesFlag==true),'border: 2px solid red !important;height:50px','')}"/>   
+                                                                                </apex:outputpanel>  
+
+                                                                            <apex:outputPanel rendered="{!IF(IsCataClaim= false || IsDealerClaim=false || CONTAINS($UserRole.Name,'Factory'),true,false)}">
+                                                                                <apex:inputtextArea value="{!OSRT_sub.SRT_OverrideReason}" html-maxlength="140" style="{!IF((OSRT_sub.notesFlag==true),'border: 2px solid red !important;width:150px;resize:none;','')}"/>  
+                                                                                </apex:outputpanel>
+
+                                                                        </apex:outputpanel> 
+                                                                    </apex:outputpanel>  
+                                                                </td>
+                                                                <td>
+                                                                    <apex:outputpanel id="opAdjOLReasonPick">
+                                                                        <!---Orignal Code-->
+                                                                        <apex:outputpanel rendered="{!IF(OSRT_sub.enableHrsReason == true,true,false)}">
+
+                                                                            <!--Added two output panel to make override reason picklist readonly for dealer cataclaim.-->    
+                                                                            <apex:outputPanel rendered="{!IF(IsCataClaim= true && IsDealerClaim=true && Not CONTAINS($UserRole.Name,'Factory'),true,false) }">
+                                                                                <apex:selectList value="{!OSRT_sub.overrideReason}" disabled="true" size="1" style="{!IF((OSRT_sub.overrideReasonFlag==true),'border: 2px solid red !important','')}">
+                                                                                    <apex:selectOptions value="{!overrideReasonList}" />
+                                                                                </apex:selectList>
+                                                                                </apex:outputpanel> 
+
+
+                                                                            <apex:outputPanel rendered="{!IF(IsCataClaim=false || IsDealerClaim=false || CONTAINS($UserRole.Name,'Factory'),true,false)}">
+                                                                                <apex:selectList value="{!OSRT_sub.overrideReason}" size="1" style="{!IF((OSRT_sub.overrideReasonFlag==true),'border: 2px solid red !important','')}">
+                                                                                    <apex:selectOptions value="{!overrideReasonList}" />
+                                                                                </apex:selectList>
+                                                                            </apex:outputPanel> 
+
+
+
+                                                                            <!---Orignal Code-->
+                                                                            <!--<apex:selectList value="{!OSRT_sub.overrideReason}" size="1" style="{!IF((OSRT_sub.overrideReasonFlag==true),'border: 2px solid red !important','')}">
+<apex:selectOptions value="{!overrideReasonList}" />
+</apex:selectList>-->
+                                                                        </apex:outputpanel>
+                                                                    </apex:outputpanel>  
+                                                                </td>
+                                                            </tr> 
+                                                            <apex:variable var="rCount" value="{!rCount + 1}"/>
+                                                        </apex:repeat> 
+                                                    </apex:repeat>
+                                                </tbody>
+                                            </apex:repeat>
+                                        </table>
+                                        <apex:actionFunction name="callActionEnable" action="{!enableHrsReason}" onComplete="removeSpinner();" reRender="opAdjOLHrs,opAdjOLReason,opAdjOLReasonPick">
+                                            <apex:param name="overrideCheck" value="" assignTo="{!isOverride}"/>
+                                            <apex:param name="selectedSRTCode" value="" assignTo="{!selectedSRT}"/>    
+                                            <apex:param name="accountCode" value="" assignTo="{!selectedAcCode}"/>
+                                        </apex:actionFunction>
+
+                                    </apex:outputPanel>
+
+                                </div>
+                                <apex:outputPanel id="totalAccessHours">
+                                    <div class="col-sm-12">
+                                        <span><b>Total {!$Label.css_overlap_hours}</b></span> 
+                                        <div> {!totalHrs} </div>
+                                    </div>
+                                </apex:outputPanel>                      
+                                <div class="row" style="margin-top:10px">
+                                    <div class="col-sm-offset-4 col-sm-6 col-xs-12">
+                                        <!--Original Save button changed as per 171838 Rupesh-->
+                                        <!--<apex:commandLink value="{!$Label.css_save_btn}" action="{!savOverlapSRT}" style="margin:0px 45px" styleClass="saveButton" status="overlapSave" id="saveButton" onclick="DisableButton(this)" oncomplete="EnableButton(this) ;updateJavascript();" rerender="opAdjOLHrs,opAdjOLOverride,opAdjOLReason,opAdjOLReasonPick,errorMsgId,totalAccessHours"/>-->
+                                        <!--For Cata Delaer claim it should be teal green color-->
+                                        <apex:outputPanel rendered="{!IF(IsCataClaim=true && IsDealerClaim=true && Not CONTAINS($UserRole.Name,'Factory'),true,false) }">
+                                            <apex:commandButton styleClass="cmi_lighttealbutton" value="{!$Label.css_save_btn}"  style="margin:0px 45px"/>
+                                        </apex:outputPanel>
+                                        <apex:outputPanel rendered="{!IF(IsCataClaim=false || IsDealerClaim=false || CONTAINS($UserRole.Name,'Factory') ,true,false)}" >
+                                            <!--apex:commandLink value="{!$Label.css_save_btn}" action="{!savOverlapSRT}" style="margin:0px 45px" styleClass="saveButton" status="overlapSave" id="saveButton" onclick="DisableButton(this)" oncomplete="EnableButton(this) ;updateJavascript();" rerender="opAdjOLHrs,opAdjOLOverride,opAdjOLReason,opAdjOLReasonPick,errorMsgId,totalAccessHours"/-->  
+                                            <apex:commandLink value="{!$Label.css_save_btn}" action="{!savOverlapSRT}" style="margin:0px 45px" styleClass="saveButton" status="overlapSave" id="saveButton" onclick="DisableButton(this)" oncomplete="EnableButton(this)" rerender="opAdjOLHrs,opAdjOLOverride,opAdjOLReason,opAdjOLReasonPick,errorMsgId,totalAccessHours"/>  
+                                        </apex:outputPanel>
+
+
+                                        <apex:actionStatus startText="Saving..." id="overlapSave">
+                                            <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                            <apex:facet name="stop"></apex:facet>
+                                        </apex:actionStatus>
+
+
+
+                                        <!--apex:commandButton value="{!$Label.css_Reset}" styleClass="cancelButton" action="{!loadOverlapSRTs}" status="overlapReset" id="cancelButton" onclick="DisableButton(this);" oncomplete="EnableButton(this);updateJavascript();" reRender="opAdjOLOverride,opAdjOLHrs,opAdjOLReason,opAdjOLReasonPick,errorMsgId" /-->
+                                        <apex:commandButton value="{!$Label.css_Reset}" styleClass="cancelButton" action="{!loadOverlapSRTs}" status="overlapReset" id="cancelButton" onclick="DisableButton(this);" oncomplete="EnableButton(this);" reRender="opAdjOLOverride,opAdjOLHrs,opAdjOLOverrideenab,opAdjOLOverridedis,opAdjOLReason,opAdjOLReasonPick,errorMsgId" />
+                                        <apex:actionStatus startText="Reseting..." id="overlapReset">
+                                            <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                            <apex:facet name="stop"></apex:facet>
+                                        </apex:actionStatus>
+
+                                    </div>                                    
+                                </div>
+                            </div> 
+                        </div>  <!-- overlap desktop code end -->                    
+                    </div>
+                </div>
+            </div> 
+        </div>
+        <!-- overlap accordian end -->
+    </apex:outputPanel>
+
+    <!-- Overlap SRT Notes popup Start GSSC-289 -->
+    <div class="modal fade" id="ClaimsSRTNotesOlapPopup" role="dialog" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content" style="text-align:left">
+                <div class="modal-header">
+                       <apex:commandButton styleClass="cross_butten" html-data-dismiss="modal" action="{!ClaimsOlapNotesPopupOk}" rerender="reRenderClaimsNotesOlapWS" value="."/>
+                    <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_cummins_service_system}</h4>
+                </div>
+                <div class="modal-body" style="height:150px;overflow-y:scroll">
+                    <apex:outputPanel id="reRenderClaimsNotesOlapWS">
+                        <apex:outputText style="font-size:14px" escape="false" value="{!StepDescriptionOlap}"> </apex:outputText>
+                    </apex:outputPanel>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid #D2D2D2;padding:5px;">
+                    <div style="text-align:center">
+                        <apex:commandButton styleClass="btn-intake btn-intake-footer m-btn-width" html-data-dismiss="modal" style="padding:4px 10px;" action="{!ClaimsOlapNotesPopupOk}" rerender="reRenderClaimsNotesOlapWS" value="Ok"></apex:commandButton>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Overlap SRT Notes popup End GSSC-289 -->
+
+</apex:component>

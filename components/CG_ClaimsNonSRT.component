@@ -1,0 +1,367 @@
+<apex:component layout="none"  controller="CG_CL_ClaimsNonSRT" allowDML="true">
+<apex:attribute name="IsCataClaim" description="IfCataclaim" type="boolean"/>  
+<apex:attribute name="IsDealerClaim" description="IfDealerClaim" type="boolean"/>  
+<script>
+    function validateMaxVal(compId){
+        var WarrTime= document.getElementById(compId.id).value;
+        var WarrTimeLength= document.getElementById(compId.id).value.length;
+        if(WarrTime > 100) {
+          document.getElementById(compId.id).value=100;   
+        }
+    }
+
+
+    function qtyPress99TimeSRT(e,compId){
+        var technicianTimeVal= document.getElementById(compId.id).value;
+        if(((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105)) || ((e.which == 190 || e.which == 110) && !(technicianTimeVal.includes('.'))))
+        {
+
+        } 
+        else 
+        {
+            return false;
+        }     
+    }
+    
+    function DisableButton(buttonId){
+        buttonId.disabled=true;
+    }reRender="modCont" 
+    
+    function EnableButton(buttonId){
+        buttonId.disabled=false;
+    }
+
+</script>
+
+<script type="text/javascript" >
+    function textCounter(field,field2,maxlimit)
+    {
+        var countfield = document.getElementById(field2);
+        if ( field.value.length > maxlimit ) 
+        {
+            field.value = field.value.substring( 0, maxlimit );
+            return false;
+        } else 
+        {
+            countfield.value = maxlimit - field.value.length;
+        }
+    }  
+    function qtyPress(e,compId){
+        // var technicianTimeVal= document.getElementById(compId.id).value;
+        if((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105))
+        {
+            //alert(e.which);
+        } 
+        else 
+        {
+            return false;
+        }        
+    }
+    function validateActtt(compId){
+        var technicianTime= document.getElementById(compId.id).value;
+        var techTimelength=document.getElementById(compId.id).value.length;
+        var techTimesplit = [];
+
+        if(technicianTime.includes('.')){
+            techTimesplit = technicianTime.split(".");
+            var declength = techTimesplit[1].length;
+            if(declength > 1){                
+                var newStr = technicianTime.substring(0, technicianTime.length-1);
+                document.getElementById(compId.id).value = newStr;
+                return false;    
+            }
+        }
+        else {
+            if(techTimelength == 5)
+            {
+                var newStr1 = technicianTime.substring(0, technicianTime.length-1);
+                var newStr2 = newStr1/10;
+                document.getElementById(compId.id).value = newStr2;
+            }
+        }
+        if(techTimelength == 4 && !technicianTime.includes('.')){
+            var result = Number(document.getElementById(compId.id).value)/10;
+            document.getElementById(compId.id).value=result;
+        }
+    } 
+ function getpercReqNonSRTJS(thisObj,srtID){
+            $(thisObj).closest('td').append('<img src="/img/loading.gif" id="spinner" style="margin-left:10px;position:absolute;"/>');
+            getpercReqNonSRT(thisObj.value,srtID);
+        }
+        function removeSpinner(){
+            $("#spinner").remove();
+
+
+        }
+</script>
+
+
+<apex:attribute name="PName" type="string" description="Page name"/>
+<apex:outputpanel id="SRT1" layout="block" >
+    <apex:actionFunction name="closePopup" action="{!closePopup}" reRender="NonSRTPopupPanel"/>
+    <div class="panel-group cmi_generic-accordion">
+        <!--  <div class="col-md-12"> -->
+        <div class="panel panel-default">
+            <div class="panel-heading " id="accordion1-heading-3">
+                <h4 class="panel-title" data-toggle="collapse" data-parent="#accordion1-heading-3" onclick="constructorMethod();" data-target="#AdminSRT-accordian" aria-expanded="true">
+                    <a class="accordion-toggle" >
+                        <span class="glyphicon glyphicon-plus"></span>
+                        <div class="cmi_accordion-title"><b>{!$Label.CG_Non_SRT_Detail_Optional}</b></div>
+                    </a>
+                </h4>
+            </div>
+            <apex:actionStatus startText="requesting..." id="callnonSRTStatus">
+                <apex:facet name="start">Loading... <img src="/img/loading.gif" /></apex:facet>
+                <apex:facet name="stop"></apex:facet>
+            </apex:actionStatus>
+            <apex:actionFunction name="constructorMethod" action="{!getConstructorLoaded}" status="callnonSRTStatus" rerender="SRTPage,SRTtblop,NonSRTPanel,nonSRTop,totSRTTime"/>
+            <!--  <div class="col-xs-12 hidden-xs" style="padding: 0 !important;">  -->
+            <div id="AdminSRT-accordian" class="panel-collapse collapse"  style="margin-top:10px"> 
+                <div class="panel-body" id="accordion1-overview2">
+
+                    <div class="hidden-xs">
+                         <apex:actionFunction name="getpercReqNonSRT"  action="{!SRTPercReqNonSRT}" oncomplete="removeSpinner();" rerender="ReqPnlNonSRT" >
+                             <apex:param name="CoveredValue" value="" assignTo="{!selCoveredVal}" />
+                             <apex:param name="SRTIDVal" value="" assignTo="{!counting}" />
+                             </apex:actionFunction>
+                        <div class="row " style="margin-top:20px"> 
+
+                            <div class="col-md-12">
+                                
+                                <!--This edit should not be visible is it is catastrphic claim.171838 Rupesh-->
+                        <!--Added isClaimReadOnly__C condition as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->        
+                                <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                    <apex:outputPanel id="SRTPage" rendered="{!IF(IsCataClaim=true && IsDealerClaim=true && Not CONTAINS($UserRole.Name,'Factory'),false,true) }">
+                                        <!--<apex:outputpanel rendered="{!IF(checklaborrate==true,true,false)}">-->
+                                        <apex:outputpanel rendered="{!IF(isNonSRTCovered == true && checklaborrate==true,true,false)}">
+                                        <div style="float:right;">
+                                            <i class="pencil-tealIcon"></i>
+                                            <apex:commandLink value="{!$Label.css_Edit}" html-data-target="#customPartsJobPopUp" html-data-toggle="modal" html-data-backdrop="static" html-data-keyboard="false"  onComplete="return false;" />
+                                        </div>
+                                        </apex:outputPanel>
+                                       <!--</apex:outputPanel>-->
+                                       
+                                       <!--<apex:outputpanel rendered="{!IF(checklaborrate==false,true,false)}"-->
+                                       <apex:outputpanel rendered="{!IF(isNonSRTCovered == false  || checklaborrate==false,true,false)}">
+                                            <div style="float:right;">
+                                                <i class="pencil-tealIcon"></i>
+                                                <font color="#007c7c">{!$Label.css_Edit}</font>
+                                            </div>
+                                        </apex:outputPanel>    
+                                   </apex:outputPanel>
+                 <!--END--as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->            
+                                   
+</apex:outputPanel> 
+   
+                                <br/><apex:outputPanel id="SRTtblop">
+                                <table class="mytable table table-striped table-bordered" style="width:100%; " id="SRTtbl"><apex:outputText id="nonSRTop">
+                                    <thead>
+                                        <tr><th class="tblhead" style="text-align:center;"><b>{!$Label.CSS_Select}</b></th>
+                                            <th class="tblhead" style="text-align:center;"><b>{!$Label.css_SRT_Code}</b></th>
+                                            <th class="tblhead" style="text-align:center;"><b>{!$Label.css_SRT_Time}</b></th>
+                                            <th class="tblhead" style="text-align:center;"><b>{!$Label.css_Percent_Requested}</b></th>
+                                            <th class="tblhead" style="text-align:center;"><b>{!$Label.CSS_Claimed_Hours}</b></th>
+                                            <th class="tblhead" style="text-align:center;"><b>{!$Label.CSS_Fail_Code}</b></th>
+                                            <th class="tblhead" style="text-align:center;"><b>{!$Label.CSS_Account_Code}</b></th>
+                                            <th class="col-sm-12 col-md-12 col-xs-12" style="text-align:center;"><b>{!$Label.css_Notes}</b></th> 
+                                        </tr>
+                                    </thead>
+                                    <tbody> 
+                                        <!--apex:outputPanel id="nonSRTop"-->
+                                        <apex:repeat var="NonSRT" value="{!existingNonSRTList}" id="nonSRT" > 
+                                            <tr>
+
+                                                <!--This should be read only it is catastrphic claim.171838 Rupesh-->
+                                                <!--Original Select-->
+                                                <!--<td style="text-align:center;"><apex:inputCheckbox value="{!NonSRT.isPerformed__c}" id="checkBoxInput"/></td>-->
+                                                <td style="text-align:center;">
+                            <!--Added isClaimReadOnly__C condition as per Story #GSSC-37,-By RAJESH 06th Nov 2019-->                        
+                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                         <apex:inputCheckbox value="{!NonSRT.isPerformed__c}" disabled="true"/> 
+                                                    </apex:outputPanel>    
+                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">    
+                                                            <apex:outputPanel rendered="{!IF(IsCataClaim=false || IsDealerClaim=false || CONTAINS($UserRole.Name,'Factory'),true,false)}">
+                                                                <apex:inputCheckbox value="{!NonSRT.isPerformed__c}" id="checkBoxInputenab">
+                                                                    <apex:actionSupport event="onchange"  rerender="opClaimedHrs1"/>
+                                                                </apex:inputCheckbox>
+                                                            </apex:outputPanel>  
+                                                            <apex:outputPanel rendered="{!IF(IsCataClaim= true && IsDealerClaim=true && Not CONTAINS($UserRole.Name,'Factory'),true,false) }">
+                                                                <apex:inputCheckbox value="{!NonSRT.isPerformed__c}" id="checkBoxInputdis" disabled="true"/>   
+                                                            </apex:outputPanel>
+                                                    </apex:outputPanel>  
+                        <!--END--as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->                            
+                                                </td>
+                                                <td style="text-align:center;"> 99-999</td>
+                                                <td style="text-align:center;"><apex:outputText value="{!NonSRT.SRT_Time__c}" /> </td>
+                                                <td style="text-align:center;"><apex:outputText value="{!NonSRT.SRT_Warrantable__c}" style="{!IF((NonSRT.SRT_Warrantable_Flag__c==true),'border: 2px solid red !important','')}"  /> </td> 
+                                                <!--td style="text-align:center;"><apex:outputText value="{!NonSRT.SRT_Warrantable__c}" /> </td--> <!-- Kalpana Added for testing purpose 155910-->
+                                                <td style="text-align:center;">
+                                                    <apex:outputPanel id="opClaimedHrs1">
+                                                    <apex:outputPanel rendered="{!IF(NonSRT.isPerformed__c == true,true,false)}">
+                                                        <apex:outputText value="{!NonSRT.Claimed_Hours__c}"/>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF(NonSRT.isPerformed__c == false,true,false)}">
+                                                    </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                </td>
+                                                <td style="text-align:center;"> <apex:outputText value="{!NonSRT.Fail_Code_Description__c}" /> </td>
+                                                <td style="text-align:center;"> <apex:outputText value="{!NonSRT.Account_Code_Description__c}" /> </td>
+                                                <td style="text-align:center;"><apex:outputText value="{!NonSRT.SRT_Notes__c}" /> </td>
+                                            </tr>
+
+                                        </apex:repeat>
+
+                                    </tbody></apex:outputText>
+                                </table></apex:outputPanel>
+                            </div>
+                            <apex:outputPanel id="totSRTTime">
+                            <div class="col-sm-12">   
+                                <span><b>{!$Label.CG_Total_Non_SRT_Detail_Time}</b></span> 
+                                <div><b>{!TotalSRTTime}</b></div>
+                            </div>
+                            </apex:outputPanel>
+                            <div class="row" style="margin-top:10px">
+                                <div class="col-sm-offset-4 col-sm-6 col-xs-12">
+                                    <!--This was original single save button 171838 Rupesh Pande-->
+                                    <!--<apex:commandButton value="{!$Label.css_save_btn}" action="{!saveNonSRTMethod}" style="margin:0px 45px" styleClass="saveButton" status="nonSRTSave" id="saveButton" onclick="DisableButton(this);" oncomplete="EnableButton(this);" rerender="checkBoxInput"/>-->
+                                    <apex:outputPanel rendered="{!IF(IsCataClaim=true && IsDealerClaim=true && Not CONTAINS($UserRole.Name,'Factory'),true,false) }">
+                                        <apex:commandButton styleClass="cmi_lighttealbutton" value="{!$Label.css_save_btn}"  style="margin:0px 45px" status="nonSRTSave" id="saveButtondis"/>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!IF(IsCataClaim=false || IsDealerClaim=false || CONTAINS($UserRole.Name,'Factory') ,true,false)}" >
+                                        <apex:commandButton value="{!$Label.css_save_btn}" action="{!saveNonSRTMethod}" style="margin:0px 45px" styleClass="saveButton" status="nonSRTSave" id="saveButtonenab" onclick="DisableButton(this)" oncomplete="EnableButton(this)" rerender="checkBoxInputenab,checkBoxInputdis,totSRTTime"/>
+                                    </apex:outputPanel>
+                                    <apex:actionStatus startText="Saving..." id="nonSRTSave">
+                                        <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                        <apex:facet name="stop"></apex:facet>
+                                    </apex:actionStatus>
+                                    <apex:commandButton value="{!$Label.css_Reset}" action="{!resetNonSRTMethod}" styleClass="cancelButton" status="nonSRTReset" id="cancelButton" onclick="DisableButton(this);" oncomplete="EnableButton(this);" rerender="checkBoxInputenab,checkBoxInputdis"/> 
+                                    <apex:actionStatus startText="Reseting..." id="nonSRTReset">
+                                        <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                        <apex:facet name="stop"></apex:facet>
+                                    </apex:actionStatus>
+                                </div>
+                            </div>
+
+                            <apex:outputPanel id="NonSRTPanel" >
+                                <div class="modal fade" id="customPartsJobPopUp" role="dialog">
+                                    <div class="modal-dialog modal-lg">
+                                        <apex:outputPanel id="NonSRTPopupPanel" >
+                                            <div class="modal-content"> 
+
+                                                <div class="modal-header">  
+                                                    <!--   <apex:commandButton title="Close the popup" action="{!closePopup2}"  styleClass="cross_butten" /> -->
+                                                    <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.CSS_Non_SRT_Detail_Cummins_Guidanz}</h4>
+                                                </div>
+                                                <apex:outputPanel rendered="{!IF(ErrorMessage1==true,true,false)}">
+                                                   <apex:outputLabel style="text-align:center; color: red ; display: block;" value="{!$Label.CSS_Claims_Enter_Value}"  />
+                                                </apex:outputPanel> 
+                                                
+                                                <apex:outputPanel rendered="{!IF(requestederr==true,true,false)}">
+                                                     <apex:outputLabel style="text-align:center; color: red ; display: block;" value="{!$Label.CSS_Requested_should_match_on_an_account_code}"  />
+                                                </apex:outputPanel>
+                                                
+                                                <table class="mytable table table-striped table-bordered repairParts" border="0" cellpadding="0" cellspacing="0" id="tbCustSRT">
+                                                    <thead>
+                                                        <tr bgcolor="#d3d3d3">
+                                                            <th style="text-align:center;width:15%;">{!$Label.css_SRT_Code} </th>
+                                                            <th style="text-align:center;width:5%">{!$Label.css_SRT_Time}<span style="color: red">*</span></th>
+                                                            <th style="text-align:center;width:15%">{!$Label.css_Percent_Requested}</th>
+                                                            <th class="tblhead" style="text-align:center;"><b>{!$Label.CSS_Claimed_Hours}</b></th>
+                                                            <th style="text-align:center;">{!$Label.CSS_Fail_Code}</th>
+                                                            <th style="text-align:center;width:15%">{!$Label.CSS_Account_Code}</th>
+                                                            <th class="col-sm-12 col-md-12 col-xs-12" style="text-align:center;"><b>{!$Label.css_Notes}</b><span style="color: red">*</span></th>
+                                                            <th style="text-align:center;">{!$Label.CSS_Remove}</th>
+                                                        </tr>
+
+                                                    </thead>
+
+                                                    <tbody> 
+                                                        
+                                                        <apex:repeat var="SRTVL" value="{!NonSRTWrapperList}" id="EditNonSRT" > 
+                                                            <tr>
+                                                                <td style="text-align:center;"> 99-999</td>
+                                                                <td style="text-align:center;">
+                                                                    <apex:InputText value="{!SRTVL.SRTTime}" onkeydown="return qtyPress99TimeSRT(event,this)" maxlength="5" onkeyup="validateActtt(this)" html-placeholder="0.0" id="acttt" style="width: 65px;"/>
+                                                                </td>
+                                                                <td style="text-align:center;">
+                                                                    <div id="divSRTTime">
+                                                                        <apex:outputPanel rendered="{!IF(isFactory == true,true,false)}" id="ReqPnlNonSRT">
+                                                                            <apex:InputText value="{!SRTVL.percentRequested}" maxlength="3" id="warVal" onkeydown="return qtyPress(event,this)" onchange="getpercReqNonSRTJS(this,'{!SRTVL.count}');" style="width: 65px;"/> 
+                                                                            <!-- onkeyup="validateMaxVal(this);" removed this function from above line as part of the task #181446 -->
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(isFactory == false,true,false)}" id="ReqPnlNonSRT1">
+                                                                            <apex:outputtext value="{!SRTVL.percentRequested}" id="warVal1"  style="width: 65px;"/> 
+                                                                        </apex:outputPanel>
+                                                                       <!-- <apex:outputPanel rendered="{!IF(SRTVL.percentRequested != '0' && isFactory==false,true,true)}">
+                                                                            2<apex:outPutText value="{!SRTVL.percentRequested}" id="warValReadOnly" style="width: 65px;"/> 
+                                                                        </apex:outputPanel>-->
+                                                                       
+                                                                      <!--  <apex:outputPanel rendered="{!IF(isFactory==false,true,false)}">
+                                                                           3 <apex:outPutText value="{!SRTVL.percentRequested}" id="warValRead" style="width: 65px;"/> 
+                                                                        </apex:outputPanel>-->
+                                                                    </div>
+                                                                </td>
+                                                                <td style="text-align:center;" class = "select">
+                                                                    <apex:outputPanel rendered="{!IF(SRTVL.isperformed == true,true,false)}">
+                                                                        <apex:OutputText value="{!SRTVL.claimedhours}"/>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(SRTVL.isperformed == false,true,false)}">
+                                                                    </apex:outputPanel>
+                                                                </td>
+                                                                <td style="text-align:center;" class = "select">
+                                                                    <apex:OutputText value="{!SRTVL.failCode}"/>
+                                                                </td> 
+                                                                <td style="text-align:center;">
+                                                                    <apex:OutputText value="{!SRTVL.accountCode}"/>
+                                                                </td>
+                                                                <td style="text-align:center;width=20%">
+                                                                    <div class="col-md-12 col-xs-12" style="word-break: break-word; ">
+                                                                        <apex:inputTextArea value="{!SRTVL.Notes}" onkeyup="textCounter(this,'counter',400);" id="findingNest" html-maxlength="400" style="resize: none;"  />
+                                                                    </div>
+                                                                </td>
+                                                                <td style="text-align:center;"> 
+                                                                    <apex:outputPanel >
+                                                                        <apex:commandLink styleClass="cmi_delete-icon"  action="{!removingNonSRTRow}" reRender="NonSRTPopupPanel" status="loading">
+                                                                            <apex:param name="nonSRTRow" value="{!SRTVL.Count}" assignTo="{!selectedRemoveRow}"/>
+                                                                        </apex:commandLink>
+                                                                        <apex:actionStatus startText="requesting..." id="loading">
+                                                                            <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                                                            <apex:facet name="stop"></apex:facet>
+                                                                        </apex:actionStatus>
+                                                                    </apex:outputPanel>
+                                                                </td>
+                                                            </tr>
+
+                                                        </apex:repeat> 
+
+                                                    </tbody>
+
+                                                </table>
+
+
+                                                <div class="modal-footer" style="margin-top:20px;border-top:0px;">
+                                                    <div class="col-sm-5"> 
+                                                        <apex:commandButton value="{!$Label.css_save_btn}" action="{!saveNonSRTPopup}" styleClass="saveButton" reRender="NonSRTPopupPanel" onclick="DisableButton(this);"  onComplete="return displaypopNonSRT('{!ErrorMessage1}','{!requestederr}'); return false;" />
+                                                    </div>
+                                                    <div class="col-sm-2">
+                                                        <button type="button" class="cancelButton" data-dismiss="modal" onClick="closePopup();" >{!$Label.css_Cancel}</button>
+                                                    </div>
+                                                </div>  
+
+                                            </div> 
+                                        </apex:outputPanel>
+
+                                    </div>
+
+                                </div>
+
+                            </apex:outputPanel>
+                        </div>  
+                    </div>
+                </div>    
+            </div> 
+        </div>
+        
+    </div>
+</apex:outputpanel>
+</apex:component>

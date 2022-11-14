@@ -1,0 +1,119 @@
+<apex:page id="StatementFormPage" standardController="CSS_WS_Statement__c" Extensions="CSS_WS_ControllerStatement">
+    <apex:pageMessages id="showmsg"/>
+    <apex:form id="formStatement">
+        <apex:pageBlock >
+            <apex:pageBlockSection id="DR" columns="2">
+                <apex:selectList id="serviceProviderDR" value="{!CSS_WS_Statement__c.CSS_WS_Service_Provider_DR__c }" size="1" style="width: 350px !important;" onChange="rerenderDealers_JS();">
+                    <apex:selectOptions value="{!distributorsSelectList}"/>                    
+                </apex:selectList>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection id="dealer" columns="2">
+                <apex:selectList id="serviceProviderDealer" value="{!CSS_WS_Statement__c.CSS_WS_Service_Provider_Dealer__c }" disabled="{!CSS_WS_Statement__c.CSS_WS_Service_Provider_DR__c == 'All Distributors'}" size="1" style="width: 350px !important;">
+                    <apex:selectOptions value="{!dealersSelectList}"/>
+                    <apex:actionSupport event="onchange" action="{!getClaimsList}" rerender="tableClaims, table, ClaimsSection, listClaims, selectBox"/>
+                </apex:selectList>
+                <apex:inputCheckbox id="selectBox" label="{!$Label.CSS_WS_Statement_E004}" value="{!selected}" onclick="selectAll_JS()"/>
+            </apex:pageBlockSection>
+            
+            <!--<apex:pageBlockSection id="tableClaims" columns="1">
+                <apex:outputPanel layout="block" style="overflow: auto !important; width: 100%; height: 200px !important;">
+                    <apex:pageBlockTable value="{!Claims}" var="claim" id="table">
+                        <apex:column value="{!claim.CSS_WS_Claim_Number__c}"/>
+                        <apex:column value="{!claim.CSS_WS_Service_Provider_Name_Dealer__c}"/>
+                        <apex:column value="{!claim.CSS_WS_Claim_Status__c}"/>
+                    </apex:pageBlockTable>
+                </apex:outputPanel>
+            </apex:pageBlockSection>-->
+            
+            <apex:pageBlockSection columns="1" id="ClaimsSection">
+                <apex:pageBlockTable value="{!ClaimsLists}" var="claim" id="tableClaims" >
+                    <!--<apex:column headerValue="Row" style="text-align:center !important; width: 25px !important;">
+                        <apex:outputText value="{!claim.Index}"/>
+                    </apex:column>-->
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.Name.Label}" style="text-align:center !important; width: 100px !important;">
+                        <apex:outputText value="{!claim.ClaimNumber}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Policy_Flag__c.Label}" style="text-align:center !important; width: 50px !important;">
+                        <apex:outputText value="{!claim.PolicyFlag}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Service_Provider_DR__c.Label}" style="text-align:center !important; width: 150px !important;">
+                        <apex:outputText value="{!claim.DRName}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Service_Provider_Dealer__c.Label}" style="text-align:center !important; width: 150px !important;">
+                        <apex:outputText value="{!claim.DealerName}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Customer_Name_Internal__c.Label}" style="text-align:center !important; width: 50px !important;">
+                        <apex:outputText value="{!claim.CustomerName}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_TSM_Approver_Name__c.Label}" style="text-align:center !important; width: 50px !important;">
+                        <apex:outputText value="{!claim.TSMApproverName}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Service_Model__c.Label}" style="text-align:center !important; width: 50px !important;">
+                        <apex:outputText value="{!claim.ServiceModel}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Model_Series__c.Label}" style="text-align:center !important; width: 50px !important;">
+                        <apex:outputText value="{!claim.ModelSeries}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Account_Code__c.Label}" style="text-align:center !important; width: 50px !important;">
+                        <apex:outputText value="{!claim.AccountCode}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$Label.CSS_WS_Statement_E008}" style="text-align:center !important; width: 150px !important;">
+                        <apex:outputText value="{!claim.FailureName}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Claim_Status__c.Label}" style="text-align:center !important; width: 180px !important;">
+                        <apex:outputText value="{!claim.Claim.CSS_WS_Claim_Status__c}"/>
+                        <apex:facet name="footer">
+                            Total                            
+                        </apex:facet>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Total_Claim_Approved__c.Label}" style="text-align:center !important; width: 100px !important;">
+                        <apex:outputText value="{!claim.Claim.CSS_WS_Total_Claim_Approved__c}"/>
+                        <apex:facet name="footer">
+                            <apex:outputText value="{0, number, currency}" id="total">
+                                <apex:param value="{!TotalAmountClaims}" id="totalCant"/>
+                            </apex:outputText>
+                        </apex:facet>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$Label.CSS_WS_Statement_E005}" style="text-align:center !important; width: 50px !important;">
+                        <apex:inputCheckbox value="{!claim.UpdateClaim}">
+                            <apex:actionSupport event="onclick" action="{!sumTotal}" rerender="total, totalCant, dealer"/>
+                        </apex:inputCheckbox>
+                    </apex:column>
+                </apex:pageBlockTable>
+            </apex:pageBlockSection>
+            
+            <!----------------------------------- Area Functions Header ----------------------------------->
+            <apex:actionFunction action="{!updateClaimsList}" name="rerenderDealers_JS" rerender="dealer, tableClaims, ClaimsSection, table, listClaims, selectBox, total, totalCant"/>
+            <apex:actionFunction action="{!selectAllClaims}" name="selectAll_JS" rerender="dealer, tableClaims, ClaimsSectionm, total, totalCant"/>
+            <apex:actionFunction action="{!declineStatement}" name="declineStatement_JS" rerender="DR, dealer, showmsg, tableClaims, table, ClaimsSection, listClaims, selectBox, total, totalCant"/>
+            <apex:actionFunction action="{!approveStatement}" name="approveStatement_JS" rerender="DR, dealer, showmsg, tableClaims, table, ClaimsSection, listClaims, selectBox" status="approveStatementStatus"/>
+            <!--<apex:actionFunction action="{!exitStatement}" name="exitStatement_JS"/>-->
+            <!----------------------------------- Area Functions Header ----------------------------------->
+            
+            <apex:pageBlockButtons >
+                <apex:commandButton onclick="approveStatement_JS(); return false;" value="{!$Label.CSS_WS_Statement_E002}"/>
+                <apex:commandButton onclick="declineStatement_JS(); return false;" value="{!$Label.CSS_WS_Statement_E003}"/>
+                <!--<apex:commandButton onclick="exitStatement_JS(); return false;" value="{!$Label.CSS_WS_Global_E007}"/>-->
+                <apex:actionstatus id="approveStatementStatus"> 
+                    <apex:facet name="start" >
+                        <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                       
+                    </apex:facet>
+                </apex:actionstatus>
+            </apex:pageBlockButtons>  
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

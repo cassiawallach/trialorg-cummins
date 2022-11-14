@@ -1,0 +1,532 @@
+<apex:page showHeader="true" sidebar="false" standardStylesheets="false" showQuickActionVfHeader="false" controller="disco.Ctl_MobileAdmin">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+		<title>Mobile Admin</title>
+		<apex:includeScript value="{!URLFOR($Resource.disco__jquery_3_6_0, 'jquery.min.js')}"/>
+		<script src="{!$Resource.customModalJS}"></script>
+		<script src="https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js"></script>
+		<script src="https://cdn.datatables.net/select/1.2.2/js/dataTables.select.min.js"></script>
+		<apex:includeScript value="{!$Resource.disco__mobileAdmin_js}"/>
+		<!-- <script src="https://localhost:9010/mobileAdmin/dist/bundle.js"></script> -->
+		<link rel="stylesheet" href="https://cdn.datatables.net/1.10.15/css/jquery.dataTables.min.css"/>
+		<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/select/1.2.2/css/select.dataTables.min.css"/>
+		<apex:includeScript value="{!URLFOR($Resource.disco__jquery_ui_1_12_1, 'jquery-ui.min.js')}"/>
+		<script src="{!URLFOR($Resource.svg4everybody, '/svg4everybody/svg4everybody.min.js')}"></script>
+		<script>
+			var vfr = {};
+			vfr.saveExternalSoupObjectsVFR = '{!JSENCODE($RemoteAction.Ctl_MobileAdmin.saveExternalSoupObjects)}';
+			vfr.updateSummaryFieldsetVFR = '{!JSENCODE($RemoteAction.Ctl_MobileAdmin.updateSummaryFieldset)}';
+			vfr.updatePrimaryGeolocationsVFR = '{!JSENCODE($RemoteAction.Ctl_MobileAdmin.populatePrimaryGeolocations)}';
+			vfr.updatePrimarySortingVFR = '{!JSENCODE($RemoteAction.Ctl_MobileAdmin.populatePrimarySortingFields)}';
+			vfr.saveMobileAdminVFR = '{!JSENCODE($RemoteAction.Ctl_MobileAdmin.saveMobileAdmin)}';
+			vfr.validateWhereClauseVFR = '{!JSENCODE($RemoteAction.Ctl_MobileAdmin.validateWhereClause)}';
+			vfr.updateCheckinRelationshipsVFR = '{!JSENCODE($RemoteAction.Ctl_MobileAdmin.populateCheckinRelationships)}';
+			var sfData = {};
+			var ns = '{!JSENCODE(namespace)}';
+			sfData.schemaData = JSON.parse('{!JSENCODE(schemaData)}');
+			sfData.primaryObjectMap = JSON.parse('{!JSENCODE(primaryObjectMapJSON)}');
+			sfData.mobileAdminSettings = JSON.parse('{!JSENCODE(mobileAdminSettingsJSON)}');
+			sfData.summaryFieldsets = JSON.parse('{!JSENCODE(summaryFieldsetsJSON)}');
+			sfData.sortingFields = JSON.parse('{!JSENCODE(sortingFieldsJSON)}');
+			sfData.primaryGeolocationFields = JSON.parse('{!JSENCODE(primaryGeolocationFieldsJSON)}');
+			sfData.cardSortOrderFields = JSON.parse('{!JSENCODE(cardSortOrderFieldsJSON)}');
+			sfData.checkinRelationshipFields = JSON.parse('{!JSENCODE(checkinRelationshipsJSON)}');
+			sfData.offlineFilters = JSON.parse('{!JSENCODE(offlineFiltersJSON)}')
+			sfData.newFormButtons = JSON.parse('{!JSENCODE(newFormButtonsJSON)}')
+			sfData.closeIconUrl = "{!URLFOR($Asset.SLDS,'/assets/icons/utility-sprite/svg/symbols.svg#close')}";
+			sfData.isLightningExp = '{!JSENCODE($User.UITheme)}' === 'Theme4d';
+			sfData.photoResolution = {!photoResolution};
+		</script>
+		<style>
+			#dataTable tbody {
+				cursor: pointer;
+			}
+			#dataTable th {
+				cursor: pointer;
+			}
+			/* override SF styles that ignore card borders inside of tabs */
+			#adminPage .slds-scope article.slds-card {
+				border: 1px solid rgb(221, 219, 218);
+				box-shadow:  0 2px 2px 0 rgba(0, 0, 0, 0.10);
+				background-clip: padding-box;
+
+			}
+			/* override styles to ignore LI styles */
+			#adminPage .slds-scope .enable-description ul {
+				list-style-type: disc;
+			}
+
+			#adminPage .slds-scope .enable-description li {
+				margin-left: 1.5em;
+			}
+
+			.slds-scope .enable-wrapper {
+				max-width:fit-content;
+				max-width: -moz-fit-content;
+
+			}
+
+			.slds-scope .enable-distance-content .slds-form-element__control {
+				 max-width: fit-content;
+				 min-width: 100px;
+			}
+   
+			.slds-scope li.mobile-card-item .slds-form-element {
+				min-width: 200px;
+			}
+			.slds-scope .select-wrapper {
+				display: flex;
+			}
+			.slds-scope .disabled-text {
+				color: lightgray !important;
+			}
+
+			.slds-scope .sorting-order {
+				margin-left: 20px;
+			}
+
+			.slds-scope  li.mobile-card-item  .slds-form-element {
+				display: inline-block;
+			}
+
+			.slds-scope .record-filter {
+				width: 100%;
+			}
+
+			.slds-scope .record-filter .slds-form-element__control {
+				width: 100%;
+			}
+
+			.slds-scope .record-filter .slds-form-element__control input {
+				width: 800px;
+				display: inline-block; 
+			}
+
+			.slds-scope .record-filter .slds-form-element__control button {
+				display: inline-block;
+			}
+
+			.slds-scope .is-valid .slds-form-element__help{
+				color: green;
+			}
+			.slds-scope #dataTable input {
+				width: 75%;
+				margin-right: 5px;
+			}
+
+			.slds-scope #dataTable td:first-child {
+				padding: 0;
+				padding-left: 30px;
+			}
+			.slds-scope #dataTable td:first-child input {
+				height: 20px;
+			}
+			.slds-scope article.primary-object-wrapper {
+				height: 800px;
+			}
+			.slds-scope #checkinRelationship {
+				min-width: 400px;
+			}
+			.slds-scope ::placeholder {
+				color: lightgray;
+			}
+			.slds-scope .tooltip-image {
+				margin-left: 4px;
+				margin-top: 8px;
+			}
+			.slds-scope .slds-docked-form-footer {
+				flex-wrap: wrap;
+			}
+			.slds-scope .slds-docked-form-footer .slds-notify_alert {
+				margin-bottom: 5px;
+			}
+			#newFormTable .slds-form-element {
+				width: 100%;
+			}
+
+			#newFormTable th:first-child {
+				width: 30%;
+			}
+			#newFormTable .remove-row {
+				cursor: pointer;
+				margin-top: 10px;
+			}
+			.all-caps {
+				text-transform: uppercase;
+			}
+			/* overrides for jquery UI tooltip */
+			.ui-tooltip {
+				padding: 8px;
+				position: absolute;
+				z-index: 99999;
+				max-width: 300px;
+				-webkit-box-shadow: 0 0 5px #aaa;
+				box-shadow: 0 0 5px #aaa;
+				font: 100% / 1.5 "Salesforce Sans", Arial, sans-serif;
+				background-color: white;
+			}
+			/* suppress extra helper text created by jquery UI tooltip */
+			.ui-helper-hidden {
+				display: none;
+			}
+			.ui-helper-hidden-accessible {
+				border: 0;
+				clip: rect(0 0 0 0);
+				height: 1px;
+				margin: -1px;
+				overflow: hidden;
+				padding: 0;
+				position: absolute;
+				width: 1px;
+			}
+			.slds-scope .learn-more {
+				position: absolute;
+				right: 20px;
+				top: 15px;
+			}
+
+			#PhotoRes{
+				width: 100px;
+			}
+			/* IE11 fix */
+			table {
+				table-layout: fixed;
+			}
+		</style>
+		<script>
+            $(document).ready(function() { 
+                svg4everybody(); // init
+            });
+        </script>
+	</head>
+	<apex:slds />
+	<body id="adminPage">
+		<div class="slds-scope">
+			<div id="custom-modal-container"/>
+			<apex:outputPanel rendered="{!yourekaDisabled}">
+				<c:YourekaDisabled messageText="{!yourekaDisabledMessage}"/>
+			</apex:outputPanel>
+			<apex:outputPanel layout="block" rendered="{!NOT(userHasTBLicense)}" >
+	            <div class="slds-notify slds-notify_alert slds-theme_error slds-theme_alert-texture" role="alert">
+	                 A Youreka Template Builder User License is required to use the Mobile Admin Page.
+	                    Please contact your System Admin for more information.
+	            </div>
+	        </apex:outputPanel>
+	        <apex:outputPanel layout="block" rendered="{!(inFreeOrg)}" >
+	            <div class="slds-notify slds-notify_alert slds-theme_error slds-theme_alert-texture" role="alert">
+	                 Mobile Admin is not available in Non-Premium Orgs
+	                    Please contact your System Admin for more information.
+	            </div>
+	        </apex:outputPanel>
+	        <apex:outputPanel layout="none" rendered="{!AND(NOT(yourekaDisabled),userHasTBLicense,NOT(inFreeOrg))}">
+				<div class="slds-text-heading_small learn-more" ><a href="https://support.youreka.io/hc/en-us/articles/360043483074-The-Mobile-Admin-Tab" target="_blank">Learn more</a></div>
+				<div class="slds-tabs_default slds-tabs_large slds-p-horizontal_x-large">
+		  			<ul class="slds-tabs_default__nav" role="tablist">
+		    			<li class="slds-tabs_default__item slds-is-active" title="Setup" role="presentation">
+		      				<a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" tabindex="0">Setup</a>
+		    			</li>
+		    			<li class="slds-tabs_default__item" title="Offline Data" role="presentation">
+		      				<a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" tabindex="-1">Offline Data</a>
+		    			</li>
+					</ul>
+					<!-- Setup Tab -->
+		  			<div class="slds-tabs_default__content slds-show" role="tabpanel">
+		  				<div class="slds-text-heading_medium">Configure the Youreka Mobile app to work for your organization.</div>
+		  				<div class="slds-text-heading_small slds-m-top_large">Mobile Photo Resolution</div>
+		  				<div class="slds-m-top_x-small">A low resolution photo speeds up mobile sync and conserves Salesforce file storage. A high resolution photo has more details but slows down the sync and needs increased storage space. The default is 750 pixels.</div>
+						  <div class="slds-form-element slds-m-top_small">
+							<!-- <label for="quantity">Photo Resolution (in pixels, longer side):</label> -->
+							<input type="number" placeholder="750" class="slds-input " id="PhotoRes" name="PhotoRes" min="200" max="2000" /><br/>						  
+						  </div>
+						<hr/>  
+		  				<!-- enable mobile cards -->
+		  				<div class="slds-text-heading_small slds-m-top_large">Enable Mobile Card</div>
+		  				<div class="slds-m-top_x-small">Mobile Cards are a new way to organize your users forms in the mobile app. Instead of a list of forms they can view a list of records. Using Accounts as an example, selecting an Account from the list will display related forms and allow them to create new forms for that Account.</div>
+		  				<div class="slds-m-top_x-small">
+		  					<div class="slds-form-element enable-wrapper">
+		  						<label class="slds-checkbox_toggle slds-grid">
+		  							<span class="slds-form-element__label slds-m-bottom_none">Enable Mobile Cards</span>
+		  							<input type="checkbox" id="enableCards" name="enable-cards" value="enable-cards"/>
+		  							<span class="slds-checkbox_faux_container">
+		  								<span class="slds-checkbox_faux"></span>
+		  							</span>
+		  						</label>
+		  					</div>
+		  				</div>
+		  				<article class="slds-card slds-m-top_small enable-cards-content primary-object-wrapper">
+		  					<div class="slds-card__body slds-card__body_inner">
+		  						<div class="slds-text-heading_small">Primary Object</div>
+								<div class="slds-m-top_x-small">The Primary Object determines how your users will browse and complete forms.</div>
+								<div class="slds-form-element select-wrapper slds-m-top_small">
+									<div class="slds-form-element__control">
+										<div class="slds-select_container">
+											<select class="slds-select" id="primaryObject">
+												<option value="Form">Form</option>
+												<!-- field link relationships are added as options-->
+											</select>
+										</div>
+									</div>
+								</div>
+		  						<ul class="slds-grid slds-m-top_medium slds-wrap slds-grid_pull-padded slds-p-around_small">
+		  							<li class="mobile-card-item slds-p-horizontal_small slds-size_1-of-1 slds-medium-size_1-of-2">
+		  								<div class="slds-text-heading_small">Summary Fieldset</div>
+		  								<div class="slds-m-top_x-small">Summary fields display related information for the <span class="js-primary-object-name"></span></div>
+		  								<div class="slds-form-element  slds-m-top_small">
+											<div class="slds-form-element__control">
+												<div class="slds-select_container">
+													<select class="slds-select" id="summaryFieldset">
+														<option value="">Please select</option>
+														<!-- fieldsets on object as addtional options -->
+													</select>
+												</div>
+											</div>
+										</div>
+		  							</li>
+		  							<li class="mobile-card-item slds-p-horizontal_small slds-size_1-of-1 slds-medium-size_1-of-2">
+		  								<div class="slds-text-heading_small">Form Sort Order</div>
+		  								<div class="slds-m-top_x-small">Sort order determines the order of the forms on the Mobile Card.</div>
+		  								<div class="slds-form-element slds-m-top_small">
+			  								<div class="slds-form-element slds-m-top_small">
+												<div class="slds-form-element__control">
+													<div class="slds-select_container">
+														<select class="slds-select" id="cardSortOrderField">
+															<!--form fields added as options -->
+														</select>
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="slds-form-element slds-m-top_small slds-m-left_small card-sort-order-wrapper">
+											<div class="slds-form-element__control">
+												<div class="slds-select_container">
+													<select class="slds-select" id="cardSortOrder">
+														<option value="ascending">Ascending (A-Z)</option>
+														<option value="descending">Descending (Z-A)</option>
+													</select>
+												</div>
+											</div>
+										</div>
+		  							</li>
+		  							<li class="mobile-card-item slds-m-top_medium slds-p-horizontal_small slds-size_1-of-1 slds-medium-size_1-of-1">
+		  								<div class="slds-text-heading_small"><span class="js-primary-object-name"></span> Filter</div>
+		  								<div class="slds-m-top_x-small">Youreka enforces sharing rules, but consider adding a SOQL query WHERE clause to filter the <span class="js-primary-object-name"></span> records that will appear to your mobile users.
+		  								<p><b>WARNING:</b> filters are <b>HIGHLY</b> recommended to ensure optimal mobile app performance. Mobile users receiving hundreds of primary object records may experience slowness/issues.</p></div>
+		  								<div class="slds-form-element record-filter slds-m-top_small">
+											<div class="slds-form-element__control">
+												<input type="text" id="primaryObjectFilter" class="slds-input" placeholder="Industry='Aerospace'" />
+												<button type="button" id="validateWhereClause" class="slds-button slds-button_neutral">Validate</button>
+											</div>
+										</div>
+		  							</li>
+		  							<li class="mobile-card-item slds-m-top_medium slds-p-horizontal_small slds-size_1-of-1 slds-medium-size_1-of-1">
+		  								<div class="slds-text-heading_small"><span class="js-primary-object-name"></span> New Form Buttons</div>
+		  								<div class="slds-m-top_x-small">
+		  									<span class="js-primary-object-name"></span> New Form Buttons allow users to create new forms populated with  <span class="js-primary-object-name"></span> data. Similar to how you build deep links, provide a 18-digit template ID and use merge-field syntax to populate field link relationships or the NEW keyword if the relationship is setup to allow new records. The primary relationship will be populated automatically.<br/><br/>
+		  									<p>
+		  										<span class="slds-heading_small">Button Link</span><br/>
+		  										Required:<br/>
+		  										<code>templateId=18-DIGIT-TEMPLATE-ID</code>
+		  									</p>
+		  									<p class="slds-m-top_medium">
+		  										Optional (additional relationships):<br/>
+		  										<code class="js-link-example-rel"></code>
+		  									</p>
+		  									<br/>Generic Example: <code class="js-link-example"></code>
+		  								</div>
+		  								<table class="slds-table slds-table_cell-buffer slds-table_bordered slds-m-top_medium" id="newFormTable">
+											<thead>
+												<tr class="slds-line-height_reset">
+													<th class="" scope="col">
+														<div class="slds-truncate">Button Label</div>
+													</th>
+													<th class="" scope="col">
+														<div class="slds-truncate">Button Link</div>
+													</th>
+													<th class="" scope="col">
+													</th>
+												</tr>
+											</thead>
+											<tbody>
+												<tr class="slds-hint-parent">
+													<td>
+														<div class="slds-form-element slds-m-top_small">
+															<div class="slds-form-element__control">
+																<input type="text" class="slds-input new-form-label" maxlength="38"/>
+																
+															</div>
+														</div>
+													</td>
+													<td>
+														<div class="slds-form-element slds-m-top_small new-form-link-wrapper">
+															<div class="slds-form-element__control">
+																<input type="text" class="slds-input new-form-link" placeholder="templateId=18_DIGIT_TEMPLATE_ID" />
+																
+															</div>
+														</div>
+													</td>
+													<td>
+														<span class="slds-icon_container slds-icon-utility-close remove-row">
+															<svg class="slds-icon slds-icon-text-default slds-icon_small" aria-hidden="true">
+																<use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+															</svg>
+														</span>
+													</td>
+												</tr>
+											</tbody>
+										</table>
+										<button type="button" id="addNewFormButton" class="slds-m-top_medium slds-button slds-button_neutral">
+											Add
+											<svg class="slds-button__icon slds-button__icon_right" aria-hidden="true">
+											    <use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/svg/symbols.svg#add')}"></use>
+											</svg>
+										</button>
+		  							</li>
+		  						</ul>
+		  					</div>
+		  				</article>
+		  				<hr/>
+		  				
+		  				<!-- distance tracking -->
+						<div class="slds-text-heading_small slds-m-top_large">Distance Tracking</div>
+		  				<div class="slds-m-top_x-small">Enable distance tracking to display how far your <span class="js-primary-object-name"></span> is from the user. Once enabled select a geolocation field on the <span class="js-primary-object-name"></span> to calculate distance.</div>
+		  				<div class="slds-m-top_x-small">
+		  					<div class="slds-form-element enable-wrapper">
+		  						<label class="slds-checkbox_toggle slds-grid">
+		  							<span class="slds-form-element__label slds-m-bottom_none">Enable Distance Tracking</span>
+		  							<input type="checkbox" id="enableDistance" name="enable-distance" value="enable-distance"/>
+		  							<span id="enable-cards" class="slds-checkbox_faux_container">
+		  								<span class="slds-checkbox_faux"></span>
+		  							</span>
+		  						</label>
+		  					</div>
+		  				</div>
+		  				<div class="enable-distance-content">
+			  				<div class="slds-form-element slds-m-top_small">
+								<div class="slds-form-element__control">
+									<div class="slds-select_container">
+										<select class="slds-select" id="distanceTrackingField">
+											<!-- geolocation options added-->
+										</select>
+									</div>
+								</div>
+							</div>
+						</div>
+						<hr/>
+
+		  				<!-- sorting -->
+		  				<div class="slds-text-heading_small slds-m-top_large"><span class="js-primary-object-name"></span> Sorting</div>
+		  				<div class="slds-m-top_x-small">Customize <span class="js-primary-object-name"></span> sorting to match your needs. Sort by distance if a geolocation field is available or the object, by created date, or simply alphabetically.</div>
+		  				<div class="slds-form-element select-wrapper slds-m-top_small">
+							<div class="slds-form-element__control">
+								<div class="slds-select_container">
+									<select class="slds-select" id="primarySorting">
+										<!-- primary object fields added-->
+									</select>
+								</div>
+							</div>
+							<div class="slds-form-element__control sorting-order">
+								<div class="slds-select_container">
+									<select class="slds-select" id="primarySortingOrder">
+										<option value="ascending">Ascending (A-Z)</option>
+										<option value="descending">Descending (Z-A)</option>
+									</select>
+								</div>
+							</div>
+						</div>
+						<hr/>
+
+						<!-- check in -->
+						<div class="slds-text-heading_small slds-m-top_large">Enable Check In</div>
+		  				<div class="slds-m-top_x-small enable-description">Check In is only accessible with Mobile Cards enabled.
+		  					<p class="slds-m-top_small">
+			  				Enable Check In to:
+				  				<ul>
+				  					<li>Allow users to indicate they have arrived at their destination.</li>
+				  					<li>Allow users to check-out when they've completed work at their destination.</li>
+				  				    <li>Require users to check in prior to completing forms at a location.</li>
+				  				    <li>Generate detailed data on locations and date/times of form saves.</li>
+				  				</ul>
+				  			</p>
+		  				</div>
+		  					<div class="slds-m-top_x-small">
+			  					<div class="slds-form-element enable-wrapper enable-cards-content">
+			  						<label class="slds-checkbox_toggle slds-grid">
+			  							<span class="slds-form-element__label slds-m-bottom_none">Enable/Require Check In</span>
+			  							<input type="checkbox" id="enableCheckIn" name="enable-checkin" value="enable-checkin"/>
+			  							<span id="enable-checkin" class="slds-checkbox_faux_container">
+			  								<span class="slds-checkbox_faux"></span>
+			  							</span>
+			  						</label>
+			  					</div>
+			  				</div>
+			  				<article class="slds-card slds-m-top_small js-enable-checkin-content tooltip-active">
+			  					<div class="slds-card__body slds-card__body_inner">
+			  						<div class="slds-text-heading_small">Check In Relationship</div>
+									<div class="slds-m-top_x-small">The check in relationship determines how the Check In record will be related to the <span class="js-primary-object-name"></span>. Please select a relationship below.</div>
+									<div class="slds-form-element select-wrapper slds-m-top_small">
+										<div class="slds-form-element__control">
+											<div class="slds-select_container">
+												<select class="slds-select" id="checkinRelationship">
+													<!-- relationship fields -->
+												</select>
+											</div>
+										</div>
+										<svg class="slds-button__icon tooltip-image" aria-hidden="true" title="If this picklist has no options please create a lookup field on the Check In object to the primary object.">
+											<use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/action-sprite/svg/symbols.svg#info')}"></use>
+										</svg>
+									</div>
+									
+			  					</div>
+			  				</article>
+		  				<hr/>
+		  				<!-- footer -->
+		  				<div class="slds-docked-form-footer">
+		  					<div class="slds-hide slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
+								<h2>Please correct errors prior to saving.</h2>
+							</div>
+							<div>
+			  					<button type="button" class="slds-button slds-button_brand" id="saveMobileAdminBtn">Save</button>
+							</div>
+						</div>
+		  			</div>
+		  			<!-- Offline Data Tab -->
+		  			<div class="slds-tabs_default__content slds-hide" role="tabpanel">
+		  				<div class="slds-text-heading_medium">Select objects to take offline in Youreka mobile</div>
+						<div class="slds-box slds-theme--info slds-m-top--large slds-m-bottom--large">
+							<p>Mobile users should press the 'Prep for Offline' button on the Sync tab, within the mobile app, to download Salesforce records to their device. Only records from objects selected below will be downloaded.</p>
+						</div>
+						<div class="slds-m-around_medium slds-border_bottom slds-p-bottom_large">
+							<p class="slds-text-heading_small slds-p-bottom_small">Selected Objects</p>
+							<div class="js-pills "></div>
+						</div>
+						
+						<!-- offline objects table -->
+						<div class="slds-m-around_medium">
+							<table id="dataTable" class="display" width="100%"></table>
+						</div>
+						<hr/>
+						<!-- footer -->
+						<div class="slds-docked-form-footer">
+							<div class="slds-hide slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
+								<h2>Please correct errors prior to saving.</h2>
+							</div>
+							<div>
+								<button type="button" class="slds-button slds-button_brand" id="saveOfflineObjects">Save</button>
+							</div>
+						</div>
+		  			</div>
+				</div>
+
+				<div class="slds-spinner_container slds-is-fixed js-save-spinner slds-hide">
+					<div role="status" class="slds-spinner slds-spinner_medium">
+						<span class="slds-assistive-text">Loading</span>
+						<div class="slds-spinner__dot-a"></div>
+						<div class="slds-spinner__dot-b"></div>
+					</div>
+				</div>
+			</apex:outputPanel>
+		</div>
+	</body>
+</html>
+</apex:page>

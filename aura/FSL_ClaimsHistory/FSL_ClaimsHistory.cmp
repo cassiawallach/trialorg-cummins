@@ -1,0 +1,178 @@
+<aura:component controller="FSL_CL_ClaimHistoryController" implements="force:appHostable,flexipage:availableForAllPageTypes,force:lightningQuickAction,forceCommunity:availableForAllPageTypes" access="global" >
+    <aura:attribute name="searchValuePSN" type="String"/> 
+    <aura:attribute name="ClaimList" type="List"/>
+    <aura:attribute name="isPopupOpen" type="boolean" default="false"/>
+    <aura:attribute name="narrativeList" type="List"/>
+    <aura:attribute name="isClaimListEmpty" type="boolean" default="false"/>
+    <aura:attribute name="isClaimIntException" type="boolean" default="false"/>
+    <lightning:navigation aura:id="navService"/>
+    <aura:attribute name="claimNumber" type="String"/> 
+    <aura:attribute name="showSpinner" type="Boolean" default="true"/>     <!--Sruthi added as part of story VGRS2-329 3/21/2022-->
+    <!--karthikG POC changes-->
+    <aura:method name="sampleMethodCH" action="{!c.handlePSNSearch}" access="PUBLIC"> 
+          <aura:attribute name="fromParentSearch" type="Boolean" />
+      </aura:method>
+       <div class="slds-section slds-is-open">
+        <div class="slds-section__content">
+            <!--div class="slds-form slds-form_horizontal">
+                <lightning:layout class="slds-m-around_small slds-m-bottom_x-small slds-container_center slds-theme_default slds-wrap" multipleRows="true">
+                    <lightning:layoutItem size="4">
+                        <lightning:input class="slds-p-right_none slds-p-left_none" label="{!$Label.c.EVL_PSN}" value="{!v.searchValuePSN}" required="true" type="text" variant="standard"></lightning:input>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="4">
+                        <lightning:button class="slds-m-top_xx-small slds-m-left_x-small slds-theme_destructive slds-align_absolute-center" onclick="{! c.handlePSNSearch }" variant="destructive" type="button" label="{!$Label.c.CSS_Search}"></lightning:button>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="4"></lightning:layoutItem>
+                </lightning:layout>
+            </div-->
+            <!--karthikG POC changes-->
+        </div>
+    </div>
+    <!--Sruthi added as part of story VGRS2-329 3/21/2022-->
+    <aura:if isTrue="{!v.showSpinner}"> 
+        <div class="slds-spinner slds-spinner_medium slds-spinner_brand" role="status">
+            <span class="slds-assistive-text">Loading...</span>
+            <div class="slds-spinner__dot-a"></div>
+            <div class="slds-spinner__dot-b"></div>
+        </div>        
+    </aura:if>
+    <!-- Added by Sruthi VGRS2-332 3/24/2022-->
+    <aura:if isTrue="{!v.isClaimIntException}">
+        <div class="slds-text-align_center slds-text-color_destructive">
+            <h2> {!$Label.c.ClaimHistory_Servicedown} </h2>
+        </div>
+        
+        <aura:set attribute="else">
+            
+            <aura:if isTrue="{!v.isClaimListEmpty}">
+                <div class="slds-text-align_center slds-text-color_destructive">
+                    <h2> {!$Label.c.FSL_NoClaimHistory} </h2>
+                </div>
+                
+                <aura:set attribute="else">
+                    <table class="slds-table slds-table--bordered slds-table--cell-buffer slds-table--striped slds-max-medium-table--stacked-horizontal" role="grid">
+                        <thead>
+                            <tr class="slds-text-title_caps">
+                                <th>
+                                    <div class="slds-truncate" title="Failure Date">{!$Label.c.CSS_Failure_date}</div>
+                                </th>
+                                <th>
+                                    <div class="slds-truncate" title="Failure Point">{!$Label.c.CSS_Failure_Pointc}</div>
+                                </th>
+                                <th>
+                                    <div class="slds-truncate" title="Root Cause">{!$Label.c.CSS_Root_Cause}</div>
+                                </th>
+                                <th>
+                                    <div class="slds-truncate" title="Repair Location">{!$Label.c.css_Repair_Location}</div>
+                                </th>
+                                <!--Sruthi-commenting  Narratives column as part of story CT1-719 08/05/2021-->
+                                <!-- Revathi - Enabling again for NIN-2 & 97 -->
+                                <th>
+                                    <div class="slds-truncate" title="Narratives">{!$Label.c.CSS_Narratives}</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.ClaimList}" var="claim">
+                                <tr class="slds-hint-parent">
+                                    <td role="gridcell" class="slds-cell-wrap">
+                                        <div class="slds-truncate" title="{!claim.sFailure_date}">{!claim.sFailure_date}</div>
+                                    </td>
+                                    <td role="gridcell" class="slds-cell-wrap">
+                                        <div class="slds-truncate" title="{!claim.sFailure_Pointc +' '+ claim.sFailure_Measure}" data-label="Role">
+                                            {!claim.sFailure_Pointc +' '+ claim.sFailure_Measure}
+                                        </div>
+                                    </td>
+                                    <td role="gridcell" class="slds-cell-wrap">
+                                        <div class="slds-truncate" title="{!claim.sRoot_Cause}" data-label="Role">{!claim.sRoot_Cause}</div>
+                                    </td>
+                                    <td role="gridcell" class="slds-cell-wrap">
+                                        <div class="slds-truncate" title="{!claim.sRepair_Location}" data-label="Role">{!claim.sRepair_Location}</div>
+                                    </td>
+                                    <!--commenting as part of CT1-719 -Sruthi (08/05/2021)-->
+                                    <!-- Revathi - Enabling it again for NIN-2 & 97-->
+                                    <td role="gridcell" class="slds-cell-wrap">
+                                        <div class="slds-truncate" title="View Narrative" data-label="Role">
+                                            <a onclick="{!c.openModal}" data-claim="{!claim.sClaim}" style="color:#c23934 !important;" >{!$Label.c.EVL_View_Narratives} </a> 
+                                        </div>
+                                    </td>
+                                </tr>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </aura:set>
+            </aura:if>
+            
+        </aura:set>
+    </aura:if>
+    
+    
+    <aura:if isTrue="{!v.isPopupOpen}">
+        <div role="dialog" tabindex="-1" aria-labelledby="header99" class="slds-modal slds-fade-in-open ">
+            <div class="slds-modal__container">
+                <div class="slds-modal__header">
+                    <button class="slds-button slds-modal__close slds-button--icon-inverse" title="Close" onclick="{!c.closeModal}">
+                        X
+                        <span class="slds-assistive-text"></span>
+                    </button>
+                    <h2 id="header99" class="slds-text-heading--medium">   </h2> 
+                </div>
+                <div class="slds-modal__content slds-p-around--medium">
+                    <!-- <div class="slds-p-around_medium">
+                        <div class="slds-grid slds-grid_vertical">
+                            <aura:iteration items="{!v.narrativeList}" var="narrative">
+                                <div class="slds-size_1-of-3">
+                                    <div  class="slds-float_right">
+                                        <b>{!$Label.c.CSS_Complaint}:</b> 
+                                    </div>
+                                    <br/>
+                                </div>
+                                <div class="slds-size_2-of-3">
+                                    <div class="slds-float_left slds-p-left_small">
+                                        <b><ui:outputText value="{!narrative.sComplaint}"/></b> <br/>
+                                    </div>
+                                </div>
+                            </aura:iteration>
+                            
+                            <div class="slds-col slds-size_1-of-3">
+                                <span>
+                                    
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-3">
+                                <span>
+                                    <b>{!$Label.c.CSS_Cause}:</b>
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-3">
+                                <span>
+                                    <b>{!$Label.c.CSS_Correction}:</b>
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-3">
+                                <span>
+                                    <b>{!$Label.c.CG_RejectReason}:</b>
+                                </span>
+                            </div>
+                            <div class="slds-col slds-size_1-of-3">
+                                <span>
+                                    <b>{!$Label.c.CSS_Narratives}:</b>
+                                </span>
+                            </div>
+                        </div>
+                    </div> --> 
+                    <div>
+                        <c:eVL_Narratives claimnumber = "{!v.claimNumber}"/>
+<!--                        <c:eVL_Narratives aura:id="childlwc"/>-->
+                    </div>     
+                </div>
+                <div class="slds-modal__footer">
+                    <lightning:button class="slds-button slds-button--neutral" onclick="{!c.closeModal}" label="{!$Label.c.css_Close}" />
+                </div>
+            </div>
+
+        </div>
+        <div class="slds-backdrop slds-backdrop--open"></div>
+    </aura:if>
+    
+</aura:component>

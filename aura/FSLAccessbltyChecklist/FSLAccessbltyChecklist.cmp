@@ -1,0 +1,252 @@
+<!--FSLAccessbltyChecklist-->
+<aura:component controller="FSLAccessibilityChecklistCls" 
+                implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global">
+    <!--use boolean attribute for Store true/false value,
+
+    make default to "false" so modal box are not display on the load of component. 
+    --> 
+    <aura:attribute name="cssSolId" type="String" default=""/> <!--added on 5-21-->
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+    <aura:attribute name="cssSRTs" type="List"/>
+    <aura:attribute name="noRespFound" type="Boolean" default="false"/>
+    <aura:attribute name="showDialog" type="Boolean" default="false"/>
+    <aura:attribute name="columnHeaders" type="list"/>
+    <aura:attribute name="recordTypeName" type="String"/>
+    <!--pagination logic related attributes-->
+    <aura:attribute name="PaginationList" type="list"/> 
+    <aura:attribute name="orginalSRTList" type="list"/>
+    <aura:attribute name="selectedCount" type="integer" default="0" description="selected Records Count"/>
+    <aura:attribute name="startPage" type="Integer" />
+    <aura:attribute name="endPage" type="Integer"/>
+    <aura:attribute name="totalRecordsCount" type="Integer"/>
+    <aura:attribute name="pageSize" type="Integer" default="9999" description="number of records to be display on per page"/>
+    <aura:attribute name="currentPage" type="integer" default="1"/>
+    <aura:attribute name="totalPagesCount" type="integer"/>
+    <aura:attribute name="bNoRecordsFound" type="boolean"/>
+    <aura:attribute name="recsToSave" type="List"/>
+    <aura:attribute name="selectedRecKeys" type="List"/>
+    <!--<aura:attribute name="showspinner" type="Boolean" default="false"/>-->
+    
+    <aura:attribute name="openModelCmp" type="boolean" /><!--added by vinod yelala for accessibility checklist-->
+    <aura:attribute name="openModelCmpSec" type="boolean"/><!--added by vinod yelala for accessibility checklist-->
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="fetchSRT" type="Boolean" default="true"/>
+    <!--ends pagination logic-->
+    <aura:attribute name="hasValidData" type="Boolean" default="true"/> <!--added by vinod 8/27-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" access="global"/>
+    <aura:attribute name="currentRow" type="Integer" /><!--added current row attribute by vinodo 9/5-->
+    <aura:attribute name="selectedRowOnParent" type="Integer"/>
+    <aura:attribute name="disableNoAccSRT" type="Boolean" default="false"/>
+    <aura:attribute name="disableOpenAccSRT" type="Boolean" default="false"/>
+    <aura:attribute name="AccessSRTCheckbox" type="Boolean" default="false"/>
+    <aura:attribute name="stageName" type="String" default=""/> <!-- Added by Harsha Ragam -->
+    <!-- <aura:attribute name="accSrtCount" type="Integer" default="0"/>-->
+    <!--Use "slds-m-around_xx-large" class to add standard X-Large padding to the component--> 
+    <!-- Starts Added by vinod for accessibility checklist SRT-->
+     <!--Newly added by Harsha START-->	
+    <aura:attribute name="noOneSelected" type="Boolean" default="false"/>	
+    <aura:attribute name="isSaveCloseHit" type="Boolean" default="false"/>	
+    <aura:attribute name="hasrecordPresent" type="Boolean" default="false"/>	
+    
+    <!--Newly added by Harsha END-->
+    <c:FSLSpinner showSpinner="{!v.showSpinner}"/> 
+    
+    <!--<div class="slds-hide slds-spinner_container" aura:id="mySpinner">
+        <div  role="status" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+            <span class="slds-assistive-text">Loading</span>
+            <div class="slds-spinner__dot-a"></div>
+            <div class="slds-spinner__dot-b"></div>
+        </div>
+    </div>-->
+    <!--</aura:if>-->
+    <div class="boxingCSS">
+        <h2><b><b style="color:red;">*</b>{!$Label.c.AccessSRT_Message}</b></h2>
+        <div>{!$Label.c.FSL_Access_SRT_Check}</div>
+        <!--<aura:if isTrue="{!v.disableOpenAccSRT}">AccessSRTCheckbox-->
+           <lightning:layout>
+            <lightning:layoutItem size="3">
+                <aura:if isTrue="{!v.AccessSRTCheckbox}">
+                    <div onclick="{!c.checkurlink}" >{!$Label.c.Access_SRT} </div>
+                    <aura:set attribute="else"> 
+                        <div onclick="{!c.checkurlink}" ><a href="" >{!$Label.c.Access_SRT}</a></div>
+                        <!--<ui:inputText onclick="{!c.checkurlink}"><a href="" >{!$Label.c.Access_SRT}</a></ui:inputText>-->
+                    </aura:set> 
+                </aura:if>
+            </lightning:layoutItem>
+            <!-- <div class="slds-float_center">-->
+            <lightning:layoutItem size="3">
+                <aura:if isTrue="{!v.stageName!='Repair'}"> <!-- Added by Harsha Ragam for CT3-96 -->
+                    <!--Newly added by Harsha START-->
+                     <!--CT3-613 changes by Murali-->
+                    <!--<aura:if isTrue="{!v.noOneSelected}">
+                        <b><ui:inputCheckbox aura:id="checkbox" label="{!$Label.c.CG_No_Access_SRT_required}" change="{!c.onCheck}" class="slds-float_left"/></b>
+                        <aura:set attribute="else"> -->
+                            <aura:if isTrue="{!v.disableNoAccSRT}">
+                                
+                                <b><ui:outputCheckbox aura:id="checkboxdis" value="{!v.AccessSRTCheckbox}" class="slds-float_left"/> {!$Label.c.CG_No_Access_SRT_required}</b>   
+                                <aura:set attribute="else">
+                                      <!--mySol:{!v.cssSolId}-->
+                                    <b><ui:inputCheckbox aura:id="checkbox" label="{!$Label.c.CG_No_Access_SRT_required}" change="{!c.onCheck}" class="slds-float_left"/></b>
+                                    
+                                   <!--<div class="slds-float_right">
+            <input type="checkbox" name="options" id="checkbox-unique-id-78" value="checkbox-unique-id-78" disabled="" />
+            <label class="slds-checkbox__label" for="checkbox-unique-id-78">
+              <span class="slds-checkbox_faux"></span>
+              <span class="slds-form-element__label">Checkbox Label</span>
+            </label>
+          </div> -->
+							</aura:set>	
+                            </aura:if>	
+                       <!-- </aura:set>	
+                    </aura:if> -->
+                    <!--Newly added by Harsha END-->	
+                </aura:if> <!-- Added by Harsha Ragam for CT3-96 -->	
+            </lightning:layoutItem>
+        </lightning:layout>
+        <!--</div> -->
+        <aura:if isTrue="{!v.openModelCmp}">
+            
+            <!-- Ends Added by vinod for accessibility checklist SRT-->
+            <div class="slds-m-around_xx-large slds-show" aura:id="modelDlg">
+                <!--Use aura:if tag to display Model Box, on the bese of conditions. [isOpen boolean attribute] -->   
+                <aura:if isTrue="{!v.isOpen}">
+                    <!--###### MODAL BOX Start######--> 
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1"
+                             class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container"  
+                             style= "margin-left: 15% !important;width: 90% !important;max-width: 70% !important; min-width: 20rem !important;">
+                            <header class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close"
+                                                      onclick="{! c.closeModel }"
+                                                      alternativeText="close"
+                                                      variant="bare-inverse"
+                                                      class="slds-modal__close"/>
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">{!$Label.c.css_Accessibility_Checklist}</h2>
+                                <br/> <!-- Added by Sriprada S as part of VGRS2-57: 08/03/2022 -->
+                                <div class="slds-text-align_left">
+                                    <aura:if isTrue="{!!v.noRespFound}">
+                                        <b style="color:red;margin:0px 0px 20px;height:30px;">{!$Label.c.FSL_AccessSRTCheckMessage}</b>
+                                    </aura:if> <!--End here - Sriprada S -->
+                                </div>
+                            </header>
+                            <aura:if isTrue="{!!v.noRespFound}"> 
+                                <div class="slds-scrollable">
+                                    <table role="grid" class="slds-table slds-table_fixed-layout slds-table_bordered slds-table_resizable-cols slds-no-row-hover slds-scrollable_none">
+                                        <thead>
+                                            <tr class="slds-line-height_reset">
+                                                <!--<aura:iteration items="{!v.columnHeaders}" var="col">
+                                        <th scope="col" data-label="Choose"  class="slds-align_absolute-center">
+                                            <div class="slds-truncate" title="Diagnose">
+                                                {!col}
+                                            </div>
+                                        </th>
+                                    </aura:iteration>-->
+                                                <th scope="col" class="slds-size--1-of-8 cellAlign">
+                                                    <div class="slds-truncate">
+                                                        <!--<ui:inputCheckbox aura:id="selectAllCB" class="slds-align_absolute-center"
+                                                                          change="{!c.setQtyForAllRows}" value=""/>-->
+                                                        {!$Label.c.CSS_Select}
+                                                    </div>
+                                                </th>
+                                                <th scope="col" class="slds-size--1-of-8 cellAlign">
+                                                    <div class="slds-truncate">
+                                                        {!$Label.c.css_SRT_Code}
+                                                    </div>
+                                                </th>
+                                                <th scope="col" class="slds-size--1-of-8">
+                                                    <div class="slds-truncate">
+                                                        {!$Label.c.css_Quantity}
+                                                    </div>
+                                                </th> 
+                                                <th scope="col" class="slds-size--5-of-8">
+                                                    <div class="slds-truncate">
+                                                        {!$Label.c.css_SRT_Description}
+                                                    </div>
+                                                </th>
+                                            </tr>  
+                                        </thead> 
+                                        <tbody>
+                                            <aura:iteration items="{!v.PaginationList}" var="csrtWrp">
+                                                <tr>
+                                                    <th scope="row" data-label="Select" class="cellAlign">
+                                                        <ui:inputCheckbox aura:id="selectCB" class="slds-align_absolute-center"
+                                                                          change="{!c.assignQty}" value="{!csrtWrp.isSelected}"
+                                                                          text="{!csrtWrp.cssSrt.Name}"/>
+                                                    </th>
+                                                    <td scope="row" data-label="Select" class="cellAlign">
+                                                        {!csrtWrp.cssSrt.Name}
+                                                    </td>
+                                                    <td>
+                                                        <lightning:input aura:id="qty" style="width:5.5rem" type="text" name="input1"
+                                                                         value="{!csrtWrp.cssSrt.SRT_Quantity__c}"
+                                                                         onchange="{!c.validateQty}"/> 
+                                                        <!-- <div class="slds-truncate" >
+                                                               value="{!csrtWrp.cssSrt.SRT_Quantity__c}"
+                                                     <abbr class="slds-required" title="required" style="font-size: 1rem;">* </abbr>
+                                                               </div> -->
+                                                        
+                                                    </td>
+                                                    <td scope="row" data-label="Select" class="tdWrap">
+                                                        {!csrtWrp.cssSrt.SRT_Title__c}
+                                                    </td>
+                                                </tr>
+                                            </aura:iteration>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <aura:set attribute="else">
+                                    <!--###### MODAL BOX BODY Part Start######-->                    
+                                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                        <p style="font-size: 1.25rem;" class="slds-align_absolute-center">
+                                            <b>{!$Label.c.FSLNoSRTsFoundAlert}</b><!--changed on 5/8-to add custom label-->
+                                        </p>
+                                    </div> 
+                                    
+                                    <!--###### MODAL BOX FOOTER Part Start ######-->
+                                </aura:set>
+                                
+                            </aura:if>                    	
+                            
+                            <footer class="slds-modal__footer">
+                                <!--  Pagination Buttons Start -->
+                                <div class="slds-text-align_right">
+                                    <!--    <lightning:button label="Previous"
+                                                      disabled="{!v.startPage == 0}"  
+                                                      onclick="{!c.navigation}"
+                                                      variant="brand"
+                                                      iconName="utility:back"
+                                                      name="previous"/>                            
+                                    <span class="slds-badge slds-badge_lightest"
+                                          style="margin-right: 10px;margin-left: 10px;">
+                                        Page {!v.currentPage} out of {!v.totalPagesCount}
+                                    </span>                            
+                                    <lightning:button label="Next"
+                                                      disabled="{!(v.endPage + 1) >= v.totalRecordsCount}" 
+                                                      onclick="{!c.navigation}"
+                                                      variant="brand"
+                                                      iconName="utility:forward"
+                                                      iconPosition="right"
+                                                      name="next"/>  -->                          
+                                    <!--  Pagination Buttons End -->   
+                                    
+                                    <lightning:button variant="brand" 
+                                                      label="Save and Close"
+                                                      title="Save SRTs and Close Model"
+                                                      onclick="{! c.saveSRTs }"/>
+                                    
+                                </div>  
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                    <!--###### MODAL BOX Part END Here ######-->
+                    
+                </aura:if>
+            </div>
+            
+        </aura:if>
+        
+    </div>
+    
+</aura:component>

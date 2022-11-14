@@ -1,0 +1,72 @@
+<aura:component controller = "FSL_CL_ServiceOrder_LightningPath"
+                implements="flexipage:availableForRecordHome,force:hasRecordId"
+                access="global" >
+    <lightning:overlayLibrary aura:id="overlayLib"/>
+    <aura:attribute name="currentStage" type="String"/>
+    <aura:attribute name="WorkOrder" type="Object"/>
+    <aura:attribute name="showPopup" type="Boolean" default="false"/>
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="repairRespList" type="String[]" />
+    <aura:attribute name="cssSolns" type="object[]"/>
+    <aura:attribute name="repairMap" type="map"/>
+    <aura:handler name="init" value="{!this}" action="{!c.loadChevron}"/>
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.recordId}"
+                      fields="Shop_Work_Order__c,Type__c"
+                      targetFields="{!v.WorkOrder}"
+                      />
+    
+    <aura:if isTrue = "{!and(or(v.currentStage == 'Intake',v.currentStage == 'Job Plan'),v.WorkOrder.Shop_Work_Order__c == null)}">
+        <p>{!$Label.c.FSL_ClosePopupIntake}</p>
+        <div class="slds-float_right">
+            <lightning:button variant="brand" label="{!$Label.c.FSL_Close_Chevron_Cancel}" onclick="{!c.handleCancelModal}" />
+            <lightning:button variant="brand" label="{!$Label.c.FSL_Close_Chevron_Close}" onclick="{!c.handleIntakeClose}" />
+        </div>
+        
+    </aura:if>
+    
+    <aura:if isTrue = "{!and(v.WorkOrder.Shop_Work_Order__c != null,not(v.cssSolns.length>0))}">
+        
+        <!-- <aura:if isTrue = "{!and(v.currentStage == 'Schedule',v.WorkOrder.Shop_Work_Order__c != null)}"> -->
+        <lightning:recordEditForm aura:id="recordScheduleForm"
+                                  onsubmit="{!c.handleScheduleClose}"
+                                  recordId="{!v.recordId}"
+                                  objectApiName="WorkOrder">
+            {!$Label.c.FSL_Close}
+            
+            <aura:if isTrue = "{!and(v.WorkOrder.Type__c != 'Internal',v.WorkOrder.Shop_Work_Order__c != null)}">
+                <lightning:inputField fieldName="FSL_Resolution__c" />
+                <lightning:inputField fieldName="FSL_Feedback_Comments__c" />
+            </aura:if>
+            <div class="slds-float_right">
+                <lightning:button variant="brand" label="Cancel" onclick="{!c.handleCancelModal}" />
+                <lightning:button variant="brand" label="Close" onclick="{!c.handleScheduleClose}" />
+            </div>
+        </lightning:recordEditForm>
+    </aura:if>
+    
+    <aura:if isTrue="{!and(v.showPopup,v.cssSolns.length>0)}">
+        <p>{!$Label.c.FSL_Close}<br/>
+            {!$Label.c.FSL_PopUp}</p>
+        <aura:iteration items="{!v.cssSolns}" var="cs">
+            <!-- <p>{!cs.solutionTitle}-{!cs.solutionName}</p> -->
+            <lightning:recordEditForm aura:id="recordSolutionForm"
+                                      onsubmit="{!c.handleSolutionClose}"
+                                      recordId="{!cs.Id}"
+                                      objectApiName="CSS_Solutions__c">
+                <lightning:messages />
+                <lightning:outputField fieldName="Name"/>
+                <lightning:outputField fieldName="Solution_Title__c"/>
+                <lightning:inputField fieldName="Repair_Response__c" class="{!cs.Id}" required="True" aura:id="RepairResponseId" onchange="{!c.handleRepairValueChange}" />
+            </lightning:recordEditForm>
+            
+        </aura:iteration> 
+        <div class="slds-float_right">
+            <lightning:button variant="brand" name="cancel" label="Cancel" onclick="{!c.handleCancelModal}" />
+            <lightning:button variant="brand"  name="save" label="Close" onclick="{!c.handleSolutionClose}" />
+        </div>
+    </aura:if>
+    
+    
+    
+</aura:component>

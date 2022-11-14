@@ -1,0 +1,156 @@
+<apex:component >
+        
+  <title>Service System</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+       <style>
+ 	.css_alert_session_red{
+            background: url("{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/CMI-WebIcon-Sprite.png')}") no-repeat scroll -130px -2811px rgba(0, 0, 0, 0);
+            display: inline-block;
+                 width: 25px;
+                height: 20px;
+                border: 0px;
+                margin: 0px 0px 0px 10x;
+                position: relative;
+                float: left;
+                zoom: 3;
+        }   
+           
+            .noclose .ui-dialog-titlebar-close {
+                display:none;
+            }
+           
+           .ui-state-hover, .ui-widget-content .ui-state-hover, .ui-widget-header .ui-state-hover, .ui-state-focus, .ui-widget-content .ui-state-focus, .ui-widget-header .ui-state-focus, .ui-button:hover, .ui-button:focus{
+               background-color:#007c7c;
+               color:white;
+           }
+
+           .ui-state-default, .ui-widget-content .ui-state-default, .ui-widget-header .ui-state-default, .ui-button, html .ui-button.ui-state-disabled:hover, html .ui-button.ui-state-disabled:active{
+               background-color:#007c7c;
+               color:white
+           }
+           
+            .ui-widget-overlay {
+            background:#aaa !important;
+           }
+           
+           .ui-button .ui-button-text {
+               background-color:#007c7c !important;
+               color:white !important;
+           }
+           
+           .ui-dialog {
+             position : fixed !important;
+           }
+           
+    </style>
+    <script>
+    
+    function redirectUserToLogout(){
+        //alert('Inside Redirect');
+        window.open('/secur/logout.jsp', '_self');
+    }
+
+  /* Popup window and button */
+        var whetherPressedExtendOrLogout = false; 
+    var countdown;
+    var i=0;
+    var diff,seconds;
+    $(function () {
+        $("#dialog").dialog({
+            bgiframe: true,
+            autoOpen: false,
+            minHeight: 200,
+            width: 400,
+            modal: true,
+            closeOnEscape: false,
+            draggable: false,
+            resizable: false,
+            dialogClass: "noclose",
+            open: function( event, ui ) {
+					var elt = $(this).find('#time')[0]
+                    countdown = startTimer(elt)
+                    },
+            close: function( event, ui ) {
+                    clearInterval(countdown);
+                    },
+            buttons: {
+                    '{!$Label.CSS_ExtendSession}': function( event, ui ){
+                        callback(true);
+                        $(this).dialog('close');
+                      
+                    },
+                    '{!$Label.CSS_Logout}': function(){
+                        callback(false);
+                        $(this).dialog('close');
+                        
+                    }
+                },
+        });
+    });
+
+        var TimeRemaining;
+        TimeRemaining = ({!$Label.CSS_SessionTimeout})*60000;
+        /* Display popup window and start asynch logic, which work if user won't press any button */
+        var notification = function() {
+
+          setTimeout(
+            function () {
+              if (!whetherPressedExtendOrLogout) {
+                $('#dialog').dialog('close');
+                  redirectUserToLogout();
+              } else {
+                whetherPressedExtendOrLogout = false; 
+              }
+            }
+            , TimeRemaining);
+            i=0;
+            $('#dialog').dialog('open');
+        }
+        
+        //Method to extend user's session time or redirect user to logout page based on the user's selection
+        var callback = function(result) {
+          if (result == true) {
+            whetherPressedExtendOrLogout = true;
+            resetTimeout();
+          } else {
+            whetherPressedExtendOrLogout = true;
+              redirectUserToLogout();
+          }
+        }
+        
+        resetTimeout();
+   
+       var timeoutID;
+       //Method to reset the time
+        function resetTimeout(){
+        if( timeoutID ) clearTimeout( timeoutID );
+        timeoutID = setTimeout( notification, (({!$Label.CSS_ActiveSession})*60000));
+        }
+    //call the resettimeout method if there is any action from user on CSS application
+    document.onkeyup   = resetTimeout;
+    document.onkeydown = resetTimeout;
+    document.onclick   = resetTimeout;
+   
+    function startTimer(display) {
+    function timer() {
+        i=i+1;
+        diff = ((((TimeRemaining) / 1000)-i) | 0);
+        minutes = ((diff % 3600) / 60) | 0;
+        seconds = (diff % 60) | 0;
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+        display.textContent = minutes + ":" + seconds;
+    };
+    timer();
+    return setInterval(timer, 1000);
+}
+    
+    </script>
+    
+    <!-- Text to display in the popup  -->
+ <div id="dialog" title="Cummins Service System" style="display:none; text-align:center; margin-top: 40px;font-size:15px;font-family: Arial, Helvetica, sans-serif;"> 
+     <div class="css_alert_session_red "/> {!$Label.CSS_Your_session_will_expire_in} <b style="color:red"><span id="time"></span></b> <b style="color:red"><span id="time1"></span> min </b> 
+ </div>
+</apex:component>

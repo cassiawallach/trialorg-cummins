@@ -1,0 +1,134 @@
+<template>
+    <template if:true={ScreenLoaded}>
+        <c-dbu_page-loader></c-dbu_page-loader>
+      </template>
+    <div class="slds-container_x-large slds-container_center returnReviewPage">
+        <h1 >{label.dbu_Return_ReturnReview_PageHeader}</h1>
+    <template if:true={showMap}>
+        <div class="slds-grid slds-wrap">
+            <div class="slds-col slds-size_1-of-1 slds-large-size_6-of-12 slds-col_padded returnReviewCont">
+        <div class="slds-col slds-size_1-of-1 slds-large-size_10-of-12 slds-col_padded">
+          <span>
+            <div >
+                <lightning-map map-markers={mapMarkers} markers-title={markersTitle} zoom-level={zoomLevel}>
+                </lightning-map>
+            </div>
+          </span>
+        </div>
+        <div class="slds-col slds-size_1-of-1 slds-large-size_6-of-12 slds-col_padded reviewAdd">
+          <span>
+               <div >
+                   <ul>
+              <li>  <strong>{label.dbu_Return_Drop_off_at_Store} </strong></li>
+              <li> {dropStoreName} </li>
+              <li> {dropCity}</li>
+              <li> {dropStreet}, {dropState} </li>
+              <li> {dropCountry} </li>
+              <li> {dropPostalCode}</li>
+            </ul>
+              </div>
+       </span>
+        </div>
+      </div>
+</div>
+    </template>
+    <div class="slds-grid slds-wrap">
+        <h5 >{label.dbu_Return_Items_to_be_returned}</h5>
+        <div class="slds-col slds-size_1-of-1 slds-large-size_12-of-12 slds-col_padded">
+          <div class="slds-grid slds-wrap cartTitHeader">
+            <div class="slds-col slds-size_6-of-12 slds-col_padded item">
+              {label.dbu_Return_Product}
+            </div>
+            <div class="slds-col slds-size_2-of-12 slds-col_padded qty">
+               {label.dbu_Return_Quantity}
+            </div>
+            <div class="slds-col slds-size_2-of-12 slds-col_padded reason">
+               {label.dbu_Return_Reason_for_Return}
+            </div>
+            <div class="slds-col slds-size_2-of-12 slds-col_padded amt">
+             {label.dbu_Return_Price}
+          </div>
+          </div>
+  
+          <template for:each={orderItemList} for:item="order">
+            <div class="slds-grid slds-wrap cartItemRow" key={order.id}>
+              <div class="slds-col slds-size_6-of-12 slds-col_padded slds-grid slds-wrap itemInfo">
+                <div class="slds-col slds-size_3-of-12 slds-col_padded">
+                <!--<img src={order.URI}>-->
+                <c-dbu_image-Generator imageurl={order.URI}></c-dbu_image-Generator>
+
+                </div>
+                <div class="slds-col slds-size_9-of-12">
+                  <template if:true={order.coreReturn}>
+                    {order.sfdcName}
+                  </template>
+                  <template if:false={order.coreReturn}>
+                  <a onclick={goToProductDetailPage} data-id={order.id} data-name={order.sfdcName}>{order.sfdcName}</a>
+                </template>
+                   <template if:true={order.coreReturn}>
+                   <p>{label.dbu_CoreCharge_Availability_Msg}</p>
+                  </template>
+                <template if:true={order.isMsg}>
+                   <p> {label.dbu_Return_HandlingFee15}</p>
+                  </template>
+                  <template if:true={order.isCoreHandlingFee}>
+                    <p> {label.dbu_Return_HandlingFee10}</p>
+                   </template>
+                </div>
+              </div>
+              <div class="slds-col slds-size_2-of-12 slds-col_padded qty">
+              <span> {order.quantity}</span> 
+              </div>
+             
+              <div class="slds-col slds-size_2-of-12 slds-col_padded reason">
+                <template if:true={order.coreReturn}> 
+                    <div> {label.dbu_Return_Core_Refund}</div> 
+                </template>
+              <span> {order.reasonForReturn}</span> 
+              </div>
+              <div class="slds-col slds-size_2-of-12 slds-col_padded amt">
+                <!-- <span > {order.price}</span><br/>
+                <span>{order.priceAfterAppliedHandlingFee}</span> -->
+
+                <template if:true={order.removeStrikeThrough}>
+                  {order.price}
+                </template>
+                  <!-- {order.price} -->
+                  <template if:true={order.isStrikeThrough}>
+                  <div style="text-decoration: line-through;">{order.price}</div>
+                  <div >{order.amtAfterHandlingFee}</div>
+                </template>
+               </div>
+  
+            </div>
+          </template>
+  
+          <div class="slds-grid slds-wrap">
+            <div class="slds-col slds-size_1-of-1 slds-large-size_12-of-12 slds-col_padded estimatedPrice">
+              <p>{label.dbu_Return_EstTax}&nbsp;&nbsp; {refundedTax}</p>
+              <strong>{label.dbu_Return_EstAmt} {estimatedRefundAmount}</strong>
+            </div>
+          </div>
+          <template if:true = {isAddInfo}>
+          <div class="slds-grid slds-wrap">
+            <div class="slds-col slds-size_1-of-1 slds-large-size_12-of-12 slds-col_padded additionalInfo">
+              <h6 class="slds-col_padded">{label.dbu_Return_AddInfo}</h6>
+             <p>{additionalInformation}</p>
+            </div>
+  
+          </div>
+        </template>
+         
+          <div class="buttonsBot slds-col_padded">
+             <lightning-button variant="brand-outline" label={label.dbu_Return_BtnLabel_Back}  onclick={backToReturnMethodPage} ></lightning-button>
+             <lightning-button variant="brand" label={label.dbu_Return_BtnLabel_InitiateReturn}  onclick={initiateReturn} class="btnAlign" disabled={noShipmentWeight}></lightning-button>
+             <template if:true={noShipmentWeight}>
+              <div class="color: #DA291C;">
+                {label.dbu_return_order_error}
+              </div>
+            </template>
+         </div>
+        </div>
+      </div>
+    </div>
+</template>

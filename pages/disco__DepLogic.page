@@ -1,0 +1,261 @@
+<apex:page showHeader="false" sidebar="false" controller="disco.Ctl_DepLogic" cache="false">
+<html>
+<head>
+	<title>Dependent Question Logic</title>
+	<apex:includeScript value="{!URLFOR($Resource.disco__jquery_3_6_0, 'jquery.min.js')}"/>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/qtip2/3.0.3/basic/jquery.qtip.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.2.7/cytoscape.min.js"></script>
+	<script src="{!$Resource.cytoscapeqtip}"></script>
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/qtip2/3.0.3/jquery.qtip.css"/>
+	<apex:styleSheet value="{!URLFOR($Resource.disco__SLDS250, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+</head>
+<style>
+	#cy {
+		width: 100%;
+		height: 100%;
+		position: absolute;
+		top: 50px;
+		left: 0px;
+	}
+	.slds {
+		display: flex;
+		justify-content: center;
+	}
+	.slds .back-btn {
+		position:absolute;
+		top:5px;
+		left:5px;
+		z-index:1000;
+	}
+	.slds .page-title {
+		margin-top:15px
+	}
+	#page-description {
+		margin-left: 200px;
+	}
+
+	.chart-key {
+		position: absolute;
+		left: 6px;
+		padding: 6px;
+	}
+
+	.chart-key span {
+		text-decoration: underline;
+		font-weight: bold;
+		font-size: 16px;
+	}
+
+	.chart-key li {
+		padding: 10px;
+		border-radius: 6px;
+		margin-left: 4px;
+		margin-bottom: 4px;
+		text-align: center;
+	}
+
+	.chart-key .key-question {
+		color: #ffffff;
+	    background-color: #3399ff;
+	}
+
+	.chart-key .key-section {
+		background-color: #ffffff;
+	    border-color: #3399ff;
+	    border-width: 2px;
+	    border-style: solid;
+	    color: #3399ff;
+	}
+
+</style>
+<script>
+var ns = '{!JSENCODE(namespace)}';
+var templateID = '{!JSENCODE(templateId)}';
+var templateName = '{!JSENCODE(templateName)}';
+var isLightningExp = typeof sforce !== 'undefined';
+
+$(document).ready(function() {
+
+	var sfQuestions = JSON.parse('{!JSENCODE(questionsJSON)}');
+	var sfSections = JSON.parse('{!JSENCODE(sectionsJSON)}');
+	var elementsWithLogic = [];
+	var graphData = [];
+	var parentAndChildIds = [];
+	var questionName;
+	var questionFullName;
+	// build more generic question objects
+	for (var i = 0; i < sfQuestions.length; i++) {
+		var thisQuestion = {};
+		thisQuestion.id = sfQuestions[i][ns+'RandomId__c'];
+		thisQuestion.name = sfQuestions[i][ns+'Label__c'];
+		thisQuestion.type = sfQuestions[i][ns+'Type__c'];
+		thisQuestion.elementType = 'question';
+		if (sfQuestions[i].hasOwnProperty(ns+'Dependent_Question_Values__c')) {
+			thisQuestion.logic = JSON.parse(sfQuestions[i][ns+'Dependent_Question_Values__c']);
+		}
+		elementsWithLogic.push(thisQuestion);
+	}
+
+	// build more generic question objects
+	for (var i = 0; i < sfSections.length; i++) {
+		var thisSection = {};
+		thisSection.id = sfSections[i][ns+'RandomID__c'];
+		thisSection.name = sfSections[i].Name;
+		thisSection.elementType = 'section';
+		if (sfSections[i].hasOwnProperty(ns+'Dependent_Question_Values__c')) {
+			thisSection.logic = JSON.parse(sfSections[i][ns+'Dependent_Question_Values__c']);
+		}
+		elementsWithLogic.push(thisSection);
+	}
+
+	// build cytoscape nodes and relationship elements 
+	for (var i = 0; i < elementsWithLogic.length; i++) {
+		var nodeObj = {};
+		/* For Rich Free Text, we add a placeholder name and then set the fullName parameter so that you 
+			can see the fully styled Free Text when you hover on each node that says "Rich Free Text" */
+		questionName = elementsWithLogic[i].type === 'Free Text' ? 'Rich Free Text' : elementsWithLogic[i].name;
+		questionFullName = elementsWithLogic[i].type === 'Free Text' ? elementsWithLogic[i].name : null;
+		nodeObj.data = { "id": elementsWithLogic[i].id, "name": questionName, "fullName": questionFullName, type: elementsWithLogic[i].elementType };
+		graphData.push(nodeObj);
+
+		if (elementsWithLogic[i].hasOwnProperty('logic')) {
+			for (var j = 0; j < elementsWithLogic[i].logic.parentValues.length; j++) {
+				var relationship = {};
+				relationship.data = { "id": "relationship" + i + j };
+				relationship.data.source = elementsWithLogic[i].logic.parentValues[j];
+				relationship.data.target = nodeObj.data.id;
+				parentAndChildIds.push(relationship.data.source);
+				parentAndChildIds.push(relationship.data.target);
+				graphData.push(relationship);
+			}
+		}
+	}
+
+	// remove questions that arent parents or children, leave all relationships
+	var finalGraphData = graphData.filter(function(thisElement) {
+		return thisElement.data.hasOwnProperty('source') || (parentAndChildIds.indexOf(thisElement.data.id) > -1) ;
+	});
+
+	if (finalGraphData.length===0) {
+		$('#no-questions').show();
+		$('#page-description').hide();
+		$('.chart-key').hide();
+		return;
+	}
+
+	//layout
+	var cytoscapeOptions = {
+		name: 'breadthfirst',
+
+		fit: true, // whether to fit the viewport to the graph
+		directed: true, // whether the tree is directed downwards (or edges can point in any direction if false)
+		padding: 30, // padding on fit
+		circle: false, // put depths in concentric circles if true, put depths top down if false
+		spacingFactor: 1.5, // positive spacing factor, larger => more space between nodes (N.B. n/a if causes overlap)
+		boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+		avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
+		nodeDimensionsIncludeLabels: false, // Excludes the label when calculating node bounding boxes for the layout algorithm
+		roots: undefined, // the roots of the trees
+		maximalAdjustments: 1, // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
+		animate: false, // whether to transition the node positions
+		//animationDuration: 500, // duration of animation in ms if enabled
+		//animationEasing: undefined, // easing of animation if enabled
+		ready: undefined, // callback on layoutready
+		stop: undefined // callback on layoutstop
+	};
+	var cy = cytoscape({
+		container: document.getElementById('cy'),
+		layout: cytoscapeOptions,
+		minZoom:.05,
+		maxZoom:10,
+		style: [ // the stylesheet for the graph
+			{
+				selector: 'node',
+				style: {
+					'color': 'white',
+					//'text-outline-width': 2,
+					//'text-outline-color': 'black',
+					'background-color': '#3399ff',
+					'label': 'data(name)',
+					'width': 'label',
+					'padding': '10px',
+					'height': 'label',
+					'text-max-width': '250px',
+					'text-wrap': 'ellipsis',
+					'shape': 'roundrectangle',
+					'text-valign': 'center'
+				}
+			},
+
+			{
+				selector: 'edge',
+				style: {
+					'width': 5,
+					'line-color': '#800080',
+					'curve-style': 'bezier',
+					'target-arrow-color': '#800080',
+					'target-arrow-shape': 'triangle',
+					'target-endpoint': 'outside-to-node'
+				}
+			}
+		],
+		elements: finalGraphData
+	});
+
+	// Set node background-color dynamically
+	cy.nodes()
+		.filter(function(element) {
+		  	return element.isNode() && element.data('type') === 'section';
+		})
+		.style({
+	      'background-color': '#ffffff',
+	      'border-color': '#3399ff',
+	      'border-width': '2px',
+	      'border-style': 'solid',
+	      'color': '#3399ff',
+	    });
+
+	cy.nodes().qtip({
+		content: function() {
+			return this.data('fullName') || this.data('name');
+		},
+		style: {
+			classes: 'qtip-blue qtip-rounded'
+		},
+		show: {
+			event: 'mouseover',
+			solo: true
+		}
+	});
+});
+// navigates back to form template detail page
+function backToTemplateDetail() {
+	if (isLightningExp) {
+		sforce.one.navigateToURL('/apex/'+ns+'FormTemplateDetail?id='+templateID);
+	} 
+	else {
+		window.location.href='/apex/'+ns+'FormTemplateDetail?id='+templateID;
+	}
+}
+</script>
+<body>
+	<div class="slds-scope">
+		<button type="button" class="slds-button slds-button_neutral back-btn" onClick="backToTemplateDetail();" style="back-btn">Back to Form Template</button>
+		<ul class="chart-key"> <span>Chart Key</span>
+			<li class="key-question">Question</li>
+			<li class="key-section">Section</li>
+		</ul>
+		<div id="no-questions" style="display:none;" class="slds-text-heading_medium page-title">
+			This template does not contain any dependent questions.
+		</div>
+		<div id="page-description" class="slds-text-heading_medium page-title">
+			This read-only chart displays the parent/child question and section relationships for the <strong>{!templateName}</strong> template.<br/>
+			You can move questions around to adjust your view.
+		</div>
+	</div>
+	<div id="cy">
+		<!-- content injected by JS -->
+	</div>
+</body>
+</html>
+</apex:page>

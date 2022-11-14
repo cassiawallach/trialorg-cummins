@@ -1,0 +1,139 @@
+<aura:component access="global"
+                implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,lightning:availableForFlowScreens" 
+                controller="EVL_MakeAndModel">
+    <aura:attribute name="recordId" type="Id"/>
+    <aura:attribute name="Make" type="string"/>
+    <aura:attribute name="selectedMake" type="String"/>
+    <aura:attribute name="selectedModel" type="String"/>
+    <aura:attribute name="makesList" type="List"/>
+    <aura:attribute name="modelsList" type="List"/>
+    <aura:attribute name="makeModelsMap" type="List"/>
+    <aura:attribute name="assetId" type="String"/>
+    <aura:attribute name="isAssetLocked" type="Boolean"/>
+    <lightning:workspaceAPI aura:id="workspace"/>
+    
+    <aura:attribute name="selectedApplicationCode" type="String"/>
+    <aura:attribute name="appList" type="List"/>
+    <aura:attribute name="ObjectName" type="String" default="WorkOrder" access="global"/> <!-- Object Name as String-->
+    <aura:attribute name="Application" type="String" default="Application__c" access="global"/>  <!-- Field Name as String-->
+    <aura:attribute name="appPicklist" type="String[]" />
+    <aura:attribute name="errorString" type="String" default=""/> 
+    <aura:attribute name="appErrorMsg" type="String"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="loaded" type="Boolean" default="false" />
+    <aura:attribute name="appCodeChange" type="Boolean" default="false"/> 
+    <aura:attribute name="makeModelChange" type="Boolean" default="false"/>
+    <aura:attribute name="MMFlag" type="Boolean" default="false"/>
+    <aura:attribute name="checkMMChanged" type="Boolean" default="false"/>
+    <aura:attribute name="AppDescription" type="String"/>
+    <aura:attribute name="ApplicationMetadataMap" type="Map"/>
+    <aura:attribute name="isClosed" type="Boolean" default="false" />
+
+
+ <aura:handler name="init" action="{!c.doInit}" value="{!this}" /> 
+    <aura:handler event="c:EVL_RefreshComponent" action="{!c.eventHandler}"/>
+   <!-- <aura:handler name="change" value="{!v.selectedApplicationCode}" action="{!c.doInit}"/> -->
+    <!-- aura if is not supporting with force:input field-->
+    <!--  <aura:handler name="init" value="{!this}" action="{!c.doInit1}" access="global"/>-->
+    
+    <div class="slds">
+    <lightning:layout multipleRows="true">
+        <lightning:layoutItem flexibility="auto" padding="around-small">
+            <!--
+            <label class="slds-form-element__label" style="margin-right: 0.5rem;">Make</label>
+            <lightning:helptext content="Please select an option from the dropdown menu." class="customIcon"/> 
+            -->
+            <lightning:select name="selectItem" label="{!$Label.c.EVL_Make}" value="{!v.selectedMake}" onchange="{!c.loadModels}" aura:id="makeSelectList"
+                              disabled="{!v.isAssetLocked}">
+                
+                
+                <aura:if isTrue="{!v.selectedMake == null || v.selectedMake == ''}">
+                    <option value="">Choose one </option>
+                    <aura:set attribute="else">
+                        <option value="">{!v.selectedMake}</option>
+                    </aura:set>
+                </aura:if> 
+                <aura:iteration items="{!v.makesList}" var="item">
+                    <option value="{!item}">
+                        {!item}
+                    </option>
+                </aura:iteration>
+            </lightning:select>
+        </lightning:layoutItem>
+        <br/>
+        
+        
+        <lightning:layoutItem flexibility="auto" padding="around-small">
+            <!--add custom label for input field-->
+            <!--
+            <label class="slds-form-element__label" style="margin-right: 0.5rem;">Model</label>
+            <lightning:helptext content="Please select an option from the dropdown menu." class="customIcon"/>
+            <br/>
+            -->
+            <!--<lightning:helptext content="Please select an option from the dropdown menu." class="slds-hide"/> -->
+            <lightning:select name="selectItem" label="{!$Label.c.EVL_Model}" value="{!v.selectedModel}" disabled="{!v.isAssetLocked}" onchange="{!c.onModelChange}">
+                <aura:if isTrue="{!v.selectedModel == null || v.selectedModel == ''}">
+                    <option value="">Choose one </option>
+                    <aura:set attribute="else">
+                        <option value="">{!v.selectedModel}</option>
+                    </aura:set>
+                </aura:if> 
+                <aura:iteration items="{!v.modelsList}" var="item">
+                    <option value="{!item}">
+                        {!item}
+                    </option>
+                </aura:iteration>
+            </lightning:select>
+        </lightning:layoutItem>
+        <br/>
+        <lightning:layoutItem flexibility="auto"  padding="around-small">
+           
+            <label class="slds-form-element__label" >{!$Label.c.FSL_Make_Application}</label>
+            <aura:if isTrue="{!not(empty(v.appPicklist))}">
+          <lightning:select aura:id="makeAppCodeList" value="{!v.selectedApplicationCode}" onchange="{!c.getSelectedAppDescription}"  name="makeAppCodeList"  disabled="{!v.isAssetLocked}">
+               <aura:iteration items="{!v.appPicklist}" var="val">
+                    <option value="{!val}"> {!val}</option>
+                </aura:iteration> 
+            </lightning:select> 
+            </aura:if>
+            
+        </lightning:layoutItem> 
+        
+        <lightning:layoutItem flexibility="auto" padding="around-small">
+            <br/>
+            <div class="slds-grid slds-grid--vertical-align-center slds-grid--align-spread ">              
+                <lightning:button onclick="{!c.saveMakeModelsOnWO}" disabled="{!v.isAssetLocked}"
+                                  variant="destructive"
+                                  label="{!$Label.c.FSL_CSSP_Save}"
+                                  class="slds-m-top_xx-small"/>
+            </div>
+        </lightning:layoutItem>
+        <div class="exampleHolder">
+            <aura:if isTrue="{!v.showSpinner}">
+                <lightning:spinner size="medium" />
+            </aura:if> </div>
+        
+        <lightning:layoutItem size="12" padding="around-small">
+            <aura:if isTrue="{!v.appErrorMsg != null}">
+                
+                <lightning:textarea class="slds-text-color_error" style="font-size: 14px;font-weight:bold; overflow:hidden" disabled="true" name="Warning" label="{!$Label.c.FSL_Warning}"
+                                    maxlength="1000" value="{!v.appErrorMsg}"/>
+                <!-- QSOl Link Added by Priyanka CT1-495 on 05/24-->
+                <lightning:formattedUrl value="https://quickserve.cummins.com/qs3/pubsys2/xml/en/memo/2019/m1929.html" label="{!$Label.c.FSL_View_Memo}" target="_blank" />
+            </aura:if>
+        </lightning:layoutItem>
+        <!-- Application Definition Message Added by Priyanka on  | VGRS2-76 -->
+                <lightning:layoutItem size="12" padding="around-small">
+                    <aura:if isTrue="{!v.AppDescription!=null}"> 
+                        <!--Application Definition <br/><br/><div style="border:1px solid #D3D3D3;font-size:14px;height:auto;"> {!v.AppDescription} </div>-->
+                        <lightning:textarea class="slds-text" style="font-size: 14px;font-weight:bold; overflow:hidden" disabled="true" name="Application Definition" label="{!$Label.c.FSL_Application_Definition}"
+                                            maxlength="1000" value="{!v.AppDescription}"/>
+                        
+                    </aura:if>
+                </lightning:layoutItem>
+                
+            
+    </lightning:layout>   
+        
+    </div>
+</aura:component>

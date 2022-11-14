@@ -1,0 +1,503 @@
+<apex:page showHeader="true" sidebar="false" controller="disco.Ctl_UserLicenses">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<head>
+	<apex:styleSheet value="{!URLFOR($Resource.disco__SLDS212, 'assets/styles/salesforce-lightning-design-system.min.css')}"/>
+	<apex:includeScript value="{!URLFOR($Resource.disco__jquery_3_6_0, 'jquery.min.js')}"/>
+	<script src="https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js"></script>
+	<script src="https://cdn.datatables.net/select/1.2.2/js/dataTables.select.min.js"></script>
+	<link rel="stylesheet" href="https://cdn.datatables.net/1.10.15/css/jquery.dataTables.min.css"/>
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/select/1.2.2/css/select.dataTables.min.css"/>
+	<style>
+	/* need to override LDS styling and set a min width*/
+	body {
+		overflow-x: scroll!important; 
+		min-width:1200px;
+	}
+	/* this is standard but if we're in classic need to scope it here instead of body tag */
+	.slds {
+		font-size: .8125rem;
+	}
+	/* override SF classic font  */
+	.slds h1 {
+		font-family: "Salesforce Sans",Arial,sans-serif;
+	}
+	.slds .slds-table td, .slds .slds-table th{
+		font-family: "Salesforce Sans",Arial,sans-serif;
+	}
+	.slds .slds-page-header {
+		font-family: "Salesforce Sans",Arial,sans-serif;
+	}
+	/* lock width of detail blocks */
+	.slds .slds-page-header__detail-block {
+		width: 325px;
+	}
+	.slds .slds-page-header__detail-row {
+		justify-content: center;
+	}
+	/* override position from SLDS style */
+	.slds-notify_container.slds-notify_container-OR {
+		position:fixed;
+		display:none;
+	}
+
+	.search-box {
+		width: 200px;
+	}
+	.more-btn-container {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 50px;
+	}
+	.search-box-container {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		height: 50px;
+	}
+	.assignment-container {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		height: 50px;
+	}
+	.assignment-container .slds-form-element {
+		margin-right: 5px;
+	}
+	.refresh-btn {
+		float: right;
+	}
+	.slds .slds-modal__container .slds-modal__content {
+        border-radius: 4px;
+        height: 200px;
+    }
+	</style>
+	<script>
+	var findYourekaUsersVFR = '{!JSENCODE($RemoteAction.Ctl_UserLicenses.findUsers)}';
+	var assignUserLicensesVFR = '{!JSENCODE($RemoteAction.Ctl_UserLicenses.assignUserLicenses)}';
+	var refreshLicenseInfoVFR =  '{!JSENCODE($RemoteAction.Ctl_UserLicenses.refreshLicenseInfo)}';
+	var isLightningExp = typeof sforce !== 'undefined';
+	var ns = '{!JSENCODE(namespace)}';
+	var totalUserCount =  parseInt('{!JSENCODE(TEXT(totalUserCount))}',10); 
+	var offsetID = null; // offset starts off as null
+	var $tableBody;
+	var $dataTableObj;
+	var userData = [];
+	var userChunkSize = 1000;
+
+	$(document).ready(function() {
+		// if its classic set font-size to 12px to stop LDS style overriding classic styles in header/sidebar
+		if (!isLightningExp) {
+			$('body').css('font-size','12px');
+		}
+
+		$tableBody = $('#userTable tbody');
+		
+		showMoreUsers();
+	});
+
+	var allSelectedToggle = false;
+	function selectAll($thisBtn) {
+		if (!allSelectedToggle) {
+			$dataTableObj.rows({filter: 'applied'}).select();
+			allSelectedToggle = true;
+			$thisBtn.eq(0).text('Deselect All');
+		}
+		else {
+			$dataTableObj.rows().deselect();
+			allSelectedToggle = false;
+			$thisBtn.eq(0).text('Select All');
+		}
+	}
+
+	function showMoreUsers() {
+		Visualforce.remoting.Manager.invokeAction(  
+			findYourekaUsersVFR,
+			offsetID,
+			function(yourekaUsers, event) {
+				userData = [];
+				yourekaUsers.forEach(function(thisUser,index){
+					var userFriendlyLicenseName;
+					switch (thisUser[ns+'Youreka_License_Type__c']) {
+						case 'PremiumMobile':
+							userFriendlyLicenseName = 'Premium+Mobile';
+							break;
+						case 'TemplateBuilder':
+							userFriendlyLicenseName = 'Template Builder';
+							break;
+						case 'Premium':
+							userFriendlyLicenseName = 'Premium';
+							break;
+						case 'Community':
+							userFriendlyLicenseName = 'Community';
+							break;
+						case 'CommunityMobile':
+							userFriendlyLicenseName = 'Community Mobile';
+							break;
+						default:
+							userFriendlyLicenseName = '';
+					}
+					userData.push([
+						'',
+						'<div class="slds-truncate" data-sfid="'+thisUser.Id+'" title="User">'+thisUser.Name+'</div>',
+						'<div class="slds-truncate" title="Profile Name">'+(thisUser.hasOwnProperty('Profile') ? thisUser.Profile.Name : '')+'</div>',
+						'<div class="slds-truncate" title="User Type">'+thisUser.UserType+'</div>',
+						'<div class="slds-truncate" title="User Role">'+(thisUser.hasOwnProperty('UserRole') ? thisUser.UserRole.Name : '')+'</div>',
+						'<div class="slds-truncate" title="Youreka License">'+userFriendlyLicenseName+'</div>'
+					]);
+				});
+				// if its the first time through, initalize the table
+				if (offsetID==null) {
+					initializeTable();
+				}
+				/// if table already exists, add new rows
+				else {
+					$dataTableObj.rows.add(userData).draw();
+				}
+				// set offsetID to last user ID that we received so the next user query will know where to pick up
+				if ($dataTableObj.rows().data().length < totalUserCount) {
+					offsetID = yourekaUsers[yourekaUsers.length-1].Id;
+				}
+				// no more results
+				else if (offsetID!=null && $dataTableObj.rows().data().length===totalUserCount) {
+					$('#showMoreUsersBtn').hide();
+				}
+			}
+		);
+	}
+
+	function initializeTable() {
+		$dataTableObj = $('#userTable').DataTable({
+			paging: false,
+			'bInfo' : false,
+			aaSorting:[],
+			data:userData,
+			columnDefs: [ {
+				orderable: false,
+				className: 'select-checkbox',
+				targets:0
+			} ],
+			select: {
+				style:'multi'
+			},
+			language: {
+				select: {
+					rows: {
+						_: "Selected %d users",
+						0: "",
+						1: "Selected 1 user"
+					}
+				}
+			}
+		});
+
+		$('#userTable_filter').html('<div class="slds-form-element search-box-container">'+
+										'<label class="slds-form-element__label">Search:</label>'+
+										'<input class="slds-input search-box" type="search" aria-controls="userTable"/>'+
+									'</div>');
+
+		//re-attach search
+		$('.search-box').on('keyup', function() {
+			$dataTableObj.search(this.value).draw();
+		});
+
+		// add show more users button
+		if ($dataTableObj.rows().data().length < totalUserCount) {
+			$('#userTable').after('<div class="more-btn-container">'+
+									'<button type="button" class="slds-button slds-button--neutral" id="showMoreUsersBtn" onClick="showMoreUsers();">'+
+										'Show '+userChunkSize+' More Users'+
+									'</button>'+
+								  '</div>');
+		}
+
+		// add assignment 
+		$('#userTable').before(
+			'<div class="assignment-container">'+
+				'<div class="slds-form-element">'+
+					'<div class="slds-form-element__control">'+
+						'<div class="slds-select_container">'+
+							'<select id="licenseTypeSelect" class="slds-select">'+
+								'<option value="">No License</option>'+
+								'<option value="TemplateBuilder">Template Builder</option>'+
+								'<option value="PremiumMobile">Premium+Mobile</option>'+
+								'<option value="Premium">Premium</option>'+
+								'<option value="Community">Community</option>'+
+								'<option value="CommunityMobile">Community+Mobile</option>'+
+							'</select>'+
+						'</div>'+
+					'</div>'+
+				'</div>'+
+				'<div>'+
+					'<button id="assignUsersBtn" type="button" disabled class="slds-button slds-button--brand">Assign Selected Users</button>'+
+				'</div>'+
+			'</div>');
+
+		// disable/enable license assignment button and update selected count
+		$dataTableObj.on( 'select deselect', function(e,thisDataTableObj) {
+			var selectedRowsCount = thisDataTableObj.rows({selected:true})[0].length;
+			if (selectedRowsCount > 0) {
+				$('#assignUsersBtn').eq(0).text('Assign '+selectedRowsCount+' Selected Users');
+				$('#assignUsersBtn').prop('disabled',false);
+			}
+			else {
+				$('#assignUsersBtn').eq(0).text('Assign Selected Users');
+				$('#assignUsersBtn').prop('disabled',true);
+			}
+		});
+
+		$('#assignUsersBtn').on('click',function() {
+			assignUsers();
+		});
+	}
+
+	function assignUsers() {
+		var licenseType = $('#licenseTypeSelect').val();
+		var userIDsToUpdate = [];
+		$('tr.selected td:nth-child(2)').each(function(index,thisCell) {
+			var thisUserID = $(thisCell).find('div').eq(0).data('sfid');
+			userIDsToUpdate.push(thisUserID);
+		});
+		Visualforce.remoting.Manager.invokeAction(
+			assignUserLicensesVFR,
+			userIDsToUpdate,
+			licenseType,
+			function(result, event) {
+				if (result==='success') {
+					window.location.reload();
+				}
+				else {
+					// Log out result before parsing it incase something is lost in the string parsing
+					console.log('Error: '+result);
+					try {
+						var startIndex = result.indexOf(',') + 2;
+						var endIndex = result.lastIndexOf(':');
+						result = $.parseHTML(result.substring(startIndex,endIndex))[0].data; // parse html characters
+						result = result.replace(/&quot;/g,'"'); // Remove unparsed ""
+	                }
+	                catch (err) {
+	                    addError("Unable to update users: "+result);
+	                }
+					addError("Unable to update users: "+result);
+				}
+			}
+		);
+	}
+
+	function refreshLicenseInfo() {
+		$('.slds-modal, .slds-backdrop').removeClass('slds-hide');
+
+		Visualforce.remoting.Manager.invokeAction(
+			refreshLicenseInfoVFR,
+			function(result, event) {
+				if (result==='success') {
+					window.location.reload();
+				}
+				else {
+					$('.slds-modal, .slds-backdrop').addClass('slds-hide');
+					addError(result);
+				}
+			}
+		);
+	}
+	/* redirect to old licensing page */
+	function oldLicensingPageRedirect() {
+		if (isLightningExp) {
+			sforce.one.navigateToURL('/apex/'+ns+'UserLicensesOld');
+		}
+		else {
+			window.location.href='/apex/'+ns+'UserLicensesOld';
+		}
+	}
+
+	/* adds an error to the error banner */
+	function addError(errorText) {
+		$('.error-container').show();
+		$('#allErrors').html(errorText);
+	}
+
+
+	</script>
+</head>
+<body>
+	<div class="slds">
+		<div class="slds-page-header" role="banner">
+			<apex:outputPanel layout="none" rendered="{!hasCRUDFLS}">
+				<div class="slds-grid">
+					<div class="slds-col slds-has-flexi-truncate">
+						<div class="slds-media slds-no-space slds-grow">
+							<div class="slds-media__figure">
+								<svg aria-hidden="true" class="slds-icon slds-icon-standard-user">
+									<use xlink:href="{!URLFOR($Resource.SLDS212, '/assets/icons/standard-sprite/svg/symbols.svg#user')}"></use>
+								</svg>
+							</div>
+							<div class="slds-media__body">
+								<h1 class="slds-page-header__title slds-m-right--small slds-align-middle slds-truncate" title="Youreka Users">Youreka Users</h1>
+								
+								<button type="button" onclick="refreshLicenseInfo();" class="slds-button slds-button--neutral refresh-btn">
+									 Refresh License Information
+									<svg aria-hidden="true" class="slds-icon slds-icon--x-small slds-icon-text-default slds-m-left--small slds-shrink-none">
+										<use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/utility-sprite/svg/symbols.svg#refresh')}"></use>
+									</svg>
+								</button>
+								<button type="button" onclick="oldLicensingPageRedirect();" class="slds-button slds-button--neutral refresh-btn">
+									Use our previous licensing model?
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</apex:outputPanel>
+			<!-- display handled errors -->
+			<apex:pageMessages />
+			<div class="error-container slds-notify_container slds-notify_container-OR">
+				<div class="slds-notify slds-notify--alert slds-theme--error slds-theme--alert-texture" role="alert">
+					<span class="slds-assistive-text">Info</span>
+					<h2 id="allErrors"><!-- errors go here --></h2>
+				</div>
+			</div>
+			<apex:outputPanel layout="none" rendered="{!hasCRUDFLS}">
+				<!-- premium expiriation date -->
+				<apex:outputPanel layout="block" rendered="{!IsPremium}" styleclass="slds-grid slds-page-header__detail-row">
+					<p id="premiumLbl" class="slds-truncate slds-text-title--caps"><apex:outputText value="{!PremiumInfo}"/></p>
+				</apex:outputPanel>
+				<apex:outputPanel layout="block"  rendered="{!NOT(IsPremium)}" styleclass="slds-grid slds-page-header__detail-row slds-notify--alert slds-theme--warning">
+					<p id="nonPremiumLbl" class="slds-text-title--caps slds-truncate  slds-align--absolute-center">
+						<apex:outputText value="{!PremiumInfo}" rendered="{!NOT(IsPremium)}"/>
+					</p>
+				</apex:outputPanel>
+				<!-- template builder licenses -->
+				<ul class="slds-grid slds-page-header__detail-row">
+					<li class="slds-page-header__detail-block">
+						<p class="slds-text-title slds-m-bottom--xx-small" title="Total Template Builder Licenses">Total Template Builder Licenses</p>
+						<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!totalPremiumTemplateBuilderLicenses}"/></p>
+					</li>
+					<li class="slds-page-header__detail-block">
+						<p class="slds-text-title slds-m-bottom--xx-small" title="Template Builder Licenses Used">Template Builder Licenses Used</p>
+						<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!templateBuilderUserCount}"/></p>
+					</li>
+					<li class="slds-page-header__detail-block">
+						<p class="slds-text-title slds-m-bottom--xx-small" title="Additional Template Builder Licenses">Template Builder Licenses Remaining</p>
+						<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!totalPremiumTemplateBuilderLicenses-templateBuilderUserCount}"/></p>
+					</li>
+				</ul>
+				<!-- if they have premium licenses available or users set to premium license -->
+				<apex:outputPanel rendered="{!OR(NOT(totalPremiumLicenses==0),NOT(premiumUserCount==0))}">
+					<ul class="slds-grid slds-page-header__detail-row">
+
+						<li class="slds-page-header__detail-block">
+							<p class="slds-text-title slds-m-bottom--xx-small" title="Total Standard Licenses">Total Premium Licenses</p>
+							<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!totalPremiumLicenses}"/></p>
+						</li>
+						<li class="slds-page-header__detail-block">
+							<p class="slds-text-title slds-m-bottom--xx-small" title="Standard Licenses Used">Premium Licenses Used</p>
+							<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!premiumUserCount}"/></p>
+						</li>
+						<li class="slds-page-header__detail-block">
+							<p class="slds-text-title slds-m-bottom--xx-small" title="Additional Standard Licenses">Premium Licenses Remaining</p>
+							<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!totalPremiumLicenses-premiumUserCount}"/></p>
+						</li>
+					</ul>
+				</apex:outputPanel>
+				<!-- if they have premium+mobile licenses available or users set to premium+mobile license-->
+				<apex:outputPanel rendered="{!OR(NOT(totalPremiumMobileLicenses==0),NOT(premiumMobileUserCount==0))}">
+					<ul class="slds-grid slds-page-header__detail-row">
+						<li class="slds-page-header__detail-block">
+							<p class="slds-text-title slds-m-bottom--xx-small" title="Total Community Licenses">Total Premium+Mobile Licenses</p>
+							<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!totalPremiumMobileLicenses}"/></p>
+						</li>
+						<li class="slds-page-header__detail-block">
+							<p class="slds-text-title slds-m-bottom--xx-small" title="Community License Used">Premium+Mobile Licenses Used</p>
+							<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!premiumMobileUserCount}"/></p>
+						</li>
+						<li class="slds-page-header__detail-block">
+							<p class="slds-text-title slds-m-bottom--xx-small" title="Additional Community Licenses">Premium+Mobile Licenses Remaining</p>
+							<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!totalPremiumMobileLicenses-premiumMobileUserCount}"/></p>
+						</li>
+					</ul>
+				</apex:outputPanel>
+
+				<!-- if they have community licenses available or users set to community license-->
+				<apex:outputPanel rendered="{!OR(NOT(totalCommunityLicenses==0),NOT(communityUserCount==0))}">
+					<ul class="slds-grid slds-page-header__detail-row">
+						<li class="slds-page-header__detail-block">
+							<p class="slds-text-title slds-m-bottom--xx-small" title="Total Community Licenses">Total Community Licenses</p>
+							<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!totalCommunityLicenses}"/></p>
+						</li>
+						<li class="slds-page-header__detail-block">
+							<p class="slds-text-title slds-m-bottom--xx-small" title="Community License Used">Community Licenses Used</p>
+							<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!communityUserCount}"/></p>
+						</li>
+						<li class="slds-page-header__detail-block">
+							<p class="slds-text-title slds-m-bottom--xx-small" title="Additional Community Licenses">Community Licenses Remaining</p>
+							<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!totalCommunityLicenses-communityUserCount}"/></p>
+						</li>
+					</ul>
+				</apex:outputPanel>
+
+				<!-- if they have community+mobile licenses available or users set to community license-->
+				<apex:outputPanel rendered="{!OR(NOT(totalCommunityMobileLicenses==0),NOT(communityMobileUserCount==0))}">
+					<ul class="slds-grid slds-page-header__detail-row">
+						<li class="slds-page-header__detail-block">
+							<p class="slds-text-title slds-m-bottom--xx-small" title="Total Community+Mobile Licenses">Total Community+Mobile Licenses</p>
+							<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!totalCommunityMobileLicenses}"/></p>
+						</li>
+						<li class="slds-page-header__detail-block">
+							<p class="slds-text-title slds-m-bottom--xx-small" title="Community+Mobile License Used">Community+Mobile Licenses Used</p>
+							<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!communityMobileUserCount}"/></p>
+						</li>
+						<li class="slds-page-header__detail-block">
+							<p class="slds-text-title slds-m-bottom--xx-small" title="Additional Community+Mobile Licenses">Community+Mobile Licenses Remaining</p>
+							<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!totalCommunityMobileLicenses-communityMobileUserCount}"/></p>
+						</li>
+					</ul>
+				</apex:outputPanel>
+			</apex:outputPanel>
+		</div>
+		<apex:outputPanel layout="none" rendered="{!hasCRUDFLS}">
+			<table id="userTable" class="slds-table slds-table--bordered slds-table--cell-buffer">
+			<thead>
+				<tr class="slds-text-title--caps">
+					<th scope="col"><button type="button" class="slds-button slds-button--neutral" onClick="selectAll($(this));">Select All</button></th>
+					<th scope="col">
+						<div class="slds-truncate" title="User">User</div>
+					</th>
+					<th scope="col">
+						<div class="slds-truncate" title="Profile">Profile</div>
+					</th>
+					<th scope="col">
+						<div class="slds-truncate" title="User Type">User Type</div>
+					</th>
+					<th scope="col">
+						<div class="slds-truncate" title="Role">Role</div>
+					</th>
+					<th scope="col">
+						<div class="slds-truncate" title="Youreka License">Youreka License</div>
+					</th>
+				</tr>
+			</thead>
+			<tbody>
+				<!-- JS inserts table content -->
+			</tbody>
+			</table>
+			<!-- Spinner Modal -->
+	        <div role="dialog" tabindex="-1" aria-labelledby="header43" class="slds-modal slds-fade-in-open slds-hide">
+			  	<div class="slds-modal__container">
+				    <div class="slds-modal__content slds-p-around--medium">
+						<!-- <div class="slds-spinner_container"> -->
+						<div>
+						    <div class="slds-spinner slds-spinner--medium" role="alert">
+						    	<span class="slds-assistive-text">Loading</span>
+						    	<div class="slds-spinner__dot-a"></div>
+						    	<div class="slds-spinner__dot-b"></div>
+						  	</div>
+						</div>
+						<!-- </div> -->
+				    </div>
+				 </div>
+			</div>
+			<div class="slds-backdrop slds-backdrop--open slds-hide"></div>
+		</apex:outputPanel>
+	</div>
+</body>
+</html>
+</apex:page>

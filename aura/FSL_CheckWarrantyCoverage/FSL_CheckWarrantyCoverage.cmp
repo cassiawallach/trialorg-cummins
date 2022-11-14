@@ -1,0 +1,344 @@
+<aura:component controller="FSL_CL_CheckWarrantyCoverage" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction" access="global" >
+    <aura:attribute name="radioOptions" type="List" default="[{'label':'Miles','value':'Miles'},{'label':'Kilometers','value':'Kilometers'}]" />
+    <aura:attribute name="searchRadioVal" type="String" default="Kilometers"/>
+    <aura:attribute name="coverageRadioVal" type="String" default="Kilometers"/>
+    <aura:attribute name="psnValue" type="String"/> 
+    <aura:attribute name="applicationList" type="List"/>
+    <aura:attribute name="warrantyDate" type="Date"/>
+    <aura:attribute name="failureDate" type="Date"/>
+    <aura:attribute name="selectedApp" type="String" />
+    <aura:attribute name="regionList" type="List"/>
+    <aura:attribute name="territoryList" type="List"/>
+    <aura:attribute name="enableTerritory" type="Boolean" default="false"/>
+    <aura:attribute name="selectedRegion" type="String" />
+    <aura:attribute name="selectedTerritory" type="String" />
+    <aura:attribute name="readOnlyWSD" type="Boolean" default="true"/>
+    <aura:attribute name="disabledBIS" type="Boolean" default="true"/>
+    <aura:attribute name="today" type="Date" default=""/>
+    <aura:attribute name="prodMileage" type="String" default="0"/>
+    <aura:attribute name="prodHours" type="String" default="0"/>
+    <aura:attribute name="isCoveregeEmpty" type="boolean" default="false"/>
+    <aura:attribute name="isFAEmpty" type="boolean" default="false"/> <!-- CT3_7.-->
+    <aura:attribute name="faCount" type="Integer" default="0"/> <!-- CT3_7. -->
+    <aura:attribute name="isServiceFailure" type="boolean" default="false"/> <!-- CT3_7.-->
+    <aura:attribute name="isPSNValid" type="boolean" default="false"/>
+    <aura:attribute name="isProdHourValid" type="boolean" default="false"/>
+     <aura:attribute name="isrequiredWSD" type="boolean" default="true"/>
+    <aura:attribute name="disableSearch" type="boolean" default="false"/> <!-- CT3_7.-->
+    <aura:attribute name="warrantyCoverageList" type="String[]"/> <!-- FSL_CL_CheckWarrantyCoverage.CoverageComponentWrapper[] -->
+    <aura:attribute name="FieldActionList" type="String[]"/> <!-- CT3_7 --> 
+    <aura:attribute name="cwcClassController" type="FSL_CL_CheckWarrantyCoverage"/> <!-- CT3_7 --> 
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="noWarrantyFlag" type="boolean" default="false"/> <!-- Added:CT3-485 Charan-->  
+    <aura:attribute name="nonCumminsAssetFlag" type="boolean" default="false"/>
+    <aura:attribute name="isWarrantyFlag" type="boolean" default="false"/> <!-- Added:CT3-485 Charan--> 
+    <aura:attribute name="isNonCumminsAssetFlag" type="boolean" default="false"/>
+    <!--karthik G POC chnages -->
+    <aura:method name="sampleMethod" action="{!c.psnChange}" access="PUBLIC"> 
+          
+      </aura:method>
+   
+    <lightning:input aura:id="displayCoverage" name="name" label="Name" value="Kilometers" required="true" class="slds-hidden" />
+    
+     <div class="slds-section slds-is-open">
+        <div class="slds-section__content"> 
+            <div class="slds-form slds-form_horizontal">
+                <lightning:layout class="slds-m-around_large slds-m-bottom_x-small slds-container_center slds-theme_default slds-wrap" multipleRows="true">
+                    <lightning:layoutItem size="5" class="slds-form-element_horizontal">
+                        <!--karthik G POC chnages -->
+                        <!--lightning:input aura:id="searchForm" class="slds-p-right_none slds-p-left_none" label="PSN" value="{!v.psnValue}" onblur = "{!c.psnChange}" required="true" type="text" variant="standard"></lightning:input-->
+                        <aura:if isTrue="{!v.isPSNValid}">
+                            <div class="slds-text-align_center slds-text-color_destructive">
+                                <h2> {!$Label.c.FSL_InvalidPSN} </h2>
+                            </div> 
+                        </aura:if> 
+                        
+                        <lightning:select label="{!$Label.c.CSS_Application}" aura:id="searchForm" name="app_select" value="{!v.selectedApp}" required="true" variant="standard" onchange="{!c.handleAppCodeChange}">
+                            <option value="" text="Select One" />
+                            <aura:iteration items="{!v.applicationList}" var="app">
+                                <option value="{!app.Value}" text="{!app.Label}" selected="{!app.selected}"/>
+                            </aura:iteration>
+                        </lightning:select>
+                        <lightning:input aura:id="inputWSDField" type="date" class="slds-p-right_none slds-p-left_none" onchange ="{!c.handleDateChange}" label="{!$Label.c.css_Warranty_Start_Date}" value="{!v.warrantyDate}" readonly="{!v.readOnlyWSD}" required="{!v.isrequiredWSD}"/> 
+                        
+                        <fieldset class="slds-form-element">
+                            <!-- Added custom label for the legend to allow for soft coding as part of NIN 34-->
+                            <legend class="slds-form-element__label">{!$Label.c.FSL_Before_In_Service}</legend>
+                            <lightning:input aura:id="inputService" type="checkbox" label="" variant="standard" disabled="{!v.disabledBIS}" onchange="{!c.handleServiceChange}"></lightning:input>
+                        </fieldset>
+                        
+                        <lightning:input class="slds-p-right_none slds-p-left_none" label="{!$Label.c.CSS_Failure_date}" type="date" variant="standard" value="{!v.failureDate}" ></lightning:input>
+                        
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="2"></lightning:layoutItem>
+                    <lightning:layoutItem size="5">
+                        <lightning:select  aura:id="searchForm" class="slds-p-around_xx-large" label="{!$Label.c.CSS_Regions}" onchange="{!c.onRegionSelect}" value="{!v.selectedRegion}" required="true" variant="standard">
+                            <option value="" text="--None--" />
+                            <aura:iteration items="{!v.regionList}" var="r">
+                                <option value="{!r.Value}" text="{!r.Label}" /> 
+                            </aura:iteration>
+                        </lightning:select>
+                        
+                        <lightning:select aura:id="searchForm" label="{!$Label.c.CSS_Territory}" required="true" variant="standard" value="{!v.selectedTerritory}" >
+                            <option value="" text="--None--" />
+                            <aura:iteration items="{!v.territoryList}" var="ter">
+                                <option value="{!ter.Value}" text="{!ter.Label}" selected="{!ter.Value == v.selectedTerritory}" /> 
+                            </aura:iteration>
+                        </lightning:select>
+                        
+                        <!--step="any" max="99999999" min="0" message-when-range-underflow={label.EVL_SO_PM_validation} message-when-range-overflow={label.EVL_SO_PM_validation}-->
+                        <lightning:input class="" label="{!$Label.c.CSS_Product_Mileage_Hours}" oncommit ="{!c.handleProdMileageChange}" value="{!v.prodMileage}" step="any" max="99999999" min="0" messageWhenRangeUnderflow="{!$Label.c.EVL_SO_PM_validation}" messageWhenRangeOverflow="{!$Label.c.EVL_SO_PM_validation}" required="false" type="number" variant="standard"></lightning:input>
+                        <lightning:radioGroup aura:id='MileageType' label="" options="{!v.radioOptions}" value="{!v.searchRadioVal }" type="radio" class="customRadioCls"></lightning:radioGroup>
+                        <!-- CT3-92 Added by Sailaja Guntupalli for custom validation on product hours,commented out for future story 
+                        <lightning:input class="" aura:id="prodHours" label="{!$Label.c.CSS_Product_Hours}" value="{!v.prodHours}" required="false" type="text" variant="standard" onblur="{!c.validateProdHours}"></lightning:input>
+                        <aura:if isTrue="{!v.isProdHourValid}">
+                            <div class="slds-text-align_center slds-text-color_destructive slds-p-left_xx-large prodHour">
+                                <h2> {!$Label.c.FSL_InvalidProductHour}</h2>
+                            </div> 
+                        </aura:if> -->
+                        <!--<lightning:helptext content="{!$Label.c.EVL_PH_Helptext}" />     -->                                       
+                        <lightning:input class="" label="{!$Label.c.CSS_Product_Hours}" fieldLevelHelp="{!$Label.c.EVL_PH_Helptext}" oncommit ="{!c.handleProdHoursChange}" step="any" maxlength="8" min="0" max="999999.9"  messageWhenRangeUnderflow="{!$Label.c.EVL_SO_PH_validation}" messageWhenRangeOverflow="{!$Label.c.EVL_SO_PH_validation}" value="{!v.prodHours}" required="false" type="number" variant="standard"></lightning:input>
+                        <!--step="any" maxlength="8" min="0" max="999999.9"  message-when-range-underflow={label.EVL_SO_PH_validation} message-when-range-overflow={label.EVL_SO_PH_validation}-->
+                      <!--  <lightning:input class="" label="{!$Label.c.CSS_Product_Hours}" value="{!v.prodHours}" required="false" type="text" variant="standard"></lightning:input> -->
+                  </lightning:layoutItem>
+                </lightning:layout>
+                <lightning:layout>
+                    <lightning:layoutItem size="12">
+                        <lightning:button class="slds-theme_destructive slds-align_absolute-center" variant="destructive" type="button" label="{!$Label.c.CSS_Search}" onclick="{! c.searchWarrantyCoverage }" disabled="{!v.disableSearch}"></lightning:button>
+                        <!--lightning:button onclick="{!c.hideErrors}">Hide Errors</lightning:button-->
+                        <lightning:spinner aura:id="Spinner" alternativeText="Loading..." title="Loading.." variant="brand" size="medium" class="slds-hide"/>
+                     <!-- <div class="exampleHolder ">
+                            
+                            <div class="slds-spinner_container slds-hide " aura:id="mySpinner"
+                                 >
+                                <div  role="status" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+                                    <span class="slds-assistive-text">Loading</span>
+                                    <div class="slds-spinner__dot-a"></div>
+                                    <div class="slds-spinner__dot-b"></div>
+                                </div>
+                            </div>
+                            <center><ui:spinner aura:id="mySpinner" class="slds-hide"/></center>
+                        </div>-->
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </div>
+        </div>
+    </div>
+    <!--CT3_7-->
+    <!--<div class="slds-text-align_center slds-text-color_destructive">
+        <h2> {!$Label.c.css_Camp_TRP_ATC} </h2>
+    </div>-->
+    <!-- added if condition as per PHOEN-27, Naveen Goud-->
+    <aura:if isTrue="{!not(or(v.isWarrantyFlag,v.isNonCumminsAssetFlag))}">
+    <div class="slds-section slds-is-open">
+         <div class="slds-form slds-form_horizontal">
+        <lightning:layout class="slds-m-around_large slds-m-bottom_x-small slds-container_center slds-theme_default slds-wrap">
+            <lightning:layoutItem size="12">
+        <h3 class="slds-section__title">
+          <!--  <lightning:button class="slds-theme_base slds-section__title-action" iconPosition="left" variant="base" label="{!$Label.c.css_Camp_TRP_ATC+'('+!c.faCount+')'}"></lightning:button> -->
+          <!--<lightning:button class="slds-theme_base slds-section__title-action" iconPosition="left" variant="base" label="{!$Label.c.css_Camp_TRP_ATC+!v.cwcClassController.faCount}"></lightning:button> -->
+        <lightning:button class="slds-theme_base slds-section__title-action" iconPosition="left" variant="base" label="{!$Label.c.css_Camp_TRP_ATC+' '+'('+v.faCount+')'}"></lightning:button> <!--removed <b> tag-->
+        </h3>
+       <!-- <h1 class="slds-section__title" title="Campaigns, TRPs, and ATCs">{!$Label.c.css_Camp_TRP_ATC+'('+v.faCount+')'}</h1>-->
+      <!-- <h1 class="slds-col slds-has-flexi-truncate firstHeaderRow" title="Campaigns, TRPs, and ATCs">{!$Label.c.css_Camp_TRP_ATC+'('+v.faCount+')'}</h1>-->
+        <!--<h2 >count{!v.faCount}</h2>-->
+        <aura:if isTrue="{!v.isServiceFailure}">
+           <!-- <div style="color:red; font-size: 10pt;">-->
+            <ui:outputText value="{!$Label.c.FSL_WebserviceFailureMsg}" class="slds-text-color_destructive" /> &nbsp;
+           <!--<h1 style="color:red;font-size: 10pt;">{!$Label.c.FSL_WebserviceFailureMsg}</h1>-->
+            <!--<div style="color:red; font-size: 10pt;"><p>{!$Label.c.FSL_WebserviceFailureMsg}</p>-->
+            <lightning:button label="Retry" onclick="{!c.retryClick}" variant="brand"/>
+       <!-- </div> -->
+           <!-- <lightning:spinner aura:id="Spinnertwo" alternativeText="Loading..." title="Loading.." variant="brand" size="medium" class="slds-hide"/>-->
+        </aura:if>
+    <aura:if isTrue="{!v.isFAEmpty}">
+        <div class="slds-text-align_center slds-text-color_destructive">
+            <h2> No Field Actions for the given PSN </h2><!-- the Message, yet to be finalised -->
+        </div>
+        
+        <aura:set attribute="else">
+           
+            <table class="slds-table slds-table--bordered slds-table--cell-buffer slds-table--slds-table_bordered--stacked-horizontal" role="grid">
+                <thead>
+                    <tr class="slds-text-title">
+                        <th>
+                            <div class="slds-truncate" title="Name">{!$Label.c.CSS_Name}</div>
+                        </th>
+                        <th>
+                            <div class="slds-truncate" title="Description">{!$Label.c.css_Description}</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:iteration items="{!v.FieldActionList}" var="fa">
+                        <tr class="slds-hint-parent">
+                            <td role="gridcell" class="slds-cell-wrap">
+                                <div class="slds-truncate" title="{!Name}">{!fa.faName}</div>
+                            </td>
+                            <td role="gridcell" class="slds-cell-wrap">
+                                <div class="slds-truncate" title="{!Description}" data-label="Role">
+                                   <!-- {!fa.faDescription} -->
+                                <!-- Added by Sailaja Guntupalli to redirect to error page for non available QSOL Link content-->
+                                <aura:if isTrue="{!not(empty(fa.faLink))}">
+                                    <a href="{!fa.faLink}" target="_blank" >{!fa.faDescription}</a>
+                                    <aura:set attribute="else">
+                                        <a href="" target="_default" onclick="{!c.loadErrorPage}">{!fa.faDescription}</a>
+                                    </aura:set>   
+                                </aura:if> 
+                                </div>
+                            </td>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+        </aura:set>
+     </aura:if>
+     
+    </lightning:layoutItem>
+             </lightning:layout> </div>
+
+    </div>
+    </aura:if>
+    <aura:if isTrue="{!v.isWarrantyFlag}"> <!-- Added:CT3-485 Charan-->  
+    <div style = "color:red; font-size: 12pt; margin-left: 2rem;">   <!-- Added:CT3-485 Charan-->  
+                <p>{!$Label.c.FSL_NO_applicable_Warranty_coverage_Message}</p> <!-- Added:CT3-485 Charan-->     
+    </div> <!-- Added:CT3-485 Charan--> 
+    </aura:if> <!-- Added:CT3-485 Charan--> 
+    <!-- END:CT3_7-->
+    <aura:if isTrue="{!v.isNonCumminsAssetFlag}"> <!-- Added:CT3-587 Sailaja-->  
+    <div style = "color:red; font-size: 12pt; margin-left: 2rem;">   
+                <p>{!$Label.c.FSL_NON_CumminsAsset_For_Warranty}</p>     
+    </div> <!-- Added:CT3-485 Charan--> 
+    </aura:if>
+    <br/>
+    <br/>
+    <div> <!--can remove--> <!-- PHOEN-27, Naveen Goud -->
+        <aura:if isTrue="{!not(or(v.isWarrantyFlag,v.isNonCumminsAssetFlag))}"> <!-- Added:CT3-485 Charan-->   
+    <div class="slds-section slds-is-open">
+       <!-- <h3 class="slds-section__title slds-m-around_large">
+            <lightning:button class="slds-theme_base slds-section__title-action" iconPosition="left" variant="base" label="{!$Label.c.CSS_Warranty+' '+$Label.c.CSS_Coverage}"></lightning:button>
+        </h3> -->
+        
+   <!--  <div class="slds-section slds-is-open">
+            <div class="slds-section__content">
+                <div class="slds-form slds-form_horizontal">
+                    <lightning:layout class="slds-m-around_large slds-m-bottom_x-small slds-container_center slds-theme_default slds-wrap" multipleRows="true">
+                        <lightning:layoutItem size="6">
+                   {!$Label.c.CSS_Display_Coverage_in}   <lightning:radioGroup aura:id="displayCoverage" label="{!$Label.c.CSS_Display_Coverage_in}" options="{!v.radioOptions}" value="{!v.coverageRadioVal }" onchange = "{!c.handleMileKMChange}" type="radio" class="customRadioCls"></lightning:radioGroup>
+                       </lightning:layoutItem>
+                    </lightning:layout>
+                </div>
+            </div>
+        </div>   -->
+        <h3 class="slds-section__title slds-m-around_large">
+            <lightning:button class="slds-theme_base slds-section__title-action" iconPosition="left" variant="base" label="{!$Label.c.CSS_Warranty+' '+$Label.c.CSS_Coverage}"></lightning:button>
+        </h3>
+            <div class="demo-only" style="padding-left: 25px;" >
+                <article class="slds-tile">
+                    <aura:iteration items="{!v.warrantyCoverageList}" var="coverage">
+                        <aura:if isTrue="{!coverage.status == 'Expired'}">
+                            <h3 class="slds-section-title--divider slds-size_1-of-2 slds-text-color_inverse custom-background-expired" >{!coverage.CoverageComponentTypeCode}</h3>
+                            <aura:set attribute="else">
+                                <h3 class="slds-section-title--divider slds-size_1-of-2 slds-text-color_inverse custom-background-active" >{!coverage.CoverageComponentTypeCode}</h3>
+                            </aura:set>
+                        </aura:if>
+                        
+                        
+                        <div class="slds-m-around_xx-small">
+                            <b>{!$Label.c.CSS_Status}: </b> 
+                            <!--ui:outputText value="{!coverage.status}" /-->
+
+                           <aura:if isTrue="{!coverage.status == 'Active'}">	
+                                <!--<ui:outputText value="{!coverage.status}" class ="activeGreen" />-->	
+                                <!--<ui:outputText value="ACTIVE" class ="activeGreen" /> Harsha Added For Uppercase -->
+                                 <ui:outputText value="{!$Label.c.FSL_Active}" class ="activeGreen"/> <!--CT3-133 -->
+                            </aura:if>
+                            
+                             <aura:if isTrue="{!coverage.status == 'Expired'}">	
+                                <!-- <ui:outputText value="{!coverage.status}" class ="expiredRed" />-->	
+                               <!--<ui:outputText value="EXPIRED" class ="expiredRed" /> Harsha Added For Uppercase -->	
+                                 <ui:outputText value="{!$Label.c.FSL_Expired}" class ="expiredRed"/> <!--CT3-133 -->
+                            </aura:if>	
+                            
+                            <aura:if isTrue="{!coverage.status == 'notActive'}">	
+                               <!-- <ui:outputText value="NOT ACTIVE" class ="notActiveGray" /> Harsha Added For Uppercase -->	
+                                <!-- <ui:outputText value="{!coverage.status}" class ="notActiveGray" />-->	
+                                 <ui:outputText value="{!$Label.c.FSL_notActive}" class ="notActiveGray"/> <!--CT3-133 -->
+                            </aura:if>	
+                                 <aura:if isTrue="{!coverage.status == 'Not Yet Active'}">
+                              <!--<ui:outputText value="NOT YET ACTIVE" class ="notActiveGray" /> Harsha Added For Uppercase -->
+                            <!-- <ui:outputText value="{!coverage.status}" class ="notActiveGray" />-->
+                               <ui:outputText value="{!$Label.c.FSL_NotYetActive}" class ="notActiveGray"/> <!--CT3-133 -->
+                            </aura:if>
+                            <aura:if isTrue="{!coverage.status == 'Not Started'}">
+                              <!--<ui:outputText value="NOT YET ACTIVE" class ="notActiveGray" /> Harsha Added For Uppercase -->
+                            <!-- <ui:outputText value="{!coverage.status}" class ="notActiveGray" />-->
+                               <ui:outputText value="{!$Label.c.FSL_NotStarted}" class ="notActiveGray"/> <!--CT3-498 -->
+                            </aura:if>
+ </div>
+                        
+                        <div class="slds-m-around_xx-small">
+                            <b>{!$Label.c.CSS_Warranty_Start}: </b> 
+                            <aura:if isTrue="{!v.disabledBIS}"> <!-- Added this as part of NIN-1 -->
+                            	<ui:outputText value="{!coverage.WarrantyStartDate}" /> 
+                            </aura:if>
+                        </div>
+                        
+                        <div class="slds-m-around_xx-small">
+                            <b>{!$Label.c.CSS_Warranty_End}: </b> 
+                            <aura:if isTrue="{!v.disabledBIS}"> <!-- Added this as part of NIN-1 -->
+                            	<ui:outputText value="{!coverage.WarrantyEndDate}" />
+                            </aura:if>
+                        </div> 
+                        
+                        <div class="slds-m-around_xx-small">
+                            <b>{!$Label.c.CSS_Coverage}: </b> {!coverage.CoverageMaxMonths} Months &nbsp;
+                            <aura:if isTrue="{!coverage.CoverageMiles >= 9999999}">
+                                Unlimited Miles/Kilometers Unlimited Hours
+                                  <aura:set attribute="else">
+                            <ui:outputText value="{!coverage.CoverageMiles}"  />&nbsp;
+                            Miles &nbsp; /
+                            <ui:outputText value="{!coverage.CoverageKM}"  /> Kilometers &nbsp; 
+                            or &nbsp;
+                            <ui:outputText value="{!coverage.CoverageHours}"  />&nbsp;
+                            {!$Label.c.css_hours}
+                            </aura:set>
+                            </aura:if>
+                           
+                          
+                                                        
+                        </div>
+                        
+                        <aura:if isTrue="{!coverage.status == 'Active'}">
+                            <div class="slds-m-around_xx-small">
+                                <b>{!$Label.c.CSS_Remaining}: </b> 
+                                <ui:outputText value="{!coverage.Remaining}" /> 
+                            </div>
+                        </aura:if>
+                        
+                        <div class="slds-m-around_xx-small">
+                            <b>{!$Label.c.CSS_Deductible}: </b>
+                            <ui:outputText value="{!coverage.Dedutibles}" /> 
+                        </div> 
+                        <div class="slds-m-around_xx-small">
+                            <div class="cmi_viewallsolutions-icon"></div>
+                            <u>
+                                <a href="{!coverage.WarrantyManualURL}" target="_blank">{!$Label.c.css_View_Warranty_Details}</a> <br />
+                            </u>                                                
+                        </div>
+                        
+                        <br/>
+                    </aura:iteration> 
+                </article>
+                
+        </div>
+        
+        <aura:if isTrue="{!v.isCoveregeEmpty}">
+            <div class="slds-text-align_center slds-text-color_destructive">
+                <h2> Coverage Information is not available </h2>
+            </div>
+        </aura:if>
+    </div>
+        </aura:if><!-- Added:CT3-485 Charan-->  
+</div>
+</aura:component>

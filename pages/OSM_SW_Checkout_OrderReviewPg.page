@@ -1,0 +1,1540 @@
+<!--*********************************************************************************************************************************************************************************
+History                                                                                                                       
+VERSION  AUTHOR            DATE              DETAIL                                
+1.0 -             
+1.1 -   Ronnie           08/10/2021    Changes added as part of MP-326 to add ids to 3rd Party Account name,Customer BMS Number,IAM Customer Number for 3rd Party Billing scenario 
+1.2 -   Ronnie           11/01/2021    Changes added as part of MP-133 to add Subscription Length 
+1.3 -   Ronnie           12/03/2021    Changes added as part of MP-372 to display Subscription Length value only for subscription based products.
+1.4 -   Suresh           03/08/2022    Changes added as part of LL-31 & LL-62 to display new BMS insufficient credit error message 
+************************************************************************************************************************************************************************************** -->
+<apex:page applyHtmlTag="false" controller="OSM_SW_Checkout_OrderReviewPg_Ctrl" docType="html-5.0" sidebar="false" showHeader="false"
+           standardStylesheets="false" cache="false">
+    
+    
+    <style>
+        .cc_sku{
+        display:none !important;
+        }
+        textarea::-webkit-input-placeholder {
+         font-style: italic;
+        }
+        textarea:-moz-placeholder { 
+          font-style: italic;  
+        }
+        textarea::-moz-placeholder {  
+          font-style: italic; 
+        }
+        textarea:-ms-input-placeholder {  
+           font-style: italic; 
+        }
+        textarea {
+         resize: none;
+        }
+        .red{
+            color:red;
+         }
+    </style>
+    <style>
+        .fontitalic{
+            font-style:italic !important;
+        }
+    </style>
+    <c:OSM_SW_UserInformationComp />
+   
+    <script type="text/javascript">
+   
+     CCRZ.uiProperties.CartOrderReviewView.desktop.tmpl = 'SWStore-OrderReview-Cart-Desktop';
+     CCRZ.uiProperties.OrderReviewView.desktop.tmpl ="SWStore-OrderReview-Desktop";
+     CCRZ.uiProperties.OrderReviewView.partial.totalsSection = "#CMI-TotalSection";
+     CCRZ.uiProperties.OrderReviewView.partial.addressDisplay = "#AddressDisplay-New";
+     CCRZ.uiProperties.PaymentsPOView.desktop.tmpl = "SWStore-PaymentPO-Both";
+     CCRZ.uiProperties.OrderReviewView.partial.includedDisplay = '#OMS-Cart-IncludedItems';
+    
+    CCRZ.uiProperties.CheckoutPaymentView.PaymentProcessor.desktop.tmpl = "CMI-PaymentProcessor-Desktop";
+    // });
+          CCRZ.uiProperties.CheckoutNav.desktop.tmpl = "Checkout-Navigation";
+          
+          
+          CCRZ.uiProperties.PaymentView.desktop.tmpl = "Payment-Desktop-New"
+          CCRZ.uiProperties.PaymentView.phone.tmpl = "Payment-Desktop-New"
+        
+       </script>
+    
+    <style>
+        a {
+        color: teal;
+        text-decoration: none;
+        }
+        
+        a:hover {
+        color: #003333;
+        text-decoration: underline;
+        }
+    </style>
+    
+    <script id="SWStore-OrderReview-Desktop" type="text/template">
+   <div class="panel panel-default cc_panel cc_checkout_review">
+   
+    <div class="panel-body cc_body">
+     <form enctype="multipart/form-data" class="margin_form cc_OrderReview_new">
+      <div class="messagingSection-Error" style="display: none"></div>
+      
+        <!-- MAR-526 changes start -->
+        {{#if this.isError }}
+        <div style="background-color: #FEEEED;padding: 10px;border: solid 2px red;margin-bottom: 20px;"> <!--@Suresh LL-31 & LL-62 added margin-bottom:20px 03/Aug/2022 -->
+                 <span class="icon-Warning" style="color:red; font-size:18px; vertical-align: middle;"></span>&nbsp;
+                    <!--@Suresh LL-31 & LL-62 Added below if condition to show error message for BMS credit validation 03/Aug/2022-->
+                    {{#ifNotEquals this.errorMsg 'BMSValidationError'}}
+                        {{this.errorMsg}}
+                    {{else}}
+                        {{pageLabelMap 'OSM_OneBMS_Validation_Error_Message'}}
+                    {{/ifNotEquals}}
+                    <!--@Suresh End LL-31 & LL-62-->
+            </div>
+        {{/if}}
+        <!-- MAR-526 changes end-->
+        
+      <div class="messagingSection-Info" style="display: none"></div>
+      <div class="messagingSection-Warning" style="display: none"></div>
+      <div class="well cc_well cc_order_review" style="width:85%; padding-top:0px; padding-bottom:0px">
+       <div class="row">
+        <div class="col-xs-12 col-md-4">
+         <h5 class="cc_buyer_information">{{pageLabelMap 'CheckOut_BuyerInformation'}}</h5>
+                  <!-- Juhi Changes : Sept 30 : Hide Edit Button -->
+         <p class="cc_buyer" style="display:none" >
+          <a id="edit_UserInfo" href="#edit_UserInfo" class="editAddressInfo cc_edit_address_info">{{pageLabelMap 'CheckOut_edit'}}</a><br>
+            <div class="cc_buyer_accountname">{{this.accountR.sfdcName}}</div>
+            <div class="cc_buyer_firstname">{{this.contactDetails.FirstName}} {{this.contactDetails.LastName}}</div>
+            <div class="cc_buyer_phone">{{this.contactDetails.Phone}}</div>
+            <div class="cc_buyer_email">{{this.contactDetails.Email}}</div>
+
+         </p>
+        </div>
+        <div class="col-xs-12 col-md-4">
+        <h5 class="cc_billing_address_label">{{pageLabelMap 'CheckOut_BillingAddress'}}</h5>
+        {{#if isthirdpartypayment}}
+            <!--MP-326 CODE START-->
+            <span id="third_party_customer_name">
+                {{thirdpartycustname}}
+            </span>
+            <br>
+            Customer BMS number: <span id="third_party_customer_number">{{thirdpartycustnum}}</span>
+            <br>
+            IAM Customer number: <span id="third_party_IAM_Number">{{thirdpartyIAMNo}}</span>            
+            <!--MP-326 CODE END-->
+        {{/if}}
+            <p class="cc_billing">
+        <span class="cc_billing_address">{{> addressDisplay this.billingAddress}}</span>
+          </p>
+        </div>
+        <!--<div class="col-xs-12 col-md-4">
+         {{#if this.hasCoupon}}
+         <h5 class="cc_coupon_label">{{pageLabelMap 'CartInc_AppliedCoupon'}}</h5>
+         <p class="cc_coupon_section">
+          <span class="cc_coupon">{{this.appliedCoupon}}</span>
+         </p>
+         {{/if}}
+        </div> -->
+        <div class="col-xs-12 col-md-4">
+         <h5 class="cc_shipping_address_label">{{pageLabelMap 'CheckOut_OrderReviewShippingAddress'}}</h5>
+         
+         {{#if this.shippingAddress.isshippingaddrcleansed}}
+                {{#if this.shippingAddress.address1}}
+                      <span class="addr_line1 cc_addr_line">{{this.shippingAddress.address1}}</span><br/>
+                  {{else}}
+                      {{#if this.shippingAddress.addressFirstline}}
+                       <span class="addr_line1 cc_addr_line">{{this.shippingAddress.addressFirstline}}</span><br/>
+                      {{/if}}
+                {{/if}}
+
+               {{#if this.shippingAddress.address2}}
+                       <span class="addr_line2 cc_addr_line">{{this.shippingAddress.address2}}</span><br/>
+                  {{else}}
+                    {{#if this.shippingAddress.addressSecondline}}
+                       <span class="addr_line1 cc_addr_line">{{this.shippingAddress.addressSecondline}}</span><br/>
+                    {{/if}}
+               {{/if}}
+
+               {{#if this.shippingAddress.address3}}
+                         <span class="addr_line3 cc_addr_line">{{this.shippingAddress.address3}}</span><br/>
+                  {{else}}
+                         {{#if this.shippingAddress.addressThirdline}}
+                          <span class="addr_line1 cc_addr_line">{{this.shippingAddress.addressThirdline}}</span><br/>
+                        {{/if}}
+                {{/if}}
+               <span class="cc_addr_city">{{this.shippingAddress.city}}</span>
+              <span class="cc_addr_city">{{this.shippingAddress.city}}</span>
+               <span class="cc_addr_state">&#44;&#160;{{this.stateCode}}</span>
+                <span class="cc_addr_postal">&#160;{{this.shippingAddress.postalCode}}</span><br/>
+               <span class="cc_addr_country">{{this.shippingAddress.countryCode}}</span>
+                {{else}}
+                
+                 
+                     <p class="cc_shipping">
+                           <span class="cc_shipping_address">{{> addressDisplay this.shippingAddress}}</span>
+                     </p>
+                 
+         {{/if}}
+         
+        
+        
+         
+        </div>
+       </div>
+      </div>
+     {{#ifEquals this.IsGOMSAccount true}}
+          <div id="GOMSPriceMsg"  style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;width: 84.6%;padding-left:1px;margin-left:2px;">                                  
+             <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; Prices shown here are for illustration purposes only. Please refer to the Global Order Management System (GOMS) and your local ERP to view accurate pricing and invoices.
+          </div>
+      {{/ifEquals}}
+      <div class="reviewCartSection"></div>
+      <div class="reviewPaymentSection"></div>
+      
+      
+     </form>
+    </div>
+   </div>
+  </script>
+
+  
+        <script id="SWStore-OrderReview-Cart-Desktop" type="text/template">
+   <div class="panel panel-default cc_panel cc_order_item_list">
+   
+   <div class="row CMI-Cart-table-header" style="width:85%">
+             <div class="col-md-5">
+                <div class="col-md-5" style="padding-left: 140px;text-align: left;">
+                          <b>Product</b>
+                 </div>
+            </div>
+             <div class="col-md-7">
+                     <div class="col-md-3" style="text-align:left;padding-left:0px;width: 17%;padding-right:0px;margin-left: -2.5%;">
+                          <B>Billing Frequency</B>
+                     </div> 
+                     <!--MP-133 Code Start-->
+                     <div class="col-md-3" style="text-align:left;padding-left:0px;width: 19%;padding-right:0px;margin-left: 0.5%;">
+                         <!-- <B>{{pageLabelMap 'SubscriptionLength'}}</B>-->
+                          <B>{{pageLabelMap 'Subscription'}}<br/>{{pageLabelMap 'End date'}}</B><!-- Mp_430 Code Added -->
+                     </div> 
+                     <!--MP-133 Code End-->
+                              
+                     <div class="col-md-2" style="margin-left: 0.5%;">
+                          <B>{{pageLabelMap 'CartInc_Qty'}}</B>
+                     </div>
+                     <div class="col-md-3" style="">
+                          <B>{{pageLabelMap 'CartInc_Price'}}</B>
+                     </div>
+                     <div class="col-md-2" style="text-align:left;">
+                          <B>Subtotal</B>
+                     </div>
+             </div>
+        </div>
+        
+    {{#each this.cartItems}}
+    
+     <div class="panel-body {{this.itemID}} row cc_body">
+      {{#ifNotEquals this.cartItemType 'Coupon'}}
+       <div class="col-md-2" style="max-width: 12%;">
+       {{#if this.productLink}}
+        {{#contains this.mockProduct.name 'Add-on'}}
+        {{else}}
+            {{productLink this.productLink 'cc_order_prod_link' image=(displayImage this.mediaWrapper 'orderDetail img-responsive' alt=this.mockProduct.name dataId=this.mockProduct.sku)}}
+        {{/contains}}
+        {{else}}
+           {{#contains this.mockProduct.name 'Add-on'}}
+           {{else}}
+            {{productLink this.displayProductBean 'cc_order_prod_link' image=(displayImage this.mediaWrapper 'orderDetail img-responsive' alt=this.mockProduct.name dataId=this.mockProduct.sku)}}
+          {{/contains}}
+        {{/if}}
+       </div>
+       <div class="col-md-3" style="padding-right:0px;width: 15.5%;margin-left: 2%; margin-right:3%">
+        
+        <p class="cc_item_title">
+         {{#if this.productLink}}
+             {{#ifEquals pricingType 'external'}}
+                {{#if extName}}
+                    {{productLink this.productLink 'cc_prod_link' text=(displayProductName  this.mockProduct.name)}}
+                {{else}}
+                    {{productLink this.productLink 'cc_prod_link' text=(displayProductName  this.mockProduct.name)}}
+                {{/if}}
+            {{else}}
+                {{productLink this.productLink 'cc_prod_link' text=(displayProductName  this.mockProduct.name)}}
+            {{/ifEquals}}
+         {{else}}
+            {{#ifEquals pricingType 'external'}}
+                {{#if extName}}
+                    {{productLink this.displayProductBean 'cc_prod_link' text=(displayProductName  this.mockProduct.name)}}
+                {{else}}
+                    {{productLink this.displayProductBean 'cc_prod_link' text=(displayProductName  this.mockProduct.name)}}
+                {{/if}}
+            {{else}}
+                {{productLink this.displayProductBean 'cc_prod_link' text=(displayProductName  this.mockProduct.name)}}
+            {{/ifEquals}}
+         {{/if}}
+        </p>
+        <p class="fontitalic">
+            {{#if this.isRenew}}
+                <span><i>Renewed until {{date this.renewEndDate}}</i></span>
+            {{/if}}
+        </p>
+        
+        {{#contains this.pricingModifierTypes 'tiered'}}
+         <div class="cc_prt_tool_tip_div cc_prt_tool_tip_div_or" data-toggle="tooltip" title="{{pageLabelMap 'ProductPricingTiers_VolumeHover'}}">
+          <span class="cc_prt_tool_tip_text cc_prt_tool_tip_text_or">{{pageLabelMap 'ProductPricingTiers_VolumePricingApplied'}}</span>
+         </div>
+        {{/contains}}
+        
+        {{log this}}
+       {{log 'OrderReviewPage'}}
+        
+        <p class="cc_subscription_product_desc" style="text-align: justify;">
+          {{unescape this.mockProduct.shortDesc}}
+         </p>
+         {{#if this.minorLines}}
+            {{#ifNotEquals this.pricingType "attrGroup"}}
+            {{#ifNotEquals this.groupName 'FluidWatch'}} <!--MP-680 updated by swetha-->
+            <!--{{#contains this.mockProduct.name 'Analysis'}}-->
+            <!--{{else}}-->
+            <p class="cc_included_items">
+                <a href="#included_items{{this.itemID}}" id="includedItemsLink" data-toggle="modal" data-id="{{this.itemID}}"><span class="icon-ViewBound"></span> &nbsp;{{pageLabelMap 'CheckOut_IncludedItems'}}</a>
+            </p>
+            {{> includedDisplay}}
+            <!--{{/contains}} -->
+            {{/ifNotEquals}}
+              {{/ifNotEquals}}
+            {{/if}}
+       </div>
+               
+             <div class="col-md-6" style="padding-left:0px; margin-left:4.1%">
+        <div class="price cc_price" style="width:95%">
+         <div class="col-md-2" style="text-align:left;padding-left: 7px;">
+             <span>{{this.billingFrequency}}</span>                 
+         </div>
+        <!--MP-133 Code Start-->
+        <div class="col-md-2" style="text-align:left;padding-left: 7px;">
+            <!--MP-372 Code Start-->
+             <!--swetha MP-430 Code Start--> 
+             {{#ifNotEquals this.groupName 'FluidWatch'}}
+             {{#ifEquals this.displayName '99 Year'}}
+                                        
+             {{else }}
+              {{#ifEquals this.isRenew false}}
+                {{#if this.SubscriptionExpiryDate}}
+                   {{#if this.withCoTerm}}
+                        {{date  this.SubscriptionExpiryDate}}
+                   {{else}}
+                    {{date this.requestDate}}   
+                   {{/if}}
+                {{else}}
+                    {{date this.requestDate}}
+                         
+                {{/if}}
+                {{else}}
+                     {{date this.renewEndDate}}  
+                    {{/ifEquals}}
+             {{/ifEquals}} 
+            {{/ifNotEquals}}
+             <!--swetha MP-430 Code End-->
+            <!--MP-372 Code Start-->           
+          </div>
+        <!--MP-133 Code End-->
+         
+         {{#ifNotEquals this.cartItemType 'Coupon'}}
+          <div class="col-md-2 cc_order_quantity" style="padding-left: 34px;padding-right:0px;text-align:center;width: 5.5%;">
+           <span class="cc_quantity">{{this.quantity}}</span>
+           <span></span>
+          </div>
+         
+          <div class="col-md-4" style="padding-left: 88px;">
+           <span class="cc_price">{{price this.proratedPrice}}</span>
+           {{#if this.proratedCouponDiscount}}
+           <span><div style="margin-top: 25%;width: 200%;"><b>{{this.couponCode}}</b> {{pageLabelMap 'OSM_Applied'}}</div></span>
+           {{/if}} 
+           </div>
+           
+           {{#if this.proratedCouponDiscount}}
+            {{#ifGreater this.proratedCouponDiscount 0}}
+             <!-- <span class="cc_price_label">Discount&#58;&#160;</span> -->
+             <!-- <span class="cc_price">{{priceAbs this.absoluteDiscount}}</span> -->
+             <!-- <div><font color="red">-{{price this.absoluteDiscount}}</font></div> -->
+            {{/ifGreater}}
+            {{#ifLessThan this.proratedCouponDiscount 0}}
+             <span class="cc_price_label">{{pageLabelMap 'CartInc_Surcharge'}}&#58;&#160;</span>
+             <span class="cc_price">{{priceAbs this.proratedCouponDiscount}}</span>
+             <!-- <div><font color="red">-{{price this.absoluteDiscount}}</font></div> -->
+            {{/ifLessThan}}
+           {{/if}}
+
+
+          </div>
+          
+          
+         
+         {{/ifNotEquals}}
+
+          <div class="col-md-2" style="text-align:right;width: 17.0%;">
+              
+         </div>  
+         
+         
+         <div class="col-md-2 cc_item_total" style="text-align:right;">
+         
+          <span class="cc_total">{{price this.proratedSubamount}}</span>
+          {{#if this.proratedCouponDiscount}}
+          {{#ifGreater this.proratedCouponDiscount 0}}
+          <span><div style="margin-top:20%"><font color="red">-{{price this.proratedCouponDiscount}}</font></div> </span>
+          {{/ifGreater}}
+          {{/if}}
+            <!--{{#if this.minorLines}}
+            {{#ifNotEquals this.pricingType "attrGroup"}}
+            <p class="cc_included_items">
+                <a href="#included_items{{this.itemID}}" id="includedItemsLink" data-toggle="modal" data-id="{{this.itemID}}"><span class="icon-ViewBound"></span> &nbsp;{{pageLabelMap 'CheckOut_IncludedItems'}}</a>
+            </p>
+            {{> includedDisplay}}
+            {{/ifNotEquals}}
+            {{/if}}-->
+            {{#if this.minorLines}}
+            {{#ifEquals this.pricingType "attrGroup" }}
+            <p class="cc_cart_attribute_items">
+                <a href="#order_attribute_items{{this.itemID}}" id="orderAttributeItemsLink" data-toggle="modal" data-id="{{this.itemID}}">{{pageLabelMap 'CheckOut_AttributeItems'}}</a>
+            </p>
+            {{> orderAttributesDisplay}}
+            {{/ifEquals}}
+            {{/if}}
+         </div>
+         {{#if sellerName}}
+          <p class="cc_seller">
+           <span class="cc_soldby_label">{{pageLabelMap 'Prod_SoldBy'}}&#58;&#160;</span>
+           <span class="cc_soldby">{{sellerName}}</span>
+          </p>
+         {{/if}}
+         {{#if this.isSubscription}}
+          <p class="cc_subscription_summary">
+           {{subscriptionSummary 'Order_Subscription_' this.subscriptionFrequency mockProduct.sku itemTotal}}
+          </p>
+          <p class="cc_subscription_next_date">
+           {{pageLabelMap 'Order_Subscription_Next_Payment'}} {{this.nextSubscriptionDateStr}}
+          </p>
+          {{#if this.isLimitedSubscription}}
+           <p class="cc_subscription_summary">
+            {{pageLabelMap 'Order_Subscription_End_Date'}} {{this.subscriptionEndDateStr}}
+           </p>
+          {{/if}}
+         {{/if}}
+         {{#each minorLines}}
+          {{#if this.isSubscription}}
+           <p class="cc_subscription_summary">
+            {{subscriptionSummary 'Order_Subscription_' this.subscriptionFrequency mockProduct.sku itemTotal}}
+           </p>
+           <p class="cc_subscription_next_date">
+            {{pageLabelMap 'Order_Subscription_Next_Payment'}} {{this.nextSubscriptionDateStr}}
+           </p>
+           {{#if this.isLimitedSubscription}}
+            <p class="cc_subscription_end_date">
+             {{pageLabelMap 'Order_Subscription_End_Date'}} {{this.subscriptionEndDateStr}}
+            </p>
+           {{/if}}
+          {{/if}}
+         {{/each}}
+         <!-- {{#if this.minorLines}}
+          {{#ifNotEquals this.pricingType "attrGroup"}}
+           <p class="cc_included_items">
+             <a href="#included_items{{this.itemID}}" id="includedItemsLink" data-toggle="modal" data-id="{{this.itemID}}"><span class="icon-ViewBound"></span> &nbsp;{{pageLabelMap 'CheckOut_IncludedItems'}}</a>
+           </p>
+           {{> includedDisplay}}
+          {{/ifNotEquals}}
+         {{/if}}
+         {{#if this.minorLines}}
+          {{#ifEquals this.pricingType "attrGroup" }}
+           <p class="cc_cart_attribute_items">
+            <a href="#order_attribute_items{{this.itemID}}" id="orderAttributeItemsLink" data-toggle="modal" data-id="{{this.itemID}}">{{pageLabelMap 'CheckOut_AttributeItems'}}</a>
+           </p>
+           {{> orderAttributesDisplay}}
+          {{/ifEquals}}
+         {{/if}} -->
+        </div>
+       </div>
+       
+      {{/ifNotEquals}}
+      {{#ifEquals this.cartItemType 'Coupon'}}
+       <p class="item_title coupon_title">
+        {{{this.mockProduct.name}}}
+       </p>
+      {{/ifEquals}}
+     </div>
+     <hr>
+     {{/each}}
+   </div>
+   {{> totalsSection}}
+  </script>
+  
+  
+  <script id="CMI-TotalSection" type="text/template">
+  <div class="col-md-6" style="margin-top: 1%;">
+     <div class="form-group">
+         <div style="padding-left:0px;padding-top:0px">
+          <h5 class="" ><strong>Purchaser Comments :</strong></h5>
+          </div>
+         
+      <textarea class="form-control" rows="4" id="Purchasercomments" placeholder="Comments are Optional" style="padding-top:1%;" onkeyup="purchasercommentlimit();" maxlength="1000" wrap="hard" value="{{this.PurchaserComments}}">{{this.PurchaserComments}}</textarea>
+       <span class="help-block"><p id="characterLeft" class="help-block "></p></span>        
+    </div>
+  </div>
+  <div class="total cc_total col-md-5" style="margin-top: 2%;">
+   {{#ifNotEquals this.totalDiscount "0.00"}}
+     <div class="col-md-7" style="text-align:right;padding-top:3px;width: 73%;">
+       <!-- changeToPageLabel -->
+        <span class=" col-md-4 cc_tax_label" id="totalPriceLabel" style="text-align:right;width: 80.1%;">{{pageLabelMap 'CartInc_OriginalPrice'}}&nbsp;&#58;</span>
+        <span class="cc_tax">{{price this.sumOriginalProratedSubtotal this.currencyCode}}</span>
+     </div>
+
+    <div class="col-md-7" style="text-align:right;padding-top:3px;width: 73%;">
+            <!-- changeToPageLabel -->
+             <span class=" col-md-4 cc_tax_label" style="text-align:right;width: 80.1%;">{{pageLabelMap 'CartInc_TotalDiscount'}}&nbsp;&#58;</span>
+             <span class="cc_tax"><font color="red">-{{price this.totalDiscount this.currencyCode}}</font></span>
+    </div>
+    {{/ifNotEquals}}
+     <div class="col-md-7" style="text-align:right;padding-top:3px;width: 73%;">
+             <span class=" col-md-4 cc_total_label" style="text-align:right;width: 80.1%;">{{pageLabelMap 'CartInc_Subtotal'}}&nbsp;&#58;</span>
+             <span class="cc_total_amount">{{price this.sumProratedPriceAfterDiscount this.currencyCode}}</span>
+   </div>
+     <div class="col-md-7" style="text-align:right;padding-top:3px;width: 73%;">
+            <span class=" col-md-4 cc_tax_label" style="text-align:right;width: 80.1%;">{{pageLabelMap 'OSM_TotalTax'}}&nbsp;&#58;</span>
+      <span class="cc_tax">{{price this.tax this.currencyCode}}</span>
+     </div>
+      
+
+   {{#ifDisplay 'OR.ShowTotalSurcharge' }}
+    {{#if this.surchargeAmount }}
+     <p class="cc_surcharge">
+      <span class="cc_surcharge_label">{{pageLabelMap 'CartInc_Surcharge'}}&#58;&#160;</span>
+      <span class="cc_surcharge_amount">{{price this.surchargeAmount this.currencyCode}}</span>
+     </p>
+    {{/if}}
+   {{/ifDisplay}}
+   
+   <div class="cc_grand_total col-md-9" style="text-align:right;margin-bottom:15px;padding-right: 23px;">
+             <span class=" col-md-6 cc_total_label" style="text-align:right;width: 75%;padding-right: 0px;">{{pageLabelMap 'CartInc_GrandTotal'}}&nbsp;&#58;</span>
+    <span class="cc_total_amount" style="text-align:right;width: 75%;">{{sum this.sumProratedPriceAfterDiscount this.tax this.currencyCode }}</span>
+    <br/>
+         <div class="link_button cc_link_button row" style="text-align: right;padding-right: 15px;padding-top: 50px;" >
+      <div id="processingMsgId" class="main-messagingSection-Error" style = " display: none" ></div>
+        {{#if this.isError }}
+            <!--div id="errorMsgId" class="main-messagingSection-Error" style = "color: red;" > {{this.errorMsg}} </div -->
+            <input class="btn btn-default btn-sm processBack osm-processback cc_process_back" type="button" value="{{pageLabelMap 'Back'}}" alt="{{pageLabelMap 'Back'}}" onclick=" return callBack()" />
+            <input onclick="refreshPaymentView()" id="paymentProcessButton" disabled class="btn btn-default btn-sm processReview proceed cc_process_review CMI-btn-teal" type="button" value="{{pageLabelMap 'CheckOut_MobileGotoPayment'}}" alt="{{pageLabelMap 'CheckOut_AcceptAndProceed'}}" />
+        {{else}}
+           <input class="btn btn-default btn-sm processBack osm-processback cc_process_back" type="button" value="{{pageLabelMap 'Back'}}" alt="{{pageLabelMap 'Back'}}" onclick=" return callBack()" />
+           <!-- LL39 @Vishnu 8/25/2022 Show Pay button based on CC and 0.00 total price -->
+           {{#if (checkTotalIsZero this.sumProratedPriceAfterDiscount this.tax this.selectedPaymentMethod)}}
+                <input onclick="redirectToConfirmationPage()" id="paymentProcessButton" class="btn btn-default btn-sm proceed cc_process_review CMI-btn-teal" type="button" value="{{pageLabelMap 'CheckOut_MobileGotoPayment'}}" alt="{{pageLabelMap 'CheckOut_AcceptAndProceed'}}" />
+           {{else}}
+                <input onclick="refreshPaymentView()" id="paymentProcessButton" class="btn btn-default btn-sm processReview proceed cc_process_review CMI-btn-teal" type="button" value="{{pageLabelMap 'CheckOut_MobileGotoPayment'}}" alt="{{pageLabelMap 'CheckOut_AcceptAndProceed'}}" />
+           {{/if}} 
+       {{/if}}
+      </div>
+   </div>
+  </div>
+    <!-- LL39 @Vishnu 8/25/2022 Show popup on OK redirect to Order confirmation page -->
+    <div class="modal fade" id="freeCheckout" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="border-radius:1px;border:1px black;">
+                <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                    <h4 class="modal-title cc_modal_title" id="exampleModalLabel">Free Product Checkout</h4>
+                </div>
+                <div class="modal-body" > <h4 class="modal-title cc_cancel_prompt">Your order total is $0 and no payment is necessary. You will be directed to the order confirmation page to complete your purchase.</h4>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="proceesOrderonOK" class="btn btn-secondary closeModal" data-dismiss="modal" style="background-color: #0f4f77;float:left;">OK</button>
+                </div>   
+            </div>
+        </div>
+    </div>   
+ </script>
+ 
+ 
+ <script id="Payment-Desktop-New" type="text/template">
+   <div class="panel panel-default cc_panel cc_checkout_payment_panel">
+    <div class="panel-body cc_body">
+     <input class="button processBack btn btn-default btn-sm" type="button" value="{{pageLabelMap 'Back'}}" alt="{{pageLabelMap 'Back'}}" onclick=" return callBack()"  />
+     <div class="checkoutContainer checkoutPaymentContainer cc_checkout_payment_container">
+      <div class="messagingSection-Error"  style="display: none"></div>
+      
+      <div class="messagingSection-Info" style="display: none"></div>
+      <div class="messagingSection-Warning" style="display: none"></div>
+      <br/>
+      <!-- @Suresh Start LL-76 : Added BMS Validation Error message with same styling as Order Review Page 11/08/2022-->
+      <div id="oneBMSValidationError" style="background-color: #FEEEED;padding: 10px;border: solid 2px red;display: none">
+        <span class="icon-Warning" style="color:red; font-size:18px; vertical-align: middle;"></span>&nbsp;
+        {{pageLabelMap 'OSM_OneBMS_Validation_Error_Message'}}
+      </div>
+      <!-- @Suresh End LL-76-->
+      <div id="getCustValid" style="background-color: #FEEEED;padding: 10px;border: solid 2px red;display:none;">
+          <span class="icon-Warning" style="color:red; font-size:18px; vertical-align: middle;"></span>&nbsp;
+          Sorry, the purchase order payment option is not available at this time. Please place your order using a different payment option or try again later.
+      </div>
+      <div class="checkoutPaymentTarget"/>
+     </div>
+    </div>
+   </div>
+  </script>
+  
+  
+ 
+ <script id="CMI-PaymentProcessor-Desktop" type="text/template">
+    
+   <div class="panel cc_panel cc_payment_processor">
+    <div class="panel-body cc_body">
+        <div id="carddecline-error" class="carddecline-error" role="alert" style="display: none"></div>
+     <div class="storedpayment-messagingSection-Warning" role="alert" style="display: none"></div>
+     <div class="storedpayment-messagingSection-Info" role="alert" style="display: none">
+      <button type="button" class="close cc_close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&#215;</span></button>
+     </div>
+        <p id="customErroDiv" style="background-color: rgba(252, 227, 227, 1);padding: 4px;border: solid 2px #b31b07;width:100%;display: none;">                                  
+            <span style="color:black; font-size:14px;"> <i style="color:#e52626; font-size:14px" class="fa">&#xf071;</i>{!$Label.OSM_BAMS_ERROR_MSG}</span> 
+        </p>
+
+                    {{#if true }}
+     {{#ifDisplay 'WLT.Enabled'}}
+      {{#if this.storedPayments}}
+       <div class="panel panel-default cc_panel cc_payment_processor_mywallet">
+        <div class="panel-heading cc_heading">
+         <h3 class="panel-title cc_title">{{pageLabelMap 'PaymentProcessor_MyWallet'}}</h3>
+        </div>
+        <div class="panel-body cc_body">
+         <div class="cc_stored_payments_container">
+          <div class="cc_top_section">{{pageLabelMap 'PaymentProcessor_Top'}}</div>
+          {{#each this.storedPayments}}
+           <div class="cc_stored_payments_container {{this.accountType}}">
+            <div class="radio">
+             <label for="storedPaymentSelection{{this.sfid}}" class="cc_stored_payments_selector {{this.sfid}}">
+              <input id="storedPaymentSelection{{this.sfid}}" type="radio" name="storedPaymentSelection" value="{{this.sfid}}" class="storedPaymentSelection {{this.sfid}}" data-id="{{this.sfid}}" {{#ifEquals @root.storedSelected this.sfid}}checked{{/ifEquals}}/></span>
+             </label>
+             <span class="cc_stored_payment_display">
+              {{pageLabelMapMultiString 'PaymentDisplay_' this.accountType this.accountType this.accountNumber this.subAccountNumber (pageLabelMapMultiString 'PaymentType_' this.paymentType) (pageLabelMapMultiString 'PaymentExpMonth_' this.expirationMonth) (pageLabelMap this.expirationYear) this.displayName}}
+             </span>
+            </div>
+           </div>
+          {{/each}}
+          <div class="cc_payment_action_container">
+           <p class="panel-body pull-right cc_action_buttons">
+            <button type="button" class="btn btn-default btn-sm useStoredPayment cc_use_stored_payment">{{pageLabelMap 'PaymentProcessor_UseStoredPayment'}}</button>
+           </p>
+          </div>
+         </div>
+        </div>
+       </div>
+      {{/if}}
+      {{/ifDisplay}}
+                    {{/if}}
+    </div>
+    <div class="paymentMidSection">{{pageLabelMap 'PaymentProcessor_MidSec'}}</div>
+    {{#if this.paymentTypes}}
+     <div class="cc_payment_types_container">
+      <div class="tab-content cc_tab-content">
+       {{#each this.paymentTypes}}
+        <div role="tabpanel" class="cc_tab-pane tab-pane {{#ifEquals @index 0 }} active {{/ifEquals}} " id="{{@key}}">
+         <div class="paymentTypeContainer {{@key}} err cc_payment_type">
+          {{pageLabelMap 'Payment_LoadingPaymentType'}}
+         </div>
+        </div>
+       {{/each}}
+      </div>
+     </div>
+    {{/if}}
+   </div>
+  </script>
+ 
+ <script id="Checkout-Navigation" type="text/template">
+   <div class="container">
+    <div class="row">
+     <div class="col-xs-12">
+      <ul class="nav nav-pills nav-justified thumbnail" style="border:none">
+      {{#each this.views}}
+      <li class="{{#ifEquals @index ../index}}active{{else}}disabled{{/ifEquals}} cc_checkoutStep{{@index}} cc_checkoutStep">
+       <a><h4 class="list-group-item-heading">{{this.title}}</h4></a>
+      </li>
+      {{/each}}
+      <li class="disabled cc_checkoutStepOrderConfirmation cc_checkoutStep">
+       <a><h4 class="list-group-item-heading">{{pageLabelMap 'CheckOut_OrderConfirmationStep'}}</h4></a>
+      </li>
+      </ul>
+     </div>
+    </div>
+   </div>
+  </script>
+        
+  
+  <script id="AddressDisplay-New" type="text/template">
+  <div class="address_selection_display">
+   {{#ifDisplay 'SO.DsplAddrName'}}
+    {{#if this.firstName }}
+     <p class="cc_addr_name">
+      <span class="cc_firstname">{{this.firstName}}&#160;</span>
+      {{#if this.lastName }}
+       <span class="cc_lastname">{{this.lastName}}</span>
+      {{/if}}
+     </p>
+    {{else}}
+     {{#if this.lastName }}
+      <p class="cc_addr_name">
+       <span class="cc_lastname">{{this.lastName}}</span>
+      </p>
+     {{/if}}
+    {{/if}}
+
+   {{/ifDisplay}}
+   {{#ifDisplay 'SO.DsplAddrCompany'}}
+    {{#if this.companyName}}
+     <p class="cc_addr_company">{{this.companyName}}</p>
+    {{/if}}
+   {{/ifDisplay}}
+   {{#if this.address1}}
+    <span class="addr_line1 cc_addr_line">{{this.address1}}</span><br/>
+   {{else}}
+    {{#if this.addressFirstline}}
+     <span class="addr_line1 cc_addr_line">{{this.addressFirstline}}</span><br/>
+    {{/if}}
+   {{/if}}
+
+   {{#if this.address2}}
+    <span class="addr_line2 cc_addr_line">{{this.address2}}</span><br/>
+   {{else}}
+    {{#if this.addressSecondline}}
+     <span class="addr_line1 cc_addr_line">{{this.addressSecondline}}</span><br/>
+    {{/if}}
+   {{/if}}
+
+   {{#if this.address3}}
+    <span class="addr_line3 cc_addr_line">{{this.address3}}</span><br/>
+   {{else}}
+    {{#if this.addressThirdline}}
+     <span class="addr_line1 cc_addr_line">{{this.addressThirdline}}</span><br/>
+    {{/if}}
+   {{/if}}
+   <span class="cc_addr_city">{{this.city}}</span>
+   {{#if this.isbillingaddrcleansed}} 
+             <span class="cc_addr_state">&#44;&#160;{{this.stateCode}}</span>
+       {{else}}
+   {{#if this.state}}    
+    <span class="cc_addr_state">&#44;&#160;{{this.state}}</span>
+   {{else}}
+    {{#if this.stateCode}}
+     <span class="cc_addr_state">&#44;&#160;{{this.stateCode}}</span>
+    {{else}}
+     {{#if this.stateISOCode}}
+      <span class="cc_addr_state">&#44;&#160;{{this.stateISOCode}}</span>
+     {{/if}}
+    {{/if}}
+   {{/if}}
+    {{/if}}
+   <span class="cc_addr_postal">&#160;{{this.postalCode}}</span><br/>
+   {{#if this.isbillingaddrcleansed}} 
+      <span class="cc_addr_country">{{this.countryCode}}</span>
+    {{else}}
+     <span class="cc_addr_country">{{this.country}}</span>
+    {{/if}}
+  </div>
+ </script>
+ 
+ 
+ <script id="SWStore-PaymentPO-Both" type="text/template">
+        <div class="panel panel-default cc_panel cc_payment_po">
+        <p id="PoValErr"  style="background-color: rgba(252, 227, 227, 1);padding: 4px;border: solid 2px #b31b07;width:100%;display: none;">                                  
+               <span style="color:black; font-size:14px;"> <i style="color:#e52626; font-size:14px" class="fa">&#xf071;</i>  {{pageLabelMap 'PO_field_Validation'}}</span> 
+                </p>   
+                <p id="PoValMaxErr"  style="background-color: rgba(252, 227, 227, 1);padding: 4px;border: solid 2px #b31b07;width:100%;display: none;">                                  
+                    <span style="color:black; font-size:14px;"> <i style="color:#e52626; font-size:14px" class="fa">&#xf071;</i>  {{pageLabelMap 'PO_field_Max_Validation'}}</span> 
+                </p> 
+                <div class="panel-body cc_body">
+                <!-- Commented as part of MAR-1151
+                    <div class="poPayment-messagingSection-Error" style="display: none"></div> 
+                -->
+                <div class="panel-heading cc_heading">
+                    <h3 class="panel-title cc_title">{{pageLabelMap 'PMTPO_NewPO'}}</h3>
+                </div>
+                <br />
+             
+                <form id="newWalletForm" class="form-horizontal newPOForm cc_form-horizontal cc_new_po_form" forceSSL="true">
+                    <p class="cc_payment_po_instructions">{{pageLabelMap 'PMTPO_Instr'}}</p>
+                    <div class="form-group">
+                        <label for="accountNumber" class="col-sm-2 control-label poLabel Number fieldLabel cc_po_label_number">{{pageLabelMap 'PMTPO_PONum'}}</label>
+                        <div class="col-sm-10">
+                            <input id="accountNumber" type="text" name="accountNumber" maxlength="25" class="form-control" oninput="return btnVisible(this)" onChange="return trimStr(this)">
+                        </div>
+                    </div>
+                    {{#if {!NOT(ISPICKVAL($User.UserType, 'Guest'))} }}
+                        {{#ifDisplay 'WLT.Enabled'}}
+                            <div class="form-group">
+                                <div class="col-sm-offset-2 col-sm-10">
+                                    <div class="checkbox">
+                                        <label for="saveAsStoredPayment" class="poLabel SavePayment fieldLabel cc_po_label_save_payment">
+                                            <input type="checkbox" name="saveAsStoredPayment" id="saveAsStoredPayment" value="true" />
+                                            {{pageLabelMap 'MyWallet_SavePayment'}}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="displayName" class="col-sm-2 control-label poLabel Name fieldLabel cc_po_label_name">{{pageLabelMap 'MyWallet_NameOpt'}}</label>
+                                <div class="col-sm-10">
+                                    <input type="text" name="displayName" id="displayName" maxlength="50" class="form-control">
+                                </div>
+                            </div>
+                        {{/ifDisplay}}
+                    {{/if}}
+                    <div class="cc_po_action_buttons">
+                        <p class="panel-body pull-right cc_action_buttons">
+                            <input type="button" class="btn btn-default btn-sm button makePOPayment cc_make_po_payment" id="save" data-id="newWalletForm" disabled="true" value="{{pageLabelMap 'Payment_MakePayment'}}" />
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+</script>
+
+<script id="OMS-Cart-IncludedItems" type="text/template">
+<div id="included_items{{this.itemID}}" class="modal fade cc_modal cc_cart_included_items_modal" tabindex="-1" role="dialog" aria-hidden="true">
+ <div class="modal-dialog" role="document">
+  <div class="modal-content cc_modal_content">
+   <div class="modal-header" style="color: white;background-color: black;font-weight: bold;">
+    <!--<button type="button" class="close cc_close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&#215;</span></button>-->
+    {{#ifEquals this.pricingType 'external'}}
+     {{#if extName}}
+        {{this.extName}}&#58;&#160;{{pageLabelMap 'CheckOut_IncludedItems'}}
+     {{else}}
+        {{this.mockProduct.name}}&#58;&#160;{{pageLabelMap 'CheckOut_IncludedItems'}}
+     {{/if}}
+    {{else}}
+        {{this.mockProduct.name}}&#58;&#160;{{pageLabelMap 'CheckOut_IncludedItems'}}
+    {{/ifEquals}}
+   </div>
+   <div class="modal-body cc_modal-body">
+    <div class="table-responsive">
+     <table class="cart_figures table cc_table cc_included_items">
+      <thead class="cc_table_header">
+       <th class="cc_name">{{pageLabelMap 'Name'}}</th>
+       <th class="cc_qty">{{pageLabelMap 'Qty'}}</th>
+       {{#ifEquals this.mockProduct.ProductType 'Dynamic Kit'}}
+        <th class="cc_total">{{pageLabelMap 'CartInc_Total'}}</th>
+       {{/ifEquals}}
+       {{#ifEquals this.mockProduct.ProductType 'Kit'}}
+        <th class="cc_total">{{pageLabelMap 'CartInc_Total'}}</th>
+       {{/ifEquals}}
+      </thead>
+      <tbody>
+      {{#each this.minorLines}}
+       <tr>
+        <td class="cc_name">
+        {{#ifEquals this.pricingType 'external'}}
+         <span class="cc_value cc_name">
+         {{#if extName}}
+          {{this.extName}}
+         {{else}}
+          {{this.mockProduct.name}}
+         {{/if}}
+         </span><br/>
+         <span class="cc_value cc_sku">
+         {{#if extSKU}}
+          {{this.extSKU}}
+         {{else}}
+          {{this.mockProduct.sku}}
+         {{/if}}
+         </span>
+        {{else}}
+         <span class="cc_value cc_name">{{this.mockProduct.name}}</span><br/><span class="cc_value cc_sku">{{this.mockProduct.sku}}</span>
+        {{/ifEquals}}
+        {{#contains this.pricingModifierTypes 'tiered'}}
+         {{#ifNotEquals this.parentProductType 'Bundle'}}
+          <div class="cc_prt_tool_tip_div cc_prt_tool_tip_div_ct" data-toggle="tooltip" title="{{pageLabelMap 'ProductPricingTiers_VolumeHover'}}">
+           <span class="cc_prt_tool_tip_text cc_prt_tool_tip_text_ct">{{pageLabelMap 'ProductPricingTiers_VolumePricingApplied'}}</span>
+          </div>
+         {{/ifNotEquals}}
+        {{/contains}}
+        </td>
+         
+        {{#ifGreater this.quantity 998}}
+        <td class="cc_qty">Unlimited  {{#contains this.mockProduct.name 'insite'}}licenses{{else}}users{{/contains}}</td>
+        {{else}}
+          <td class="cc_qty">{{this.quantity}}  {{#contains this.mockProduct.name 'insite'}}licenses{{else}}users{{/contains}}</td>
+
+        {{/ifGreater}}
+        {{#ifEquals ../mockProduct.ProductType 'Dynamic Kit'}}
+         <td class="cc_total"><span class="price cc_totalPrice">{{price this.itemTotal}}</span></td>
+        {{/ifEquals}}
+        {{#ifEquals ../mockProduct.ProductType 'Kit'}}
+         <td class="cc_total"><span class="price cc_totalPrice">{{price this.itemTotal}}</span></td>
+        {{/ifEquals}}
+       </tr>
+      {{/each}}
+      </tbody>
+     </table>
+    </div>
+   </div>
+    <div class="modal-footer">
+        <button type="button" class=" cc_close btn btn-default btn-sm cc_checkout_btn" data-dismiss="modal" aria-label="Close">Close</button>
+      </div>
+  </div>
+ </div>
+</div>
+</script>
+     
+    
+ 
+ 
+ <script type="text/javascript">
+ var paymentView;// test233
+ var parentPaymentView;
+    function callBack()
+    {
+        CCRZ.cartCheckoutModel.attributes.getTaxFirstTime = false;
+        CCRZ.cartCheckoutModel.attributes.isError = false;
+        CCRZ.cartCheckoutModel.attributes.errorMsg = "";
+        if($("#Purchasercomments").length != 0) {
+             var comment = $("#Purchasercomments").val();
+              if(comment != ""){
+                OSM_SW_Checkout_OrderReviewPg_Ctrl.updatepurchasercomments(CCRZ.pagevars.remoteContext,comment,function(response){});
+              } 
+         }
+        
+        return true;
+    }
+    
+    CCRZ.pubSub.on('view:PaymentView:refresh ',function(parentPaymentView1){
+            parentPaymentView = parentPaymentView1;
+    });
+    
+    var refreshPaymentViewFlag=false;;
+    CCRZ.pubSub.on('view:PaymentView:refresh', function(cartCheckoutView){
+        refreshPaymentViewFlag = false;
+    });
+ // MAR-934 Code Start 
+    function trimStr (el) {
+       el.value = el.value.
+       replace (/(^\s*)|(\s*$)/gi, "");
+        console.log('Inside PO validation1111====>'+el.selectionStart);
+        if(el.value =='' || el.selectionStart < 3 ){ 
+          document.getElementById("PoValErr").style.display = "block" ;
+          document.getElementById("save").disabled = true;
+         }
+         if(el.selectionStart > 15 ) { 
+             document.getElementById("PoValMaxErr").style.display = "block" ;
+             document.getElementById("save").disabled = true;
+         }else{
+             document.getElementById("PoValMaxErr").style.display = "none" ;
+            
+         }
+       return;
+       }
+    
+    function btnVisible (el) {
+        document.getElementById("PoValErr").style.display = "None" ;
+        document.getElementById("PoValMaxErr").style.display = "None" ;
+        document.getElementById("save").disabled = false;
+         return;
+       }
+    
+    //LL39 @Vishnu 8/25/2022 On OK redirect to Order confirmation page 
+    function redirectToConfirmationPage(){
+       var comment = $("#Purchasercomments").val();
+       if(comment != ""){
+           OSM_SW_Checkout_OrderReviewPg_Ctrl.updatepurchasercomments(CCRZ.pagevars.remoteContext,comment,function(response){});
+        } 
+            $('#freeCheckout').modal('show'); 
+            $(document).on("click","#proceesOrderonOK",function() {                
+                proceesOrderonOK();
+                $('#freeCheckout').modal('hide');
+            });
+            return;
+    }   
+
+    function proceesOrderonOK(){  
+        var dateNow = Date.now();
+        var paymentData =
+            {                
+                token : dateNow,
+                accountType : 'cc',
+                transactionCode : dateNow,
+                transactionSubcode : dateNow                
+            };
+            CCRZ.pubSub.trigger('action:processPayment',paymentData);
+            return;
+    }
+       
+   // MAR-934 Code End
+    function refreshPaymentView()
+    {
+      var comment = $("#Purchasercomments").val();
+       if(comment != ""){
+           OSM_SW_Checkout_OrderReviewPg_Ctrl.updatepurchasercomments(CCRZ.pagevars.remoteContext,comment,function(response){});
+        }      
+      refreshPaymentViewFlag = true;  
+      console.log('Triggering the payment view event');
+      CCRZ.pubSub.trigger('action:paymentViewReady','cc',function(options)
+        {
+           
+            CCRZ.payment = CCRZ.payment||{views:{}};
+            
+                CCRZ.payment.views.cc = new CCRZ.views.PaymentsCCView({
+                    selector : options.selector
+                });
+             
+        });
+        
+         return false;
+              
+    }
+    
+    function purchasercommentlimit(){
+        var max = 1000;
+         var len =  $("#Purchasercomments").val().length;
+              if (len >= max) {
+                  $("#characterLeft").text('You have reached the limit');
+                  $("#characterLeft").addClass('red');
+               }else{
+                    var ch = max - len;
+                    $("#characterLeft").text(ch + ' characters left');
+                    $("#characterLeft").removeClass('red');
+                             
+                 }
+      
+    }
+    
+    jQuery(function($)
+    {
+         
+         CCRZ.pubSub.once('view:cartCheckoutView:refresh', function(cartCheckoutView)
+        {
+            console.log('Cart:Step1');
+            var subViewList = CCRZ.cartCheckoutView.subViewArray
+            CCRZ.cartCheckoutModel.attributes.appliedCoupon = sessionStorage['appliedCoupon'];
+            CCRZ.cartCheckoutModel.attributes.totalDiscount = sessionStorage['totalDiscount'];
+            CCRZ.cartCheckoutModel.attributes.totalOriginalPrice = sessionStorage['totalOriginalPrice'];
+
+              var targetedView =  _.find(subViewList, function(subView)
+               {
+                                
+                     return subView.title == 'Payment';
+                });
+                
+                var paymentModel  = targetedView.view.model ;
+                
+                Object.getPrototypeOf(paymentModel).defaultProcessPayment = Object.getPrototypeOf(paymentModel).processPayment;
+                
+                _.extend(Object.getPrototypeOf(paymentModel), 
+                 {
+                    processPayment: function (event) 
+                    {
+                        debugger;
+                      // custom logic goes here 
+                      //adding cart item update method...
+                       OSM_SW_Checkout_OrderReviewPg_Ctrl.postApplyCoupon(CCRZ.pagevars.remoteContext,function(response){
+                                        console.log('price type changed method called>>>> %o',response);
+                                        if(response.log){
+                                            for(var i=0;i<response.log.length;i++){
+                                                console.log(response.log[i]);
+                                            }
+                                        }
+                                        if(response.success)
+                                        {
+                                            console.log("on custom payment");
+                                            // console.log(cartCheckoutView);
+                                           
+                                            if(cartCheckoutView != undefined && cartCheckoutView.model != undefined && cartCheckoutView.model.attributes != undefined && cartCheckoutView.model.attributes.selectedPaymentMethod != undefined && cartCheckoutView.model.attributes.selectedPaymentMethod == "po" && ((cartCheckoutView.model.attributes.poType != undefined && cartCheckoutView.model.attributes.poType == "OneBMS") || (cartCheckoutView.model.attributes.thirdPartyPaymentChcked && cartCheckoutView.model.attributes.selectedBMSResult != undefined && cartCheckoutView.model.attributes.selectedBMSResult.CustomerCode != undefined) ))
+                                            {
+                                                var BMSCode = '';
+                                                var IAMAccountId = ''; 
+                                                if(cartCheckoutView.model.attributes.selectedBMSResult  != undefined  && cartCheckoutView.model.attributes.selectedBMSResult.CustomerCode != undefined)
+                                                    BMSCode = cartCheckoutView.model.attributes.selectedBMSResult.CustomerCode;
+                                                
+                                                if(cartCheckoutView.model.attributes.IAMAccountId != undefined)
+                                                    IAMAccountId = cartCheckoutView.model.attributes.IAMAccountId;
+                                                
+                                                var thirdPartyPaymentChecked = false;
+                                                if(cartCheckoutView.model.attributes.thirdPartyPaymentChcked)
+                                                    thirdPartyPaymentChecked = true;
+                                                CCRZ.subsc.OneBMSAction.checkOneBMSCreditLimit(thirdPartyPaymentChecked, BMSCode,IAMAccountId,function(response)
+                                                {
+                                                    console.log(response);
+                                                    if (response.success)
+                                                    {
+                                                        console.log("check credit limit sucess");
+                                                        console.log(response);
+                                                        console.log("Do Payment on if block");
+                                                        console.log(event);
+                                                        if(response.data.BMSPaymentType != undefined &&  response.data.BMSPaymentType != "" && (response.data.BMSPaymentType.toUpperCase() == "CHARGE" || response.data.BMSPaymentType.toUpperCase() == "CBILL" || cartCheckoutView.model.attributes.totalAmount == 0 ) && (response.data.avialableBMSCreditLimit >= cartCheckoutView.model.attributes.totalAmount || cartCheckoutView.model.attributes.totalAmount == 0)) //Subbu added extra check for allowing purchase where available credit is 0 and payment type is CCARD
+                                                        {
+                                                            paymentModel.defaultProcessPayment(event);
+                                                        }
+                                                        else
+                                                        {
+                                                            //@Suresh LL-76 commented below code and added line to display error message 11/08/2022
+                                                            /*CCRZ.pubSub.trigger('pageMessage',{messages:[
+                                                            {
+                                                                type : 'CUSTOM',
+                                                                labelId : 'OSM_OneBMS_Validation_Error_Message',   //@Suresh LL-31 & LL-62 changed Page Label from 'Checkout_OneBMS_Validation' to 'OSM_OneBMS_Validation_Error_Message' show BMS Credit validation error message on Payment screen 03/Aug/2022 
+                                                                severity : 'ERROR',
+                                                                classToAppend : 'messagingSection-Error'
+                                                            }
+                                                            ]});*/
+                                                            document.getElementById("oneBMSValidationError").style.display = "block";
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        /*CCRZ.pubSub.trigger('pageMessage',{messages:[
+                                                        {
+                                                            type : 'CUSTOM',
+                                                            labelId : 'Checkout_OneBMS_Validation_Failure',
+                                                            severity : 'ERROR',
+                                                            classToAppend : 'messagingSection-Error'
+                                                        }
+                                                        ]});*/
+                                                        document.getElementById("getCustValid").style.display = "block";                                                        
+                                                    }
+                                                });
+                                            }
+                                            else
+                                            {
+                                                console.log("Do Payment on else block");
+                                                paymentModel.defaultProcessPayment(event);
+                                                
+                                            }
+                        
+                                         console.log('price type changed again external>>>>');
+                                         
+                                        }
+                                         
+                        });
+                    }
+                 });
+                 
+            cartCheckoutView.delegateEvents();
+        });
+        
+        CCRZ.subsc = _.extend(CCRZ.subsc||{});
+
+        CCRZ.subsc.OneBMSAction = _.extend({
+                className : 'OSM_SW_Checkout_OrderReviewPg_Ctrl',
+                checkOneBMSCreditLimit : function(thirdPartypayment, thirPartyBMSCode,IAMAccountId, callback){
+                    this.invokeContainerLoadingCtx($('body'),'checkOneBMSCreditLimit',thirdPartypayment, thirPartyBMSCode,IAMAccountId,function(resp){
+                            callback(resp);
+                        },
+                        {
+                        buffer : false, // this call will be executed by itself
+                        nmsp : false // defines that this is a call to a subscriber class
+                        }); // end invokeCtx call
+                }
+                },CCRZ.RemoteInvocation);
+    
+        //START-Vaibhav : Hide Shipping tab on 6/28/2018
+            CCRZ.pubSub.on('view:cartCheckoutView:awaitingSubViewInit', function (theView) {
+        if (CCRZ.Checkout.userInfo) {
+            CCRZ.Checkout.userInfo.register(theView);
+        }
+        if (CCRZ.Checkout.shipping) {
+            
+        }
+        if (CCRZ.Checkout.review) {
+            CCRZ.Checkout.review.register(theView);
+        }
+        if (CCRZ.Checkout.payment) {
+            CCRZ.Checkout.payment.register(theView);
+        }
+        CCRZ.pubSub.trigger('view:cartCheckoutView:subViewInit');
+                
+         
+    });
+    
+    CCRZ.pubSub.on('view:PaymentProcessorView:refresh',function(paymentView1){
+            paymentView = paymentView1;
+    });
+    
+    CCRZ.pubSub.on('view:OrderReviewView:refresh',function(orderReviewView){
+
+            try{
+
+                    //Start:Added by Vaibhav on 26-Aug
+                        CCRZ.subsc = _.extend(CCRZ.subsc||{});
+                    
+                        orderReviewView.resetUserInformationTabFlags = function(event) {
+                //this is important to avoid user from moving to UI tab instead of Payment Tab
+                //If not set then Proceed on Order Review will take user to UI Tab
+                                isPaymentMethodcalledFromRemote = false;
+                            }
+                            
+                            orderReviewView.refreshPaymentView = function(event) {
+                //when user comes back from payment page and goes to payment page again refresh payment view again       
+                            }       
+                    orderReviewView.events['click .osm-processback'] = 'resetUserInformationTabFlags';              
+                    orderReviewView.delegateEvents(); 
+                    //End:Added by Vaibhav on 26-Aug
+                console.log('----c: '+JSON.stringify(CCRZ.cartCheckoutModel));
+                console.log(CCRZ.cartCheckoutModel.attributes);
+                console.log(CCRZ.cartCheckoutModel.attributes.getTaxFirstTime);
+                console.log((CCRZ.cartCheckoutModel.attributes.getTaxFirstTime == undefined));
+                
+                if(CCRZ.cartCheckoutModel.attributes.getTaxFirstTime == undefined)
+                {
+                    CCRZ.cartCheckoutModel.attributes.getTaxFirstTime = false;
+                }
+                console.log(CCRZ.cartCheckoutModel.attributes.getTaxFirstTime);
+                if(CCRZ.cartCheckoutModel.attributes.getTaxFirstTime == false)
+                {
+                    CCRZ.cartCheckoutModel.attributes.getTaxFirstTime = true;
+                    console.log(orderReviewView);
+                    document.getElementById("paymentProcessButton").disabled = true;
+                    //assuming that minicart has already been rendered which has cartModel
+                    var cartItemsFromMiniCart = CCRZ.headerModel.attributes.ECartItems;
+                    var cartItemIdTocartItemMap = new Map();
+                    var addProratedPriceCartItems = CCRZ.cartCheckoutModel.attributes.cartItems;
+                    if(addProratedPriceCartItems.length > 0 && cartItemsFromMiniCart.length >0){
+                        cartItemsFromMiniCart.forEach(function(ciCart){                       
+                                cartItemIdTocartItemMap.set(ciCart.sfid,ciCart);
+                        });
+                        addProratedPriceCartItems.forEach(function(ci){
+                            if(cartItemIdTocartItemMap.has(ci.itemID)){
+                                var cartCI = cartItemIdTocartItemMap.get(ci.itemID);
+                                ci.proratedCouponDiscount = cartCI.proratedCouponDiscount;
+                                ci.proratedPrice = cartCI.proratedPrice;
+                                ci.proratedPriceAfterDiscount = cartCI.proratedPriceAfterDiscount;
+                                ci.proratedSubamount = cartCI.proratedSubamount;
+                            }
+                        });
+
+                    } 
+                    CCRZ.cartCheckoutModel.attributes.cartItems = addProratedPriceCartItems;
+                    
+
+
+
+
+                    var cartItemsFromOrderReviewModel = CCRZ.cartCheckoutModel.attributes.cartItems;
+                    document.getElementById("processingMsgId").innerHTML = "{!$Label.OSM_SW_Tax_Calculation_Wait}";
+                    document.getElementById("processingMsgId").style.display = "block";
+                    
+                    CCRZ.subsc.VertexTaxRemoteActions.getVertexData(function(response)
+                        {
+                            if (response.success)
+                            {
+                            var vertexTaxWrapper = response.data.CartTaxDetail;
+                                CCRZ.cartCheckoutModel.attributes.totalDiscount = response.data.CartTaxDetail.totalDiscount;
+                                console.log(vertexTaxWrapper);
+                                _.each(cartItemsFromOrderReviewModel, function(cartItemFromOrderReviewModel) {
+                                cartItemFromOrderReviewModel.vertexTax=0;
+                                cartItemFromOrderReviewModel.vertexTax=_.find(vertexTaxWrapper.cartIteams, function (a) {
+                                return a.CartLineId === cartItemFromOrderReviewModel.itemID;
+                                }).vertexTax;
+                                
+                                cartItemFromOrderReviewModel.billingFrequency=_.find(vertexTaxWrapper.cartIteams, function (a) {
+                                return a.CartLineId === cartItemFromOrderReviewModel.itemID;
+                                }).billingFrequency;
+                                                                   
+                                    /* Added By vineet to display Coupon Code*/   
+                            cartItemFromOrderReviewModel.couponCode=_.find(vertexTaxWrapper.cartIteams, function (a) {
+                                return a.CartLineId === cartItemFromOrderReviewModel.itemID;
+                                }).couponCode;
+                                    
+                                    cartItemFromOrderReviewModel.hasCoupon=_.find(vertexTaxWrapper.cartIteams, function (a) {
+                                return a.CartLineId === cartItemFromOrderReviewModel.itemID;
+                                }).hasCoupon;
+                                cartItemFromOrderReviewModel.renewEndDate=_.find(vertexTaxWrapper.cartIteams, function (a) {
+                                return a.CartLineId === cartItemFromOrderReviewModel.itemID;
+                                }).renewEndDate;
+                                
+                                cartItemFromOrderReviewModel.renewStartDate=_.find(vertexTaxWrapper.cartIteams, function (a) {
+                                return a.CartLineId === cartItemFromOrderReviewModel.itemID;
+                                }).renewStartDate;
+                                
+                                
+                    
+                                cartItemFromOrderReviewModel.isRenew=_.find(vertexTaxWrapper.cartIteams, function (a) {
+                                return a.CartLineId === cartItemFromOrderReviewModel.itemID;
+                                }).isRenew;
+                                
+                                cartItemFromOrderReviewModel.productLink = Object();
+                                
+                                cartItemFromOrderReviewModel.productLink.sku=_.find(vertexTaxWrapper.cartIteams, function (a) {
+                                return a.CartLineId === cartItemFromOrderReviewModel.itemID;
+                                }).ProductLinkSKU;
+                                
+                                
+                                });
+                                CCRZ.cartCheckoutModel.attributes.tax = vertexTaxWrapper.vertexTax;
+                                
+                                console.log("test here ===");
+                                console.log(CCRZ.cartCheckoutModel.attributes.selectedPaymentMethod);
+                                console.log(CCRZ.cartCheckoutModel.attributes.poType);
+                                console.log(CCRZ.cartCheckoutModel.attributes.OneBMSCreditValue);
+                                console.log(CCRZ.cartCheckoutModel.attributes.subTotal);
+                                console.log(CCRZ.cartCheckoutModel.attributes.tax);
+                                
+                                if(CCRZ.cartCheckoutModel.attributes.selectedPaymentMethod == "po" && CCRZ.cartCheckoutModel.attributes.poType == "OneBMS")
+                                {
+                                    /* @Suresh- Start- OMG-1119 - 30-08-2022*/
+                                    if(CCRZ.cartCheckoutModel.attributes.thirdPartyPaymentChcked)
+                                    {
+                                        console.log('test third party'+CCRZ.cartCheckoutModel.attributes.selectedBMSResult);
+                                    	if(CCRZ.cartCheckoutModel.attributes.selectedBMSResult != undefined && CCRZ.cartCheckoutModel.attributes.subTotal != undefined 
+                                           && CCRZ.cartCheckoutModel.attributes.tax != undefined)
+                                		{
+                                       		console.log('test third party total amount'+(CCRZ.cartCheckoutModel.attributes.subTotal+CCRZ.cartCheckoutModel.attributes.tax));
+                                            console.log('test third party Available credit'+CCRZ.cartCheckoutModel.attributes.selectedBMSResult.AvailableCredit);
+                                            if((CCRZ.cartCheckoutModel.attributes.selectedBMSResult.AvailableCredit < (CCRZ.cartCheckoutModel.attributes.subTotal + CCRZ.cartCheckoutModel.attributes.tax) 
+                                                || (CCRZ.cartCheckoutModel.attributes.selectedBMSResult.PaymentType != "CHARGE" && CCRZ.cartCheckoutModel.attributes.selectedBMSResult.PaymentType != "CBILL" ))
+                                                && ((CCRZ.cartCheckoutModel.attributes.subTotal + CCRZ.cartCheckoutModel.attributes.tax) > 0))
+                                                {
+                                                    console.log('test third party inside BMS Validation Failed '+CCRZ.cartCheckoutModel.attributes.selectedBMSResult.AvailableCredit);
+                                                    CCRZ.cartCheckoutModel.attributes.isError = true;
+                                                    CCRZ.cartCheckoutModel.attributes.errorMsg = "{!$Label.OSM_SW_BMS_Credit_Limit_Validation_Msg}";
+                                                }
+                                         }
+                                         orderReviewView.render();
+                                    }
+                                    /*@Suresh- End- OMG-1119 - 30-08-2022- Also Added changed from if to else if in below line*/
+                                    else if(CCRZ.cartCheckoutModel.attributes.OneBMSCreditValue != undefined && CCRZ.cartCheckoutModel.attributes.subTotal != undefined && CCRZ.cartCheckoutModel.attributes.tax != undefined)
+                                    {
+                                        console.log(CCRZ.cartCheckoutModel.attributes.OneBMSCreditValue < ( CCRZ.cartCheckoutModel.attributes.subTotal + CCRZ.cartCheckoutModel.attributes.tax ));
+                                        
+                                        if((CCRZ.cartCheckoutModel.attributes.OneBMSCreditValue < ( CCRZ.cartCheckoutModel.attributes.subTotal + CCRZ.cartCheckoutModel.attributes.tax )) && ((CCRZ.cartCheckoutModel.attributes.subTotal + CCRZ.cartCheckoutModel.attributes.tax) > 0))
+                                        {
+
+                                            CCRZ.cartCheckoutModel.attributes.isError = true;
+                                            CCRZ.cartCheckoutModel.attributes.errorMsg = "{!$Label.OSM_SW_BMS_Credit_Limit_Validation_Msg}";
+                                            orderReviewView.render();
+                                        }
+                                        else
+                                        {
+                                            orderReviewView.render();
+                                        }
+                                    }
+                                    else
+                                        orderReviewView.render();
+                                }
+                                else
+                                    orderReviewView.render();
+                                
+                            }
+                            console.log("before refresh");
+                            orderReviewView.render();
+                            
+                        });  
+                }
+            }
+            catch(error)
+            {
+                console.log("OSM_Vertex_Skip_Tax error %o",error);
+                if(!{!$Label.OSM_Vertex_Skip_Tax})
+                {
+                    CCRZ.cartCheckoutModel.attributes.isError = true;
+                    CCRZ.cartCheckoutModel.attributes.errorMsg = "{!$Label.OSM_SW_Tax_Validation_Msg}";
+                }
+                else
+                {
+                    document.getElementById("paymentProcessButton").disabled = false;
+                    CCRZ.cartCheckoutModel.attributes.isError = false;
+                    CCRZ.cartCheckoutModel.attributes.errorMsg = "";
+                }
+                CCRZ.cartCheckoutView.render();
+            }
+    });
+    
+    CCRZ.subsc = _.extend(CCRZ.subsc||{});
+        CCRZ.subsc.VertexTaxRemoteActions = _.extend(
+        {
+            
+            className : 'OSM_SW_Checkout_OrderReviewPg_Ctrl',
+            getVertexData : function(callback)
+            {
+                
+                this.invokeCtx('fetchCartDetails', 
+                function(response)
+                {
+                    if (response && response.success){
+                        console.log(response.data.CartTaxDetail);
+                        //swetha:start for MP-531
+                        cartItems1 = response.data.CartTaxDetail.cartIteams;
+                        cartItemsModels = CCRZ.cartCheckoutModel.attributes.cartItems;
+                        cartItemsModels.forEach(function(main){                       
+                            cartItems1.forEach(function(child){
+                                if(child.CartLineId == main.itemID){
+                                    console.log('inside each');
+                                       //main["requestDate"] = child.requestDate;
+                                    if(child.requestedDate && child.groupname != "FluidWatch") { //modified by swetha 
+                                          var reqDate = new Date(child.requestedDate); 
+                                           var year= reqDate.getFullYear();
+                                           var month = new Date(reqDate).getMonth();
+                                           var day   = new Date(reqDate).getDate();
+                                           var date;
+                                           console.log('main.displayName' +main.displayName);
+                                           if(main.displayName.trim() == "1 Year" ){
+                                               console.log('cartitem.attributes.displayName');
+                                               date  = new Date(year + 1, month, day);
+                                           }else if(main.displayName.trim() == '1 Month'){
+                                        
+                                               if(month+1 == 1){
+                                                    var datefinal=new Date(reqDate);
+                                                   if(reqDate.getDate() === 29){
+                                                    datefinal.setDate(datefinal.getDate()+ 28);
+                                                       date = datefinal;
+                                                    }else{
+                                                    datefinal.setDate(datefinal.getDate()+ 27);
+                                                        date = datefinal;
+                                                        }
+                                                      }else{
+                                                    date  = new Date(year, month+1, day);
+                                                }
+                                           }else if(main.displayName.trim() == '1 Quarter'){
+                                               console.log('cartitem.attributes.displayName');
+                                               date  = new Date(year, month+3, day);
+                                           }else if(main.displayName.trim() == '99 Year'){
+                                               date  = "99 Year";
+                                           }
+                                           if(date != '' && date != "99 Year" )
+                                               main["requestDate"] = date.getTime();
+                                           
+                                       } 
+                                        
+                          main["SubscriptionExpiryDate"]=child.SubscriptionExpiryDate;
+                                    //console.log('child.withCoTerm--- '+child.withCoTerm);
+                                    //console.log('123--- '+JSON.stringify(child.withCoTerm));
+                         main["withCoTerm"]=child.withCoTerm;
+                                       //main["requestDate"] = child.requestDate;
+                         }
+                                    
+                          });
+                        });
+                        
+                        //swetha: end for MP-531
+                       if(response.data.CartTaxDetail.isError)
+                        {
+                            CCRZ.cartCheckoutModel.attributes.isError = true;
+                            CCRZ.cartCheckoutModel.attributes.errorMsg = response.data.CartTaxDetail.errorMsg;
+                        }
+                        else
+                        {
+                            CCRZ.cartCheckoutModel.attributes.isError = false;
+                            CCRZ.cartCheckoutModel.attributes.errorMsg = "";
+                            var vertexTaxWrapper = response.data.CartTaxDetail;
+                            
+                        }
+                        
+                        if(response.data.isthirdpartypayment){
+                           CCRZ.cartCheckoutModel.attributes.isthirdpartypayment = true; 
+                           CCRZ.cartCheckoutModel.attributes.thirdpartycustname = response.data.thirdpartycustname;
+                            CCRZ.cartCheckoutModel.attributes.thirdpartycustnum = response.data.thirdpartycustnum;
+                            CCRZ.cartCheckoutModel.attributes.thirdpartyIAMNo = response.data.thirdpartyIAMNo;
+                        }else{
+                            CCRZ.cartCheckoutModel.attributes.isthirdpartypayment = false;  
+                        }
+                        if(response.data.PurchaserComments!=undefined){
+                             CCRZ.cartCheckoutModel.attributes.PurchaserComments=response.data.PurchaserComments;
+                             
+                         }
+                     }
+                    else
+                    {
+                        if(!{!$Label.OSM_Vertex_Skip_Tax})
+                        {
+                            
+                            CCRZ.cartCheckoutModel.attributes.isError = true;
+                            CCRZ.cartCheckoutModel.attributes.errorMsg = "{!$Label.OSM_SW_Tax_Validation_Msg}";
+                            if(response != undefined && response.data != undefined && response.data.CartTaxDetail != undefined && response.data.CartTaxDetail.isError != undefined)
+                            {
+                                if(response.data.CartTaxDetail.isError)
+                                {
+                                    CCRZ.cartCheckoutModel.attributes.errorMsg = response.data.CartTaxDetail.errorMsg;
+                                }
+                            }                       
+                                
+                        }
+                        else
+                        {
+                            document.getElementById("paymentProcessButton").disabled = false;
+                            CCRZ.cartCheckoutModel.attributes.isError = false;
+                            CCRZ.cartCheckoutModel.attributes.errorMsg = "";
+                        }
+                        
+                    }
+                    document.getElementById("processingMsgId").style.display = "none";
+                    callback(response);
+                   
+                },
+                {buffer:true,escape: true, timeout: 120000,nmsp:false} // Added for Mar-1262 and commented below
+              /*  {
+                    buffer : false, // this call will be executed by itself
+                    nmsp   : false  // defines that this is a call to a subscriber class
+                } */ ); // end invokeCtx call
+            }
+          
+        },CCRZ.RemoteInvocation);
+     
+        
+    });
+  </script>
+  <script>
+  Handlebars.registerHelper('date', function(milsec) {
+    if(milsec  != "" && milsec != undefined)
+    {
+        var params = Array.prototype.slice.call(arguments, 1);
+        var thisDate = new Date(milsec);
+        var dateToStr = thisDate.toUTCString().split(' ');
+        var datefinal = dateToStr[1] + ' ' + dateToStr[2]+' '+dateToStr[3];
+
+    return datefinal;
+    }
+    else
+        return "";
+
+}); 
+    //LL39 @Vishnu 8/25/2022 show skip proceed to payment button 
+    Handlebars.registerHelper('checkTotalIsZero', function(sumProratedPriceAfterDiscount, tax, selectedPaymentMethod){
+        return sumProratedPriceAfterDiscount + tax == 0 && selectedPaymentMethod == 'cc' ? true : false;
+    });
+
+ // MP-564 Code start by swetha
+    /*  Handlebars.registerHelper('reqdate', function(milsec,duration) {
+    if(milsec  != "" && milsec != undefined)
+    {
+                        var reqDate = new Date(milsec);
+                        var year= reqDate.getFullYear();
+                        var month = new Date(reqDate).getMonth();
+                        var day   = new Date(reqDate).getDate();
+                        var datefinal;
+                        console.log('cartitem.attributes.displayName' +duration);
+                        if(duration.trim() == "1 Year" ){
+                            
+                             datefinal  = new Date(year + 1, month, day);
+                        }else if(duration.trim() == '1 Month'){
+                            
+                            datefinal  = new Date(year, month+1, day);
+                        }else if(duration.trim() == '1 Quarter'){
+                            
+                            datefinal  = new Date(year, month+3, day);
+                        }
+        
+                    var datefinalmill = datefinal.getTime();
+                    var thisDate = new Date(datefinalmill);
+                    var dateToStr = thisDate.toUTCString().split(' ');
+                    var datefinalconvert = dateToStr[1] + ' ' + dateToStr[2]+' '+dateToStr[3];
+        
+    return datefinalconvert;
+    }
+    else
+        return "";
+
+}); */
+       
+
+        
+  </script>
+  <script type = "text/javascript" >
+
+   function preventBack(){window.history.forward();}
+
+    setTimeout("preventBack()", 0);
+
+    window.onunload=function(){null};
+
+</script>
+  
+    </apex:page>

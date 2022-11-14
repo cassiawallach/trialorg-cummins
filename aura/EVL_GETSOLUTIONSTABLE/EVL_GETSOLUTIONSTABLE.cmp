@@ -1,0 +1,243 @@
+<!-- Name:EVL_GETSOLUTIONSTABLE
+Copyright © 2019  Cummins
+======================================================
+======================================================
+Purpose:                                                            
+ 
+This component is to populate table on click of "GO" to display FaultCodes/Symptoms
+========================================================================================================
+========================================================================================================
+History                                                            
+                                                          
+VERSION     AUTHOR                     DATE                                   
+1.0     MALLIKA SUBHASHINI          3/21/2019 
+ -->
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,lightning:availableForFlowScreens"
+                controller="EVL_CL_GETSOLUTIONS" access="global" >
+    <aura:attribute name="wrapperList" type="object"/>
+     <aura:attribute name="selectedTabId" type="string"/> 
+    <aura:attribute name="recordId" type="string"/> 
+    <aura:attribute name="cumminsFaultCode" type="string"/>
+   <aura:attribute name="spn" type="string"/>
+    <aura:attribute name="pcode" type="string"/>
+    <aura:attribute name="highLevelSymptom" type="string"/>
+    <aura:attribute name="showTable" type="boolean" default="false"/>
+     <aura:attribute name="lowLevelSymptom" type="string"/>
+    <aura:handler name="init" value="{!this}" action="{!c.fetchDetails}"/>
+    <aura:method name="sampleMethod" action="{!c.doAction}"
+                        description="Sample method with parameters"> 
+       <aura:attribute name="cumCode" type="String"/> 
+       <aura:attribute name="pcode" type="String" />
+        <aura:attribute name="spn" type="String" />
+        <aura:attribute name="highLevelSymptom" type="String" />
+        <aura:attribute name="lowLevelSymptom" type="String" />
+                                <aura:attribute name="recordId" type="string"/>  
+              </aura:method>
+    <aura:registerEvent name="cmpEvent" type="c:EVL_TDSCompEvent"/>
+    <aura:registerEvent name="EVL_RefreshComponent" type="c:EVL_RefreshComponent"/>
+     <aura:registerEvent name="EVLPathChange" type="c:EVL_PathChange"/>
+
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+    <aura:attribute name="errorMsg" type="String"/>
+    <aura:attribute name="isHoursErr" type="boolean" default="false"/>
+    <aura:attribute name="hoursNum" type="Decimal"/>
+    <aura:attribute name="isMileageErr" type="boolean" default="false"/>
+    <aura:attribute name="mileageNum" type="Integer"/>
+    
+    <!--added by Piyush VGRS2-321 -->
+   <aura:attribute name="ShowSpinner" type="Boolean" default="false"></aura:attribute>
+   <aura:if isTrue="{!v.ShowSpinner}">
+        <lightning:spinner aura:id="busyIndicator" variant="brand" size="large"/>
+   </aura:if> 
+    <!-- VGRS2-321 End-->
+    
+    <lightning:navigation aura:id="navService"/>
+    <!-- <aura:if isTrue="{!v.showTable}"> -->
+   <div id="table-wrapper">
+        <div id="table-scroll">
+     <table class="slds-table slds-table_bordered 
+     slds-table_fixed-layout">
+      <thead>
+        <tr class="slds-text-title--caps">
+          <th scope="col">
+            <div class="slds-truncate-sm" title="Diagnose">{!$Label.c.css_Diagnose}</div>
+          </th>
+            <th scope="col-sm">
+            <div class="slds-truncate-sm" title="Position">{!$Label.c.FSL_Position}</div>
+            </th> 
+             <!--image header start -->
+             <th scope="col-sm">
+            <div class="slds-truncate-sm" title="Solution img">{!$Label.c.FSL_Sol_Icon}</div>
+            </th> 
+             <!--image header end -->
+          <th scope="col">
+            <div class="slds-truncate-sm" title="Solutions">{!$Label.c.css_Solutions}</div>
+          </th>
+            <th scope="col-sm">
+               <div class="slds-truncate-sm" title="Repair img">{!$Label.c.FSL_Sol_Icon}</div>
+            </th>
+          <th scope="col-sm">
+            <div class="slds-truncate-sm" title="Repairs Made">{!$Label.c.css_Repairs_Made}</div>
+          </th>
+          <th scope="col-sm">
+            <div class="slds-truncate-sm" title="SRTs">{!$Label.c.CSS_SRTs}</div>
+          </th>
+            
+          
+        </tr>
+      </thead>
+        
+      <!--table body start, 
+        Iterate wrapperList as a <tr>
+        -->
+      <tbody>
+        <aura:iteration items="{!v.wrapperList}" var="wl">
+          <tr>
+            <th scope="row">
+              <div class="slds-truncate" title="{!wl.FCdesc}">
+                  <a target="_self" href="" data-id="{!wl.recid}" onclick = "{!c.getSolutions}">{!wl.name}</a> <!-- modified by Sriprada -->                
+                     
+              </div>
+            </th>
+             
+              <th scope="row-sm">
+                  <div class="slds-truncate" title="Solution Position"></div><br/>
+                  <aura:iteration items="{!wl.solList}" var="w">
+                      <div><b>{!w.FSL_Solution_Position__c}</b><br/><br/></div>  
+                </aura:iteration>  
+            </th>
+               <!--image start -->
+              <th scope="row-sm">
+               <div class="slds-truncate" title="Solution Img">
+               <aura:iteration items="{!wl.solList}" var="w">
+                    <aura:if isTrue="{!w.Diagnostic_Response__c == 'Most likely the solution. Repair recommended.'}">                                 
+                   <img src="{!$Resource.passed_png}" width="20" height="20" alt="img"/><br/><br/>
+                   </aura:if>
+                    <aura:if isTrue="{!w.Diagnostic_Response__c == 'Not the solution. Continue troubleshooting.'}">                                 
+                   <img src="{!$Resource.not_passed_png}" width="20" height="20"/><br/><br/>
+                   </aura:if>
+                  <aura:if isTrue="{!w.Diagnostic_Response__c == 'Could not perform the solution verification'}">                                 
+                   <img src="{!$Resource.not_answered_png}" width="20" height="20"/><br/><br/>
+                   </aura:if>
+                   
+         </aura:iteration> 
+                  </div>
+            </th> 
+              <!--image end -->
+            <th scope="row">
+                <div class="incr">
+               <div class="slds-truncate" title="{!wl.solCount}">{!wl.solCount} </div>
+               <aura:iteration items="{!wl.solList}" var="w">
+                  <aura:if isTrue="{!NOT(w.FSL_Service_Job__r.Service_Order_Extension__r.FSL_ABRFlag__c)}"><!-- Added by Prasanna to remove the displaying Solution ID for FTR Event - ROAD -474 -->
+                   	 	<div><b>{!w.Name}</b></div> 
+                    </aura:if>   
+                 <div class="slds-truncate" title="{!w.Solution_Title__c}">{!w.Solution_Title__c}</div>  
+                </aura:iteration>  
+                 </div>   
+            </th>
+            <!-- Repair image start -->
+                            <th scope="row-sm">
+                                <div class="slds-truncate" title="Solution Img">
+                                    <aura:iteration items="{!wl.solList}" var="w">
+                                        <aura:if isTrue="{!w.Repair_Response__c != null}">
+                                       <aura:if isTrue="{!w.Repair_Response__c == 'Repair Successful.'}">                                 
+                                            <img src="{!$Resource.passed_png}" width="15" height="15" alt="img"/><br/><br/>
+                                        </aura:if>
+                                        <aura:if isTrue="{!w.Repair_Response__c == 'Repair Successful with additional parts/procedures.'}">                                 
+                                            <img src="{!$Resource.passedplus}" width="15" height="15"/><br/><br/>
+                                        </aura:if>
+                                        <aura:if isTrue="{!w.Repair_Response__c =='Repair performed but didnot resolve the root cause.'}">                                 
+                                            <img src="{!$Resource.not_passed_png}" width="15" height="15"/><br/><br/>
+                                        </aura:if>
+                                        <aura:if isTrue="{!w.Repair_Response__c =='Repair not performed.'}">                                 
+                                            <img src="{!$Resource.not_answered_png}" width="15" height="15"/><br/><br/>
+                                        </aura:if>
+                                             <aura:set attribute="else">
+                                                    <br/><br/>
+                                                    </aura:set>
+                                             </aura:if>
+                                    </aura:iteration> 
+                                </div>
+                            </th> 
+                            <!--Repair image end -->
+                            <th scope="row">
+                                <div class="incr">
+                                    <div class="slds-truncate" title="Repairs Made">
+                                        <aura:iteration items="{!wl.solList}" var="w">
+                                           
+                                            <aura:if isTrue="{!w.Diagnostic_Response__c == 'Most likely the solution. Repair recommended.'}">
+                                                <div class="slds-truncate" title="{!w.Repair_Response__c}"> {!w.Repair_Response__c}</div>   <br/>
+                                                
+                                                <aura:if isTrue="{!w.Repair_Response__c == null}">
+                                                    <a  onclick="{!c.editComp}" 
+                                                       name="{!wl.name}" 
+                                                       aura:id="EditLink"
+                                                       data-value="{!w.Id}">Perform repair</a><br/><br/>
+                                                    
+                                                </aura:if>
+                                                <aura:set attribute="else">
+                                                    <br/><br/>
+                                                    </aura:set>
+                                            </aura:if>
+                                        </aura:iteration>  
+                                    </div>
+                                </div> 
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate" title="SRTs">
+                                    <label>
+                                        Diagnosis : {!wl.digTime} <br/>
+                                        Repair    : {!wl.repairTime}
+                                    </label>
+                                    
+                                </div>
+                            </th>
+                        </tr>
+        </aura:iteration>
+      </tbody>
+    </table>
+    </div>
+    </div> 
+    
+    <!-- NIN-40 START -->
+    <!--Use "slds-m-around_xx-large" class to add standard X-Large padding to the component--> 
+    <div class="slds-m-around_xx-large">
+        <!--Use aura:if tag to display Model Box, on the bese of conditions. [isOpen boolean attribute] -->   
+        <aura:if isTrue="{!v.isOpen}">
+            <!--###### MODAL BOX Start######--> 
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    
+                    <!--###### MODAL BOX BODY Part Start######-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <center><p><b>{!v.errorMsg} </b>
+                            </p></center>
+                        <aura:if isTrue="{!v.isHoursErr}">
+                            <br/>
+                            <lightning:input type="number" name="input7" label="Product Hours" value="{!v.hoursNum}" step="0.1"/>
+                        </aura:if>
+                        <aura:if isTrue="{!v.isMileageErr}">
+                            <br/>
+                            <lightning:input type="number" name="input8" label="Product Mileage" value="{!v.mileageNum}" step="0"/>
+                        </aura:if>
+                    </div>
+                    <!--###### MODAL BOX FOOTER Part Start ######-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="brand" 
+                                          label="Close"
+                                          title="Close"
+                                          onclick="{! c.closeWind }"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+            <!--###### MODAL BOX Part END Here ######-->
+            
+        </aura:if>
+    </div>
+    <!-- NIN-40 END -->
+    
+    <!--test
+    <c:FSL_DisplaySolution aura:id='childCmp2' recordId="{!v.recordId}"/>
+	-->
+</aura:component>

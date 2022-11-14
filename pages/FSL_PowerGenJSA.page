@@ -1,0 +1,1671 @@
+<apex:page showHeader="false" standardStylesheets="false" controller="FSL_CL_PowerGenJSA">
+    <head>
+        <apex:stylesheet value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/css/component_specific/jquery.dataTables.css')}"/>      
+        <link rel="stylesheet" href="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/bootstrap3/css/CMI-bootstrap.css')}"/>
+        <SCRIPT type="text/javascript" src="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/jquery-1.11.2.min.js')}"/>
+        <SCRIPT type="text/javascript" src="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/bootstrap3/js/bootstrap.js')}"/>
+        <style>
+           
+            .cmi_cummins_logo {
+                background: url("{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/Cummins_logo.png')}") no-repeat 0 0;
+                width: 152px;
+                height: 133px;
+                zoom:0.5;
+            }
+
+            .cmi_QSOL_logo {
+                background: url("{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/QSOL.png')}") no-repeat 0 0;
+                width: 200px;
+                height: 80px;
+                display:inline-block;
+            } 
+
+            .logo {
+                display: block;
+                padding-left: 0px;
+                padding-right: 0px;
+            }
+
+            .logo_img {
+                display: inline-block;
+                padding: 0px 0px 0px 30px;
+                float: left;
+                width: 117px;
+                height: 74px;
+            }
+
+            .sub-brand {
+                padding: 0px;
+                display: inline-block;
+            }
+
+            table.cmi_inShopJSA .readOnly {
+                background-color:#d2d2d2;
+            }
+
+            table.cmi_inShopJSA tr td {
+                border:2px solid #000;
+            } 
+
+            table.cmi_inShopJSA tr td:nth-of-type(1) {
+                width:13%;
+                border-bottom:0px;
+            }
+
+            table.cmi_inShopJSA tr td {
+                width:30%;
+            }
+
+            table.cmi_inShopJSA_Prepare tr td, table.cmi_TELA{
+                vertical-align:middle;
+            }
+
+            .prepareRadiobuttons {
+                width:200px;
+            }
+
+            table.cmi_inShopJSA_Hazard tr td {
+                border:2px solid #000;
+                vertical-align:middle;
+            }
+
+            .InShopCheckbox{
+                float:left;
+                width:35px;
+                height:20px;
+            }
+
+            table.cmi_InShop_HIdentification tr td{
+                border : 1px solid #000;
+            }
+
+            #ReportInjury:after {
+                content: "";
+                background-color: #d2d2d2;
+                position: absolute;
+                width: 2px;
+                height: 565px;
+                top: 0px;
+                left: 52%;
+                display: block;
+            }
+
+            .saveButton {
+                display: inline-block;
+                position: relative;
+                color: #fff !important;
+                border: none;
+                border-radius: 5px;
+                padding: 5px 20px;
+                font-size: 14px;
+                cursor: pointer;
+                filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#007C7C', endColorstr='#007C7C',GradientType=0 ); /* IE6-9 */
+				background-color: #c23934;
+				border-color: #c23934;
+				color: #fff;
+				border-color: #c23934;
+				background: #c23934;
+            }
+            .cancelButton {
+                display: inline-block;
+                position: relative;
+                color: #FFF;
+                border: none;
+                border-radius: 5px;
+                padding: 5px 20px;
+                font-size: 14px;
+                cursor: pointer;
+                background: #333333; /* Old browsers */
+                background: -moz-linear-gradient(top,  #333333 0%, #333333 100%); /* FF3.6+ */
+                background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#333333), color-stop(100%,#333333)); /* Chrome,Safari4+ */
+                background: -webkit-linear-gradient(top,  #333333 0%,#333333 100%); /* Chrome10+,Safari5.1+ */
+                background: -o-linear-gradient(top,  #333333 0%,#333333 100%); /* Opera 11.10+ */
+                background: -ms-linear-gradient(top,  #333333 0%,#333333 100%); /* IE10+ */
+                background: linear-gradient(to bottom,  #333333 0%,#333333 100%); /* W3C */
+                filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#333333', endColorstr='333333',GradientType=0 ); /* IE6-9 */
+            }
+
+            .cmi_inShopJSA_Prepare > tbody > tr > td ,  .cmi_TELA > tbody > tr > td {
+                padding:0px 10px;
+                vertical-align:middle;
+            }
+
+            table.cmi_inShopJSA_Prepare label ,  table.cmi_TELA label {
+                font-weight:normal;
+            }
+
+            a.cancelButton:hover {
+                color:#fff;
+                text-decoration:none;
+            }
+
+            .responsive {
+                width: 100%;
+                height: auto;
+            }
+
+
+        </style>
+    </head>
+
+    <body>
+
+        <script>
+            function DisableButton(saveBtn){
+                saveBtn.disabled=true;
+                powerGenPgSaveJS();
+            }
+
+            function DisableButtonSaveAndClose(saveBtn){
+                saveBtn.disabled=true;
+            }
+
+            function onCompleteSaveAndClose() {
+                // window.opener.top.location.reload();
+                window.close();
+            }
+        </script>
+
+        <apex:form id="pgJSAFrm">   
+            <apex:outputPanel rendered="{!IF(copy == 'false',true,false)}">
+                <div class="panel-body" style="border:2px solid #000;padding:0px;margin:10px;">
+
+                    <div class="col-sm-12" style="padding:0px;margin:10px 0px;">
+
+                        <div class="col-sm-9" style="border:1px solid #000">
+                            <div class="logo col-sm-8">
+                                <div class="logo_img" style="margin:10px 0px 0px 0px">
+                                    <div class="cmi_cummins_logo"></div>
+                                </div>
+                                <div class="sub-brand">
+                                    <h3 style="color:red;margin-top:5px;"><b>Distribution</b></h3>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-4" style="height:90px;padding:5px">
+                                <h2><b>{!$Label.CG_PowerGenJSA}</b> </h2>
+                            </div>
+                            <div class="clearfix"></div>
+                        </div>
+
+                        <div class="col-sm-3" style="border:1px solid #000;">
+                            <div class="col-sm-12" style="margin:20px 10px">{!$Label.CG_Date} : {!currentDateTime} </div>   
+                            <div class="col-sm-12" style="margin:0px 10px 10px 10px"> {!$Label.CG_WorkOrder} # {!workJob.WorkOrderNumber}</div>
+                        </div>
+                    </div> 
+                    <div class="clearfix"></div>
+
+                    <table class="table table-bordered cmi_inShopJSA" style="margin-bottom:0px;">
+                        <tr class="readOnly">
+                            <td style="padding:8px 30px;"> {!$Label.CG_EmployeeName}</td>
+                            <td> {!UserName}</td>
+                            <td style="border:3px solid #000;" align="center"> {!$Label.CG_WWID}</td> 
+                            <td colspan="2">{!WWID}</td>
+                        </tr>
+
+                        <tr>
+                            <td class="readOnly" style="border-top:0px;padding:8px 30px;"> {!$Label.CG_JSACompletedwith} </td>
+                            <td class="readOnly" style="padding:15px;border:3px solid #000;">{!$ObjectType.CSS_JobForms__c.fields.Co_Worker_Name__c.Label}:</td>
+                            <td colspan="3" style="padding:0px"> 
+                                <apex:inputTextarea style="width:100%;resize:none;height:50px;border:0px" value="{!PowerGenForm.Co_Worker_Name__c}" html-maxlength="255"/> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="readOnly" style="border-top:0px;padding:8px 30px;">{!$ObjectType.CSS_JobForms__c.fields.Task_Category__c.Label}</td>
+                            <td style="padding:0px"> 
+                                <apex:selectList size="1" style="width:100%;height:35px;border:0px;" value="{!PowerGenForm.Task_Category__c}" html-escape="false">
+                                    <apex:selectOptions value="{!TaskCategory}"/> 
+                                </apex:selectList>
+                            </td>
+                            <td colspan="3" class="readOnly"></td>
+                        </tr>
+
+                        <tr>
+                            <td class="readOnly" style="border-top:0px;padding:8px 30px;"> {!$ObjectType.CSS_JobForms__c.fields.Task_Description__c.Label}</td>
+                            <td colspan="4" style="padding:0px">
+                                <apex:inputTextarea style="width:100%;resize:none;height:50px;border:0px;" value="{!PowerGenForm.Task_Description__c}" html-maxlength="255"/>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td class="readOnly" style="border-top:0px;border-bottom:0px solid #000;padding:8px 30px;"> {!$ObjectType.CSS_JobForms__c.fields.Job_Location__c.Label}</td>
+                            <td colspan="4" style="padding:0px">
+                                <apex:inputTextarea style="width:100%;resize:none;height:50px;" value="{!PowerGenForm.Job_Location__c}" html-maxlength="255"/>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                           <td class="readOnly" style="border-top:0px;"></td>
+                           <td bgcolor="#d2d2d2" style="text-align:center;padding:15px;">{!$Label.CG_SpecifyVoltageEquipment}:</td>
+                            <td style="padding:0px"> <apex:inputTextarea style="width:100%;resize:none;height:50px;border:0px;" value="{!PowerGenForm.PowerGenVoltageEquipment__c}" html-maxlength="255"/></td>
+                            <td colspan="2" bgcolor="#d2d2d2">{!$Label.CG_HighVoltage}</td>
+                        </tr>
+                        
+                        <tr>
+                           <td class="readOnly" style="border-top:0px;border-bottom:1px solid #000;"></td>
+                           <td bgcolor="#d2d2d2">{!$Label.CG_ArcFlash} &nbsp; {!$Label.CG_FlashHazardBoundary} </td>
+                            <td style="padding:0px"> <apex:inputTextarea style="width:100%;resize:none;height:56px;border:0px;" value="{!PowerGenForm.PowerGenFlashHazardBoundary__c}" html-maxlength="255"/></td>
+                            <td bgcolor="#d2d2d2" style="width:15%">{!$Label.CG_PPELevel}</td>
+                            <td style="padding:0px"> <apex:inputTextarea style="width:100%;resize:none;height:56px;border:0px;" value="{!PowerGenForm.PowerGenPPELevel__c}" html-maxlength="255"/></td>
+                        </tr>
+                        
+                    </table>
+                    
+                    <hr style="margin-bottom:1px;border-top:1px solid #000;"/>
+                    
+                     <!-- PREPARE Table -->
+                    <div style="padding:0px 15px">
+                        <table class="table cmi_inShopJSA_Prepare" style="border:2px solid #000;margin-bottom:10px">
+                            <tr bgcolor ="#d2d2d2" style="border-bottom:2px solid #000">
+                                <td style="padding:8px;"><b>{!$ObjectType.CSS_JobForms__c.fields.PREPARE1__c.Label}</b></td>
+                                <td colspan="2" style="padding:0px 50px;"> {!$Label.CG_YesNoNA}</td>
+                            </tr>
+                            
+                            
+                             <tr>
+                                <td width="50%">{!$Label.CG_Prepare4}</td>
+                                <td width="10%">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenPrepare1__c}" style="font-weight:normal" >
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                                <td rowspan="7" style="vertical-align:middle;border-left:2px solid #000; border-top:3px solid #000"> 
+                                    <p>{!$Label.CG_ContactSupervisor}</p>
+                                </td>
+                            </tr> 
+                            
+                              <tr>
+                                <td width="50%" style="border-top:0px">{!$Label.CG_PowerGenPrepare2}</td>
+                                <td width="10%" style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenPrepare2__c}" style="font-weight:normal" >
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr> 
+                            
+
+                            <tr>
+                                <td width="50%" style="border-top:0px">{!$Label.CG_Prepare2}</td>
+                                <td width="10%" style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PREPARE2__c}" style="font-weight:normal" >
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr> 
+
+                            <tr>
+                                <td width="50%" style="border-top:0px">{!$Label.CG_Prepare3}</td>
+                                <td width="10%" style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PREPARE3__c}">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td width="50%" style="border-top:0px">{!$Label.CG_PowerGenPrepare5}</td>
+                                <td width="10%" style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenPrepare5__c}">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio> 
+                                </td>
+                            </tr>
+                            
+                             <tr>
+                                <td width="50%" style="border-top:0px">{!$Label.CG_PowerGenPrepare6}</td>
+                                <td width="10%" style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenPrepare6__c}">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio> 
+                                </td>
+                            </tr>
+                            
+                             <tr>
+                                <td width="50%" style="border-top:0px">{!$Label.CG_PowerGenPrepare7}</td>
+                                <td width="10%" style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenPrepare7__c}">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio> 
+                                </td>
+                            </tr>
+
+                        </table>
+                    </div>
+                    <hr style="margin:5px 0px;border-top:2px solid #000"/>
+                    
+                    <!-- Start up or Load Bank -->
+                    
+                    <div style="padding:0px 15px">
+                        <table class="table cmi_inShopJSA_Prepare" style="border:2px solid #000;margin-bottom:0px">
+                            <tr bgcolor ="#d2d2d2" style="border-bottom:2px solid #000">
+                                <td style="padding:8px;">{!$Label.CG_StartUpLoadBank}</td>
+                                <td colspan="2" style="padding:0px 50px;"> {!$Label.CG_YesNoNA}</td>
+                            </tr>
+
+                            <tr>
+                                <td width="50%">{!$Label.CG_StartUpLoadBank1}</td>
+                                <td width="10%" style="border-right:2px solid #000;">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenLoadBankTest1__c}" style="font-weight:normal" >
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                               
+                            </tr> 
+
+                            <tr>
+                                <td width="50%" style="border-top:0px">{!$Label.CG_StartUpLoadBank2}</td>
+                                <td width="10%" style="border-top:0px;border-right:2px solid #000;">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenLoadBankTest2__c}">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+</table>
+                    </div>
+                    
+                      <!-- Tooling & Equipment-->
+
+                    <div class="col-sm-6" style="padding-right:0px;border-right:2px solid #000;">
+                        <table class="table cmi_TELA" style="border:2px solid #000;margin-bottom:0px;border-right:0px solid #000">
+                            <tr bgcolor ="#d2d2d2" style="border-bottom:2px solid #000">
+                                <td>{!$ObjectType.CSS_JobForms__c.fields.ToolingEquipment1__c.Label}</td>
+                                <td style="padding:8px 50px;border:3px solid #000;">{!$Label.CG_YesNoNA}</td>
+                            </tr>
+                            
+                             <tr>
+                                <td style="border-top:0px">{!$Label.CG_PowerGenToolingEquipment}</td>
+                                <td style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenTE1__c}">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td style="border-top:0px">{!$Label.CG_ToolingEquipment2}</td>
+                                <td style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.ToolingEquipment2__c}">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+                            
+                             <tr>
+                                <td style="border-top:0px">{!$Label.CG_ToolingEquipment}</td>
+                                <td style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.ToolingEquipment1__c}">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- Lifting And Access -->
+
+                    <div class="col-sm-6" style="padding-left:0px">
+                        <table class="table cmi_TELA" style="border:2px solid #000;margin-bottom:0px">
+                            <tr bgcolor ="#d2d2d2" style="border-bottom:2px solid #000">
+                                <td>{!$ObjectType.CSS_JobForms__c.fields.LiftingAccess1__c.Label}</td>
+                                <td  style="padding:8px 50px;border:3px solid #000;">{!$Label.CG_YesNoNA}</td>
+                            </tr>
+                            <tr>
+                                <td>{!$Label.CG_LiftingAccess1}</td>
+                                <td>
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.LiftingAccess1__c}">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="border-top:0px">{!$Label.CG_LiftingAccess2}</td>
+                                <td style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.LiftingAccess2__c}">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="border-top:0px">{!$Label.CG_LiftingAccess3}</td>
+                                <td style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.LiftingAccess3__c}">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!--PPE -->
+
+                    <div style="padding:0px 15px">
+                        <table class="table cmi_inShopJSA_Prepare" style="border:2px solid #000;margin-bottom:10px;">
+                            <tr bgcolor ="#d2d2d2" style="border-bottom:3px solid #000">
+                                <td colspan="6" style="padding:8px">{!$Label.CG_PPE} </td>
+                            </tr>  
+                            <tr>
+                                <td>{!$ObjectType.CSS_JobForms__c.fields.PPE1__c.Label}</td>
+                                <td style="border-right:2px solid #000;">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PPE1__c}">
+                                        <apex:selectOptions value="{!PPE1}" />
+                                    </apex:selectRadio>
+                                </td>
+                                <td style="padding-right: 0px" >{!$Label.CG_PPESuitable}</td>
+                                <td style="border-right:2px solid #000;">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PPE2__c}">
+                                        <apex:selectOptions value="{!PPE1}" />
+                                    </apex:selectRadio>
+                                </td>
+                                <td style="padding-right: 0px" >{!$Label.CG_PPEElectricalInsulated}</td>
+                                <td>
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenPPE__c}">
+                                        <apex:selectOptions value="{!PPE1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+                        </table> 
+                    </div>
+
+                    <hr style="margin:5px 0px;border-top:2px solid #000"/>
+
+                    <!-- Lone Working -->
+
+                    <div style="padding:0px 15px">
+                        <table class="table cmi_inShopJSA_Prepare" style="border:2px solid #000;margin-bottom:0px;">
+                            <tr style="border-bottom:2px solid #000">
+                                <td bgcolor ="#d2d2d2" style="width:150px;border-right:2px solid #000;">{!$ObjectType.CSS_JobForms__c.fields.LoneWorking__c.Label}</td>
+                                <td style="border-bottom:2px solid #000;width:35%"> {!$Label.CG_LoneWorking}  </td>
+                                <td style="border-right:2px solid #000;">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.LoneWorking__c}">
+                                        <apex:selectOptions value="{!PPE1}" />
+                                    </apex:selectRadio>     
+                                </td>     
+                            </tr>  
+                            <tr style="border-top:2px solid #000">
+                                <td colspan="4" style="padding:0px"> 
+                                    <div>{!$Label.CG_LoneWorkingInputText}:</div>
+                                    <apex:inputTextarea style="width:100%;height:100px;resize:none;border:0px;" value="{!PowerGenForm.LoneWorkingTextArea__c}" html-maxlength="1000"/>                    
+                                </td>
+                            </tr>
+                        </table> 
+
+                        <!-- Serious Injury HAZARD ASSEMENT -->
+
+                        <table class="table cmi_inShopJSA_Prepare" style="border:2px solid #000;margin-bottom:0px">
+                            <tr bgcolor ="#d2d2d2" style="border-bottom:2px solid #000">
+                                <td colspan="6" style="padding:8px;">
+                                    {!$Label.CG_SeriousInjuryHA}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" style="padding:10px;"><span style="color:red"> <b> {!$ObjectType.CSS_JobForms__c.fields.MOVING_VEHICLES__c.Label} </b> </span></td>
+                                <td colspan="2" align="center"><span style="color:red"> <b> {!$ObjectType.CSS_JobForms__c.fields.MOVING_MACHINERY__c.Label} </b> </span></td>
+                                <td colspan="2" align="center"><span style="color:red"> <b> {!$ObjectType.CSS_JobForms__c.fields.WORK_AT_HEIGHT__c.Label} </b> </span></td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" style="padding:10px;border-top:0px;"><span style="color:red"> <b> {!$ObjectType.CSS_JobForms__c.fields.WORK_WITH_ELECTRICITY__c.Label} </b> </span></td>
+                                <td colspan="2" align="center" style="border-top:0px;"><span style="color:red"> <b> {!$ObjectType.CSS_JobForms__c.fields.LIFTING_OPERATOIONS__c.Label} </b></span></td>
+                                <td colspan="2" align="center" style="border-top:0px;padding-left:114px;"><span style="color:red"> <b> {!$Label.CG_FireExplosionArcFlash} </b></span></td>
+                            </tr>
+                        </table>  
+
+
+                        <table class="table table-bordered cmi_inShopJSA_Hazard" style="border:2px solid #000;">
+                            <tr bgcolor ="#d2d2d2" style="border-bottom:2px solid #000">
+                                <td align="center"> {!$Label.CG_SeriousInjuryHI}</td>
+                                <td align="center">{!$Label.CG_ControlsPutInPlace}</td>
+                                <td align="center">{!$Label.CG_WhatIsStrange}</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <apex:inputCheckbox styleClass="InShopCheckbox" style="margin-top:0px;" value="{!PowerGenForm.MOVING_VEHICLES__c}"> <b>{!$ObjectType.CSS_JobForms__c.fields.MOVING_VEHICLES__c.Label} </b></apex:inputCheckbox>
+                                </td>
+                                <td width="25%" style="padding:0px">
+                                    <apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.MOVING_VEHICLES_Controls__c}"/>
+                                </td>
+                                <td style="padding:0px">
+                                    <apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.MOVING_VEHICLES_What_Is_Strange__c}"/>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <apex:inputCheckbox value="{!PowerGenForm.WORK_WITH_ELECTRICITY__c}" style="margin-top:0px;" styleClass="InShopCheckbox"> <b> {!$ObjectType.CSS_JobForms__c.fields.WORK_WITH_ELECTRICITY__c.Label} </b> </apex:inputCheckbox> 
+                                </td>
+                                <td width="25%" style="padding:0px">
+                                    <apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.WORK_WITH_ELECTRICITY_Control__c}"/>
+                                </td>
+                                <td style="padding:0px">
+                                    <apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.WORK_WITH_ELECTRICITY_What_Is_Strange__c}"/>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <apex:inputCheckbox value="{!PowerGenForm.MOVING_MACHINERY__c}" style="margin-top:0px;" styleClass="InShopCheckbox"> <b>{!$ObjectType.CSS_JobForms__c.fields.MOVING_MACHINERY__c.Label}</b> </apex:inputCheckbox> 
+                                </td>
+                                <td width="25%" style="padding:0px">
+                                    <apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.MOVING_MACHINERY_Controls__c}" />
+                                </td>
+                                <td style="padding:0px"><apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.MOVING_MACHINERY_What_Is_Strange__c}" /></td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <apex:inputCheckbox styleClass="InShopCheckbox" style="margin-top:0px;" value="{!PowerGenForm.LIFTING_OPERATOIONS__c}"> <b> {!$ObjectType.CSS_JobForms__c.fields.LIFTING_OPERATOIONS__c.Label} </b></apex:inputCheckbox> 
+                                </td>
+                                <td width="25%" style="padding:0px">
+                                    <apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.LIFTING_OPERATOIONS_Controls__c}"/>
+                                </td>
+                                <td style="padding:0px">
+                                    <apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.LIFTING_OPERATOIONS_What_Is_Strange__c}"/>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <apex:inputCheckbox styleClass="InShopCheckbox" style="margin-top:0px;" value="{!PowerGenForm.WORK_AT_HEIGHT__c}">
+                                        <b> {!$ObjectType.CSS_JobForms__c.fields.WORK_AT_HEIGHT__c.Label} </b>
+                                    </apex:inputCheckbox> 
+                                </td>
+                                <td width="25%" style="padding:0px"><apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.WORK_AT_HEIGHT_Controls__c}"/></td>
+                                <td style="padding:0px"><apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.WORK_AT_HEIGHT_What_Is_Strange__c}"/></td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <apex:inputCheckbox styleClass="InShopCheckbox" style="margin-top:0px;" value="{!PowerGenForm.FIRE_EXPLOSION_OR_ARC_FLASH__c}">
+                                        <b>  {!$Label.CG_FireExplosionArcFlash} </b>
+                                    </apex:inputCheckbox> 
+                                </td>
+                                <td width="25%" style="padding:0px">
+                                    <apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.FIRE_EXPLOSION_OR_ARC_FLASH_Controls__c}"/>
+                                </td>
+                                <td style="padding:0px"><apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.FIRE_EXPLOSION_OR_ARC_FLASH_What_IS_Stra__c}"/></td>
+                            </tr>
+
+                            <tr>
+                                <td width="34%"> 
+                                    <div class="col-sm-2" style="padding:30px 20px;font-weight:normal;"> {!$ObjectType.CSS_JobForms__c.fields.OTHER1__c.Label}:</div>   
+                                    <div class="col-sm-10"><apex:inputTextarea style="width:100%;height:80px;border:1px solid #000;resize:none;" html-maxlength="255" value="{!PowerGenForm.OTHER1__c}"/></div>
+                                    <div class="clearfix"></div>
+                                </td>
+                                <td width="25%" style="padding:0px">
+                                    <apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.OTHER1_Controls__c}"/>
+                                </td>
+                                <td style="padding:0px">
+                                    <apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.OTHER1_What_Is_Strange__c}"/>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td width="34%"> 
+                                    <div class="col-sm-2" style="padding:30px 20px;font-weight:normal;">{!$ObjectType.CSS_JobForms__c.fields.OTHER1__c.Label}:</div>   
+                                    <div class="col-sm-10"><apex:inputTextarea style="width:100%;height:80px;border:1px solid #000;resize:none;" html-maxlength="255" value="{!PowerGenForm.OTHER1__c}"/></div>
+                                    <div class="clearfix"></div>
+                                </td>
+                                <td width="25%" style="padding:0px">
+                                    <apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.OTHER2_Controls__c}"/>
+                                </td>
+                                <td style="padding:0px">
+                                    <apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.OTHER2_What_Is_Strange__c}"/>
+                                </td>
+                            </tr>
+
+                        </table>  
+
+
+
+                        <table class="table table-bordered cmi_inShopJSA_Hazard" style="border:2px solid #000;margin-bottom:0px">
+                            <tr bgcolor ="#d2d2d2" style="border-bottom:2px solid #000">
+                                <td>
+                                    <h4 style="margin:0px;"><b>{!$Label.CG_WorkSiteHA}</b></h4>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:normal">{!$Label.CG_WorkSiteText}</td>
+                            </tr>
+                            <tr bgcolor ="#d2d2d2">
+                                <td align="center"> <span style="font-weight:normal">{!$Label.CG_HazardIdentification} </span> <b>({!$Label.CG_CheckIfPresent}) </b></td>
+                            </tr>
+                        </table>
+
+                        <div class="col-sm-3" style="padding:0px">
+                            <table class="table table-bordered cmi_InShop_HIdentification">
+                                <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"> <td> <b>{!$Label.CG_UnusualHazards}</b></td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Natural_Gas_CNG_LNG__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Natural_Gas_CNG_LNG__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Animals_or_Insects__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Animals_or_Insects__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Overhead_Power_Lines__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Overhead_Power_Lines__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Exhaust_Gases__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Exhaust_Gases__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.High_Noise_Level__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.High_Noise_Level__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Hot_Work__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Hot_Work__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox styleClass="InShopCheckbox" value="{!PowerGenForm.Restricted_Work_Spaces__c}" /> {!$Label.CG_RestrictedWorkSpaces} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Confined_Work_Spaces__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$Label.CG_ConfinedWorkSpaces} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Hygiene_Hazards__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Hygiene_Hazards__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Flammable_Gas_Liquid__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Flammable_Gas_Liquid__c.Label} </td></tr>
+                                <tr><td></td></tr>
+                                <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"> <td> <b> {!$Label.CG_AccessEquipment} </b> </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Ladder_or_Step_Ladder__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Ladder_or_Step_Ladder__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Static_Access_Platform__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Static_Access_Platform__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Mobile_Work_Platform__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Mobile_Work_Platform__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Step_Stool__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Step_Stool__c.Label} </td></tr>
+                            </table>
+                        </div>
+
+                        <div class="col-sm-3" style="padding:0px 10px;margin-bottom:-15px;">
+                            <table class="table table-bordered cmi_InShop_HIdentification">
+                                 <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"> <td> <b> {!$Label.CG_Line_of_Fire} </b></td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Struck_by_or_Against__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Struck_by_or_Against__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Caught_or_Trapped_By__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Caught_or_Trapped_By__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Hazardous_Energy__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Hazardous_Energy__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Dust_or_Dirt__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Dust_or_Dirt__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Projectile_Hazard__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Projectile_Hazard__c.Label} </td></tr>
+                                <tr><td></td></tr>
+                                <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"> <td> <b> {!$Label.CG_Environmental_Impact} </b> </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Leaks_or_Spills__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Leaks_or_Spills__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Fumes_or_Smoke__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Fumes_or_Smoke__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Waste_Disposal__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Waste_Disposal__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Use_of_Chemicals__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Use_of_Chemicals__c.Label} </td></tr>
+                                <tr><td></td></tr>
+                                <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"><td> <b> {!$Label.CG_Housekeeping} </b> </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Set_to_Order__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Set_to_Order__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Dispose_Scrap__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Dispose_Scrap__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Cleanliness__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Cleanliness__c.Label} </td></tr>
+                                <tr><td></td></tr>
+                               
+                            </table>
+                        </div>
+
+                        <div class="col-sm-3" style="padding:0px 10px 0px 0px">
+                            <table class="table table-bordered cmi_InShop_HIdentification">
+                                <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"> <td> <b> {!$Label.CG_Slips_Trips_Falls} </b> </td></tr>
+                                 <tr><td><apex:inputCheckbox value="{!PowerGenForm.Snow_Mud_or_Ice__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Snow_Mud_or_Ice__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Trailing_Cables__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Trailing_Cables__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Uneven_Ground_Gravel__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Uneven_Ground_Gravel__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Elevated_Area_Mezzanine__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$Label.CG_ElevatedArea} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Roof_Top__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Roof_Top__c.Label} </td></tr>
+                                <tr><td></td></tr>
+                                <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"> <td> <b> {!$Label.CG_People_Interaction} </b> </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Work_with_Contractors__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Work_with_Contractors__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.General_Public__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.General_Public__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Customer_Employees__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Customer_Employees__c.Label} </td></tr>
+                               </table>
+                        </div>
+
+                        <div class="col-sm-3" style="padding:0px">
+                            <table class="table table-bordered cmi_InShop_HIdentification">
+                                <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"> <td> <b> {!$Label.CG_Ergonomics} </b> </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Excessive__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Excessive__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Repetitive_Work__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Repetitive_Work__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Stressful_Posure__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Stressful_Posure__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Contact_Stress__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Contact_Stress__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Kneeling_Crawling__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$Label.CG_KneelingCrawling} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Vibration__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Vibration__c.Label} </td></tr> 
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Heavy_Lifting__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$Label.CG_HeavyLifting} </td></tr> 
+                                <tr><td></td></tr>
+                                <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"><td> <b> {!$Label.CG_Weather_Conditions} </b> </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Extreme_Heat__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Extreme_Heat__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Extreme_Cold__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Extreme_Cold__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.High_Winds__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.High_Winds__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Storm_Conditions__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Storm_Conditions__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Rain__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Rain__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.Snow_Ice__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Snow_Ice__c.Label} </td></tr> 
+                                <tr><td><apex:inputCheckbox value="{!PowerGenForm.High_Altitude__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.High_Altitude__c.Label} </td></tr> 
+                            </table>
+                        </div>
+
+                        <div class="clearfix"></div>
+
+                        <hr style="margin:10px 0px;border-top:2px solid #000;"/>
+
+                        <table class="table table-bordered" style="margin-bottom:0px;">
+                            <tr bgcolor="#d2d2d2" style="border:2px solid #000">
+                                <td><h4 style="display:inline"> {!$Label.CG_SpecilalControls} - <b>{!$Label.CG_Strange}</b></h4></td>
+                            </tr>
+                            <tr style="border:1px solid #d2d2d2">
+                                <td style="padding:0px;">
+                                    <apex:inputTextarea style="resize:none;width:100%;height:200px;" value="{!PowerGenForm.IDENTIFY_ANY_SPECIAL_CONTROL_MEASURES_RE__c}" html-maxlength="4000"/>
+                                </td>
+                            </tr>
+                        </table>
+
+                    </div>
+
+
+                    <div class="col-sm-12"> 
+                        <div class="col-sm-6" style="border:1px solid #000;padding:0px;border-bottom:2px solid #000;">
+                            <div class="col-sm-12" style="background-color:#d2d2d2;border-bottom:2px solid #000;text-align:center">
+                                <h4> {!$Label.CG_ReportInjury} </h4>
+                            </div>
+                            <div class="col-sm-12" style="padding:5px"> {!$Label.CG_ContactEmergencyServices} </div>
+                            <div class="col-sm-12" style="padding:5px">
+                                <apex:outputText value=" {!$Label.CG_Report}" escape="false"></apex:outputText> 
+                            </div>
+
+                            <div class="col-sm-12" style="padding:0px">
+                                <div class="col-sm-4" style="border:1px solid #000;padding:15px;height:50px">
+                                    {!$ObjectType.CSS_JobForms__c.fields.Manager_Name__c.Label}
+                                </div>
+                                <div class="col-sm-8" style="padding:0px">
+                                    <apex:inputTextarea html-maxlength="255" style="resize:none;width:100%;height:50px;border-bottom:2px solid #000;border-top:2px solid #000" value="{!PowerGenForm.Manager_Name__c}" />
+                                </div>
+                                <div class="clearfix"></div>
+
+                                <div class="col-sm-4" style="border:1px solid #000;padding:15px;height:50px">
+                                    {!$ObjectType.CSS_JobForms__c.fields.Manager_Contact_Tel_No__c.Label}.
+                                </div>
+                                <div class="col-sm-8" style="padding:0px">
+                                    <apex:inputTextarea html-maxlength="255" style="resize:none;width:100%;height:50px;border-bottom:2px solid #000;" value="{!PowerGenForm.Manager_Contact_Tel_No__c}" />
+                                </div>
+                                <div class="clearfix"></div>
+
+                            </div>
+
+                            <div class="col-sm-12" style="padding:5px;border-bottom:1px solid #000;margin-bottom:20px;"> {!$Label.CG_CumminsResponseCenter} </div>
+
+
+                            <div class="col-sm-12" style="background-color:#d2d2d2;border-bottom:2px solid #000;border-top:1px solid #000;text-align:center">
+                                <h4>{!$Label.CG_ImproveSafety}</h4>
+                            </div>
+
+
+                            <div class="col-sm-12" style="padding:5px">
+
+                                <div class="col-sm-12" style="padding:0px 15px">
+                                    <b> {!$Label.CG_ImproveSuggestion}</b>
+                                </div>  <div class="clearfix"></div>
+
+                                <div class="col-sm-7" style="margin:5px 0px;padding:0px;">
+                                    <div class="col-sm-12">
+                                        <b> 1.{!$Label.CG_QSOLHelpTicket} </b> 
+                                    </div> <div class="clearfix"></div>
+                                    <div class="col-sm-12" style="margin:10px 0px;">
+                                        {!$Label.CG_MyQSOLHelpTicket}
+                                    </div> <div class="clearfix"></div>
+                                </div>
+                                <div class="col-sm-5">
+                                    <span class="cmi_QSOL_logo"/>
+                                </div>
+                                <div class="clearfix"></div>
+
+                                <div class="col-sm-12" style="margin:5px 0px">
+                                    <b> 2.{!$Label.CG_NotifySupervisor}</b>
+                                </div> 
+                                <div class="clearfix"></div>
+
+                                <div class="col-sm-12">
+                                    <b>3.{!$Label.CG_ExpJobSafetyObservation}</b>
+                                </div> 
+                                <div class="clearfix"></div>
+
+                            </div>
+
+                        </div>
+
+                        <div class="col-sm-6" style="border:1px solid #000;padding:0px;border-bottom:2px solid #000">
+
+                            <div class="col-sm-12" style="background-color:#d2d2d2;border-bottom:2px solid #000;text-align:center">
+                                <h4>{!$Label.CG_LockoutTagout}</h4>
+                            </div>
+                            <div class="col-sm-12" style="padding:5px;text-align:center;">
+                                <h4><b> 8 {!$Label.CG_StepstoCompleteLoto}</b></h4>
+                            </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 1. {!$Label.CG_UnderstandTheEquipment} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox styleClass="InShopCheckbox" value="{!PowerGenForm.Understand_the_equipment__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 2. {!$ObjectType.CSS_JobForms__c.fields.Inform_Affected_Employees__c.Label} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox styleClass="InShopCheckbox" value="{!PowerGenForm.Inform_Affected_Employees__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 3. {!$ObjectType.CSS_JobForms__c.fields.Shutt_Off_Power__c.Label} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox styleClass="InShopCheckbox" value="{!PowerGenForm.Shutt_Off_Power__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 4. {!$Label.CG_IsolateMachine} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox styleClass="InShopCheckbox" value="{!PowerGenForm.Isolate_the_Machine_from_All_Energy_Sour__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 5. {!$ObjectType.CSS_JobForms__c.fields.Lockout_the_Energy__c.Label} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox styleClass="InShopCheckbox" value="{!PowerGenForm.Lockout_the_Energy__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 6. {!$Label.CG_ControlStoredSecondary} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox styleClass="InShopCheckbox" value="{!PowerGenForm.Control_Stored_or_Secondary_Energy__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 7. {!$ObjectType.CSS_JobForms__c.fields.Verify_the_Lackout__c.Label}</div>
+                            <div class="col-sm-3"> <apex:inputCheckbox styleClass="InShopCheckbox" value="{!PowerGenForm.Verify_the_Lackout__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 8. {!$ObjectType.CSS_JobForms__c.fields.Maintain_the_Lackout__c.Label} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox styleClass="InShopCheckbox" value="{!PowerGenForm.Maintain_the_Lackout__c}"/> </div>
+                            <div class="clearfix"></div>
+
+
+                            <div class="col-sm-12" style="padding:5px;text-align:center;">
+                                <h4><b> 5 {!$Label.CG_StepstoReleaseLockout} </b></h4>
+                            </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 1. {!$Label.CG_PersonalAndTools} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox styleClass="InShopCheckbox" value="{!PowerGenForm.Make_sure_the_area_is_Clear_of_personal__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 2. {!$ObjectType.CSS_JobForms__c.fields.Remove_locks__c.Label} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox styleClass="InShopCheckbox" value="{!PowerGenForm.Remove_locks__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 3. {!$Label.CG_NotifyEmployees} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox styleClass="InShopCheckbox" value="{!PowerGenForm.Notifiy_the_affected_Employees_that_the__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 4. {!$ObjectType.CSS_JobForms__c.fields.Test_the_Machine__c.Label} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox styleClass="InShopCheckbox" value="{!PowerGenForm.Test_the_Machine__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 5. {!$Label.CG_NotifyEmployees1} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox styleClass="InShopCheckbox" value="{!PowerGenForm.Notify_the_affected_Employees_that_the_M__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-12" style="padding:7.5px"> {!$Label.CG_ShiftHandoverCompleted} </div>
+
+
+                        </div>
+
+                    </div>
+                    <div class="clearfix"> </div>
+
+                    <hr style="border-top:2px solid #000;"/>
+
+                    <div class="col-sm-12">
+                        <div class="col-sm-6">
+                            <div class="col-sm-6">
+                                <!--apex:commandButton value="{!$Label.CG_Print}"  styleClass="saveButton" onclick="window.print();"/-->
+                            </div>
+                            <div class="col-sm-6">
+                                <apex:commandButton value="{!$Label.css_save_btn}" onClick="DisableButton(this)" styleClass="saveButton" reRender="pgJSAFrm"/> 
+                                <apex:actionFunction name="powerGenPgSaveJS"  action="{!powerGenPgSave}"/>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <!--div class="col-sm-6">
+                                <apex:commandButton value="{!$Label.CSS_Save_And_Close}" styleClass="saveButton" onClick="DisableButtonSaveAndClose(this)" action="{!insertPowerGenJSARecord}" onComplete="onCompleteSaveAndClose()"/>
+                            </div-->
+                            <div class="col-sm-6">
+                                <a data-target="#FormCancelPopupPowerGen" data-toggle="modal" class="cancelButton">{!$Label.css_Cancel}</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="clearfix"> </div>
+
+                    <hr style="border-top:2px solid #000;margin-bottom:0px;"/>
+                    <div class="col-sm-12" style="text-align:center;background-color:#d2d2d2;padding:5px"> {!$Label.CG_ThankYouForWorking}</div>
+
+                </div> <!-- Panel body End -->
+                
+                  <!-- Cancel Popup Begin -->
+
+                <div class="modal fade" id="FormCancelPopupPowerGen" role="dialog" data-backdrop="static" data-keyboard="false">
+                    <div class="modal-dialog">
+                        <div class="modal-content"> 
+                            <div class="modal-header" style="color: #FFF;background-color:#000;height:35px;padding:5px;margin-right:-1px;">  
+                                <h4 class="modal-title">{!$Label.CSS_CumminsLabel01}</h4>
+                            </div>
+                            <div class="modal-body" style="padding:50px;"> 
+                                <div class="col-sm-12 col-xs-12">
+                                    <b>{!$Label.CG_CancelTheForm}</b>
+                                </div>
+                            </div>
+                            <div class="modal-footer"> 
+                                <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                                    <apex:commandButton value="{!$Label.css_Yes}" styleClass="saveButton" action="{!FormCancelPopup}" onComplete="window.close();"/>
+                                </div>
+                                <div class="col-sm-5 col-xs-4 cmi-tar">     
+                                    <a data-dismiss="modal" class="cancelButton">{!$Label.CSS_No}</a>
+                                </div> 
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </apex:outputPanel>
+            <!-- Editable Form End -->
+
+            <!-- Non Editable Form Begin -->
+            <apex:outputPanel rendered="{!IF(copy == 'true',true,false)}">
+                
+                 <div class="panel-body" style="border:2px solid #000;padding:0px;margin:10px;">
+
+                    <div class="col-sm-12" style="padding:0px;margin:10px 0px;">
+
+                        <div class="col-sm-9" style="border:1px solid #000">
+                            <div class="logo col-sm-9">
+                                <div class="logo_img" style="margin:10px 0px 0px 0px">
+                                    <div class="cmi_cummins_logo"></div>
+                                </div>
+                                <div class="sub-brand">
+                                    <h3 style="color:red;margin-top:5px;"><b>Distribution</b></h3>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-3" style="height:90px;padding:5px">
+                                <h2><b>{!$Label.CG_PowerGenJSA}</b> </h2>
+                            </div>
+                            <div class="clearfix"></div>
+                        </div>
+
+                        <div class="col-sm-3" style="border:1px solid #000;">
+                            <div class="col-sm-12" style="margin:20px 10px">{!$Label.CG_Date} : {!currentDateTime} </div>   
+                            <div class="col-sm-12" style="margin:0px 10px 10px 10px"> {!$Label.CG_WorkOrder} # {!workJob.WorkOrderNumber}</div>
+                        </div>
+                    </div> 
+                    <div class="clearfix"></div>
+
+                    <table class="table table-bordered cmi_inShopJSA" style="margin-bottom:0px;">
+                        <tr class="readOnly">
+                            <td style="padding:8px 30px;"> {!$Label.CG_EmployeeName}</td>
+                            <td> {!UserName}</td>
+                            <td style="border:3px solid #000;" align="center"> {!$Label.CG_WWID}</td> 
+                            <td colspan="2">{!WWID}</td>
+                        </tr>
+
+                        <tr>
+                            <td class="readOnly" style="border-top:0px;padding:8px 30px;"> {!$Label.CG_JSACompletedwith} </td>
+                            <td class="readOnly" style="padding:15px;border:3px solid #000;" disabled="true">{!$ObjectType.CSS_JobForms__c.fields.Co_Worker_Name__c.Label}:</td>
+                            <td colspan="3" style="padding:0px"> 
+                                <apex:inputTextarea style="width:100%;resize:none;height:50px;border:0px" disabled="true" value="{!PowerGenForm.Co_Worker_Name__c}" html-maxlength="255"/> 
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="readOnly" style="border-top:0px;padding:8px 30px;">{!$ObjectType.CSS_JobForms__c.fields.Task_Category__c.Label}</td>
+                            <td style="padding:0px"> 
+                                <apex:selectList size="1" style="width:100%;height:35px;border:0px;" value="{!PowerGenForm.Task_Category__c}" disabled="true">
+                                    <apex:selectOptions value="{!TaskCategory}"/> 
+                                </apex:selectList>
+                            </td>
+                            <td colspan="3" class="readOnly"></td>
+                        </tr>
+
+                        <tr>
+                            <td class="readOnly" style="border-top:0px;padding:8px 30px;"> {!$ObjectType.CSS_JobForms__c.fields.Task_Description__c.Label}</td>
+                            <td colspan="4" style="padding:0px">
+                                <apex:inputTextarea style="width:100%;resize:none;height:50px;border:0px;" disabled="true" value="{!PowerGenForm.Task_Description__c}" html-maxlength="255"/>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td class="readOnly" style="border-top:0px;border-bottom:0px solid #000;padding:8px 30px;"> {!$ObjectType.CSS_JobForms__c.fields.Job_Location__c.Label}</td>
+                            <td colspan="4" style="padding:0px">
+                                <apex:inputTextarea style="width:100%;resize:none;height:50px;" disabled="true" value="{!PowerGenForm.Job_Location__c}" html-maxlength="255"/>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                           <td class="readOnly" style="border-top:0px;"></td>
+                           <td bgcolor="#d2d2d2" style="text-align:center;padding:15px;">{!$Label.CG_SpecifyVoltageEquipment}</td>
+                            <td style="padding:0px"> <apex:inputTextarea disabled="true" style="width:100%;resize:none;height:50px;border:0px;" value="{!PowerGenForm.PowerGenVoltageEquipment__c}" html-maxlength="255"/></td>
+                            <td colspan="2" bgcolor="#d2d2d2">{!$Label.CG_HighVoltage}</td>
+                        </tr>
+                        
+                        <tr>
+                           <td class="readOnly" style="border-top:0px;border-bottom:1px solid #000;"></td>
+                           <td bgcolor="#d2d2d2">{!$Label.CG_ArcFlash} &nbsp; {!$Label.CG_FlashHazardBoundary} </td>
+                            <td style="padding:0px"> <apex:inputTextarea disabled="true" style="width:100%;resize:none;height:56px;border:0px;" value="{!PowerGenForm.PowerGenFlashHazardBoundary__c}" html-maxlength="255"/></td>
+                            <td bgcolor="#d2d2d2" style="width:15%">{!$Label.CG_PPELevel}</td>
+                            <td style="padding:0px"> <apex:inputTextarea disabled="true" style="width:100%;resize:none;height:56px;border:0px;" value="{!PowerGenForm.PowerGenPPELevel__c}" html-maxlength="255"/></td>
+                        </tr>
+                        
+                    </table>
+                    
+                    <hr style="margin-bottom:1px;border-top:1px solid #000;"/>
+                    
+                     <!-- PREPARE Table -->
+                    <div style="padding:0px 15px">
+                        <table class="table cmi_inShopJSA_Prepare" style="border:2px solid #000;margin-bottom:10px">
+                            <tr bgcolor ="#d2d2d2" style="border-bottom:2px solid #000">
+                                <td style="padding:8px;"><b>{!$ObjectType.CSS_JobForms__c.fields.PREPARE1__c.Label}</b></td>
+                                <td colspan="2" style="padding:0px 50px;"> {!$Label.CG_YesNoNA}</td>
+                            </tr>
+                            
+                            
+                             <tr>
+                                <td width="50%">{!$Label.CG_Prepare4}</td>
+                                <td width="10%">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenPrepare1__c}" style="font-weight:normal" disabled="true">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                                <td rowspan="7" style="vertical-align:middle;border-left:2px solid #000; border-top:3px solid #000"> 
+                                    <p>{!$Label.CG_ContactSupervisor}</p>
+                                </td>
+                            </tr> 
+                            
+                              <tr>
+                                <td width="50%" style="border-top:0px">{!$Label.CG_PowerGenPrepare2}</td>
+                                <td width="10%" style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenPrepare2__c}" style="font-weight:normal" disabled="true">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr> 
+                            
+
+                            <tr>
+                                <td width="50%" style="border-top:0px">{!$Label.CG_Prepare2}</td>
+                                <td width="10%" style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PREPARE2__c}" style="font-weight:normal" disabled="true">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr> 
+
+                            <tr>
+                                <td width="50%" style="border-top:0px">{!$Label.CG_Prepare3}</td>
+                                <td width="10%" style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PREPARE3__c}" disabled="true">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td width="50%" style="border-top:0px">{!$Label.CG_PowerGenPrepare5}</td>
+                                <td width="10%" style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenPrepare5__c}" disabled="true">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio> 
+                                </td>
+                            </tr>
+                            
+                             <tr>
+                                <td width="50%" style="border-top:0px">{!$Label.CG_PowerGenPrepare6}</td>
+                                <td width="10%" style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenPrepare6__c}" disabled="true">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio> 
+                                </td>
+                            </tr>
+                            
+                             <tr>
+                                <td width="50%" style="border-top:0px">{!$Label.CG_PowerGenPrepare7}</td>
+                                <td width="10%" style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenPrepare7__c}" disabled="true">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio> 
+                                </td>
+                            </tr>
+
+                        </table>
+                    </div>
+                    <hr style="margin:5px 0px;border-top:2px solid #000"/>
+                    
+                    <!-- Start up or Load Bank -->
+                    
+                    <div style="padding:0px 15px">
+                        <table class="table cmi_inShopJSA_Prepare" style="border:2px solid #000;margin-bottom:0px">
+                            <tr bgcolor ="#d2d2d2" style="border-bottom:2px solid #000">
+                                <td style="padding:8px;">{!$Label.CG_StartUpLoadBank}</td>
+                                <td colspan="2" style="padding:0px 50px;"> {!$Label.CG_YesNoNA}</td>
+                            </tr>
+
+                            <tr>
+                                <td width="50%">{!$Label.CG_StartUpLoadBank1}</td>
+                                <td width="10%" style="border-right:2px solid #000;">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenLoadBankTest1__c}" style="font-weight:normal" disabled="true">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                               
+                            </tr> 
+                            <tr>
+                                <td width="50%" style="border-top:0px">{!$Label.CG_StartUpLoadBank2}</td>
+                                <td width="10%" style="border-top:0px;border-right:2px solid #000;">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenLoadBankTest2__c}" disabled="true">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+</table>
+                    </div>
+                    
+                      <!-- Tooling & Equipment-->
+
+                    <div class="col-sm-6" style="padding-right:0px;border-right:2px solid #000;">
+                        <table class="table cmi_TELA" style="border:2px solid #000;margin-bottom:0px;border-right:0px solid #000">
+                            <tr bgcolor ="#d2d2d2" style="border-bottom:2px solid #000">
+                                <td>{!$ObjectType.CSS_JobForms__c.fields.ToolingEquipment1__c.Label}</td>
+                                <td style="padding:8px 50px;border:3px solid #000;">{!$Label.CG_YesNoNA}</td>
+                            </tr>
+                            
+                             <tr>
+                                <td style="border-top:0px">{!$Label.CG_PowerGenToolingEquipment}</td>
+                                <td style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenTE1__c}" disabled="true">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td style="border-top:0px">{!$Label.CG_ToolingEquipment2}</td>
+                                <td style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.ToolingEquipment2__c}" disabled="true">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+                            
+                             <tr>
+                                <td style="border-top:0px">{!$Label.CG_ToolingEquipment}</td>
+                                <td style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.ToolingEquipment1__c}" disabled="true">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- Lifting And Access -->
+
+                    <div class="col-sm-6" style="padding-left:0px">
+                        <table class="table cmi_TELA" style="border:2px solid #000;margin-bottom:0px">
+                            <tr bgcolor ="#d2d2d2" style="border-bottom:2px solid #000">
+                                <td>{!$ObjectType.CSS_JobForms__c.fields.LiftingAccess1__c.Label}</td>
+                                <td  style="padding:8px 50px;border:3px solid #000;">{!$Label.CG_YesNoNA}</td>
+                            </tr>
+                            <tr>
+                                <td>{!$Label.CG_LiftingAccess1}</td>
+                                <td>
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.LiftingAccess1__c}" disabled="true">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="border-top:0px">{!$Label.CG_LiftingAccess2}</td>
+                                <td style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.LiftingAccess2__c}" disabled="true">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="border-top:0px">{!$Label.CG_LiftingAccess3}</td>
+                                <td style="border-top:0px">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.LiftingAccess3__c}" disabled="true">
+                                        <apex:selectOptions value="{!PowerGenPrepare1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!--PPE -->
+
+                    <div style="padding:0px 15px">
+                        <table class="table cmi_inShopJSA_Prepare" style="border:2px solid #000;margin-bottom:10px;">
+                            <tr bgcolor ="#d2d2d2" style="border-bottom:3px solid #000">
+                                <td colspan="6" style="padding:8px">{!$Label.CG_PPE} </td>
+                            </tr>  
+                            <tr>
+                                <td>{!$ObjectType.CSS_JobForms__c.fields.PPE1__c.Label}</td>
+                                <td style="border-right:2px solid #000;">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PPE1__c}" disabled="true">
+                                        <apex:selectOptions value="{!PPE1}" />
+                                    </apex:selectRadio>
+                                </td>
+                                <td style="padding-right: 0px" >{!$Label.CG_PPESuitable}</td>
+                                <td style="border-right:2px solid #000;">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PPE2__c}" disabled="true">
+                                        <apex:selectOptions value="{!PPE1}" />
+                                    </apex:selectRadio>
+                                </td>
+                                <td style="padding-right: 0px" >{!$Label.CG_PPEElectricalInsulated}</td>
+                                <td>
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.PowerGenPPE__c}" disabled="true">
+                                        <apex:selectOptions value="{!PPE1}" />
+                                    </apex:selectRadio>
+                                </td>
+                            </tr>
+                        </table> 
+                    </div>
+
+                    <hr style="margin:5px 0px;border-top:2px solid #000"/>
+
+                    <!-- Lone Working -->
+
+                    <div style="padding:0px 15px">
+                        <table class="table cmi_inShopJSA_Prepare" style="border:2px solid #000;margin-bottom:0px;">
+                            <tr style="border-bottom:2px solid #000">
+                                <td bgcolor ="#d2d2d2" style="width:150px;border-right:2px solid #000;">{!$ObjectType.CSS_JobForms__c.fields.LoneWorking__c.Label}</td>
+                                <td style="border-bottom:2px solid #000;width:35%"> {!$Label.CG_LoneWorking}  </td>
+                                <td style="border-right:2px solid #000;">
+                                    <apex:selectRadio styleClass="prepareRadiobuttons" value="{!PowerGenForm.LoneWorking__c}" disabled="true">
+                                        <apex:selectOptions value="{!PPE1}" />
+                                    </apex:selectRadio>     
+                                </td>     
+                            </tr>  
+                            <tr style="border-top:2px solid #000">
+                                <td colspan="4" style="padding:0px"> 
+                                    <div>{!$Label.CG_LoneWorkingInputText}:</div>
+                                    <apex:inputTextarea style="width:100%;height:100px;resize:none;border:0px;" value="{!PowerGenForm.LoneWorkingTextArea__c}" html-maxlength="1000" disabled="true"/>                    
+                                </td>
+                            </tr>
+                        </table> 
+
+                        <!-- Serious Injury HAZARD ASSEMENT -->
+
+                        <table class="table cmi_inShopJSA_Prepare" style="border:2px solid #000;margin-bottom:0px">
+                            <tr bgcolor ="#d2d2d2" style="border-bottom:2px solid #000">
+                                <td colspan="6" style="padding:8px;">
+                                    {!$Label.CG_SeriousInjuryHA}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" style="padding:10px;"><span style="color:red"> <b> {!$ObjectType.CSS_JobForms__c.fields.MOVING_VEHICLES__c.Label} </b> </span></td>
+                                <td colspan="2" align="center"><span style="color:red"> <b> {!$ObjectType.CSS_JobForms__c.fields.MOVING_MACHINERY__c.Label} </b> </span></td>
+                                <td colspan="2" align="center"><span style="color:red"> <b> {!$ObjectType.CSS_JobForms__c.fields.WORK_AT_HEIGHT__c.Label} </b> </span></td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" style="padding:10px;border-top:0px;"><span style="color:red"> <b> {!$ObjectType.CSS_JobForms__c.fields.WORK_WITH_ELECTRICITY__c.Label} </b> </span></td>
+                                <td colspan="2" align="center" style="border-top:0px;"><span style="color:red"> <b> {!$ObjectType.CSS_JobForms__c.fields.LIFTING_OPERATOIONS__c.Label} </b></span></td>
+                                <td colspan="2" align="center" style="border-top:0px;padding-left:114px;"><span style="color:red"> <b> {!$Label.CG_FireExplosionArcFlash} </b></span></td>
+                            </tr>
+                        </table>  
+
+
+                        <table class="table table-bordered cmi_inShopJSA_Hazard" style="border:2px solid #000;">
+                            <tr bgcolor ="#d2d2d2" style="border-bottom:2px solid #000">
+                                <td align="center"> {!$Label.CG_SeriousInjuryHI}</td>
+                                <td align="center">{!$Label.CG_ControlsPutInPlace}</td>
+                                <td align="center">{!$Label.CG_WhatIsStrange}</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <apex:inputCheckbox disabled="true" styleClass="InShopCheckbox" style="margin-top:0px;" value="{!PowerGenForm.MOVING_VEHICLES__c}"> <b>{!$ObjectType.CSS_JobForms__c.fields.MOVING_VEHICLES__c.Label} </b></apex:inputCheckbox>
+                                </td>
+                                <td width="25%" style="padding:0px">
+                                    <apex:inputTextArea disabled="true" style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.MOVING_VEHICLES_Controls__c}"/>
+                                </td>
+                                <td style="padding:0px">
+                                    <apex:inputTextArea disabled="true" style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.MOVING_VEHICLES_What_Is_Strange__c}"/>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <apex:inputCheckbox disabled="true" value="{!PowerGenForm.WORK_WITH_ELECTRICITY__c}" style="margin-top:0px;" styleClass="InShopCheckbox"> <b> {!$ObjectType.CSS_JobForms__c.fields.WORK_WITH_ELECTRICITY__c.Label} </b> </apex:inputCheckbox> 
+                                </td>
+                                <td width="25%" style="padding:0px">
+                                    <apex:inputTextArea disabled="true" style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.WORK_WITH_ELECTRICITY_Control__c}"/>
+                                </td>
+                                <td style="padding:0px">
+                                    <apex:inputTextArea disabled="true" style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.WORK_WITH_ELECTRICITY_What_Is_Strange__c}"/>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <apex:inputCheckbox disabled="true" value="{!PowerGenForm.MOVING_MACHINERY__c}" style="margin-top:0px;" styleClass="InShopCheckbox"> <b>{!$ObjectType.CSS_JobForms__c.fields.MOVING_MACHINERY__c.Label}</b> </apex:inputCheckbox> 
+                                </td>
+                                <td width="25%" style="padding:0px">
+                                    <apex:inputTextArea disabled="true" style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.MOVING_MACHINERY_Controls__c}" />
+                                </td>
+                                <td style="padding:0px"><apex:inputTextArea disabled="true" style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.MOVING_MACHINERY_What_Is_Strange__c}" /></td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <apex:inputCheckbox styleClass="InShopCheckbox"  disabled="true" style="margin-top:0px;" value="{!PowerGenForm.LIFTING_OPERATOIONS__c}"> <b> {!$ObjectType.CSS_JobForms__c.fields.LIFTING_OPERATOIONS__c.Label} </b></apex:inputCheckbox> 
+                                </td>
+                                <td width="25%" style="padding:0px">
+                                    <apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" disabled="true" html-maxlength="255" value="{!PowerGenForm.LIFTING_OPERATOIONS_Controls__c}"/>
+                                </td>
+                                <td style="padding:0px">
+                                    <apex:inputTextArea style="width:100%;height:110px;resize:none;border:0px;" disabled="true" html-maxlength="255" value="{!PowerGenForm.LIFTING_OPERATOIONS_What_Is_Strange__c}"/>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <apex:inputCheckbox styleClass="InShopCheckbox" style="margin-top:0px;" value="{!PowerGenForm.WORK_AT_HEIGHT__c}" disabled="true">
+                                        <b> {!$ObjectType.CSS_JobForms__c.fields.WORK_AT_HEIGHT__c.Label} </b>
+                                    </apex:inputCheckbox> 
+                                </td>
+                                <td width="25%" style="padding:0px"><apex:inputTextArea disabled="true" style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.WORK_AT_HEIGHT_Controls__c}"/></td>
+                                <td style="padding:0px"><apex:inputTextArea disabled="true" style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.WORK_AT_HEIGHT_What_Is_Strange__c}"/></td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <apex:inputCheckbox disabled="true" styleClass="InShopCheckbox" style="margin-top:0px;" value="{!PowerGenForm.FIRE_EXPLOSION_OR_ARC_FLASH__c}">
+                                        <b>  {!$Label.CG_FireExplosionArcFlash} </b>
+                                    </apex:inputCheckbox> 
+                                </td>
+                                <td width="25%" style="padding:0px">
+                                    <apex:inputTextArea disabled="true" style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.FIRE_EXPLOSION_OR_ARC_FLASH_Controls__c}"/>
+                                </td>
+                                <td style="padding:0px"><apex:inputTextArea disabled="true" style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.FIRE_EXPLOSION_OR_ARC_FLASH_What_IS_Stra__c}"/></td>
+                            </tr>
+
+                            <tr>
+                                <td width="34%"> 
+                                    <div class="col-sm-2" style="padding:30px 20px;font-weight:normal;"> {!$ObjectType.CSS_JobForms__c.fields.OTHER1__c.Label}:</div>   
+                                    <div class="col-sm-10"><apex:inputTextarea disabled="true" style="width:100%;height:80px;border:1px solid #000;resize:none;" html-maxlength="255" value="{!PowerGenForm.OTHER1__c}"/></div>
+                                    <div class="clearfix"></div>
+                                </td>
+                                <td width="25%" style="padding:0px">
+                                    <apex:inputTextArea disabled="true" style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.OTHER1_Controls__c}"/>
+                                </td>
+                                <td style="padding:0px">
+                                    <apex:inputTextArea disabled="true" style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.OTHER1_What_Is_Strange__c}"/>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td width="34%"> 
+                                    <div class="col-sm-2" style="padding:30px 20px;font-weight:normal;">{!$ObjectType.CSS_JobForms__c.fields.OTHER1__c.Label}:</div>   
+                                    <div class="col-sm-10"><apex:inputTextarea disabled="true" style="width:100%;height:80px;border:1px solid #000;resize:none;" html-maxlength="255" value="{!PowerGenForm.OTHER1__c}"/></div>
+                                    <div class="clearfix"></div>
+                                </td>
+                                <td width="25%" style="padding:0px">
+                                    <apex:inputTextArea disabled="true" style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.OTHER2_Controls__c}"/>
+                                </td>
+                                <td style="padding:0px">
+                                    <apex:inputTextArea disabled="true" style="width:100%;height:110px;resize:none;border:0px;" html-maxlength="255" value="{!PowerGenForm.OTHER2_What_Is_Strange__c}"/>
+                                </td>
+                            </tr>
+
+                        </table>  
+
+
+
+                        <table class="table table-bordered cmi_inShopJSA_Hazard" style="border:2px solid #000;margin-bottom:0px">
+                            <tr bgcolor ="#d2d2d2" style="border-bottom:2px solid #000">
+                                <td>
+                                    <h4 style="margin:0px;"><b>{!$Label.CG_WorkSiteHA}</b></h4>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:normal">{!$Label.CG_WorkSiteText}</td>
+                            </tr>
+                            <tr bgcolor ="#d2d2d2">
+                                <td align="center"> <span style="font-weight:normal">{!$Label.CG_HazardIdentification} </span> <b>({!$Label.CG_CheckIfPresent}) </b></td>
+                            </tr>
+                        </table>
+
+                        <div class="col-sm-3" style="padding:0px">
+                            <table class="table table-bordered cmi_InShop_HIdentification">
+                                <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"> <td> <b>{!$Label.CG_UnusualHazards}</b></td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Natural_Gas_CNG_LNG__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Natural_Gas_CNG_LNG__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Animals_or_Insects__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Animals_or_Insects__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Overhead_Power_Lines__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Overhead_Power_Lines__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Exhaust_Gases__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Exhaust_Gases__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.High_Noise_Level__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.High_Noise_Level__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Hot_Work__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Hot_Work__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" styleClass="InShopCheckbox" value="{!PowerGenForm.Restricted_Work_Spaces__c}" /> {!$Label.CG_RestrictedWorkSpaces} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Confined_Work_Spaces__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$Label.CG_ConfinedWorkSpaces} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Hygiene_Hazards__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Hygiene_Hazards__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Flammable_Gas_Liquid__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Flammable_Gas_Liquid__c.Label} </td></tr>
+                                <tr><td></td></tr>
+                                <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"> <td> <b> {!$Label.CG_AccessEquipment} </b> </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Ladder_or_Step_Ladder__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Ladder_or_Step_Ladder__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Static_Access_Platform__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Static_Access_Platform__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Mobile_Work_Platform__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Mobile_Work_Platform__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Step_Stool__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Step_Stool__c.Label} </td></tr>
+                            </table>
+                        </div>
+
+                        <div class="col-sm-3" style="padding:0px 10px;margin-bottom:-15px;">
+                            <table class="table table-bordered cmi_InShop_HIdentification">
+                                 <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"> <td> <b> {!$Label.CG_Line_of_Fire} </b></td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Struck_by_or_Against__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Struck_by_or_Against__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Caught_or_Trapped_By__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Caught_or_Trapped_By__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Hazardous_Energy__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Hazardous_Energy__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Dust_or_Dirt__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Dust_or_Dirt__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Projectile_Hazard__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Projectile_Hazard__c.Label} </td></tr>
+                                <tr><td></td></tr>
+                                <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"> <td> <b> {!$Label.CG_Environmental_Impact} </b> </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Leaks_or_Spills__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Leaks_or_Spills__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Fumes_or_Smoke__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Fumes_or_Smoke__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Waste_Disposal__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Waste_Disposal__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Use_of_Chemicals__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Use_of_Chemicals__c.Label} </td></tr>
+                                <tr><td></td></tr>
+                                <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"><td> <b> {!$Label.CG_Housekeeping} </b> </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Set_to_Order__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Set_to_Order__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Dispose_Scrap__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Dispose_Scrap__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Cleanliness__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Cleanliness__c.Label} </td></tr>
+                                <tr><td></td></tr>
+                               
+                            </table>
+                        </div>
+
+                        <div class="col-sm-3" style="padding:0px 10px 0px 0px">
+                            <table class="table table-bordered cmi_InShop_HIdentification">
+                                <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"> <td> <b> {!$Label.CG_Slips_Trips_Falls} </b> </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Snow_Mud_or_Ice__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Snow_Mud_or_Ice__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Trailing_Cables__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Trailing_Cables__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Uneven_Ground_Gravel__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Uneven_Ground_Gravel__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Elevated_Area_Mezzanine__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/>{!$Label.CG_ElevatedArea}</td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Roof_Top__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Roof_Top__c.Label} </td></tr>
+                                <tr><td></td></tr>
+                                <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"> <td> <b> {!$Label.CG_People_Interaction} </b> </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Work_with_Contractors__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Work_with_Contractors__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.General_Public__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.General_Public__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Customer_Employees__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Customer_Employees__c.Label} </td></tr>
+                               </table>
+                        </div>
+
+                        <div class="col-sm-3" style="padding:0px">
+                            <table class="table table-bordered cmi_InShop_HIdentification">
+                                <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"> <td> <b> {!$Label.CG_Ergonomics} </b> </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Excessive__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Excessive__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Repetitive_Work__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Repetitive_Work__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Stressful_Posure__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Stressful_Posure__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Contact_Stress__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Contact_Stress__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Kneeling_Crawling__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$Label.CG_KneelingCrawling} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Vibration__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Vibration__c.Label} </td></tr> 
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Heavy_Lifting__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$Label.CG_HeavyLifting} </td></tr> 
+                                <tr><td></td></tr>
+                                <tr bgcolor="#d2d2d2" style="border:2px solid #000" align="center"><td> <b> {!$Label.CG_Weather_Conditions} </b> </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Extreme_Heat__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Extreme_Heat__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Extreme_Cold__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Extreme_Cold__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.High_Winds__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.High_Winds__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Storm_Conditions__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Storm_Conditions__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Rain__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Rain__c.Label} </td></tr>
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.Snow_Ice__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.Snow_Ice__c.Label} </td></tr> 
+                                <tr><td><apex:inputCheckbox disabled="true" value="{!PowerGenForm.High_Altitude__c}" styleClass="InShopCheckbox" style="margin-top:1px;"/> {!$ObjectType.CSS_JobForms__c.fields.High_Altitude__c.Label} </td></tr> 
+                            </table>
+                        </div>
+
+                        <div class="clearfix"></div>
+
+                        <hr style="margin:10px 0px;border-top:2px solid #000;"/>
+
+                        <table class="table table-bordered" style="margin-bottom:0px;">
+                            <tr bgcolor="#d2d2d2" style="border:2px solid #000">
+                                <td><h4 style="display:inline"> {!$Label.CG_SpecilalControls} - <b>{!$Label.CG_Strange}</b></h4></td>
+                            </tr>
+                            <tr style="border:1px solid #d2d2d2">
+                                <td style="padding:0px;">
+                                    <apex:inputTextarea disabled="true" style="resize:none;width:100%;height:200px;" value="{!PowerGenForm.IDENTIFY_ANY_SPECIAL_CONTROL_MEASURES_RE__c}" html-maxlength="4000"/>
+                                </td>
+                            </tr>
+                        </table>
+
+                    </div>
+
+
+                    <div class="col-sm-12"> 
+                        <div class="col-sm-6" style="border:1px solid #000;padding:0px;border-bottom:2px solid #000;">
+                            <div class="col-sm-12" style="background-color:#d2d2d2;border-bottom:2px solid #000;text-align:center">
+                                <h4> {!$Label.CG_ReportInjury} </h4>
+                            </div>
+                            <div class="col-sm-12" style="padding:5px"> {!$Label.CG_ContactEmergencyServices} </div>
+                            <div class="col-sm-12" style="padding:5px">
+                                <apex:outputText value="{!$Label.CG_Report}" escape="false"></apex:outputText> 
+                            </div>
+
+                            <div class="col-sm-12" style="padding:0px">
+                                <div class="col-sm-4" style="border:1px solid #000;padding:15px;height:50px">
+                                    {!$ObjectType.CSS_JobForms__c.fields.Manager_Name__c.Label}
+                                </div>
+                                <div class="col-sm-8" style="padding:0px">
+                                    <apex:inputTextarea disabled="true" html-maxlength="255" style="resize:none;width:100%;height:50px;border-bottom:2px solid #000;border-top:2px solid #000" value="{!PowerGenForm.Manager_Name__c}" />
+                                </div>
+                                <div class="clearfix"></div>
+
+                                <div class="col-sm-4" style="border:1px solid #000;padding:15px;height:50px">
+                                    {!$ObjectType.CSS_JobForms__c.fields.Manager_Contact_Tel_No__c.Label}.
+                                </div>
+                                <div class="col-sm-8" style="padding:0px">
+                                    <apex:inputTextarea disabled="true" html-maxlength="255" style="resize:none;width:100%;height:50px;border-bottom:2px solid #000;" value="{!PowerGenForm.Manager_Contact_Tel_No__c}" />
+                                </div>
+                                <div class="clearfix"></div>
+
+                            </div>
+
+                            <div class="col-sm-12" style="padding:5px;border-bottom:1px solid #000;margin-bottom:20px;"> {!$Label.CG_CumminsResponseCenter} </div>
+
+
+                            <div class="col-sm-12" style="background-color:#d2d2d2;border-bottom:2px solid #000;border-top:1px solid #000;text-align:center">
+                                <h4>{!$Label.CG_ImproveSafety}</h4>
+                            </div>
+
+
+                            <div class="col-sm-12" style="padding:5px">
+
+                                <div class="col-sm-12" style="padding:0px 15px">
+                                    <b> {!$Label.CG_ImproveSuggestion}</b>
+                                </div>  <div class="clearfix"></div>
+
+                                <div class="col-sm-7" style="margin:5px 0px;padding:0px;">
+                                    <div class="col-sm-12">
+                                        <b> 1.{!$Label.CG_QSOLHelpTicket} </b> 
+                                    </div> <div class="clearfix"></div>
+                                    <div class="col-sm-12" style="margin:10px 0px;">
+                                        {!$Label.CG_MyQSOLHelpTicket}
+                                    </div> <div class="clearfix"></div>
+                                </div>
+                                <div class="col-sm-5">
+                                    <span class="cmi_QSOL_logo"/>
+                                </div>
+                                <div class="clearfix"></div>
+
+                                <div class="col-sm-12" style="margin:5px 0px">
+                                    <b> 2.{!$Label.CG_NotifySupervisor}</b>
+                                </div> 
+                                <div class="clearfix"></div>
+
+                                <div class="col-sm-12">
+                                    <b>3.{!$Label.CG_ExpJobSafetyObservation}</b>
+                                </div> 
+                                <div class="clearfix"></div>
+
+                            </div>
+
+                        </div>
+
+                        <div class="col-sm-6" style="border:1px solid #000;padding:0px;border-bottom:2px solid #000">
+
+                            <div class="col-sm-12" style="background-color:#d2d2d2;border-bottom:2px solid #000;text-align:center">
+                                <h4>{!$Label.CG_LockoutTagout}</h4>
+                            </div>
+                            <div class="col-sm-12" style="padding:5px;text-align:center;">
+                                <h4><b> 8 {!$Label.CG_StepstoCompleteLoto}</b></h4>
+                            </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 1. {!$Label.CG_UnderstandTheEquipment} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox disabled="true" styleClass="InShopCheckbox" value="{!PowerGenForm.Understand_the_equipment__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 2. {!$ObjectType.CSS_JobForms__c.fields.Inform_Affected_Employees__c.Label} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox disabled="true" styleClass="InShopCheckbox" value="{!PowerGenForm.Inform_Affected_Employees__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 3. {!$ObjectType.CSS_JobForms__c.fields.Shutt_Off_Power__c.Label} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox disabled="true" styleClass="InShopCheckbox" value="{!PowerGenForm.Shutt_Off_Power__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 4. {!$Label.CG_IsolateMachine} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox disabled="true" styleClass="InShopCheckbox" value="{!PowerGenForm.Isolate_the_Machine_from_All_Energy_Sour__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 5. {!$ObjectType.CSS_JobForms__c.fields.Lockout_the_Energy__c.Label} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox disabled="true" styleClass="InShopCheckbox" value="{!PowerGenForm.Lockout_the_Energy__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 6. {!$Label.CG_ControlStoredSecondary} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox disabled="true" styleClass="InShopCheckbox" value="{!PowerGenForm.Control_Stored_or_Secondary_Energy__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 7. {!$ObjectType.CSS_JobForms__c.fields.Verify_the_Lackout__c.Label}</div>
+                            <div class="col-sm-3"> <apex:inputCheckbox disabled="true" styleClass="InShopCheckbox" value="{!PowerGenForm.Verify_the_Lackout__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 8. {!$ObjectType.CSS_JobForms__c.fields.Maintain_the_Lackout__c.Label} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox disabled="true" styleClass="InShopCheckbox" value="{!PowerGenForm.Maintain_the_Lackout__c}"/> </div>
+                            <div class="clearfix"></div>
+
+
+                            <div class="col-sm-12" style="padding:5px;text-align:center;">
+                                <h4><b> 5 {!$Label.CG_StepstoReleaseLockout} </b></h4>
+                            </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 1. {!$Label.CG_PersonalAndTools} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox disabled="true" styleClass="InShopCheckbox" value="{!PowerGenForm.Make_sure_the_area_is_Clear_of_personal__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 2. {!$ObjectType.CSS_JobForms__c.fields.Remove_locks__c.Label} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox disabled="true" styleClass="InShopCheckbox" value="{!PowerGenForm.Remove_locks__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 3. {!$Label.CG_NotifyEmployees} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox disabled="true" styleClass="InShopCheckbox" value="{!PowerGenForm.Notifiy_the_affected_Employees_that_the__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 4. {!$ObjectType.CSS_JobForms__c.fields.Test_the_Machine__c.Label} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox disabled="true" styleClass="InShopCheckbox" value="{!PowerGenForm.Test_the_Machine__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-9"> 5. {!$Label.CG_NotifyEmployees1} </div>
+                            <div class="col-sm-3"> <apex:inputCheckbox disabled="true" styleClass="InShopCheckbox" value="{!PowerGenForm.Notify_the_affected_Employees_that_the_M__c}"/> </div>
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-12" style="padding:7.5px"> {!$Label.CG_ShiftHandoverCompleted} </div>
+
+
+                        </div>
+
+                    </div>
+                    <div class="clearfix"> </div>
+
+                    <hr style="border-top:2px solid #000;"/>
+
+                    <div class="col-sm-12">
+                        <!--div class="col-sm-6" style="text-align:center;">
+                            <apex:commandButton value="Print" styleClass="saveButton" onclick="window.print();"/>
+                        </div-->
+                        <div class="col-sm-12" style="text-align:center;">
+                            <a data-target="#FormCancelPopup" class="cancelButton" onclick="window.close();">{!$Label.css_close}</a>
+                        </div>
+                    </div>
+                    <div class="clearfix"> </div>
+
+                    <hr style="border-top:2px solid #000;margin-bottom:0px;"/>
+                    <div class="col-sm-12" style="text-align:center;background-color:#d2d2d2;padding:5px"> {!$Label.CG_ThankYouForWorking}</div>
+
+                </div> <!-- Panel body End -->
+                
+            </apex:outputPanel>
+            
+            
+        </apex:form>
+    </body>
+</apex:page>

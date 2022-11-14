@@ -1,0 +1,316 @@
+<apex:component controller="CG_CL_ClaimsODMMessagesController" allowDML="true">
+    <apex:attribute name="LicensePlateState" description="License Plate State" type="String" assignto="{!licensePlate}" />
+    <apex:attribute name="mainController" description="Main Controller Type" type="CG_CL_ClaimsIntake" assignTo="{!mainContr}"/>
+    <apex:attribute name="pgName" description="Parent page name" type="String"/>
+    <!--  Added below variables for debug purpose  
+
+wrapclaimsSCList** {!wrapclaimsSCList}
+wrapclaimsPOList ** {!wrapclaimsPOList}
+wrapclaimsSRTList {!wrapclaimsSRTList}
+odmstatusFlag** {!odmstatusFlag}
+odm status code ** {!odmstatusCodeFlag}
+TTML** {!ttmlerrorcoverlmt} 
+odm solcomp** {!odmsolcompsatusSRT}
+odm solcomp code ** {!odmsolcompsatusCodeFlag}
+claims userlanded**  {!claimsRec.User_Landed_CC__c}
+categoryMandate ** {!categoryMandate}
+odmpartstatusCodeFlag ** {!odmpartstatusCodeFlag}
+dealerCustomer ** {!dealerCustomer}
+jobNotesCorrectMsg ** {!jobNotesCorrectMsg}
+isInfoOnly ** {!isInfoOnly}
+mutuallyExcSRTFlag ** {!mutuallyExcSRTFlag}
+isInfoOnly** {!isInfoOnly}
+FieldActionError**  {!FieldActionError}
+olapReasonSRTFlag**  {!olapReasonSRTFlag}
+dupAccessCodePercentReqFlag** {!dupAccessCodePercentReqFlag}
+olapFailureSRTFlag ** {!olapFailureSRTFlag}
+isATT ** {!isATT}
+pendingAuthFlag**  {!pendingAuthFlag}
+PartsDupMsg**  {!PartsDupMsg}
+licensePlateError**  {!licensePlateError}
+travelRateError** {!travelRateError}
+partsODMMesasgeflag**  {!partsODMMesasgeflag}
+checklaborrate ** {!checklaborrate}
+coveredPartsMsgFlag**  {!coveredPartsMsgFlag}
+coveredTTMLMsgFlag ** {!coveredTTMLMsgFlag}
+coveredOCMsgFlag** {!coveredOCMsgFlag}
+coveredSRTMsgFlag** {!coveredSRTMsgFlag}
+FailModeErrorFlag** {!FailModeErrorFlag}
+srtDuplicateError** {!srtDuplicateError}
+
+-->
+
+    <div class="col-sm-12 col-xs-12"> <!--Ignore this:{!claimsRec.isCalibrationFieldsBlank__c} -->
+<!--Have removed the condition (claimsRec.User_Landed_CC__c == true && (categoryMandate==true || custcomplerrormsg==true)) and added (categoryMandate==true || custcomplerrormsg==true) this condition below as per story GSSC-377 -By RAJESH 23rd Dec 2019-->
+        <apex:outputpanel rendered="{!IF(licensePlateErr==true || odmstatusFlag==true || odmstatusCodeFlag==true ||ttmlerrorcoverlmt==true || odmsolcompsatusSRT==true 
+                                    || odmsolcompsatusCodeFlag==true ||  categoryMandate==true || custcomplerrormsg==true
+                                    || odmpartstatusCodeFlag == true || odmsrtstatusCodeFlag == true || (jobNotesCorrectMsg != null && jobNotesCorrectMsg != '' && isInfoOnly==false) 
+                                    || (mutuallyExcSRTFlag == true && isInfoOnly==false) || FieldActionError == true || olapReasonSRTFlag == true || admin902SRTFlag == true || dupAccessCodePercentReqFlag == true || olapFailureSRTFlag==true
+                                    || (isATT == true && isInfoOnly==false) || (pendingAuthFlag == true && isInfoOnly==false) || PartsDupMsg == true || licensePlateError == true || travelRateError==true 
+                                    || partsODMMesasgeflag==true  || checklaborrate == true || coveredPartsMsgFlag == true || coveredTTMLMsgFlag == true || coveredOCMsgFlag == true || coveredSRTMsgFlag == true 
+                                    || FailModeErrorFlag == true || claimsRec.SRT_FlexTime_Error__c == true || srtDuplicateError==true || claimsRec.isCalibrationFieldsBlank__c == true 
+                                    || milprodhrsFlag == true || trackingNumberReq ==true, true, false)}"> <!--dealerCustomer==false && DEFECT #GSSC-499--> 
+
+            <div class="col-sm-12" style="border: 1px solid red;background-color:#FFB6C1;overflow-y: scroll;word-wrap:break-word;padding:10px;height:100px">
+                <div style="font-size:16px;">
+                    <b>{!$Label.CG_WarrantyValidationErrors}</b>
+                </div> 
+                <div>
+                    <span class="cmi-catastrophicWarning-icon"/>
+                    <span>{!$Label.CSS_Claims_ODM_Messages}</span>
+                </div>
+
+                <apex:outputPanel rendered="{!odmstatusCodeFlag}">
+                    <div> Warranty header validation failed. Please retry or contact Guidanz@cummins.com</div>
+                </apex:outputPanel>
+
+                <apex:outputPanel rendered="{!odmsolcompsatusCodeFlag}">
+                    <div> Failure validation failed. Please retry or contact Guidanz@cummins.com</div>
+                </apex:outputPanel>
+
+                <apex:outputPanel rendered="{!odmpartstatusCodeFlag}">
+                    <div> Parts validation failed. Please retry or contact Guidanz@cummins.com</div>
+                </apex:outputPanel>
+
+                <apex:outputPanel rendered="{!odmsrtstatusCodeFlag}">
+                    <div>SRT validation failed. Please retry or contact Guidanz@cummins.com</div>
+                </apex:outputPanel>
+
+                <!--Start code for checking dealer location from utility class and showing error when we are not getting Fail and Account code as per story #176379 Kung Fu Panda sprint,-By RAJESH 14th Mar 2019-->
+                <apex:outputPanel rendered="{!IF(partsODMMesasgeflag==true,true, false)}">
+                    <div style="text-align:left; color: red ; display: block;">{!$Label.css_Error_Parts_Please_enter_values_for_fail_code_and_account_code}</div>
+                    <!--End  code for checking dealer location from utility class and showing error when we are not getting Fail and Account code as per story #176379 Kung Fu Panda sprint,-By RAJESH 14th Mar 2019-->                    
+                </apex:outputPanel>
+
+                <apex:outputPanel rendered="{!IF(pendingAuthFlag==true && isInfoOnly==false, true, false)}">
+                    <div>{!$Label.CSS_Pending_Authorization_Required}</div>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!IF(PartsDupMsg==true && NOT((claimsRec.CSS_Job__c!='' || claimsRec.Dealer_Service_Job__c!= '') && distrCustomer==true), true, false)}"> <!--Ridhima needs to recheck on the condition-->
+                    <div>{!$Label.CSS_Duplicate_Parts}</div>
+                </apex:outputPanel>
+                <apex:outputpanel rendered="{!IF(((claimsRec.ODM_Status__c!=null && claimsRec.ODM_Status__c!='' && claimsRec.ODM_Status__c!='YTBV' && claimsRec.ODM_Status__c!='PASSED' && 
+                                            claimsRec.ODM_Status__c!='NA') || (claimsRec.Customer_Name__c == null || claimsRec.Customer_Name__c == '' ||
+                                            claimsRec.Shop_Work_Order__c == null || claimsRec.Shop_Work_Order__c == '' ||  categoryMandate==true || custcomplerrormsg==true ||
+                                            psnRec[0].PSN__c == null || psnRec[0].PSN__c == '' ||
+                                            (psnRec[0].Warranty_Start_Date__c == null && psnRec[0].Before_In_Service__c == false) ||
+                                            psnRec[0].Failure_Date__c == null ||
+                                            (pgName=='CG_ClaimsIntake' && (mainContr.filterApplication =='----None----' || mainContr.filterApplication == '' 
+                                            || mainContr.filterApplication == null || claimsRec.isCalibrationFieldsBlank__c == true ||
+                                            mainContr.filterMake =='----None----' || mainContr.filterMake == '' || mainContr.filterMake == null ||
+                                            mainContr.filterModel =='----None----' || mainContr.filterModel == '' || mainContr.filterModel == null)))), true, false)}">
+
+                    <div><b>{!$Label.CG_WarrantyOverview}</b></div>
+                   
+            <!--START Code added for showing error message when any category and Complaint is empty as per story #GSSC-377-BY RAJESH 23rd Dec 2019-->       
+                    <apex:outputpanel rendered="{!IF(categoryMandate==true, true, false)}">
+                        <div>{!$Label.CG_Category_Error}</div>
+                    </apex:outputpanel>
+        
+                    <apex:outputpanel rendered="{!IF(custcomplerrormsg==true, true, false)}">
+                        <div>{!$Label.CG_Complaint_Type_Error}</div>
+                    </apex:outputpanel>
+            <!--END Code added for showing error message when any category and Complaint is empty as per story #GSSC-377-BY RAJESH 23rd Dec 2019-->
+                    <apex:outputPanel rendered="{!IF(pgName=='CG_ClaimsIntake',true,false)}">
+
+                        <apex:outputPanel rendered="{!IF((mainContr.claimsRec.Customer_Name__c == null || mainContr.claimsRec.Customer_Name__c == ''),true,false)}">
+                            <div>{!$Label.CG_Customer_Company_Error}</div>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!IF((mainContr.claimsRec.Shop_Work_Order__c == null || mainContr.claimsRec.Shop_Work_Order__c == ''),true,false)}">
+                            <div>{!$Label.CG_Shop_Work_Order_Error}</div>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!IF((mainContr.psnRec.PSN__c == null || mainContr.psnRec.PSN__c == ''),true,false)}">
+                            <div>{!$Label.CG_PSN_Error}"</div>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!IF((mainContr.psnRec.Warranty_Start_Date__c == null && mainContr.psnRec.Before_In_Service__c == false),true,false)}">
+                            <div>{!$Label.CG_WSD_or_BIS_Error}</div>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!IF((mainContr.psnRec.Failure_Date__c == null),true,false)}">
+                            <div>{!$Label.CG_Failure_Date_Error}</div>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!IF((mainContr.filterApplication =='----None----' || mainContr.filterApplication == '' || mainContr.filterApplication == null),true,false)}">
+                            <div>{!$Label.CG_Application_Error}</div>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!IF((mainContr.filterMake =='----None----' || mainContr.filterMake == '' || mainContr.filterMake == null),true,false)}">
+                            <div>{!$Label.CG_Make_Error}</div>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!IF((mainContr.filterModel =='----None----' || mainContr.filterModel == '' || mainContr.filterModel == null),true,false)}">
+                            <div>{!$Label.CG_Model_Error}</div>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                    
+
+                    <div>
+                        <apex:repeat value="{!headerclaimsRecMsg}" var="hList">
+                            <apex:outputText value="{!hList}" /><br/>
+                        </apex:repeat>
+                    </div>
+
+                </apex:outputpanel>
+
+                <!-- GSSC - 106 -->
+                <apex:outputPanel rendered="{!IF(milprodhrsFlag == true, true, false)}">
+                    <div>{!$Label.CSS_Error}: {!$Label.CG_MIL_HRS}</div>
+                </apex:outputPanel>
+
+                <!-- GSSC - 30 -->
+               <!-- <apex:outputPanel rendered="{!IF(claimsRec.isCalibrationFieldsBlank__c == true,true,false)}">-->
+                
+                <apex:outputPanel rendered="{!IF(claimsRec.isCalibrationFieldsBlank__c == true && ((mainContr.psnRec.Calibration_After__c=='' || mainContr.psnRec.Calibration_After__c==null) || (mainContr.psnRec.Calibration_Before__c=='' || mainContr.psnRec.Calibration_Before__c==null) || (mainContr.psnRec.Revision_Before__c=='' || mainContr.psnRec.Revision_Before__c==null)|| ( mainContr.psnRec.Revision_After__c=='' || mainContr.psnRec.Revision_After__c==null)),true,false)}">
+                    <div>{!$Label.CSS_Error}: {!$Label.CalibrationErrorPinkBox}</div>
+                </apex:outputPanel>
+
+                <apex:outputPanel rendered="{!IF(licensePlateErr == true,true,false)}">
+                    <div>{!$Label.CG_License_Plate}</div>
+                </apex:outputPanel>
+
+                <apex:outputPanel rendered="{!IF(claimsRec.License_Plate_State_Error_message__c != null && isInfoOnly==false,true,false)}">
+                    <div>{!claimsRec.License_Plate_State_Error_message__c}</div>
+                </apex:outputPanel>
+       <!--Commented below code as per story #GSSC 377-By RAJESH 23rd Dec 2019..If any one wants the below code please uncommented--
+                <apex:outputPanel rendered="{!IF(claimsRec.User_Landed_CC__c == true && (categoryMandate==true || custcomplerrormsg==true), true, false)}">
+                    <div><b>{!$Label.CSS_Customer_Complaint}</b></div>
+                </apex:outputPanel>
+
+                <apex:outputpanel rendered="{!IF(claimsRec.User_Landed_CC__c == true && categoryMandate==true, true, false)}">
+                    <div>{!$Label.CG_Category_Error}</div>
+                </apex:outputpanel>
+
+                <apex:outputpanel rendered="{!IF(claimsRec.User_Landed_CC__c == true && custcomplerrormsg==true, true, false)}">
+                    <div>{!$Label.CG_Complaint_Type_Error}</div>
+                </apex:outputpanel>
+                
+        <!--End #GSSC 377-By RAJESH 23rd Dec 2019-->        
+                <apex:outputPanel rendered="{!IF((wrapclaimsSCList!=null &&  wrapclaimsSCList.size>0) || FailModeErrorFlag == true, true, false)}">
+                    <div><b>{!$Label.CG_FailuresAndCampaigns}</b></div>
+                    <apex:outputPanel rendered="{!IF(FailModeErrorFlag == true, true, false)}">
+                        <div>{!$Label.CG_Fail_Mode_Error}</div>
+                    </apex:outputPanel>
+                    <div>
+                        <apex:repeat value="{!wrapclaimsSCList}" var="wrapSCList">
+                            <div>{!wrapSCList.odmStatusMsg}</div>
+                        </apex:repeat>
+                    </div>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!IF(FieldActionError == true, true, false)}">
+                    <div>{!$Label.CG_FA_FLAG}</div>
+                </apex:outputPanel>
+
+                <apex:outputPanel rendered="{!IF((wrapclaimsPOList!=null &&  wrapclaimsPOList.size>0) || trackingNumberReq== true, true, false)}">
+                    <div><b>{!$Label.CG_Partsandotherclaimbles}</b></div>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!IF(wrapclaimsPOList!=null &&  wrapclaimsPOList.size>0, true, false)}">
+                    <div>
+                        <apex:repeat value="{!wrapclaimsPOList}" var="wrapPOList">
+                            <div>{!wrapPOList.odmStatusMsg}</div>
+                        </apex:repeat>
+                    </div>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!IF(trackingNumberReq== true, true, false)}">
+                    <div>{!$Label.CG_Tracking_Number_Required}</div>
+                </apex:outputPanel>
+                <!--Parts Coverage Error-->
+                <apex:outputpanel rendered="{!IF(coveredPartsMsgFlag == true, true, false)}">
+                    <div><b>{!$Label.CSS_Parts}</b></div>
+                    <div>{!claimsRec.CoveragePartsErrMsg__c}</div>
+                </apex:outputpanel>
+
+                <!--TTML Coverage Error-->
+                <apex:outputpanel rendered="{!IF(coveredTTMLMsgFlag == true, true, false)}">
+                    <div><b>TTML</b></div>
+                    <div>{!claimsRec.CoverageTTMLErrMsg__c}</div>
+                </apex:outputpanel>
+
+                <!--OC Coverage Error-->
+                <apex:outputpanel rendered="{!IF(coveredOCMsgFlag == true, true, false)}">
+                    <div><b>OCs</b></div>
+                    <div>{!claimsRec.CoverageOCErrMsg__c}</div>
+                </apex:outputpanel>
+
+                <apex:outputpanel rendered="{!IF((isATT == true && isInfoOnly==false) || ((mutuallyExcSRTFlag == true && isInfoOnly==false) || olapReasonSRTFlag == true || admin902SRTFlag == true || dupAccessCodePercentReqFlag == true || olapFailureSRTFlag==true) 
+                                            || (wrapclaimsSRTList!=null &&   wrapclaimsSRTList.size>0) || (checklaborrate==true) || (coveredSRTMsgFlag == true) || claimsRec.SRT_FlexTime_Error__c == true
+                                            || (srtDuplicateError==true || (isSRTFailAccCodepresentError != null && isSRTFailAccCodepresentError != '')), true, false)}"> <!--GSSC 330, Added isSRTFailAccCodepresentError Condition-->
+                    <div><b>{!$Label.CSS_Claims_SRT}</b></div>
+                </apex:outputpanel>
+
+                <apex:outputpanel rendered="{!checklaborrate}">
+                    <div>{!$Label.CG_In_Shop_Labor_Rate_Error_Msg}</div>
+                </apex:outputpanel>
+
+                <apex:outputpanel rendered="{!IF(coveredSRTMsgFlag == true, true, false)}">
+                    <div>{!claimsRec.CoverageSRTErrMsg__c} </div>
+                </apex:outputpanel>
+
+                <apex:outputpanel rendered="{!IF(isATT==true && isInfoOnly==false, true, false)}">
+                    <div>{!$Label.CG_Actual_Technician_Time_Error}</div>
+                </apex:outputpanel>
+
+                <apex:outputpanel rendered="{!IF(claimsRec.SRT_FlexTime_Error__c ==true, true, false)}">
+                    <div>{!$Label.CSS_Error}: SRT Time should be greater than 0.0</div><!--GSSC - 24 changes-->
+                </apex:outputpanel>
+
+                <apex:outputpanel rendered="{!IF(mutuallyExcSRTFlag==true && isInfoOnly==false, true, false)}">
+                    <div>{!$Label.CSS_Error}: {!mutuallyExcSRTMsg}</div>
+                </apex:outputpanel>
+
+                <apex:outputpanel rendered="{!IF(olapReasonSRTFlag==true, true, false)}">
+                    <div>{!$Label.CSS_Error}: {!olapReasonSRTMsg}</div>
+                </apex:outputpanel>
+                <apex:outputpanel rendered="{!IF(admin902SRTFlag==true, true, false)}">
+                    <div>{!$Label.CSS_Error}: {!admin902SRTMsg}</div>
+                </apex:outputpanel>
+
+                <apex:outputpanel rendered="{!IF(dupAccessCodePercentReqFlag==true, true, false)}">
+                    <div>{!$Label.CSS_Error}: {!dupAccessCodePercentReqMsg}</div>
+                </apex:outputpanel>
+
+                <apex:outputpanel rendered="{!IF(olapFailureSRTFlag==true, true, false)}">
+                    <div>{!$Label.CSS_Error}: {!olapFailureSRTMsg}</div>
+                </apex:outputpanel>
+
+                <apex:outputpanel rendered="{!IF(srtDuplicateError==true, true, false)}">
+                    <div>{!srtDuplicateMsg}</div>
+                </apex:outputpanel>
+
+                <apex:outputPanel rendered="{!IF((wrapclaimsSRTList!=null &&   wrapclaimsSRTList.size>0), true, false)}">
+                    <div>
+                        <apex:repeat value="{!wrapclaimsSRTList}" var="wrapSRTList">
+                            <div>{!wrapSRTList.odmStatusMsg}</div>
+                        </apex:repeat>
+                    </div>
+                </apex:outputPanel>
+                <apex:outputText Value="{!isSRTFailAccCodepresentError}" escape="false" rendered="{!IF(isSRTFailAccCodepresentError!=null && isSRTFailAccCodepresentError != '', true, false)}"/> <!--GSSC-330--->
+                <apex:outputPanel rendered="{!IF(jobNotesCorrectMsg!=null && jobNotesCorrectMsg!='' && isInfoOnly==false, true, false)}"> <!--dealerCustomer==true &&  DEFECT #GSSC-499-->
+                    <div><b>{!$Label.CSS_Job_Notes}</b></div>
+                    <div>{!jobNotesCorrectMsg}</div>
+                </apex:outputPanel>
+
+                <apex:outputpanel rendered="{!ttmlerrorcoverlmt}">
+                    <div>
+                        <apex:repeat value="{!ttmlerrorlst}" var="ttmlerror">
+                            <div>Error: {!ttmlerror}</div>
+                        </apex:repeat>
+                    </div>
+                </apex:outputpanel>
+
+                <apex:outputPanel rendered="{!IF(travelRateError==true, true, false)}">
+                    <div>
+                        <apex:outputText value="{!$Label.CSS_Travel_Rate_Error_Msg_Dealer_Claim}" rendered="{!IF(claimsRec.IsDealerCreatedClaim__c == true, true,false)}"/><br/>
+                        <apex:outputText value="{!$Label.CSS_Travel_Rate_Error_Msg_Distributor_Claim}" rendered="{!IF(claimsRec.IsDealerCreatedClaim__c == false, true,false)}"/>
+                    </div>
+                </apex:outputPanel>
+
+                <apex:outputPanel rendered="{!IF(preSubmitclaimsRecMsg != null && preSubmitclaimsRecMsg.size>0,true,false)}">
+                    <div>
+                        <b>Verify and Submit</b>
+                    </div>
+                    <div>
+                        <apex:repeat value="{!preSubmitclaimsRecMsg}" var="PSList">
+                            <div>{!PSList}</div>
+                        </apex:repeat>
+                    </div>
+                </apex:outputPanel>
+
+            </div>
+        </apex:outputpanel>
+    </div>
+</apex:component>

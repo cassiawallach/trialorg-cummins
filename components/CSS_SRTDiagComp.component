@@ -1,0 +1,125 @@
+<apex:component id="srtdiagComp" controller="CSS_SRTDiag" layout="none" allowDML="true">
+
+    <apex:attribute name="RedirectPage4" type="string" description="Page Name"/>
+    <apex:attribute name="diagTime" type="String" description="Diagnosis Time"/>
+    <apex:attribute name="repTime" type="String" description="repair Time"/>
+    <apex:attribute name="decimalDiagTime" type="Decimal" description="Decimal Diagnosis Time"/>
+    <apex:attribute name="decimalrepTime" type="Decimal" description="Decimal repair Time"/> 
+    <apex:attribute name="techTimeReadonly" type="Boolean" description="Show technician in read only format" default="true"/> 
+    <apex:attribute name="vpageName" description="mainPageName" type="String" assignTo="{!pgeName}"/>
+
+    <script>
+        function qtyPressSrt(e,compId){
+            var technicianTimeVal= document.getElementById(compId.id).value;
+            if(((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105)) || ((e.which == 190 || e.which == 110) && !(technicianTimeVal.includes('.'))))
+            {
+            } 
+            else 
+            {
+                return false;
+            }        
+        }
+         // added by karthik G
+         function blockSpecialCharactersActtt(e,compId){
+            if((e.which > 47 && e.which <=57) || e.which == 9 || e.which == 11 ||  e.which == 0 || e.which == 8 || e.which == 46 ) 
+            {
+            } 
+            else 
+            {
+                return false;
+            }  
+            
+        }
+        
+        function validateActtt(compId){
+            var technicianTime= document.getElementById(compId.id).value;
+            var techTimelength=document.getElementById(compId.id).value.length;
+            var techTimesplit = [];
+
+            if(technicianTime.includes('.')){
+                techTimesplit = technicianTime.split(".");
+                var declength = techTimesplit[1].length;
+                if(declength > 1){    
+                    var newStr = technicianTime.substring(0, technicianTime.length-1);
+                    document.getElementById(compId.id).value = newStr;
+                    return false;    
+                }
+
+            }
+            else {
+                if(techTimelength == 5)
+                {
+                    var newStr1 = technicianTime.substring(0, technicianTime.length-1);
+                    var newStr2 = newStr1/10;
+                    document.getElementById(compId.id).value = newStr2;
+                }
+            }
+            if(techTimelength == 4 && !technicianTime.includes('.')){
+                var result = Number(document.getElementById(compId.id).value)/10;
+                document.getElementById(compId.id).value=result;
+            }
+        }
+    </script> 
+    <apex:outputpanel id="srtdiagpanel" >
+        <fieldset class="cmi_field_set">
+            <legend class="fs_legend">{!$Label.CSS_SRTs}</legend>
+            <div class="form-horizontal" role="form"> 
+                <div class="col-sm-4 col-xs-12 fset-label">
+                    <apex:outputLabel value="{!$ObjectType.CSS_SRT__c.Fields.Diagnosis_Time__c.Label}"></apex:outputLabel>
+                </div>
+                <div class="col-sm-6">{!jobOrdr.DiagTimeExtendedHrsCalculation__c}</div>
+                <div class="clearfix"></div>
+                
+                <div class="col-sm-4 col-xs-12 fset-label">
+                        <apex:outputLabel value="{!$Label.CG_TotalSRTHours}"></apex:outputLabel></div>
+                   <div class="col-sm-6">{!jobOrdr.TotalSRTExtendedHours__c}</div>
+                <div class="clearfix"></div>
+                <!--  Story 97304 Changes start -->
+                <apex:outputPanel rendered="{!IF(techTimeReadonly == true,false,true)}">
+                    <div class="col-md-4 col-xs-12 fset-label">
+                        <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.Fields.Actual_Technician_Time__c.Label}">
+                         <!--   <apex:outputPanel rendered="{!IF(isClaimEnabled, true,false)}"> -->
+                          <!--  <apex:outputpanel rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c, true, false)}">
+                                <span class="glyphicon-asterisk" style="color:red"></span> </apex:outputpanel>-->
+                          <!--  </apex:outputPanel> -->
+                        </apex:outputLabel></div> 
+                    <div class="col-sm-6">
+                        <apex:inputField value="{!jobOrdr.Actual_Technician_Time__c}"  onkeydown="return qtyPressSrt(event,this)" onkeyup="validateActtt(this)" html-maxlength="5" id="acttt"  onkeypress="return blockSpecialCharactersActtt(event,this)" /> 
+                        <!--<apex:outputLabel rendered="{!IF(isError, true, false)}" style="color:red" id="error1"> {!$Label.css_You_must_enter_value}.</apex:outputLabel>-->
+                      <!--  <apex:outputLabel rendered="{!IF(mainContr.reqATTBoolean == true, true, false)}" style="color:red" id="error1"> {!$Label.css_You_must_enter_value}.</apex:outputLabel> -->
+ <!--commented as part of story number GSSC-108-->
+ <!--<apex:outputLabel rendered="{!IF(jobOrdr.Actual_Technician_Time__c == null && ($Setup.css_header_nav__c.RSWButtonEnable__c), true, false)}" style="color:red" id="error1"> {!$Label.css_You_must_enter_value}.</apex:outputLabel>-->
+                    </div>
+                    <div></div>
+                </apex:outputPanel>
+                <div class="col-sm-4 cmi-tar"></div><br/>
+                <div class="col-sm-8 col-xs-12">   <a href="{!RedirectPage4}" style="text-decoration:underline"> {!$Label.css_View_SRT_Detail} </a></div>
+
+            </div>
+            <div class="clearfix"></div>
+            <apex:outputPanel rendered="{!IF(techTimeReadonly == true,false,true)}">   
+                <div>
+
+                    <hr />
+                    <div class="col-sm-4 cmi-tar"></div>
+                    <div class="col-sm-6 col-xs-9 ">  
+                            <apex:commandButton value="Save"  styleClass="saveButton" action="{!techSave}" status="TechTimeSave" reRender="srtdiagpanel, error1"></apex:commandButton>
+                            <!-----Added action status to avoid 101 SOQL on page load onclick of save --->
+                            <apex:actionStatus id="TechTimeSave" startText="Processing.."></apex:actionStatus>     
+                    </div>
+                </div> 
+            </apex:outputPanel>
+
+            <!-- <apex:outputPanel rendered="{!IF(techTimeReadonly == true,true,false)}">
+
+<div class="col-md-4 col-xs-12 fset-label">
+<apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.Fields.Actual_Technician_Time__c.Label}"></apex:outputLabel></div> 
+<div class="col-sm-6">
+<apex:outputField value="{!workJob.Actual_Technician_Time__c}" />
+</div>   
+</apex:outputPanel>  -->
+            <!--  Story 97304 Changes end -->
+
+        </fieldset>
+    </apex:outputpanel>
+</apex:component>

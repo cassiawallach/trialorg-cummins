@@ -1,0 +1,265 @@
+<apex:page id="CyberSourcePaymentPage" controller="OSM_SW_CyberSourcePayment" sidebar="false" showHeader="false" standardStylesheets="false">
+<script id="PaymentCC-Both" type="text/template">
+    <div class="ccPaymentOuterContainer">
+        <form method="POST" name="newCCForm" id="newCCForm" target="CC_Cybersource_pmt_iframe" action="{{postUrl}}">
+            <input type="hidden" name="access_key" value="{{accessKey}}" />
+            <input type="hidden" name="profile_id" value="{{profileId}}" />
+            <input type="hidden" name="transaction_uuid" value="{{transactionId}}" />
+            <input type="hidden" name="signed_field_names" value="{{signedFields}}" />
+            <input type="hidden" name="signature" value="{{signedData}}" />
+            <input type="hidden" name="unsigned_field_names" value="{{unsignedFields}}" />
+            <input type="hidden" name="reference_number" value="{{referenceNumber}}" />
+            <input type="hidden" name="transaction_type" value="{{transactionType}}" />
+            <input type="hidden" name="locale" value="{{locale}}" />
+            <input type="hidden" name="amount" value="{{amount}}" />
+            <input type="hidden" name="currency" value="{{currencyCode}}" />
+            <input type="hidden" name="signed_date_time" value="{{utcDate}}" />
+            <input type="hidden" name="bill_to_forename" value="{{firstName}}" />
+            <input type="hidden" name="bill_to_surname" value="{{lastName}}" />
+            <input type="hidden" name="bill_to_email" value="{{email}}" />
+            <input type="hidden" name="bill_to_address_line1" value="{{billingAddressFirstLine}}" />
+            <input type="hidden" name="bill_to_address_city" value="{{billingAddressCity}}" />
+            <input type="hidden" name="bill_to_address_country" value="{{billingAddressCountryIsoCode}}" />
+            <input type="hidden" name="bill_to_address_state" value="{{billingAddressStateCode}}" />
+            <input type="hidden" name="bill_to_address_postal_code" value="{{billingAddressPostalCode}}" />
+            <input type="hidden" name="payment_method" value="{{paymentMethod}}" />
+            <input type="hidden" name="ignore_avs" value="{{ignoreAvs}}" />
+            <input type="hidden" name="override_custom_receipt_page" value="{{returnURL}}" />
+            <input type="hidden" name="merchant_defined_data1" value="{{cartSFId}}" />
+        </form>
+    </div>
+            
+               
+                            
+    <div class="payment_cc_information" style="background-color:white">
+        <iframe id="CC_Cybersource_pmt_iframe" name="CC_Cybersource_pmt_iframe" width="108%" height="1190px" scrolling="auto" style="border:0px">
+        </iframe>
+    </div>
+</script>
+<script type="text/javascript">
+
+var rerenderBAMSIFrame;
+   if (window.addEventListener)
+    {
+      window.addEventListener("message", receiveMessage, false);
+     }
+   else if (window.attachEvent)
+    {
+     window.attachEvent("onmessage", receiveMessage);
+    }
+  
+  
+ 
+
+  
+    function receiveMessage(event)
+    {
+     
+      console.log('=====INSIDE receiveMessage====');
+        if (event && event.data)
+        {
+            // This is the response from the payment gateway
+            // var responseData = event.data;
+            var responseData = JSON.parse(event.data);
+            if(responseData){
+             //console.log('======response Data Got from BAMS ====='+JSON.stringify(responseData));
+           }
+           
+            CCRZ.subsc.cyberSourcePaymentRemoteActions.processCybersourceResponse(responseData, function(response)
+            {
+                console.log('==Inside callback of processCybersourceResponse==');
+                if (response.success) 
+                {
+                    var responseDataFromOSM = response.data;
+                    //console.log('======response Data in processCybersourceResponse====='+JSON.stringify(responseDataFromOSM));
+                    //console.log(responseDataFromOSM);
+                    //console.log(response);
+                    
+                        var paymentData =
+                        {
+                            
+                            token : responseDataFromOSM.paymentToken,
+                            accountType : 'cc',
+                            transactionType : responseDataFromOSM.cardType, // Added for MAR-1739
+                            accountNumber : responseDataFromOSM.accountNumber, // Added for MAR-1739
+                            transactionCode : responseDataFromOSM.bankTransRef,
+                            transactionSubcode : responseDataFromOSM.bamsMarchantNo ////Added by Vineet on 26/10/1028
+                            
+                        };
+                        CCRZ.pubSub.trigger('action:processPayment',paymentData);
+                    
+                }
+                else
+                {
+                    // handle error condition here
+                    //refresh the iframe also
+                     CCRZ.pubSub.trigger('action:paymentViewReady','cc',function(options)
+                        {
+                            CCRZ.payment = CCRZ.payment||{views:{}};
+                            CCRZ.payment.views.cc = new CCRZ.views.PaymentsCCView({
+                                selector : options.selector
+                            });
+                        });
+                        var responseDataFromOSM = response.data;
+                        //console.log('error processing CC data=='+responseDataFromOSM);
+                        if(!_.isUndefined(responseDataFromOSM)){
+                            
+                            //var errContext = CCRZ.createPageMessage('ERROR', "storedpayment-messagingSection-Error", responseDataFromOSM.message);
+                            //CCRZ.pubSub.trigger("pageMessage", errContext);
+                            const divElement = document.getElementById("carddecline-error");
+                            divElement.style.cssText="background-color: rgb(254, 238, 237); padding: 10px; border: 2px solid red;font-size:14px;display:block;";
+                            
+                            var errorDiv = "<div style='background-color: #FEEEED;'>"+
+                            "<span class='icon-Warning' style='color:red; font-size:18px; vertical-align: middle;'></span>&nbsp;"+responseDataFromOSM.message+"</div>";
+                            divElement.innerHTML = errorDiv;
+                            
+                            
+                        }
+                        else
+                        {
+                            /*var errContext = CCRZ.createPageMessage('ERROR', "storedpayment-messagingSection-Error", '{!$Label.OSM_BAMS_ERROR_MSG}');
+                            CCRZ.pubSub.trigger("pageMessage", errContext);*/
+                            document.getElementById("customErroDiv").style.display = "block" ;
+                        }
+                        
+                        
+                }
+            });
+            
+            
+            
+            
+        }
+        else
+        {
+            console.log('Error processing payment');
+            //console.log('Error data: ' + event.data);
+            // Handle error condition here
+        }
+    }
+    jQuery(function($)
+    {
+        CCRZ.subsc = _.extend(CCRZ.subsc||{});
+        CCRZ.subsc.cyberSourcePaymentRemoteActions = _.extend(
+        {
+            className : 'OSM_SW_CyberSourcePayment',
+            getCybersourceHostedFormData : function(callback)
+            {
+                this.invokeCtx('getCybersourceHostedFormData',
+                function(resp, evt)
+                {
+                    //console.log('OSM_SW_CyberSourcePayment getCybersourceHostedFormData %o',resp);
+                    callback(resp, evt);
+                },
+                {
+                    buffer : false, // this call will be executed by itself
+                    nmsp   : false  // defines that this is a call to a subscriber class
+                }); // end invokeCtx call
+            },
+            processCybersourceResponse : function(jsonResponseData,callback)
+            {
+              console.log('===Calling backend CTRL');
+                this.invokeCtx('processCybersourceResponse',
+                jsonResponseData,
+                function(resp, evt)
+                {
+                    callback(resp, evt);
+                },
+                {
+                    buffer : false, // this call will be executed by itself
+                    nmsp   : false  // defines that this is a call to a subscriber class
+                }); // end invokeCtx call
+            }
+        
+        },CCRZ.RemoteInvocation);
+
+        CCRZ.views.PaymentsCCView = CCRZ.CloudCrazeView.extend(
+        {
+            viewName : "PaymentsCCView",
+            managedSubView : true,
+            templateDesktop : CCRZ.util.template("PaymentCC-Both"),
+            templatePhone : CCRZ.util.template("PaymentCC-Both"),
+            init : function(options)
+            {
+                var theView =  this;
+                this.selector = options.selector;
+                CCRZ.subsc.cyberSourcePaymentRemoteActions.getCybersourceHostedFormData(function(response)
+                {
+                    if (response.success)
+                    {
+                        theView.model = response.data.cybersourceHostedPageData;
+                        
+                        //this code replaces the &amp; to &
+                        if(!(_.isUndefined(theView.model)) && !(_.isUndefined(theView.model.returnURL)) )
+                        {
+                            var decoded123 = $.parseHTML(theView.model.returnURL)[0].textContent; 
+                            console.log('decoded123==='+decoded123);
+                            //theView.model.returnURL = unescape(decoded123);
+                            theView.model.returnURL = decoded123;
+                        }
+                        else
+                        {
+                            //tbd check message
+                            // var errContext = CCRZ.createPageMessage('ERROR', "storedpayment-messagingSection-Error", 'There is some issue in processing request.Please try later.');
+                            // CCRZ.pubSub.trigger("pageMessage", errContext);
+                        }
+                        theView.render();
+                        CCRZ.pubSub.trigger('action:paymentViewInit',theView);
+                    }
+                });
+            },
+            renderDesktop : function()
+            {
+                this.setElement(this.selector);
+                this.$el.html(this.templateDesktop(this.model));
+                this.submitForm();
+            },
+            submitForm: function()
+            {
+               $('#newCCForm').submit();
+             },
+            renderPhone : function()
+            {
+                this.setElement(this.selector);
+                this.$el.html(this.templatePhone(this.model));
+                this.submitForm();
+            }
+        });
+        
+        console.log('=====TRIGGERING action:paymentViewReady====');
+        CCRZ.pubSub.trigger('action:paymentViewReady','cc',function(options)
+        {
+            
+            console.log('=====TRIGGERING CALLBACK action:paymentViewReady====');
+            CCRZ.payment = CCRZ.payment||{views:{}};
+            CCRZ.payment.views.cc = new CCRZ.views.PaymentsCCView({
+                selector : options.selector
+            });
+        });
+        
+        
+        
+ 
+        /*
+        CCRZ.pubSub.on('view:PaymentView:refresh',function(){
+        CCRZ.pubSub.on('view:PaymentProcessorView:refresh',function(){
+         
+        console.log('Refreshing the Payment CC View');
+         CCRZ.pubSub.trigger('action:paymentViewReady','cc',function(options)
+        {
+            console.log('=====TRIGGERING CALLBACK action:paymentViewReady====');
+            CCRZ.payment = CCRZ.payment||{views:{}};
+            CCRZ.payment.views.cc = new CCRZ.views.PaymentsCCView({
+                selector : options.selector
+            });
+        });
+        
+        });
+        
+        });
+        */
+         
+        
+    });
+</script>
+</apex:page>

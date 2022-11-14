@@ -1,0 +1,112 @@
+<!--
+/**
+* Created by salesforce.com, inc.
+* Copyright 2018 salesforce.com, inc. All rights reserved.
+
+* Redistribution and use in source or binary forms, with or without
+* modification is PROHIBITED.
+*/
+ -->
+<apex:page id="ProductDetails" applyHtmlTag="false"  controller="ccrz.cc_ctrl_ProductDetailRD" title="{!productName}"  extensions="ccrz.cc_ctrl_LocaleExtension" docType="html-5.0" sidebar="false" showHeader="false" cache="{!widgetConfiguration[LOWER('PD.cache')]}" standardStylesheets="false" language="{!userLanguageCode}">
+	<apex:outputPanel rendered="{!isBotRequest == false}" layout="none">
+		<apex:composition template="{!IF(overridePageTemplate != null, overridePageTemplate, 'cc_tmpl_TwoColRD')}">
+			<apex:define name="meta">
+				<title><apex:outputText value="{!productSEOTitle}" /></title>
+				<meta name="description" content="{!HTMLENCODE(productSEODescription)}" />
+				<meta name="keywords" content="{!HTMLENCODE(productSEOKeywords)}" />
+				<meta property="og:description" content="{!HTMLENCODE(productSEODescription)}"/>
+			</apex:define>
+
+			<apex:define name="splash">
+				<c:cc_Hero divClass="{!LOWER(pageName)} {!userLanguageCode}" rendered="{!widgetConfiguration[LOWER('BN.Enabled')]}" />
+			</apex:define>
+
+			<apex:define name="WidgetBoxL">
+				<apex:outputPanel layout="none" rendered="{!useWidgetLeft}" >
+					<apex:include pageName="{!widgetLeftPage}" />
+				</apex:outputPanel>
+			</apex:define>
+
+			<apex:define name="MiniQuickOrderBox">
+				<div class="quick-order"></div>
+			</apex:define>
+
+			<apex:define name="MiniCartBox">
+				<div class="minicart"></div>
+			</apex:define>
+
+			<apex:define name="ReOrderBox">
+				<div class="reorderContainer"></div>
+			</apex:define>
+
+			<apex:define name="body">
+				<apex:outputPanel layout="none" rendered="{!useBodyBegin}" >
+					<apex:include pageName="{!bodyBeginPage}" />
+				</apex:outputPanel>
+				<div class="prodDetailContainer"></div>
+
+				<apex:outputPanel layout="none" rendered="{!useBodyEnd}" >
+					<apex:include pageName="{!bodyEndPage}" />
+				</apex:outputPanel>
+			</apex:define>
+
+			<apex:define name="htmlbodyX">
+				<script>
+					CCRZ.remoteAction.PLfetchCompositeProducts = '{!$RemoteAction.cc_ctrl_ProductDetailRD.fetchCompositeProducts}';
+				</script>
+				<script>
+					CCRZ.detailData = new Object;
+					CCRZ.detailData.jsonProductData = {!jsonProductData};
+					CCRZ.detailData.pageSections = {!jsonPageSectionData};
+					CCRZ.detailData.relatedData = {!jsonRelatedData};
+					var showCategories = true;
+					var productList = function(categoryId) {
+						document.location = CCRZ.pageUrls.productList + "?viewState=ListView&cartID=" + CCRZ.pagevars.currentCartID + "&categoryId=" + categoryId+getCSRQueryString();
+					}
+					var productDetails = function(productId, cartId) {
+						document.location = "{!JSENCODE($Page.ProductDetails)}?viewState=DetailView&cartID=" + CCRZ.pagevars.currentCartID + "&sku=" + productId+getCSRQueryString();
+					}
+					var homePage = function() {
+						document.location = "{!JSENCODE($Page.HomePage)}?cartID=" + CCRZ.pagevars.currentCartID + getCSRQueryString();
+					}
+					var cartDetails = function() {
+						document.location = "{!JSENCODE($Page.Cart)}?cartID=" + CCRZ.pagevars.currentCartID + getCSRQueryString();
+					}
+					var sellerDetail = function(sellerId) {
+						document.location = "{!$Page.SellerDetail}?selid=" + sellerId + "&cartID=" + CCRZ.pagevars.currentCartID + getCSRQueryString();
+					}
+					var orderDetails = function(orderId) {
+						document.location = "{!$Page.OrderView}" + CCRZ.buildQueryString("?o=" + orderId);
+					};
+				</script>
+
+				<!-- common components -->
+				<c:cc_PageMessagesRD />
+				<c:cc_headerRD ccCtrl="{!ProductDetailController}" rendered="{!widgetConfiguration[LOWER('H.Enabled')]}" />
+				<c:cc_topMenuRD ccCtrl="{!ProductDetailController}" rendered="{!widgetConfiguration[LOWER('TM.Enabled')]}" />
+				<c:cc_CategoryTreeRD rendered="{!widgetConfiguration[LOWER('CT.Enabled')]}" />
+				<c:cc_BreadCrumbRD rendered="{!widgetConfiguration[LOWER('BC.Enabled')]}" />
+				<c:cc_WishlistPicker rendered="{!widgetConfiguration[LOWER('WL.PkrOn')]}" />
+				<c:cc_MiniCartDetailsRD rendered="{!widgetConfiguration[LOWER('MC.Enabled')]}" />
+				<c:cc_MiniQuickOrderRD rendered="{!widgetConfiguration[LOWER('QO.Enabled')]}" />
+				<c:cc_ProductSearchWidgetNavRD ccCtrl="{!ProductDetailController}" rendered="{!widgetConfiguration[LOWER('SB.Enabled')]}" />
+				<c:cc_productSearchWidget pCcCtrl="{!ProductDetailController}" rendered="{!IF(OR(widgetConfiguration[LOWER('H.Enabled')] == 'TRUE', widgetConfiguration[LOWER('SB.Enabled')] == 'TRUE'), true, false)}" />
+				<c:cc_promoRD pageLoc="Product Detail" rendered="{!widgetConfiguration[LOWER('PM.Enabled')]}" />
+				<c:cc_EffectiveAccountSelector rendered="{!widgetConfiguration[LOWER('EFF.Enabled')]}" />
+				<c:cc_ReOrder3 rendered="{!AND(widgetConfiguration[LOWER('QR.Enabled')] == 'TRUE', NOT(ISPICKVAL($User.UserType,'Guest')))}"/>
+
+				<!-- page-specific components -->
+				<c:cc_ProductDetailInvalidSKURD rendered="{!IF(productData == null, true, false)}"  ctrl="{!ProductDetailController}"/>
+				<c:cc_ProductDetailStandardRD rendered="{!IF(productData != null && productType == 'Product', true, false)}"/>
+				<c:cc_ProductDetailBundleRD rendered="{!IF(productData != null && (productType == 'Kit' || productType == 'Bundle'), true, false)}"/>
+				<c:cc_ProductDetailAggregateRD rendered="{!IF(productData != null && productType == 'Aggregated', true, false)}"/>
+				<c:cc_ProductDetailAssemblyRD rendered="{!IF(productData != null && productType == 'Assembly', true, false)}"/>
+				<c:cc_ProductDetailDynamicKitRD rendered="{!IF(productData != null && productType == 'Dynamic Kit', true, false)}"/>
+				<c:cc_ProductDetailRD ctrl="{!ProductDetailController}" />
+			</apex:define>
+
+		</apex:composition>
+	</apex:outputPanel>
+
+	<c:cc_ProductDetailsStatic rendered="{!isBotRequest}"/>
+</apex:page>

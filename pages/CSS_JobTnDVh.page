@@ -1,0 +1,1723 @@
+<apex:page id="tndpages" Controller="css_tnd_job" showHeader="false" standardStylesheets="false" action="{!updateNotes}" >
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content=""/>
+    <meta name="author" content="Cummins Inc."/>
+    <meta name="copyright" content="(C)2015 Cummins Inc., Box 3005, Columbus, IN 47202-3005 U.S.A."/> 
+    <title>{!$Label.css_Cummins_Service_System} | {!$Label.css_Triage} &amp; {!$Label.css_Diagnosis}  </title>
+    <!--  <c:css_styles /> -->
+    <c:CSS_Standard_IntakeStyles />
+    <c:css_ExtraStyles />
+    <style>
+    .PopupBackground{
+        background-color: white;
+        opacity: 0.8;
+        filter: alpha(opacity = 20);
+    position: absolute;
+        width: 100%;
+        height: 200%;
+        top: -100px;
+        left: 10px;
+        z-index: 9998;
+    }
+
+    .AccountEdit{
+        background-color: white;
+        border-width: 8px;
+       border-style: solid;
+        z-index: 9999;
+        left: 30%;
+        padding:10px;
+        position: fixed;
+        width: 600px;
+       margin-left: 75px;
+        top:200px;
+
+    }
+</style>
+    <script type="text/javascript">
+    j$ = jQuery.noConflict();
+    j$(document).ready(function() {
+        j$('#open').click(function(){
+            j$('#grpopup').fadeIn();
+            return false;
+        });
+        j$('#close').click(function(){
+            j$('#grpopup').fadeOut();
+            return false;
+        });   
+        j$('#delcancel').click(function(){
+            j$('#grpopup').fadeOut();
+            return false;
+        });  
+    });
+    
+    <!-------------------attachmnets related code -------------------------------------------->
+        function myPopup2() {
+            window.open( "/apex/Css_AuditTrail?id={!workJob.Id}", "myWindow", "status = 1, height = 600, width = 800, resizable = 1,scrollbars=yes" );
+        }
+    
+    function abc()
+    {
+        
+        window.confirm('Are you sure?', DeleteFile('{!jobAttach}.Id}'));
+        //DeleteFile('{!jobAttach}.Id}');
+    }
+    
+    <!--Modified as ROD:86567-->
+     function disableDeleteButton(){
+        document.getElementById("tndpages:TnDfrm:theDeleteButton").disabled=true;
+        
+        }
+    window.onload=function(){
+        document.getElementById('counter_desc1').value= 100-document.getElementById('reviewHistory:Intakefrm:uPopup:popInnerOutputPnl1:description_upl1').value.length;
+        document.getElementById('counter_desc2').value= 100-document.getElementById('reviewHistory:Intakefrm:uPopup:popInnerOutputPnl1:description_upl2').value.length;
+        document.getElementById('counter_desc3').value= 100-document.getElementById('reviewHistory:Intakefrm:uPopup:popInnerOutputPnl1:description_upl3').value.length;
+        document.getElementById('edit_desc1').value= 100-document.getElementById('reviewHistory:Intakefrm:EditPopup:popInnerOutputPn5:edit_desc1_textarea').value.length;
+    }
+    
+    //InsiteImage file download
+   function downloadFile1(endPointStr, tokenStr, attachId) {
+       //alert('entered download into downloadFile function...tokenStr>>>:'+tokenStr+' endPointStr>>:'+endPointStr);
+        try {
+            var statusEle = document.getElementById('{!$Component.TnDfrm.statusCodeId}');
+            var statusStr = statusEle.value;
+            //alert('status code>>>>>:'+statusStr);
+            if(statusStr !=200){
+   window.open('/apex/CSS_InsiteImageError?errorCode='+statusStr, 'target');             
+            }else{
+                var tokenElement = document.getElementById('{!$Component.TnDfrm.attId}');
+                var attIdStr = tokenElement.value;
+                //alert('attIdStr>>>>>:'+attIdStr);
+                window.open('/servlet/servlet.FileDownload?file='+attIdStr, 'target');
+           }
+            
+         } catch(err) {
+            alert(err.message);
+            console.log('Error message>>>:'+err.message);
+        }
+   }
+    
+    
+    function switchMenu(obj,obj1,obj2,obj3) 
+    {
+        var el = document.getElementById(obj);                                       
+        if ( el.style.display != 'none' ) {
+            el.style.display = 'none';
+        }
+        else {
+            el.style.display = '';
+        }
+        var e2 = document.getElementById(obj1);                                       
+        if ( e2.style.display != 'none' ) {
+            e2.style.display = 'none';
+        }
+        else {
+            e2.style.display = '';
+        }
+        var e3 = document.getElementById(obj2);                                       
+        if ( e2.style.display != 'none' ) {
+            e3.style.display = 'none';
+        }
+        else {
+            e3.style.display = '';
+        }
+        var e4 = document.getElementById(obj3);                                       
+        if ( e4.style.display != 'none' ) {
+            e4.style.display = 'none';
+        }
+        else {
+            e4.style.display = '';
+        }
+    }
+    function textCounter(field,field2,maxlimit)
+    {
+        var countfield = document.getElementById(field2);
+        if ( field.value.length > maxlimit ) 
+        {
+            field.value = field.value.substring( 0, maxlimit );
+            return false;
+        } else 
+        {
+            countfield.value = maxlimit - field.value.length;
+        }
+    }
+    
+    var newWin=null; 
+    function openLookupPopup(name,id)
+    {                    
+        var url="/apex/css_attach?namefield=" + name + "&idfield=" + id;
+        newWin=window.open(url, 'Popup','height=600,width=700,left=100,top=100,resizable=no,scrollbars=yes,toolbar=no,status=no,location=no');
+        if (window.focus)                                        
+            newWin.focus();                                                               
+        return false;
+    }
+    //Defect fix 61124 start
+    function DisableButton1()
+    {
+         document.getElementById("tndpages:TnDfrm:Attach1").disabled=true;
+         processup();
+        return false; 
+    }
+    //Defect fix 61124 end
+    function closeLookupPopup()
+    {
+        if (null!=newWin)                                      
+            newWin.close();                                        
+    }
+    function firstSearch(ev){
+        if (window.event && window.event.keyCode == 13 || ev.which == 13) {
+            callFirstSearch();
+        }
+    }
+    function secondSearch(ev){
+        if (window.event && window.event.keyCode == 13 || ev.which == 13) {
+            callsecondSearch();
+        }
+    }
+    function thirdSearch(ev){
+        if (window.event && window.event.keyCode == 13 || ev.which == 13) {
+            callthirdSearch();
+        }
+    }
+    function callIntake(){ window.open( "/apex/CSS_JobIntake?id={!workjob.Id}", '_self');}
+    //function callRepair(){ window.open( "/apex/CSS_Job_Detail?id={!workjob.Id}&nto=DET", '_self');}
+    function callRepair(){ window.open( "/apex/CSS_JobRepair?id={!workjob.Id}&nto=DET", '_self');}
+    function callJobPlan(){ window.open( "/apex/CSS_JobPlan?id={!workjob.Id}", '_self');}
+    function callJobInvoice(){ window.open( "/apex/CSS_JobInvoice?id={!workjob.Id}", '_self');}
+    </script> 
+    
+    <apex:outputPanel id="exeReload" >
+        <script>
+            function redirectPage(){
+                //alert('hello');
+                var bool = '{!cancelSJWrapperObj1.errorFlag}';
+                //alert(bool);
+                if(bool=='false'){
+                    //alert('hi');
+                    document.location.href = '/apex/CSS_Job_Detail?nto=HOME';
+                }
+            }
+            
+            function ClearErrorMessage(){
+                document.getElementById('CancelErrorId').innerHTML = '';
+            }
+            
+            function CloseErrorMessage(){
+                document.getElementById('closeErrorId').innerHTML = '';
+                document.getElementById('closeErrorId1').innerHTML = '';
+            }
+        </script>
+           <script>
+     var fileAttachSaveBtn;
+    function checkFileSize()
+    {
+        if ($("[id$='file_File_1']")[0].files.length > 0) {
+   
+    var uploadFileSize = $("[id$='file_File_1']")[0].files[0].size;
+    if (uploadFileSize > 10485760) {
+        //alert('File uploads must be less than 10mb in size. Your file is: '+(Math.round(uploadFileSize/1024)) + 'k');
+        var x=document.getElementById('tndpages:TnDfrm:error12');
+                     x.style.display = "";
+        var y=document.getElementById('tndpages:TnDfrm:Attach1');
+                     y.style.display = "none";
+        var z=document.getElementById('tndpages:TnDfrm:disableAttach1');
+                     z.style.display = "";
+    }
+    else {
+        //   alert('Else is calling for save method');
+        var x=document.getElementById('tndpages:TnDfrm:error12');
+                     x.style.display = "none";
+        fileAttachSaveBtn = true;
+        if(fileAttachSaveBtn == true && fileAttachSaveBtn12 == true && fileAttachSaveBtn13 == true){
+        var y=document.getElementById('tndpages:TnDfrm:Attach1');
+                     y.style.display = "";
+        var z=document.getElementById('tndpages:TnDfrm:disableAttach1');
+                     z.style.display = "none";  
+            }
+    }
+}
+         else {
+        //  alert('Else is calling for save method');
+        var x=document.getElementById('tndpages:TnDfrm:error12');
+                     x.style.display = "none";
+    }
+    }
+    </script>
+   <script>
+ 
+
+    
+    var fileAttachSaveBtn12;
+    function checkFileSize12()
+    {
+        if ($("[id$='file_File_2']")[0].files.length > 0) {
+   
+    var uploadFileSize = $("[id$='file_File_2']")[0].files[0].size;
+    if (uploadFileSize > 10485760) {
+        // alert('File uploads must be less than 10mb in size. Your file is: '+(Math.round(uploadFileSize/1024)) + 'k');
+        var x=document.getElementById('tndpages:TnDfrm:error11');
+                     x.style.display = "";
+        var y=document.getElementById('tndpages:TnDfrm:Attach1');
+                     y.style.display = "none";
+        var z=document.getElementById('tndpages:TnDfrm:disableAttach1');
+                     z.style.display = "";
+    }
+    else {
+        // alert('Else is calling for save method');
+        var x=document.getElementById('tndpages:TnDfrm:error11');
+                     x.style.display = "none";
+         fileAttachSaveBtn12 = true;
+        if(fileAttachSaveBtn == true && fileAttachSaveBtn12 == true && fileAttachSaveBtn13 == true){
+        var y=document.getElementById('tndpages:TnDfrm:Attach1');
+                     y.style.display = "";
+        var z=document.getElementById('tndpages:TnDfrm:disableAttach1');
+                     z.style.display = "none";  
+            }
+    }
+}
+        else {
+        // alert('Else is calling for save method');
+        var x=document.getElementById('tndpages:TnDfrm:error11');
+                     x.style.display = "none";
+    }
+    }
+    
+  </script>
+    <script>
+     var fileAttachSaveBtn13;
+    function checkFileSize13()
+    {
+        if ($("[id$='file_File_3']")[0].files.length > 0) {
+    
+    var uploadFileSize = $("[id$='file_File_3']")[0].files[0].size;
+    if (uploadFileSize > 10485760) {
+        // alert('File uploads must be less than 500k in size. Your file is: '+(Math.round(uploadFileSize/1024)) + 'k');
+        var x=document.getElementById('tndpages:TnDfrm:error13');
+                     x.style.display = "";
+        var y=document.getElementById('tndpages:TnDfrm:Attach1');
+                     y.style.display = "none";
+        var z=document.getElementById('tndpages:TnDfrm:disableAttach1');
+                     z.style.display = "";
+    }
+    else {
+        // alert('Else is calling for save method');
+        var x=document.getElementById('tndpages:TnDfrm:error13');
+                     x.style.display = "none";
+        fileAttachSaveBtn13 = true;
+        if(fileAttachSaveBtn == true && fileAttachSaveBtn12 == true && fileAttachSaveBtn13 == true){
+        var y=document.getElementById('tndpages:TnDfrm:Attach1');
+                     y.style.display = "";
+        var z=document.getElementById('tndpages:TnDfrm:disableAttach1');
+                     z.style.display = "none";  
+            }
+    }
+}
+        else {
+        // alert('Else is calling for save method');
+        var x=document.getElementById('tndpages:TnDfrm:error13');
+                     x.style.display = "none";
+    }
+    }
+    </script>
+    </apex:outputPanel>
+    
+    <c:CSS_JavaScript />   
+    
+    
+    
+    <div class="container-fluid1">
+        <apex:composition template="CSS_STDTemplate" />
+        <apex:define name="body">          
+            
+            <apex:form id="TnDfrm" >
+                <apex:actionFunction name="processup" action="{!processUpload}" /> <!----61124 attchments Defect fix ---->
+                <div class="">
+                    <apex:outputpanel id="DisplayChevs2" rendered="{!IF(workjob.id ==null , false , true)}">
+                        <div class="">
+                            <ul class="nav nav-tabs desk-tabs" id="JobDetailTab" style="background-color: #eee;">
+                                <!-- <li><a href="/apex/CSS_Job_Detail?id={!workjob.Id}&nto=INT" data-toggle="tab">Intake</a></li> -->
+                                <li><a href="" style="color:#888;" class="not-active">{!$Label.css_Intake}</a></li>
+                                <li class="active"><a href="#tnd" data-toggle="tab">{!$Label.css_Triage} &amp; {!$label.css_Diagnosis}</a></li>
+                                <!--<li><a href="/apex/CSS_Job_Detail?id={!workjob.Id}&nto=PLN" data-toggle="tab">Job Plan</a></li>-->
+                                <!--<li><a href="#" class="not-active" onClick="callJobPlan()">{!$Label.css_Job_Plan}</a></li>  -->
+                                <li><a href="#" style="{!IF(showJobPlanBoolean = true,'','color:#888;')}" class="{!IF(showJobPlanBoolean = true,'active','not-active')}" onClick="{!IF(showJobPlanBoolean = true,'callJobPlan();','')}">{!$Label.css_Job_Plan}</a></li>
+                                <li><a href="/apex/CSS_Job_Detail?id={!workjob.Id}&nto=REP" onClick="callRepair()" data-toggle="tab">{!$Label.css_Repair}</a></li>
+                                <!--<li><a href="/apex/CSS_Job_Detail?id={!workjob.Id}&nto=WAR" data-toggle="tab">Warranty Claim</a></li> -->
+                                <li><a href="" style="color:#888;" class="not-active">{!$Label.css_Warramnty_Claim}</a></li>
+                                <!--<li><a href="/apex/CSS_Job_Detail?id={!workjob.Id}&nto=INV" data-toggle="tab">Invoice</a></li>-->
+                               <li><a href="#" style="{!IF($Setup.css_header_nav__c.CG_Invoice_Check__c = true,'','color:#888;')}" class="{!IF($Setup.css_header_nav__c.CG_Invoice_Check__c = true,'active','not-active')}" onclick="{!IF($Setup.css_header_nav__c.CG_Invoice_Check__c = true,'callJobInvoice();','')}">{!$Label.css_Invoice}</a></li>
+                            </ul>
+                            <ul class="nav nav-tabs mob-tabs" id="JobDetailTab" style="background-color: #eee;">
+                                <li class="active"><a href="#tnd" data-toggle="tab">{!$Label.css_Triage} &amp; {!$label.css_Diagnosis}</a></li>
+                            </ul>
+                            <div class="tab-content">
+                                <div class="tab-pane active" id="tnd">
+                                    <div class="panel panel-default">
+                                        <div class="panel-body intakechevs" style="padding-top:0px;">
+                                            <div class="col-md-12" align="left">
+                                                
+                                                <ul class="desk-ulist">
+                                                    <li>
+                                                        <!-- <apex:commandLink action="/apex/CSS_JobTnDJo?id={!workjob.Id}" styleclass="{!jo_chv_sts}" id="cusave"> -->
+                                                        <a href="/apex/CSS_JobTnDJo?id={!workjob.Id}" class="sopen" id="cusave">
+                                                            <span class="chev_cu_img_open"/>
+                                                            <span class="chev_text_open">{!$label.css_job1} <br /> {!$Label.css_jo_label} </span>
+                                                        </a>
+                                                    </li>
+                                                    <li class="first-child">
+                                                        <apex:commandLink styleclass="sactive" id="uesave">
+                                                            <span class="chev_vh_img_active"/>
+                                                            <span class="chev_text_active"> {!$Label.css_view} <br /> {!$Label.css_History} </span>
+                                                        </apex:commandLink>
+                                                    </li>
+                                                    
+                                                    <li>
+                                                        <apex:commandLink styleclass="{!vi_chv_sts}" id="visave">
+                                                            <span class="{!vi_btn_cls}"/>
+                                                            <span class="{!vi_txt_sts}"> {!$Label.css_Visual} <br /> {!$Label.css_Inspection} </span>
+                                                        </apex:commandLink>
+                                                    </li>
+                                                    <li>
+                                                        <!--      <a href="/apex/CSS_JobTnDTs?id={!workjob.Id}" class="sopen" id="vhsave">
+<span class="chev_ts_img_open"/>
+<span class="chev_text_open"> Troubleshooting</span>
+</a>-->
+                                                        <apex:commandLink action="{!createDSID}" styleclass="sopen" id="vhsave">
+                                                            <span class="chev_ts_img_open"/>
+                                                            <span class="chev_text_open"> {!$Label.css_Troubleshooting}</span>
+                                                        </apex:commandLink>
+                                                    </li>
+                                                    <li class="last-child">
+                                                        <a href="/apex/CSS_JobTnDRj?id={!workjob.Id}" class="sopen" id="rwsave">
+                                                            <span class="chev_rj_img_open"/>
+                                                            <span class="chev_text_open"> {!$Label.css_Review} <br /> {!$label.css_job1} </span>
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                                <ul class="mob-ulist">
+                                                    <li class="first-child">
+                                                        <apex:commandLink action="{!tnd_jo}" styleclass="{!jo_chv_sts}" id="cusave_m">
+                                                            <div class="circle-active">1</div>
+                                                            <span class="{!jo_txt_sts}">{!jo_txt_val}</span>
+                                                        </apex:commandLink>
+                                                    </li>
+                                                    <li>
+                                                        <apex:commandLink action="{!tnd_vh}" styleclass="{!vh_chv_sts}" id="uesave_m">
+                                                            <div class="pull-right circle-open">2</div>
+                                                            <span class="{!vh_txt_sts}">{!vh_txt_val}</span>
+                                                        </apex:commandLink>
+                                                    </li>
+                                                    <!-- <li>
+<apex:commandLink action="{!createDSID}" styleclass="sopen" id="vhsave">
+<span class="chev_ts_img_open"/>
+<span class="chev_text_open"> Troubleshooting</span>
+</apex:commandLink>
+<!--<a href="/apex/CSS_JobTnDTs?id={!workjob.Id}" class="sopen" id="vhsave">
+<span class="chev_ts_img_open"/>
+<span class="chev_text_open"> Troubleshooting</span>
+</a> 
+</li>-->
+                                                    <li>
+                                                        <apex:commandLink action="{!tnd_vi}" styleclass="{!vi_chv_sts}" id="ccsave_m">
+                                                            <div class="pull-right circle-open">3</div>
+                                                            <span class="{!vi_txt_sts}">{!vi_txt_val}</span>
+                                                        </apex:commandLink>
+                                                    </li>
+                                                    <li>
+                                                        <apex:commandLink action="{!tnd_ts}" styleclass="{!ts_chv_sts}" id="visave_m">
+                                                            <div class="pull-right circle-open">4</div>
+                                                            <span class="{!ts_txt_sts}">{!ts_txt_val}</span>
+                                                        </apex:commandLink>
+                                                    </li>
+                                                    <li class="last-child">
+                                                        <apex:commandLink action="{!tnd_rj}" styleclass="{!rj_chv_sts}" id="rjsave_m">
+                                                            <div class="circle-open">5</div>
+                                                            <span class="{!rj_txt_sts}"> {!rj_txt_val}</span>
+                                                        </apex:commandLink>
+                                                    </li>
+                                                </ul>
+                                                <!---       </apex:form> --->
+                                            </div>
+                                            <!--         <div class="col-sm-2" align="left">
+<apex:image url="{!$Resource.printicon}" width="20" height="20"/>
+<a href="/apex/CSS_StdHeaderFooter" class="none">Print<i class="fa fa-caret-right"></i></a><br/>
+<apex:image url="{!$Resource.emailicon}" width="20" height="20"/>
+<a href="/apex/CSS_StdHeaderFooter" class="none">Email<i class="fa fa-caret-right"></i></a>
+</div> -->
+                                        </div>  
+                                        
+                                        <div class="panel-body">
+                                            <!-- ******* BEGIN TD - JOB OVERVIEW **** -->
+                                            <!---Chnages made for Defect 58562 to addd paramter in CSS_JobOverviewPanel--->
+                                            <apex:outputPanel id="joboverviewpnl" >
+                                                <div class="col-md-12">
+                                                    <div class="row">
+                                                        <c:CSS_JobOverviewPanel CustName="{!workJob.Customer_Name__c}" JobOrdId="{!workJob.Id}" JobStatus="{!workJob.Status__c}" DateCreated="{!workJob.CreatedDate}" DateIn="{!workJob.Date_In__c}" jobOrdNumb="{!workJob.Name}" ShopWO="{!workJob.Shop_Work_Order__c}" LastSaved="{!workJob.LastModifiedDate}" JobESN="{!workJob.ESN__c}" ServModel="{!workJob.Service_Model__c}" RepRecent="{!workJob.Repeat_Or_Recent_Calc__c}" 
+                                                                                JobLoc="{!workJob.JobLocation__c}" pgName="TND" ControlNo="{!workJob.RPVControlNumber__c}" paccarAuthReq="{!workJob.PACCAR_Auth_Required__c}"/>
+                                                    </div>
+                                                </div>
+                                            </apex:outputPanel> 
+                                            <apex:outputPanel id="tndhistory">
+                                                <!--     <apex:form >  --->              
+                                                <div class="panel-body">
+                                                    
+                                                    
+                                                    
+                                                    <br/>      
+                                                    <apex:outputpanel id="plusimageA">
+                                                        <apex:outputpanel onclick="switchMenu('{!$Component.inlinetablesecA}','{!$Component.minusimageA}','{!$Component.plusimageA}','{!$Component.minusimageA1}')" title="Expand - View More">
+                                                            <a><i class="fa fa-caret-down fa-lg"/> {!$Label.css_View_more} </a>
+                                                        </apex:outputpanel> 
+                                                    </apex:outputpanel>
+                                                    <apex:outputpanel id="minusimageA" style="display:none;">
+                                                        <apex:outputpanel onclick="switchMenu('{!$Component.inlinetablesecA}','{!$Component.plusimageA}','{!$Component.minusimageA}','{!$Component.minusimageA1}')" title="Collapse - View More">
+                                                            <a><i class="fa fa-caret-down fa-lg"/> {!$Label.css_View_less}</a>
+                                                        </apex:outputpanel>
+                                                    </apex:outputpanel>
+                                                    
+                                                    <!---       </apex:form>    ---> 
+                                                    <apex:outputpanel id="inlinetablesecA" style="display:none;">        
+                                                        <div class="panel-body">
+                                                            <div class="container-fluid">
+                                                                <div class="row">
+                                                                    <div class="col-md-12">
+                                                                        <div class="row">
+                                                                            <div class="col-md-6">  
+                                                                                <!-- <apex:form > -->
+                                                                                <apex:outputpanel id="AssignedTopnl1" rendered="true">
+                                                                                    <fieldset class="cmi_field_set">
+                                                                                        <legend class="fs_legend">{!$Label.css_assignto}</legend>
+                                                                                        <c:css_asign_tech JobLoc="{!workJob.JobLocation__c}" JoId="{!workjob.Id}" tech1="{!workjob.Assigned_to__r.Name}" tech2="{!workjob.Additional_Tech1__r.Name}" tech3="{!workjob.Additional_Tech2__r.Name}" tech4="{!workjob.Additional_Tech3__r.Name}" tech5="{!workjob.Additional_Tech4__r.Name}" tech6="{!workjob.Additional_Tech5__r.Name}"  tech7="{!workjob.Additional_Tech6__r.Name}" tech8="{!workjob.Additional_Tech7__r.Name}" tech9="{!workjob.Additional_Tech8__r.Name}" tech10="{!workjob.Additional_Tech9__r.Name}" />
+                                                                                    </fieldset>
+                                                                                    
+                                                                                </apex:outputpanel>
+                                                                                <!---BMS User screen-->
+                                                                                
+                                                                                <apex:outputPanel rendered="{!IF(bmsEnabled==true, true,false)}">
+                                                                                    
+                                                                                    <!--- <apex:outputpanel id="customerpnla" rendered="true">-->
+                                                                                    
+                                                                                    
+                                                                                    <fieldset class="cmi_field_set">
+                                                                                        <legend class="fs_legend">{!$Label.css_customer} </legend>
+                                                                                        <div class="form-horizontal" role="form">
+                                                                                            
+                                                                                            <label for="" class="col-sm-4 cmi-tar">{!$ObjectType.CSS_Job_Order__c.fields.Customer_Name__c.Label}<div class="cmi_asterisk">*</div></label>
+                                                                                            
+                                                                                            <div class="col-sm-7 col-xs-12">
+                                                                                                <apex:OutputField value="{!workJob.Customer_Name__c}"/>
+                                                                                            </div>
+                                                                                            <div class="clearfix"></div>
+                                                                                            
+                                                                                            <div class="col-sm-4 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.Name.Label}" />
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12">
+                                                                                                <apex:OutputField value="{!workJob.Name}" />
+                                                                                                &nbsp;
+                                                                                            </div>
+                                                                                            <div class="clearfix"></div>
+                                                                                            
+                                                                                            <div class="col-sm-4 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.Shop_Work_Order__c.Label}" />
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12">
+                                                                                                <apex:OutputField value="{!workJob.Shop_Work_Order__c}" /> &nbsp;
+                                                                                                <a data-target="#showqmarkpopup" data-toggle="modal" ><span class="cmi_intake_help" /></a>
+                                                                                                <apex:commandLink rerender="showqmarkpopup" style="text-decoration:underline" />
+                                                                                            </div>
+                                                                                            
+                                                                                            <div class="clearfix"></div>
+                                                                                            <div class="col-sm-4 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.Date_In__c.Label}" />
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12">
+                                                                                                <apex:OutputField value="{!workJob.Date_In__c}" /> &nbsp;
+                                                                                            </div>
+                                                                                            <!---test for customer page-->
+                                                                                            
+                                                                                            <div class="clearfix"></div>                                                
+                                                                                            <div class="col-sm-4 col-xs-12 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$Label.CSS_Customer_Code}"  /><div class="cmi_asterisk">*</div>
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12 ">
+                                                                                                <apex:outputText value="{!workJob.Customer_Code__c}"/>&nbsp;
+                                                                                            </div> 
+                                                                                            
+                                                                                            <div class="clearfix"></div>                                                
+                                                                                            <div class="col-sm-4 col-xs-12 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$Label.CSS_Phone_Number}"  /><div class="cmi_asterisk">*</div>
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12 ">
+                                                                                                <apex:outputText value="{!workJob.Phone_Number__c}"/>&nbsp;
+                                                                                            </div> 
+                                                                                            
+                                                                                            
+                                                                                            <!---    <div class="clearfix"></div>                                                
+<div class="col-sm-4 col-xs-12 cmi-tar">
+<apex:outputLabel value="{!$Label.CSS_Contact_Name}"  /><div class="cmi_asterisk">*</div>
+</div>
+<div class="col-sm-8 col-xs-12 ">
+<apex:outputText value="{!workJob.Contact_Name__c}"/>&nbsp;
+</div> --->
+                                                                                            <!----test for first name--->
+                                                                                            <div class="clearfix"></div> 
+                                                                                            <div class="col-sm-4 col-xs-12 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$Label.CSS_First_Name}"  /><div class="cmi_asterisk">*</div>
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12 ">
+                                                                                                <apex:outputText value="{!workJob.First_Name__c}"/>&nbsp;
+                                                                                            </div> 
+                                                                                            <div>
+                                                                                                
+                                                                                            </div>
+                                                                                            <div class="clearfix"></div>
+                                                                                            <div class="col-sm-4 col-xs-12 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$Label.CSS_Last_Name}"  /><div class="cmi_asterisk">*</div>
+                                                                                                
+                                                                                            </div>
+                                                                                            <div class="col-sm-4 col-xs-12 ">
+                                                                                                <apex:outputText value="{!workJob.BMS_Last_Name__c}"/>&nbsp;
+                                                                                            </div> 
+                                                                                            <!--- end--->
+                                                                                            <div class="clearfix"></div>                                                
+                                                                                            <div class="col-sm-4 col-xs-12 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$Label.CSS_Customer_Contact_Phone}"  /><div class="cmi_asterisk">*</div>
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12 ">
+                                                                                                <apex:outputText value="{!workJob.Cstmr_Contacts_Phone__c}"/>&nbsp;
+                                                                                            </div> 
+                                                                                            
+                                                                                            <div class="clearfix"></div>                                                
+                                                                                            <div class="col-sm-4 col-xs-12 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$Label.CSS_Address}"  /><div class="cmi_asterisk">*</div>
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12 ">
+                                                                                                <apex:outputText value="{!workJob.Address__c}"/>&nbsp;
+                                                                                            </div> 
+                                                                                            
+                                                                                            <div class="clearfix"></div>                                                
+                                                                                            <div class="col-sm-4 col-xs-12 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$Label.CSS_City}"  /><div class="cmi_asterisk">*</div>
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12 ">
+                                                                                                <apex:outputText value="{!workJob.City__c}"/>&nbsp;
+                                                                                            </div> 
+                                                                                            <div class="clearfix"></div>                                                
+                                                                                            <div class="col-sm-4 col-xs-12 cmi-tar">
+                                                                                                <label>{!$Label.CSS_State}<div class="cmi_asterisk">*</div></label>
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12 ">
+                                                                                                <apex:outputText value="{!workJob.CSS_State__c}"/>&nbsp;
+                                                                                            </div> 
+                                                                                            
+                                                                                            <div class="clearfix"></div>                                                
+                                                                                            <div class="col-sm-4 col-xs-12 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$Label.CSS_Zipcode}"  /><div class="cmi_asterisk">*</div>
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12 ">
+                                                                                                <apex:outputText value="{!workJob.ZipCode__c}"/>&nbsp;
+                                                                                            </div> 
+                                                                                            <!---   <div class="clearfix"></div>   
+<div class="col-sm-4 col-xs-12 cmi-tar">
+<apex:outputLabel value="Primary Segment"  />
+</div>   <div class="col-sm-8 col-xs-12 ">
+<apex:outputText value="{!workJob.Primary_Segment__c}"/>&nbsp;
+</div>   --->
+                                                                                            
+                                                                                            
+                                                                                            
+                                                                                            <div class="clearfix"></div>                                                
+                                                                                            <div class="col-sm-4 col-xs-12 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$Label.CSS_Country}"/><div class="cmi_asterisk">*</div>
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12 ">
+                                                                                                <apex:outputText value="{!workJob.Country__c}"/>&nbsp;
+                                                                                            </div> 
+                                                                                            
+                                                                                            <div class="clearfix"></div>                                                
+                                                                                            <div class="col-sm-4 col-xs-12 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$Label.CSS_Payment_Type_Intake}"  />
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12 ">
+                                                                                                <apex:outputText value="{!workJob.CSS_Charge_Account_Status__c}"/>&nbsp;
+                                                                                            </div> 
+                                                                                            <!--- testing  end---> 
+                                                                                            
+                                                                                        </div>
+                                                                                    </fieldset>
+                                                                                </apex:outputPanel>
+                                                                                <!--  </apex:outputpanel>--->
+                                                                                <!--- BMS Users Ends Screen-->
+                                                                                
+                                                                                <!----****** Non-BMS Users ****---->
+                                                                                <apex:outputPanel rendered="{!IF(bmsEnabled==false, true,false)}">
+                                                                                    <fieldset class="cmi_field_set">
+                                                                                        <legend class="fs_legend">{!$Label.css_customer}</legend>
+                                                                                        <div class="form-horizontal" role="form">
+                                                                                            <label for="" class="col-sm-4 cmi-tar">{!$Label.css_customer}<div class="cmi_asterisk">*</div></label>
+                                                                                            <div class="col-sm-7 col-xs-12 " >
+                                                                                                <apex:outputField value="{!workJob.Customer_Name__c}"></apex:outputField>
+                                                                                            </div>
+                                                                                            <div class="clearfix"></div>
+                                                                                            <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Job}</label>
+                                                                                            <div class="col-sm-8 col-xs-12 " >
+                                                                                                <apex:outputField value="{!workJob.Name}"></apex:outputField>
+                                                                                            </div>
+                                                                                            
+                                                                                            <div class="clearfix"></div>
+                                                                                            <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.css_shop_work_order}</label>
+                                                                                            <div class="col-sm-8 col-xs-12 " >
+                                                                                                <apex:outputField value="{!workJob.Shop_Work_Order__c}"></apex:outputField>
+                                                                                                <a data-target="#showqmarkpopup" data-toggle="modal" ><span class="cmi_intake_help" /></a>
+                                                                                                <apex:commandLink rerender="showqmarkpopup" style="text-decoration:underline" />
+                                                                                            </div>
+                                                                                            
+                                                                                            <div class="clearfix"></div>
+                                                                                            <div class="col-sm-4 col-xs-12 cmi-tar">
+                                                                                                <apex:Outputlabel value="{!$ObjectType.CSS_Job_Order__c.fields.Date_In__c.Label}"/>
+                                                                                            </div> 
+                                                                                            <div class="col-sm-8 col-xs-12 " >
+                                                                                                <apex:outputField value="{!workJob.Date_In__c}"></apex:outputField>
+                                                                                            </div> 
+                                                                                        </div>
+                                                                                    </fieldset>
+                                                                                </apex:outputPanel>
+                                                                                
+                                                                                <!---- ******Ending for Non-BMS Users*****--->
+                                                                                <apex:outputpanel id="unitengpnl" rendered="{!IF(workJob.Unit_Number__c!=null || workJob.Application_Desc__c!=null || workJob.ESN__c!=null || workJob.Mileage__c!=null, true, false)}"> 
+                                                                                    <fieldset class="cmi_field_set">
+                                                                                        
+                                                                                        <legend class="fs_legend ">{!$Label.Unit_amp_Engine}&nbsp;&nbsp; </legend>
+                                                                                        
+                                                                                        <div class="form-horizontal" role="form">
+                                                                                            <!---------Story 63538 fix starts------->
+                                                                                            <div class="col-sm-4 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.ESN__c.Label}" />
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12">
+                                                                                                <apex:OutputField value="{!workJob.ESN__c}" /> &nbsp;
+                                                                                                <a data-target="#ueESNQMarkPopup" data-toggle="modal" ><span class="cmi_intake_help" /></a> 
+                                                                                                
+                                                                                            </div>
+                                                                                            <!---------Story 63538 fix ends------->
+                                                                                            <div class="clearfix"></div>
+                                                                                            <apex:outputPanel rendered="{!IF(bmsEnabled==true,true,false)}">
+                                                                                                <div class="col-sm-4 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.Unit_Number__c.Label}" /><div class="cmi_asterisk">*</div>
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12">
+                                                                                                <apex:OutputField value="{!workJob.Unit_Number__c}" /> &nbsp;
+                                                                                            </div>
+                                                                                            </apex:outputPanel>
+                                                                                            <apex:outputPanel rendered="{!IF(bmsEnabled==false,true,false)}">
+                                                                                                <div class="col-sm-4 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.Unit_Number__c.Label}" />
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12">
+                                                                                                <apex:OutputField value="{!workJob.Unit_Number__c}" /> &nbsp;
+                                                                                            </div>
+                                                                                            </apex:outputPanel>
+                                                                                            <div class="clearfix"></div>
+                                                                                            <!---------Story 63538 fix starts------->
+                                                                                            <label for="" class="col-sm-4 cmi-tar">{!$ObjectType.CSS_Job_Order__c.fields.Application_Desc__c.Label}<div class="cmi_asterisk">*</div></label>
+                                                                                            
+                                                                                            <div class="col-sm-7 col-xs-12">
+                                                                                                <apex:OutputField value="{!workJob.Application_Desc__c}" />
+                                                                                            </div>
+                                                                                            <!---------Story 63538 fix ends------->
+                                                                                            
+                                                                                            <div class="clearfix"></div>
+                                                                                            
+                                                                                            <div class="col-sm-4 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.Service_Model__c.Label}" />
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12">
+                                                                                                <apex:OutputField value="{!workJob.Service_Model__c}" /> &nbsp;
+                                                                                            </div>
+                                                                                            
+                                                                                            <div class="clearfix"></div>
+                                                                                            <div class="col-sm-4 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.Make__c.Label}" /><div class="cmi_asterisk">*</div>
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12">
+                                                                                                <apex:OutputField value="{!workJob.Make__c}" /> &nbsp;
+                                                                                            </div>
+                                                                                            <div class="clearfix"></div>
+                                                                                            
+                                                                                            <div class="col-sm-4 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.Model__c.Label}" /><div class="cmi_asterisk">*</div>
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12">
+                                                                                                <!--Replace ESN_C with  model field API name  once it is created  --> <apex:OutputField value="{!workJob.Model__c}" /> &nbsp;
+                                                                                            </div>
+                                                                                            <div class="clearfix"></div>
+                                                                                            
+                                                                                            <div class="col-sm-4 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.VIN__c.Label}" />
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12">
+                                                                                                <apex:OutputField value="{!workJob.VIN__c}" /> &nbsp;
+                                                                                            </div>
+                                                                                            <div class="clearfix"></div>
+                                                                                            
+                                                                                            <div class="col-sm-4 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.Failure_Date__c.Label}" />
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12">
+                                                                                                <apex:OutputField value="{!workJob.Failure_Date__c}" /> &nbsp;
+                                                                                            </div>
+                                                                                            <div class="clearfix"></div>
+                                                                                            
+                                                                                            <div class="col-sm-4 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.Warranty_Start_Date__c.Label}" />
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12">
+                                                                                                <apex:OutputField value="{!workJob.Warranty_Start_Date__c}" /> &nbsp;
+                                                                                            </div>
+                                                                                            <div class="clearfix"></div>
+                                                                                            
+                                                                                            <div class="col-sm-4 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$Label.CSS_Product_Mileage_Kilometers}" />
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12">
+                                                                                                <!--<apex:OutputField value="{!workJob.Mileage__c}" /> &nbsp; {!workJob.Mileage_Measure__c}-->
+                                                                                                <apex:outputText value="{0, number, 0}"> <!-- Sai:3/20: Changed the format value for Q1 UAT defect -->
+                                                                                                    <apex:param value="{!workJob.Mileage__c}" />
+                                                                                                </apex:outputText> &nbsp; {!workJob.Mileage_Measure__c}
+                                                                                            </div>
+                                                                                            <!------------------Hours text box added------------------------------>
+                                                                                            
+                                                                                            <div class="clearfix"></div>
+                                                                                            
+                                                                                            <div class="col-sm-4 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$Label.CSS_Product_Hours}" />
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12">
+                                                                                                <apex:outputText value="{0, number, 0}"> <!-- Sai:3/20: Changed the format value for Q1 UAT defect -->
+                                                                                                    <apex:param value="{!workJob.CSS_Hours__c}" />
+                                                                                                </apex:outputText> 
+                                                                                            </div>
+                                                                                            
+                                                                                            
+                                                                                            <!------------------Hours text box code ended------------------------->
+                                                                                            
+                                                                                            <!-- <div class="clearfix"></div>     
+
+<div class="col-sm-4 cmi-tar">
+<apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.Failure_Point__c.Label}" />
+</div>
+<div class="col-sm-8 col-xs-12">
+<apex:OutputField value="{!workJob.Failure_Point__c}" /> &nbsp;
+</div>  -->
+                                                                                            
+                                                                                        </div>             
+                                                                                    </fieldset>
+                                                                                </apex:outputpanel>
+                                                                                <apex:outputpanel id="ccpnl" rendered="{!IF(workJob.General_Symptoms__c!=null || workJob.Category_Desc__c!=null || workJob.Complaint_Type__c!=null, true, false)}">
+                                                                                    <!--      <fieldset style="border: 1px solid grey; word-wrap:break-word;">  -->
+                                                                                    <fieldset class="cmi_field_set">
+                                                                                        <legend class="fs_legend">{!$Label.CSS_Customer_Complaint}</legend>
+                                                                                        <div class="form-horizontal" role="form">
+                                                                                            <label for="" class="col-sm-4 cmi-tar">{!$ObjectType.CSS_Job_Order__c.fields.General_Symptoms__c.Label}</label> 
+                                                                                            
+                                                                                            <div class="col-sm-8 col-xs-12" Style="word-break: break-word;">
+                                                                                                <apex:OutputField value="{!workJob.General_Symptoms__c}" />
+                                                                                            </div>
+                                                                                            <div class="clearfix"></div>   
+                                                                                            
+                                                                                            <div class="col-sm-4 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.Category_Desc__c.Label}" /><div class="cmi_asterisk">*</div>
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12">
+                                                                                                <apex:OutputField value="{!workJob.Category_Desc__c}" />
+                                                                                            </div>
+                                                                                            <div class="clearfix"></div>   
+                                                                                            
+                                                                                            <div class="col-sm-4 cmi-tar">
+                                                                                                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.Complaint_Type__c.Label}" /><div class="cmi_asterisk">*</div>
+                                                                                            </div>
+                                                                                            <div class="col-sm-8 col-xs-12">
+                                                                                                <apex:OutputField value="{!workJob.Complaint_Type__c}" />
+                                                                                            </div>
+                                                                                            <div class="clearfix"></div>
+                                                                                            <br/>
+                                                                                            <apex:outputPanel rendered="{!IF(workJob.Category2_Desc__c==null || workJob.Category2_Desc__c=='' || workJob.Category2_Desc__c == '----None----', false,true)}">
+                                                                                                <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Category}<div class="cmi_asterisk">*</div></label>
+                                                                                                <div class="col-sm-6 col-xs-12 ">
+                                                                                                    <apex:outputField value="{!workJob.Category2_Desc__c}" styleClass="css_ipfiel_size"/>
+                                                                                                </div>
+                                                                                                <div class="col-sm-6 col-xs-12 ">
+                                                                                                </div>
+                                                                                                <div class="clearfix"></div>
+                                                                                                <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Complaint_Type}<div class="cmi_asterisk">*</div> </label>
+                                                                                                <div class="col-sm-6 col-xs-12 ">
+                                                                                                    <apex:outputField value="{!workJob.Complaint_Type2__c}" styleClass="css_ipfiel_size"/>
+                                                                                                </div>
+                                                                                            </apex:outputPanel>
+                                                                                            <div class="clearfix"></div>
+                                                                                            <br/>
+                                                                                            <apex:outputPanel rendered="{!IF(workJob.Category3_Desc__c==null || workJob.Category3_Desc__c=='' || workJob.Category3_Desc__c == '----None----', false,true)}">
+                                                                                                <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Category}<div class="cmi_asterisk">*</div></label>
+                                                                                                <div class="col-sm-6 col-xs-12 ">
+                                                                                                    <apex:outputField value="{!workJob.Category3_Desc__c}" styleClass="css_ipfiel_size"/>
+                                                                                                </div>
+                                                                                                <div class="col-sm-6 col-xs-12 ">
+                                                                                                </div>
+                                                                                                <div class="clearfix"></div>
+                                                                                                <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Complaint_Type}<div class="cmi_asterisk">*</div> </label>
+                                                                                                <div class="col-sm-6 col-xs-12 ">
+                                                                                                    <apex:outputField value="{!workJob.Complaint_Type3__c}" styleClass="css_ipfiel_size"/>
+                                                                                                </div>
+                                                                                            </apex:outputPanel>
+                                                                                            <div class="clearfix"></div>
+                                                                                            <br/>
+                                                                                            <apex:outputPanel rendered="{!IF(workJob.Category4_Desc__c==null || workJob.Category4_Desc__c=='' || workJob.Category4_Desc__c == '----None----', false,true)}">
+                                                                                                <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Category}<div class="cmi_asterisk">*</div></label>
+                                                                                                <div class="col-sm-6 col-xs-12 ">
+                                                                                                    <apex:outputField value="{!workJob.Category4_Desc__c}" styleClass="css_ipfiel_size"/>
+                                                                                                </div>
+                                                                                                <div class="col-sm-6 col-xs-12 ">
+                                                                                                </div>
+                                                                                                <div class="clearfix"></div>
+                                                                                                <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Complaint_Type}<div class="cmi_asterisk">*</div> </label>
+                                                                                                <div class="col-sm-6 col-xs-12 ">
+                                                                                                    <apex:outputField value="{!workJob.Complaint_Type4__c}" styleClass="css_ipfiel_size"/>
+                                                                                                </div>
+                                                                                            </apex:outputPanel>
+                                                                                            <div class="clearfix"></div>
+                                                                                            <br/>
+                                                                                            
+                                                                                            <apex:outputPanel rendered="{!IF(workJob.Category5_Desc__c==null || workJob.Category5_Desc__c=='' || workJob.Category5_Desc__c == '----None----', false,true)}">
+                                                                                                <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Category}<div class="cmi_asterisk">*</div></label>
+                                                                                                <div class="col-sm-6 col-xs-12 ">
+                                                                                                    <apex:outputField value="{!workJob.Category5_Desc__c}" styleClass="css_ipfiel_size"/>
+                                                                                                </div>
+                                                                                                <div class="col-sm-6 col-xs-12 ">
+                                                                                                </div>
+                                                                                                <div class="clearfix"></div>
+                                                                                                <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Complaint_Type}<div class="cmi_asterisk">*</div> </label>
+                                                                                                <div class="col-sm-6 col-xs-12 ">
+                                                                                                    <apex:outputField value="{!workJob.Complaint_Type5__c}" styleClass="css_ipfiel_size"/>
+                                                                                                </div>
+                                                                                            </apex:outputPanel>
+                                                                                            <div class="clearfix"></div>
+                                                                                            <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$LAbel.css_Preventive_Maintenance}</label>
+                                                                                            <div class="col-sm-6 col-xs-12 ">
+                                                                                                <apex:outputField value="{!workJob.Preventive_Maintenance__c}" styleClass="css_ipfiel_size"/>
+                                                                                            </div>
+                                                                                            
+                                                                                            <div class="clearfix"></div>
+                                                                                            <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.css_Expedited_Service}</label>
+                                                                                            <div class="col-sm-6 col-xs-12 ">
+                                                                                                
+                                                                                                
+                                                                                                <apex:outputField value="{!workJob.Expedited_Service__c}" styleClass="css_ipfiel_size"/>
+                                                                                            </div>
+                                                                                            
+                                                                                        </div>      
+                                                                                    </fieldset>
+                                                                                </apex:outputpanel>
+                                                                                <apex:outputpanel id="attachmentpnl1" rendered="true">  
+                                                                                    <fieldset class="cmi_field_set">
+                                                                                        <legend class="fs_legend">{!$Label.CSS_Attachments}</legend>
+                                                                                        <div class="form-horizontal" role="form"> 
+                                                                                            
+                                                                                            <label class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Attachments}</label>
+                                                                                            <div class="col-sm-8 col-xs-12">
+                                                                                                <apex:actionRegion > 
+                                                                                                    <a><i class="upload-icon"></i></a> 
+                                                                                                    <apex:commandLink value="{!$Label.css_Upload}" action="{!showPopup1}" style="text-decoration:underline; margin-left: 5px; font-weight:bold;" rendered="{!IF(workJob.Id!=null, true, false)}"/>    
+                                                                                                </apex:actionRegion> 
+                                                                                            </div>
+                                                                                            
+                                                                                            <!--Story Number : 78936 Implemented by Ekta  --->
+                                                                                            <!--INSITE Image links to be visible in the CSS Job User Interface   -->
+                                                                                            <apex:inputHidden id="tokenId" value="{!sEncryptToken}"/>
+                                                                                        <apex:inputHidden id="fileNameId" value="{!sFileName}"/>
+                                                                                        <apex:inputHidden id="attId" value="{!attachId}"/>
+                                                                                        <apex:inputHidden id="statusCodeId" value="{!statusCode}"/>
+                                                                                            <apex:outputPanel rendered="{!IF(workJob.Before_Image__c!=null, true,false)}">  
+                                                                                            <label class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Attachments}</label>
+                                                                                            <div class="col-sm-8 col-xs-12">
+<apex:commandLink value="{!$ObjectType.CSS_Job_Order__c.fields.Before_Image__c.Label}" onClick="processInsiteBefore();return false;" id="beforeId"/>
+                                                                                            <apex:actionfunction action="{!getFile}" oncomplete="downloadFile1('{!sEndPoint}','{!sEncryptToken}','{!attachId}')" name="processInsiteBefore" reRender="tokenId,attId,fileNameId,statusCodeId">
+                                                                                                <apex:param name="fileName" value="{!workJob.Before_Image__c}"/>
+                                                                                        </apex:actionFunction>
+                                                                                            </div>
+                                                                                            <div class="clearfix"></div>
+                                                                                            </apex:outputPanel>  
+                                                                                            <apex:outputPanel rendered="{!IF(workJob.After_Image__c!=null, true,false)}">
+                                                                                            <label class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Attachments}</label>
+                                                                                            <div class="col-sm-8 col-xs-12">
+<apex:commandLink value="{!$ObjectType.CSS_Job_Order__c.fields.After_Image__c.Label}" onClick="processInsiteAfter();return false;"/>
+                                                                                        <apex:actionfunction action="{!getFile}" oncomplete="downloadFile1('{!sEndPoint}','{!sEncryptToken}','{!attachId}')" name="processInsiteAfter" reRender="tokenId,attId,fileNameId,statusCodeId">
+                                                                                                <apex:param name="fileName" value="{!workJob.After_Image__c}"/>
+                                                                                        </apex:actionFunction>
+                                                                                            </div>
+                                                                                            </apex:outputPanel>
+                                                                                            <!--Story Number : 78936 Implementation end  --->
+                                                                                            
+                                                                                            <apex:repeat value="{!jobAttach}" var="atth">
+                                                                                                <div class="clearfix"></div>
+                                                                                                
+                                                                                                <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Attachment}</label>
+                                                                                                <div class="col-sm-8 col-xs-12"> 
+                                                                                                    
+                                                                                                    <a href="/servlet/servlet.FileDownload?file={!atth.Id}" target="_blank" style="text-decoration:underline;">
+                                                                                                        <i class="cmi_upload-document"></i> {!LEFT(atth.Name,40)}
+                                                                                                    </a> 
+                                                                                                    <br/>
+                                                                                                    <apex:outputLabel value="{!atth.Description}" style="word-break:break-word; font-weight: normal"/>
+                                                                                                    
+                                                                                                    <div onclick="abc()" class="pull-right"><i class="cmi_delete-icon"></i>
+                                                                                                        <apex:commandlink value="{!$Label.CSS_Delete}" action="{!showPopup6}"  style="margin-right: -20px; font-weight:bold ;">
+                                                                                                            <apex:param name="atthIdParam" value="{!atth.Id}" assignTo="{!atthId}"/>
+                                                                                                        </apex:commandlink>
+                                                                                                    </div>
+                                                                                                    <div class="clearfix"></div>  
+                                                                                                    
+                                                                                                    <div data-target="#EditPopupNew" data-toggle="modal" class="pull-right" style="font-weight:bold;"><i class="CMI-edit-icon"></i>
+                                                                                                        
+                                                                                                        <apex:commandLink value="{!$Label.css_Edit}" action="{!showPopup5}" rerender="EditPopupNew" style="font-weight:bold;  text-decoration:underline;"> 
+                                                                                                            <apex:param name="atthIdParam" value="{!atth.Id}" assignTo="{!atthId}"/>
+                                                                                                        </apex:commandLink>
+                                                                                                    </div>
+                                                                                                </div>   </apex:repeat></div>
+                                                                                        <!-- End - Attachment Records -->                                        
+                                                                                    </fieldset>
+                                                                                </apex:outputpanel>
+                                                                                <!--      </apex:form> -->
+                                                                            </div>
+                                                                            <!--      <apex:form > -->
+                                                                            
+                                                                            <div class="col-md-6 col-xs-12" >
+                                                                                
+                                                                                <!-- Fault Codes Repairs -->                            <apex:outputpanel id="faultcodes4" rendered="true">
+                                                                                <fieldset class="cmi_field_set">
+                                                                                    <legend class="fs_legend">{!$Label.css_Fault_Codes_Symptoms_Diagnostic_Solutions_Repairs}</legend>
+                                                                                    <c:CSS_TnDFCSummary jobOrdId="{!workjob.Id}" jobOrdNumb="{!workjob.Name}" CustName="{!workjob.Customer_Name__c}" TechID="{!workjob.OwnerID}" RedirectPage1="/apex/CSS_JobTnDRj?id={!workJob.Id}&pgflag=rj#accordion1-heading-5" FCOverviewPage="/apex/CSS_JobTnDEds?id={!workJob.Id}" DisplayPrioritized="true" viewMod="shortView"/>
+                                                                                    <!--  <div class="form-horizontal" role="form"> 
+<label for="" class="col-sm-offset-4 col-sm-4 control-label cmi_fcsds-mobile">Diagnose</label>
+<label class="col-sm-offset-1 col-sm-3 cmi_fcsds-mobile">Repair</label>
+
+<div class="clearfix"></div>
+<div class="col-sm-4 cmi-tar">
+<apex:outputLabel value="{!IF(isPrioritized, 'Prioritized ', '')}Fault Codes" /> 
+</div>
+<div class="col-sm-8 cmi-tar">
+<apex:repeat value="{!solList}" var="fC" id="theRepeat1"  rows="5">    
+<div class="col-sm-1 col-xs-12">                                                                      
+<apex:repeat value="{!fC.faultCode}" var="sList">
+<apex:outputText value="{!sList.Name}" id="theValue1" style="align:left; font-weight:bold;"/> <br />
+</apex:repeat>
+</div>
+<div class="col-sm-6 col-xs-12">
+
+<apex:outputPanel rendered="{!IF(fC.verified.size> 0, true, false)}">
+{!fC.verified.size} Most Likely the solution
+</apex:outputPanel>
+<br/>
+<apex:outputPanel rendered="{!IF(fC.notVerified.size> 0, true, false)}">
+{!fC.notVerified.size} Could Not perform the solution verification
+</apex:outputPanel>
+<br/>
+<apex:outputPanel rendered="{!IF(fC.solutionFound.size> 0, true, false)}">
+{!fC.solutionFound.size} Solution Found
+</apex:outputPanel>
+
+</div>
+<div class="col-sm-4 col-xs-12">
+<apex:outputPanel rendered="{!IF(fC.repairFound.size> 0, true, false)}">
+{!fC.repairFound.size} Repairs Found
+</apex:outputPanel>
+</div>
+<div class="clearfix"></div>
+</apex:repeat>
+</div>    
+<p for="" class="col-sm-3 control-label cmi_fcsds-mobile"></p>
+<p for="" class="col-sm-3 control-label cmi_fcsds-mobile"></p>
+<div class="clearfix"></div>
+<table class="CMI-HomeTableMobile">
+<tbody style="border-bottom: 2px solid #666666;" >
+<tr>
+<th>Diagnose</th>
+<td></td>
+</tr>
+
+<tr>
+<th>Repair</th>
+<td class="even"></td>
+</tr>  
+</tbody>
+</table> -->
+                                                                                    
+                                                                                    <div class="row intakerow">
+                                                                                        <div class="col-md-4 col-xs-12 fset-label">
+                                                                                            <apex:outputLabel value="{!$Label.CSS_DSID}" /> </div>
+                                                                                        <div class="col-md-8 col-xs-12">
+                                                                                            <apex:outputText value="{!workjob.DSID__c}" id="dsid"/><br/> <!-- removed DSID : Sai: 75252 -->
+                                                                                        </div>      
+                                                                                    </div>    
+                                                                                    
+                                                                                    <div class="clearfix"></div>
+                                                                                    <div class="col-sm-4 cmi-tar">
+                                                                                        <apex:outputLabel value="{!$Label.CSS_Pulled_From_INSITE}" /> </div>
+                                                                                    <div class="col-sm-8 col-xs-12">
+                                                                                        <apex:outputText value="{!InsiteTimeStr}" id="theValue7"/><br/>
+                                                                                    </div>                                                                                                                                        
+                                                                                    
+                                                                                    <div class="clearfix"></div>
+                                                                                    <div class="col-sm-4 cmi-tar">
+                                                                                        <apex:outputLabel value="{!$Label.CSS_Repairs}" /> </div>
+                                                                                    <div class="col-sm-8 col-xs-12">
+                                                                                        <apex:outputText value="{!Repair}" id="repair1"/><br/>
+                                                                                    </div>  
+                                                                                    
+                                                                                    
+                                                                                    
+                                                                                    
+                                                                                </fieldset>
+                                                                                </apex:outputpanel> 
+                                                                                <apex:outputpanel id="DiagSRTpnl2" rendered="true">
+                                                                                    <c:CSS_SRTDiagComp decimalDiagTime="{!digTime}" decimalrepTime="{!repTime}" RedirectPage4="/apex/CSS_JobTnDRj?id={!workJob.Id}&pgflag=rj#accordion1-heading-4"/> 
+                                                                                </apex:outputpanel>
+                                                                                
+                                                                                <!-- Job Notes -->                                                            
+                                                                                <apex:outputpanel id="jobnotesNewpnl1" rendered="true">
+                                                                                    <c:CSS_NotesDisplay sJobId="{!workjob.Id}" RedirectPage="/apex/CSS_JobTnDRj?id={!workJob.Id}&pgflag=rj#accordion1-heading-4"/>  
+                                                                                </apex:outputpanel>
+                                                                                
+                                                                                
+                                                                                <apex:outputpanel id="auditpnlh" rendered="true">
+                                                                                    
+                                                                                    <c:css_vmore_audit jobordID="{!workjob.Id}" />
+                                                                                    
+                                                                                </apex:outputpanel>
+                                                                                <apex:outputpanel id="formid" rendered="{!IF(workjob.Id!=null, true, false)}">
+                                                                                      <c:CSS_Forms jobordID="{!workjob.Id}" />
+                                                                                </apex:outputpanel>
+                                                                                <!--  <c:CSS_FutureAlerts /> -->
+                                                                            </div>
+                                                                            
+                                                                            <!---          </apex:form>  --->
+                                                                        </div>
+                                                                    </div>
+                                                                </div></div></div>
+                                                    </apex:outputpanel>
+                                                    <!--          <apex:form > --->
+                                                    <apex:outputpanel id="minusimageA1" style="display:none;">
+                                                        <apex:outputpanel onclick="switchMenu('{!$Component.inlinetablesecA}','{!$Component.plusimageA}','{!$Component.minusimageA}','{!$Component.minusimageA1}')" title="Collapse - View More">
+                                                            <a><i class="fa fa-caret-up fa-lg"/> {!$Label.css_View_less}</a>
+                                                        </apex:outputpanel>
+                                                    </apex:outputpanel>
+                                                    <!---          </apex:form> --->
+                                                    <hr/>
+                                                    <div class="panel-body">
+                                                        <br/>
+                                                        <!---------- Connected Diagnostics Panel start ------------------>
+                                                        <!---        <apex:form > --->
+                                                        <div class="row">
+                                                            <div class="col-md-12 col-xs-12" height="100%">   
+                                                                <apex:outputpanel id="ViewHistorypnl" rendered="{!IF(workJob.ESN__c!=null, true, false)}">         
+                                                                    <fieldset style="border: 1px solid grey;">
+                                                                        <legend class="fs_legend">{!$Label.css_view_History}</legend>
+                                                                        <div class="row intakerow">
+                                                                            <div class="col-md-12 col-xs-12">
+                                                                                
+                                                                                <c:CSS_CDAlertList jobSFDCId="{!workJob.Id}" jobESN="{!workJob.ESN__c}"/> 
+                                                                            </div>
+                                                                            <!--- <div class="col-md-6 col-xs-6 pull-right"><c:CSS_FutureAlerts /><hr/></div> --->
+                                                                        </div>
+                                                                        <br/>
+                                                                        <div class="col-md-12 col-xs-12" height="100%">   
+                                                                            <apex:outputpanel id="ServiceHistory">         
+                                                                                
+                                                                                
+                                                                                <div>
+                                                                                    <c:CSS_ServiceHistory sESN="{!workjob.ESN__c}" dCreated="{!workjob.createdDate}" rendered="{!IF(workJob.ESN__c!=null, true, false)}"/>
+                                                                                    
+                                                                                </div>  
+                                                                            </apex:outputpanel>
+                                                                            
+                                                                        </div>
+                                                                        
+                                                                        
+                                                                        
+                                                                    </fieldset>
+                                                                </apex:outputpanel>
+                                                            </div>
+                                                        </div> 
+                                                        <div class="row">
+                                                            <div class="col-md-12 col-xs-12" height="100%">   
+                                                                <apex:outputpanel id="ViewHistorypanel" rendered="{!IF(workJob.ESN__c!=null, false, true)}">         
+                                                                    <fieldset style="border: 1px solid grey;">
+                                                                        <legend class="fs_legend">{!$Label.css_view_History}</legend>
+                                                                        <div class="row intakerow">
+                                                                            <div class="col-md-12 col-xs-12">
+                                                                                {!$Label.css_Connected_Diagnostic }
+                                                                                <b> <apex:commandLink value="{!$Label.css_Review_Job_section}." action="{!tnd_rj}" /> </b>
+                                                                            </div>
+                                                                            <!---   <div class="col-md-6 col-xs-6 pull-right"><c:CSS_FutureAlerts /><hr/></div> --->
+                                                                        </div>   
+                                                                    </fieldset>
+                                                                </apex:outputpanel>
+                                                            </div>
+                                                            
+                                                            
+                                                            
+                                                        </div> 
+                                                        <!---          </apex:form>     --->
+                                                        <!---------- Connected Diagnostic Panel ends-------------------------------->
+                                                        <hr/>
+                                                        <!--         <apex:form > --->
+                                                        <div class="pull-left btncrumbslft">
+                                                            <ul class="desk-ulist">
+                                                                <li>
+                                                                    &nbsp;
+                                                                </li>
+                                                                <li>
+                                                                    <apex:commandLink action="/apex/CSS_JobTnDJo?id={!workjob.Id}" styleclass="sopen" id="josavebottom1">
+                                                                        <span class="chev_cu_img_open"/>
+                                                                        <span class="chev_text_open"> {!$Label.css_job1} <br/>{!$Label.css_jo_label} </span>
+                                                                    </apex:commandLink>
+                                                                </li>
+                                                                <li>
+                                                                    &nbsp;
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                        <div class="pull-right btncrumbs">
+                                                            <ul class="desk-ulist">
+                                                                <li>
+                                                                    &nbsp;
+                                                                </li>
+                                                                <li>
+                                                                    <!--Defect fix - 65391 -->
+                                                                    <apex:commandLink action="{!createDSID}" styleclass="sopen" id="tssavebottom">
+                                                                        <span class="chev_ts_img_open"/>
+                                                                        <span class="chev_text_open"> {!$Label.css_Troubleshooting}</span>
+                                                                    </apex:commandLink>
+                                                                </li>
+                                                                <li>
+                                                                    &nbsp;
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                        <div class="col-xs-12 mob-ulist">
+                                                            <apex:commandLink action="/apex/CSS_JobTnDTs?id={!workjob.Id}" styleclass="btn-intake m-btn-footer-r m-btn-width" value="{!$Label.CSS_Continue_troubleshooting}" />
+                                                            <span class="mob-only"> &nbsp; </span>
+                                                        </div>
+                                                        <div class="col-xs-12 mob-ulist">
+                                                            <apex:commandLink action="/apex/CSS_JobTnDJo?id={!workjob.Id}" value="{!$Label.css_Back_to_Overview}" styleclass="btn-intake btn-intake-footer m-btn-width"/>
+                                                            <span class="mob-only"> &nbsp; </span>
+                                                        </div>
+                                                        <div class="col-md-2 col-xs-12 mob-ulist">
+                                                            <apex:commandLink action="{!pgSave}" value="{!$Label.css_save_btn}" styleclass="btn-intake btn-intake-footer m-btn-width"/>
+                                                            <span class="mob-only"> &nbsp; </span>
+                                                        </div> 
+                                                        <div class="col-md-2 col-xs-12 mob-ulist">
+                                                            <apex:commandLink action="{!showPopup}" rerender="popup" value="{!$Label.css_exit_btn}" styleclass="btn-intake btn-intake-footer m-btn-width"/>
+                                                            <span class="mob-only"> &nbsp; </span>
+                                                        </div>
+                                                        <div class="col-md-3 col-xs-12 mob-ulist">
+                                                            <apex:commandButton action="{!closeSession}" value="{!$Label.css_save_close_btn}" styleclass="btn-intake btn-intake-footer m-btn-width" rendered="{!$Setup.css_header_nav__c.btnJobFinishedCanceled__c}"/>
+                                                            <span class="mob-only"> &nbsp; </span>
+                                                        </div>
+                                                        <!-- 82020- Story87378 Reminder when canceling a job - Krishna on 19-06-2017.-->
+                                                        <!--
+                                                        <div class="col-md-5 col-xs-12 mob-ulist">
+                                                            <apex:commandLink action="{!cancel}" value="{!$Label.css_cancel_btn}" styleclass="btn-intake btn-intake-footer m-btn-width" rendered="{!$Setup.css_header_nav__c.btnJobFinishedCanceled__c}"/>
+                                                            <span class="mob-only"> &nbsp; </span>
+                                                        </div>
+                                                        -->
+                                                        <div class="col-md-5 col-xs-12 mob-ulist">
+                                                            <apex:outputPanel rendered="{!$Setup.css_header_nav__c.btnJobFinishedCanceled__c}">
+                                                                <a data-target="#cancelModelPopup" data-toggle="modal" class="btn-intake btn-intake-footer m-btn-width">{!$Label.css_cancel_btn}</a>
+                                                                <span class="mob-only"> &nbsp; </span>
+                                                            </apex:outputPanel>
+                                                        </div>
+                                                        <!-- 82020- Story87378 Reminder when canceling a job - Krishna on 19-06-2017.-->
+                                                        <!--          </apex:form>      --->
+                                                    </div>
+                                                    <!-- <c:css_intake_vhist /> -->
+                                                    
+                                                    <apex:outputPanel id="tndvisual" rendered="{!show_vi_pnl}">
+                                                        <div class="panel-body">
+                                                            {!$Label.css_Future_Functionality_for_Visual_Inspection}
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                    
+                                                    <!-- Butten -->
+                                                    <div class="panel-body">
+                                                        <div class="col-sm-offset-5 col-sm-7">
+                                                            
+                                                            <div class="col-sm-2  col-xs-12">
+                                                                <apex:commandLink action="{!pgSave}" value="{!$Label.css_save_btn}" styleclass="btn-intake btn-intake-footer m-btn-width"/>
+                                                                <span class="mob-only"> &nbsp; </span>
+                                                            </div> 
+                                                            <div class="col-sm-2 col-xs-12">
+                                                                <apex:commandLink action="{!showPopup}" rerender="popup" value="{!$Label.css_exit_btn} " styleclass="btn-intake btn-intake-footer m-btn-width"/>
+                                                                <span class="mob-only"> &nbsp; </span>
+                                                            </div> 
+                                                            <div class="col-sm-6 col-xs-12">
+                                                                <!--  <c:CSS_JobCloseComponent sJobId="{!workjob.Id}"/> -->
+                                                                <apex:commandButton action="{!closeSession}" value="{!$Label.css_save_close_btn}" styleclass="btn-intake btn-intake-footer m-btn-width" rendered="{!$Setup.css_header_nav__c.btnJobFinishedCanceled__c}"/>
+                                                                <span class="mob-only"> &nbsp; </span>
+                                                            </div>
+                                                            <!-- 82020- Story87378 Reminder when canceling a job - Krishna on 19-06-2017.-->
+                                                            <!--
+                                                            <div class="col-sm-2 col-xs-12">
+                                                                <apex:commandLink action="{!cancel}" value="{!$Label.css_cancel_btn}" styleclass="btn-intake btn-intake-footer m-btn-width" rendered="{!$Setup.css_header_nav__c.btnJobFinishedCanceled__c}"/>
+                                                                <span class="mob-only"> &nbsp; </span>
+                                                            </div>
+-->
+                                                            <div class="col-sm-2 col-xs-12">
+                                                                <apex:outputPanel rendered="{!$Setup.css_header_nav__c.btnJobFinishedCanceled__c}">
+                                                                    <a data-target="#cancelModelPopup" data-toggle="modal" class="btn-intake btn-intake-footer m-btn-width">{!$Label.css_cancel_btn}</a>
+                                                                    <span class="mob-only"> &nbsp; </span>
+                                                                </apex:outputPanel>
+                                                            </div>
+                                                            <!-- 82020- Story87378 Reminder when canceling a job - Krishna on 19-06-2017.-->
+                                                        </div>
+                                                    </div>
+                                                    <!-- Butten End -->
+                                                    
+                                                </div></apex:outputPanel></div></div></div></div></div>
+                        <!-- 82020- Story87378 Reminder when canceling a job ******* START CANCEL - MODEL POPUP **** -->
+                        <apex:outputPanel id="cancelModelPopup">
+                            <div class="modal fade" id="cancelModelPopup"  role="dialog">
+                                <apex:outputPanel id="cancelModeShow" styleClass="popupAttachBg" layout="block">                  
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">  
+                                                <apex:commandButton title="Close the popup" html-data-dismiss="modal" styleClass="cross_butten"  onclick="ClearErrorMessage();"/>
+                                                <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_cummins_service_system} </h4>
+                                            </div>
+                                            <div class="modal-body">
+                                                <b>{!$Label.CSS_Cancel_Popup_Message}</b>
+                                            </div>
+                                            <apex:outputPanel id="msgbody">
+                                                <apex:outputPanel rendered="{!cancelSJWrapperObj1.errorFlag}">
+                                                    <div class="modal-body">
+                                                       <span id="CancelErrorId"><b><apex:outputText value="{!cancelSJWrapperObj1.errorMessage}" style="color:red;"/></b></span>
+                                                    </div>
+                                                </apex:outputPanel>
+                                            </apex:outputPanel>
+                                            <div class="modal-footer">
+                                                <div class="col-sm-8 col-xs-4 cmi-tar"> 
+                                                    <apex:commandButton value="{!$Label.CSS_FAQs_Working_A7}" action="{!cancel}" styleClass="saveButton"  status="cancelJobImg" rerender="msgbody,exeReload" oncomplete="redirectPage();"/>
+                                                    
+                                                    <apex:actionStatus id="cancelJobImg">
+                                                        <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                                        <apex:facet name="stop"></apex:facet>
+                                                    </apex:actionStatus>&nbsp; &nbsp;
+                                                    <apex:commandButton value="{!$Label.CSS_No}" html-data-dismiss="modal" styleClass="cancelButton"  onclick="ClearErrorMessage();"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </apex:outputPanel>
+                            </div>
+                        </apex:outputPanel>
+<!-- 82020- Story87378 Reminder when canceling a job ******* END CANCEL - MODEL POPUP **** -->
+                        <apex:outputPanel id="popup">
+                            <apex:outputPanel id="popInnerOutputPnl" styleClass="customPopup" layout="block" rendered="{!displayPopUp}">                  
+                                <table style="width:100%" align="centre" background-color="">
+                                    <tr>
+                                        <td><font face="Helvetica neue" size="5px">{!$Label.css_Cummins_Service_System}</font>
+                                            <apex:commandButton image="{!URLFOR($Resource.CSS_Cross_Button)}" title="Close the popup" action="{!closePopup}" styleClass="closeButton" rerender="popup"></apex:commandButton>
+                                        </td>
+                                    </tr>
+                                    <tr><td>  <br/>{!$Label.css_Do_you_want_to_Exit}</td> </tr><br/>
+                                    <tr><td> <br/>
+                                        <div class="col-md-12" align="center" draggable="false" >
+                                            
+                                            <apex:commandButton value="{!$Label.CSS_FAQs_Working_A7}" action="{!redirectPopup}" styleClass="saveButton" rerender="popup" />
+                                            <!-- <button type="button" class="cancelButton" data-dismiss="modal">{!$Label.css_Cancel}</button> commented by Rajesh Narra to fix the defect 191735 number --> &nbsp;&nbsp;
+                                           <apex:commandButton title="Close the popup" value="{!$Label.css_Cancel}" action="{!closePopup}" styleClass="cancelButton" rerender="popup" />
+                                        </div> 
+                                        </td></tr>
+                                </table>
+                            </apex:outputPanel> 
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel id="uPopup">
+                            <apex:outputPanel id="popInnerOutputPnl1" styleClass="uploadAttachmentPopupStyle" layout="block" rendered="{!displayPopup1}"> 
+                                
+                                <div class="modal-header">  
+                                    <apex:commandButton title="Close the popup" action="{!closePopup1}" styleClass="cross_butten" />
+                                    <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.CSS_Triage_Diagnosis_Cummins_Service_System} </h4>
+                                </div>
+                                
+                                <div class="clearfix"></div>
+                                
+                                <div class="col-md-12 col-xs-12 modal-title"> 
+                                    <apex:outputLabel value="{!$Label.css_File_Select_the_file_you_would_like_to_upload}" for="file_File"/>&nbsp;<span style="font-size:10px;"><b>({!$Label.file_size_must_be_less_than_10_MB})</b></span>
+                                </div>
+                                <div class="col-md-12 col-xs-12">
+                                    <apex:inputFile id="file_File_1" value="{!fileBody}" filename="{!fileName}" onchange="checkFileSize(this);return false;"/>
+                                </div>
+                                
+                                
+                                <div class="col-md-12 col-xs-12 modal-title" >    
+                                    <apex:outputLabel value="{!$Label.css_Description}" for="description"/> 
+                                    <b><apex:outputText value="{!$Label.Attachment_size_cannot_exceed_10_MB}" id="error12" style="display:none;color: red;font-size: 12px;"></apex:outputText></b> 
+                                </div>
+                                <div class="col-md-12 col-xs-12">
+                                    <apex:inputTextarea id="description_upl1" value="{!description1}" rows="2" cols="20" onkeyup="textCounter(this,'counter_desc1',100);"/>
+                                </div> 
+                                <div class="clearfix"></div>
+                                <div class="col-md-12 col-xs-12"> 
+                                    {!$label.css_Remaining_Characters} <input disabled="true" value ="100"  id="counter_desc1" style="border:none; background:none" />
+                                </div>
+                                <div class="clearfix"></div>
+                                <div class="col-md-12 col-xs-12 modal-title">
+                                    <apex:outputLabel value="{!$Label.css_File_Select_the_file_you_would_like_to_upload}" for="file_File"/>&nbsp;<span style="font-size:10px;"><b>({!$Label.file_size_must_be_less_than_10_MB})</b></span>
+                                </div>
+                                <div class="col-md-12 col-xs-12">
+                                    <apex:inputFile id="file_File_2" value="{!fileBody2}" filename="{!fileName2}" style="height:30px;" onchange="checkFileSize12(this);return false;"/>
+                                </div>
+                                
+                                <div class="clearfix"></div>
+                                <div class="col-md-12 col-xs-12 modal-title">  
+                                    <apex:outputLabel value="{!$Label.css_Description}" for="description"/> 
+                                    <b><apex:outputText value="{!$Label.Attachment_size_cannot_exceed_10_MB}" id="error11" style="display:none;color: red;font-size:12px;"></apex:outputText></b>
+                                </div>
+                                <div class="col-md-12 col-xs-12">  
+                                    <apex:inputTextarea id="description_upl2" value="{!description2}" rows="2" cols="20" onkeyup="textCounter(this,'counter_desc2',100);"/>
+                                </div>
+                                
+                                
+                                
+                                <div class="clearfix"></div>
+                                <div class="col-md-12 col-xs-12 modal-title">  
+                                    {!$label.css_Remaining_Characters} <input disabled="true" value ="100"  id="counter_desc2" style="border:none; background:none" />
+                                </div>
+                                <div class="clearfix"></div>
+                                <div class="col-md-12 col-xs-12 modal-title">
+                                    <apex:outputLabel value="{!$Label.css_File_Select_the_file_you_would_like_to_upload}" for="file_File"/>&nbsp;<span style="font-size:10px;"><b>({!$Label.file_size_must_be_less_than_10_MB})</b></span>
+                                </div>
+                                <div class="col-md-12 col-xs-12">
+                                    <apex:inputFile id="file_File_3" value="{!fileBody3}" filename="{!fileName3}" style="height:30px;" onchange="checkFileSize13(this);return false;"/>
+                                </div>
+                                <div class="clearfix"></div>
+                                <div class="col-md-12 col-xs-12 modal-title">    
+                                    <apex:outputLabel value="{!$Label.css_Description}" for="description"/> 
+                                     <b><apex:outputText value="{!$Label.Attachment_size_cannot_exceed_10_MB}" id="error13" style="display:none;color: red;font-size: 12px;"></apex:outputText></b>  
+                                </div>
+                                <div class="col-md-12 col-xs-12">
+                                    <apex:inputTextarea id="description_upl3" value="{!description3}" rows="2" cols="20" onkeyup="textCounter(this,'counter_desc3',100);"/>
+                                </div>
+                                
+                                
+                                <div class="clearfix"></div>
+                                <div class="col-md-12 col-xs-12"> 
+                                    {!$label.css_Remaining_Characters} <input disabled="true" value ="100"   id="counter_desc3" style="border:none; background:none" />
+                                </div>
+                                <div class="clearfix"></div>
+                                <hr/> 
+                                <div style="margin-bottom:15px;">
+                                    <div class="col-sm-5 col-xs-4 cmi-tar">    
+                                        <!--<apex:commandButton value="{!$Label.css_save_btn}" action="{!processUpload}" styleClass="saveButton" ></apex:commandButton>-->
+                                        <apex:commandButton value="{!$Label.css_save_btn}" styleClass="saveButton" onclick="return DisableButton1();"  id="Attach1" /> <!--Defect fix 61124 --->
+                                        <apex:commandButton value="{!$Label.css_save_btn}" styleClass="cmi_lighttealbutton"  id="disableAttach1" style="display:none;"/> <!--Defect fix 61124 ---> 
+                                    </div>
+                                    <div class="col-sm-5 col-xs-4 cmi-tar">
+                                        <apex:commandButton value="{!$Label.css_Cancel}" action="{!closePopup1}" styleClass="cancelButton" ></apex:commandButton>
+                                    </div>
+                                    <br/>
+                                </div>
+                                
+                                
+                                
+                                <!-- <c:css_multi_attach objId="{!$CurrentPage.Parameters.id}"/> -->
+                            </apex:outputPanel> 
+                        </apex:outputPanel>
+                        
+                        <div class="container">  
+                            <div class="modal fade" id="EditPopupNew"  role="dialog">
+                                <div class="modal-dialog">
+                                    <div class="modal-content"> 
+                                        <div class="modal-header">  
+                                            <Button title="Close the popup" class="cross_butten" data-dismiss="modal" /> 
+                                            <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Intake} {!$Label.css_view} {!$Label.css_History} - {!$Label.css_cummins_service_system}</h4>
+                                        </div>
+                                        <div class="modal-body">
+                                            <form class="form-horizontal" role="form">   
+                                                <div class="form-group">
+                                                    <div class="col-sm-12 col-xs-12">
+                                                        <div>  {!$Label.css_Modify_attachment_for} - {!atthName} </div> 
+                                                        <!--   <apex:outputLabel value="JOB NOTES " /> -->
+                                                        
+                                                    </div>
+                                                </div>
+                                            </form>
+                                            <div class="clearfix"></div>
+                                            <apex:outputLabel value="{!$Label.css_Description}" for="description"/>
+                                            <div class="clearfix"></div>
+                                            <apex:inputtextarea id="edit_desc9_textarea" value="{!description}" rows="2" cols="20" onkeyup="textCounter(this,'edit_desc1',100);"/>
+                                            <div class="clearfix"></div>
+                                            <hr/>
+                                            <div>{!$label.css_Remaining_Characters} <input disabled="true" value ="100" id="edit_desc1" style="background: none; border:none" /> </div>      
+                                            
+                                            
+                                            <hr/>
+                                            <div class="col-sm-5 col-xs-4 cmi-tar">    
+                                                <apex:commandButton value="{!$Label.css_save_btn}" action="{!editAttachment}" styleClass="saveButton"  /> 
+                                            </div>
+                                            <div class="col-sm-5 col-xs-4 cmi-tar">
+                                                <button type="button" class="cancelButton" data-dismiss="modal">{!$Label.css_Cancel}</button>
+                                            </div> 
+                                            <br/></div></div></div></div></div>
+                        
+                        <apex:outputPanel id="DeletePopupNew">                  
+                            <apex:outputPanel id="popInnerOutputPn6" styleClass="DeletepopupStyle" layout="block" rendered="{!displayPopup6}">                     
+                                <div class="modal-header">
+                                    <apex:commandButton title="Close the popup" action="{!closePopup6}" styleClass="cross_butten" rerender="DeletePopupNew" ></apex:commandButton>  
+                                    <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.CSS_Triage_Diagnosis_Cummins_Service_System} </h4>
+                                </div>
+                                <div class="clearfix"></div>
+                                <div class="col-sm-12 col-xs-12">
+                                    <font size="4px" weight="bold">{!$Label.css_Please_confirm_delete}.</font>  
+                                    <!--   <apex:outputLabel value="JOB NOTES " /> -->
+                                </div>
+                                <div class="clearfix"></div>
+                                <hr/>
+                                <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                                    <apex:commandButton value="{!$Label.CSS_Delete}" action="{!delAttachment}" onClick="disableDeleteButton();" styleClass="saveButton" rerender="DeletePopupNew" id="theDeleteButton" />
+                                    
+                                </div>
+                                <div class="col-sm-5 col-xs-4 cmi-tar">
+                                    <apex:commandButton value="{!$Label.css_Cancel}" action="{!closePopup6}" styleClass="cancelButton" rerender="DeletePopupNew" />
+                                    <!--     <apex:commandButton value="Cancel" action="{!closePopup6}" styleClass="cancelButton"  /> -->
+                                </div> 
+                                
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                        
+                        <!-- 56604  Start Code for Job Closure panel content --->    
+                         <apex:actionRegion >
+                        <apex:outputPanel id="jobClosePanel">
+                            <apex:outputPanel id="JobCloseInnerPanel" rendered="{!displayClosePopup}" styleclass="popupAttachBg" layout="block">
+                                <apex:outputPanel styleClass="custPopupAttach" layout="block">
+                                <div role="dialog">
+                                    <div class="modal-header">  
+                                        <apex:commandButton title="Close the popup" action="{!closeSession_close}" styleClass="cross_butten" rerender="jobClosePanel" oncomplete="CloseErrorMessage();"></apex:commandButton>  
+                                        <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.CSS_Job3} - {!workjob.Customer_Name__c}</h4>
+                                    </div>
+                                    <div class="modal-body" style="max-height:500px;overflow:auto;">
+                                        <!-- Begin Code for Warning Message with CAMPAIGNS, TSB's TRP's incomplete  as-->
+                                        <apex:outputPanel id="NoCampTSBsTRPs" rendered="{!nocamptsbtrps}">
+                                            <div>
+                                                {!$Label.css_Please_check_off_required_Campaigns_TRPs_TSBs_or_provide_comments}
+                                            </div>
+                                        </apex:outputPanel>
+                                        <!-- End Code for Warning Message with CAMPAIGNS, TSB's TRP's incomplete -->
+                                        
+                                        <!-- Begin Code for  Job Close with Resolution and Feed Back Fields -->
+                                        <apex:outputPanel rendered="{!showResolution}">
+                                            <apex:pageMessages />
+                                            <div>
+                                                {!$Label.css_You_are_about_to_close_the_Job}. 
+                                            </div><br/>
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <b><apex:outputLabel value="{!$objectType.CSS_Job_Order__c.Fields.CSS_Resolution__c.Label}"/></b>
+                                                    <apex:selectRadio value="{!workJob.CSS_Resolution__c}" layout="pageDirection">
+                                                        <apex:selectOptions value="{!resolutionOptions}" />
+                                                    </apex:selectRadio>
+                                                    
+                                                    <apex:outputPanel rendered="{!IF(bmsEnabled==true, true,false)}">
+                                                        <div class="form-horizontal" role="form">
+                                                            <apex:outputPanel rendered="{!IF((workJob.Customer_Code__c==''||workJob.Customer_Code__c==null), true,false)}">
+                                                                <label for="" class="col-sm-4 cmi-tar">{!$Label.CSS_Customer_Code}<span class="cmi_asterisk">*</span></label>
+                                                                <div class="col-sm-7 col-xs-12 " >
+                                                                    <apex:InputField value="{!workJob.Customer_Code__c}"></apex:InputField>
+                                                                </div>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF((workJob.Unit_Number__c==''||workJob.Unit_Number__c==null), true,false)}">
+                                                                <div class="clearfix"></div>
+                                                                <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Unit_Num}<span class="cmi_asterisk">*</span></label>
+                                                                <div class="col-sm-8 col-xs-12 " >
+                                                                    <apex:InputField value="{!workJob.Unit_Number__c}"></apex:InputField>
+                                                                </div>
+                                                            </apex:outputPanel>
+                                                            <div class="clearfix"></div>
+                                                            <apex:outputPanel rendered="{!IF((workJob.Shop_Work_Order__c==''||workJob.Shop_Work_Order__c==null), true,false)}">
+                                                                <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Work_Oder_Num}<span class="cmi_asterisk">*</span></label>
+                                                                <div class="col-sm-8 col-xs-12 " >
+                                                                    <apex:InputField value="{!workJob.Shop_Work_Order__c}"></apex:InputField>
+                                                                </div>
+                                                            </apex:outputPanel>
+                                                            <div class="clearfix"></div>                                                            
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel id="resolutionReqMessage">
+                                                        <apex:outputPanel rendered="{!showResolutionRequired}"> <!--Rajesh. Fixed as part of defect 179167-->
+                                                                <div class="modal-body"> <!--Rajesh. Fixed as part of defect 179167-->
+                                                                   <span id="resolutionRequired"><b><apex:outputText value="Please select the resolution" style="color:red;"/></b></span> <!--Rajesh. Fixed as part of defect 179167-->
+                                                                </div> <!--Rajesh Narra-->
+                                                       </apex:outputPanel> <!--Rajesh Narra-->
+                                                     <!--  <apex:outputText rendered="{!requiredBMSMessage}" value="Please add values to the fields" style="color:red; font-weight:bold"/><br/> Rajesh. Fixed as part of defect 179167 -->
+                                                   </apex:outputPanel>
+                                                    <!--<apex:outputText rendered="{!requiredBMSMessage}" value="Please add values to the fields" style="color:red; font-weight:bold"/><br/>-- Rajesh. Fixed as part of defect 179167-->
+                                                    <apex:outputLabel value="{!$objectType.CSS_Job_Order__c.Fields.CSS_Feedback_Comments__c.Label}"/>
+                                                    <div style="padding-left:15px;border-bottom:1px solid #000000">       
+                                                        <apex:inputTextarea value="{!workjob.CSS_Feedback_Comments__c}" style="min-height:100px; overflow-x:hidden; overflow-y:scroll; resize: none; border-style: groove;" onkeyup="textCounter(this,'ttocounter',2000);" rows="1" cols="20" />
+                                                        {!$Label.css_Remaining_Characters} <input type="text" value="2000" readonly="readonly" maxlength="3" size="3"  id="ttocounter" style="border:none;" />    
+                                                    </div><br/>
+                                                    <apex:outputPanel id="errmsgbody">
+                                                        <apex:outputPanel rendered="{!cancelSJWrapperObj1.errorFlag}">
+                                                            <div class="modal-body">
+                                                               <span id="closeErrorId"><b><apex:outputText value="{!cancelSJWrapperObj1.errorMessage}" style="color:red;"/></b></span>
+                                                            </div>
+                                                        </apex:outputPanel>
+                                                    </apex:outputPanel>
+                                                    <div class="row" style="padding-left:15px">
+                                                        <div class="col-sm-offset-2 col-sm-4 col-xs-12">    
+                                                            <apex:commandButton value="{!$Label.css_Close_Job}" action="{!saveAndCloseJob}" styleClass="saveButton"  status="closeJobImg3" rerender="errmsgbody,exeReload,resolutionReqMessage,showResolution" oncomplete="redirectPage();" ></apex:commandbutton><!--Rajesh. Fixed as part of defect 179167 showResolution -->
+                                                            <apex:actionStatus id="closeJobImg3">
+                                                                <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                                                <apex:facet name="stop"></apex:facet>
+                                                            </apex:actionStatus>
+                                                        </div>
+                                                        <div class="col-sm-6 col-xs-12">
+                                                            <apex:commandButton value="{!$Label.css_Cancel}" action="{!closeSession_close}" styleClass="cancelButton" rerender="jobClosePanel" oncomplete="CloseErrorMessage();"/><br/>
+                                                        </div><br/>
+                                                    </div>
+                                                    
+                                                </div>
+                                            </div>
+                                        </apex:outputPanel>
+                                        <!-- End Code for Job Close with Resolution and Feed Back Fields -->
+                                        
+                                        <!-- Begin Code for Job Close with Verified Solutions with out Repairs -->
+                                        <apex:outputPanel id="repairsPan" rendered="{!showRepairs}">
+                                            <apex:outputText rendered="{!showRepairErrorMessage}" value="Please select repair response for the below solutions" style="color:red; font-weight:bold"/>
+                                            <apex:outputText rendered="{!showRepairRequired}" value="Please select resolution" style="color:red; font-weight:bold"/><!--Rajesh. Fixed as part of defect 179167-->
+                                            <div>
+                                                {!$Label.css_You_are_about_to_close_the_Job}. 
+                                            </div><br/>
+                                            <div class="row"><b>{!$Label.css_Please_provide_repair_information_forthe_cases}.</b><br/>
+                                                <div class="col-sm-12"><br/>
+                                                    <apex:selectOptions value="{!responseOptions}"/>
+                                                    <apex:repeat var="qa" value="{!responseValues}">
+                                                        {!qa.Case_Name__c} - {!qa.Solution_Title__c}
+                                                        <apex:selectRadio value="{!qa.Repair_Response__c}" layout="pageDirection">
+                                                            <apex:selectOptions value="{!responseOptions}"/>
+                                                        </apex:selectRadio> 
+                                                    </apex:repeat>
+                                                     <apex:outputLabel value="{!$objectType.CSS_Job_Order__c.Fields.CSS_Resolution__c.Label}" rendered="{!showRepairRequired}"/><!-- Rajesh. Fixed as part of defect 179167 showResolutionWithRepair Replaced with showRepairRequired  -->
+                                                        <apex:selectRadio value="{!workJob.CSS_Resolution__c}" layout="pageDirection" rendered="{!showRepairRequired}"><!-- Rajesh. Fixed as part of defect 179167 showResolutionWithRepair Replaced with showRepairRequired  -->
+                                                            <apex:selectOptions value="{!resolutionOptions}" />
+                                                        </apex:selectRadio> 
+                                             <apex:outputPanel rendered="{!IF(bmsEnabled==true, true,false)}">
+                                                <div class="form-horizontal" role="form">
+                                                    <apex:outputPanel rendered="{!IF((workJob.Customer_Code__c==''||workJob.Customer_Code__c==null), true,false)}">
+                                                    <label for="" class="col-sm-4 cmi-tar">{!$Label.CSS_Customer_Code}<span class="cmi_asterisk">*</span></label> <!-- Rajesh. Fixed as part of defect 179167 ---->
+                                                    <div class="col-sm-7 col-xs-12" >
+                                                        <apex:InputField value="{!workJob.Customer_Code__c}"></apex:InputField>
+                                                    </div>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF((workJob.Unit_Number__c==''||workJob.Unit_Number__c==null), true,false)}">
+                                                    <div class="clearfix"></div>
+                                                    <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Unit_Num}<span class="cmi_asterisk">*</span></label>
+                                                    <div class="col-sm-8 col-xs-12" >
+                                                        <apex:InputField value="{!workJob.Unit_Number__c}"></apex:InputField>
+                                                    </div>
+                                                    </apex:outputPanel>
+                                                    <div class="clearfix"></div>
+                                                    <apex:outputPanel rendered="{!IF((workJob.Shop_Work_Order__c==''||workJob.Shop_Work_Order__c==null), true,false)}">
+                                                    <label for="" class="col-sm-4 col-xs-12 cmi-tar">{!$Label.CSS_Work_Oder_Num}<span class="cmi_asterisk">*</span></label>
+                                                    <div class="col-sm-8 col-xs-12" >
+                                                        <apex:InputField value="{!workJob.Shop_Work_Order__c}"></apex:InputField>
+                                                    </div>
+                                                    </apex:outputPanel>
+                                                    <div class="clearfix"></div>                                                   
+                                                </div>
+                                            </apex:outputPanel>
+                                                            
+                                           <!-- <apex:outputText rendered="{!requiredBMSMessage}" value="Please add values to the fields" style="color:red; font-weight:bold"/><br/> -->
+                                            <apex:outputLabel value="{!$objectType.CSS_Job_Order__c.Fields.CSS_Feedback_Comments__c.Label}"/>
+                                            <apex:inputTextarea value="{!workjob.CSS_Feedback_Comments__c}" style="min-height:100px; overflow-x:hidden; overflow-y:scroll; resize: none; border-style: groove;" onkeyup="textCounter(this,'txtcounter',2000);" rows="1" cols="20" />
+                                            {!$Label.css_Remaining_Characters} <input type="text" value="2000" readonly="readonly" maxlength="3" size="3"  id="txtcounter" style="border:none;" /> 
+                                                    <apex:outputPanel id="errmsgbody1">
+                                                        <apex:outputPanel rendered="{!cancelSJWrapperObj1.errorFlag}">
+                                                            <div class="modal-body">
+                                                               <span id="closeErrorId1"><b><apex:outputText value="{!cancelSJWrapperObj1.errorMessage}" style="color:red;"/></b></span>
+                                                            </div>
+                                                        </apex:outputPanel>
+                                                    </apex:outputPanel>
+                                                    <div class="row" style="padding-left:15px">
+                                                        <div class="col-sm-offset-2 col-sm-4 col-xs-12">    
+                                                            <apex:commandButton value="{!$Label.css_Close_Job}" action="{!saveAndCloseJob}" styleClass="saveButton"   status="closeJobImg1" rerender="errmsgbody1,exeReload,repairsPan" oncomplete="redirectPage();"></apex:commandButton> <!--Rajesh Narra -->
+                                                            <apex:actionStatus id="closeJobImg1">
+                                                                <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                                                <apex:facet name="stop"></apex:facet>
+                                                            </apex:actionStatus>
+                                                        </div>
+                                                        <div class="col-sm-6 col-xs-12">
+                                                            <apex:commandButton value="{!$Label.css_Cancel}" action="{!closeSession_close}" styleClass="cancelButton" rerender="jobClosePanel"  oncomplete="CloseErrorMessage();"/><br/>
+                                                        </div><br/>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </apex:outputPanel>
+                                        <!-- End Code for Resoluiton inclduing negative repair Reponse -->
+                                        
+                                    </div>
+                                </div>
+                            </apex:outputPanel>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                        </apex:actionRegion> 
+                        <!-- 56604  EndCode for Job Closure panel content --->    
+                        
+                    </apex:outputpanel>
+                    
+                </div>
+                
+            </apex:form>
+        </apex:define>
+        
+        
+    </div>
+    <apex:outputPanel id="ueESNQMarkPopup">
+        <div class="container">  
+            <div class="modal fade" id="ueESNQMarkPopup"  role="dialog">
+                <div class="modal-dialog">
+                    <div class="modal-content"> 
+                        <div class="modal-header">  
+                            <Button title="Close the popup" class="cross_butten" data-dismiss="modal" />
+                            <h4 class="modal-title" style="color: #FFFFFF;"> {!$Label.css_unit} &amp; {!$Label.css_Engine} - {!$Label.css_cummins_service_system}  </h4>
+                        </div>
+                        <div class="modal-body">
+                            <form class="form-horizontal" role="form">   
+                                <div class="form-group">
+                                    <div class="col-sm-12 col-xs-12">
+                                        <div class="intake_help1 intake_help-popup"></div>
+                                        <div class="col-sm-11 col-xs-12" style=" text-align: justify;">
+                                            <!--<p><b> PSN </b>-->
+                                            <apex:outputLabel value="{!$Label.css_ue_ESN_popup}" escape="false" style="font-weight: normal;"></apex:outputLabel>
+                                            <!-- {!$Label.css_ue_ESN_popup}-->
+                                            
+                                            <!--{!$Label.css_ue_ESN_popup1}--> 
+                                            <!--</p>-->
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                            <div class="clearfix"></div>
+                            <hr/>
+                            
+                            <div class="col-sm-12" align="center" draggable="false" >
+                                <button type="button"  class="cancelButton" data-dismiss="modal">{!$Label.css_Ok}</button>
+                                
+                            </div> <br/>
+                            <div class="clearfix"></div>
+                            <div class="clearfix"></div>
+                        </div></div></div></div></div>
+    </apex:outputPanel> 
+</apex:page>

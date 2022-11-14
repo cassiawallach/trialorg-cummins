@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <brand>
+        <headerColor>#1E1E1E</headerColor>
+        <shouldOverrideOrgTheme>true</shouldOverrideOrgTheme>
+    </brand>
+    <description>View and manage log data</description>
+    <formFactors>Small</formFactors>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
+    <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
+    <label>Logger Console</label>
+    <navType>Console</navType>
+    <tabs>Nebula__Log__c</tabs>
+    <tabs>Nebula__LogEntry__c</tabs>
+    <tabs>Nebula__LogEntryTag__c</tabs>
+    <tabs>Nebula__LoggerTag__c</tabs>
+    <tabs>Nebula__LogEntryEventStream</tabs>
+    <tabs>Nebula__LoggerSettings</tabs>
+    <tabs>Nebula__LogBatchPurge</tabs>
+    <tabs>standard-report</tabs>
+    <tabs>standard-Dashboard</tabs>
+    <uiType>Lightning</uiType>
+    <utilityBar>Nebula__LoggerConsoleUtilityBar</utilityBar>
+    <workspaceConfig>
+        <mappings>
+            <tab>Nebula__LogBatchPurge</tab>
+        </mappings>
+        <mappings>
+            <tab>Nebula__LogEntryEventStream</tab>
+        </mappings>
+        <mappings>
+            <fieldName>Nebula__LogEntry__c</fieldName>
+            <tab>Nebula__LogEntryTag__c</tab>
+        </mappings>
+        <mappings>
+            <fieldName>Nebula__Log__c</fieldName>
+            <tab>Nebula__LogEntry__c</tab>
+        </mappings>
+        <mappings>
+            <tab>Nebula__Log__c</tab>
+        </mappings>
+        <mappings>
+            <tab>Nebula__LoggerSettings</tab>
+        </mappings>
+        <mappings>
+            <tab>Nebula__LoggerTag__c</tab>
+        </mappings>
+        <mappings>
+            <tab>standard-Dashboard</tab>
+        </mappings>
+        <mappings>
+            <tab>standard-report</tab>
+        </mappings>
+    </workspaceConfig>
+</CustomApplication>

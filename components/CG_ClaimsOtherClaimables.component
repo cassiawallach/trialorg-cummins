@@ -1,0 +1,1362 @@
+<!-- 
+Version      Author                  Date             Comments
+1.0        Rajasekhar Hindupur     19/03/2018     Added Other Claimables  
+-->
+<apex:component controller="CG_CL_ClaimsOtherClaimbles" allowDML="true">
+    <apex:attribute name="mainController" description="Main Controller Type" type="CG_CL_ClaimsPartsandOtherClaimbles"/>
+    <apex:attribute name="TotalUSD" description="total Value" type="Decimal" />
+    <apex:attribute name="comt" description="comt Value" type="Decimal" />
+    <apex:attribute name="ncomt" description="ncomt Value" type="Decimal" />
+    <apex:attribute name="towt" description="towt Value" type="Decimal" />
+    <apex:attribute name="meals" description="meals Value" type="Decimal" />
+    <apex:attribute name="lodg" description="lodg Value" type="Decimal" />
+    <apex:attribute name="totalexp" description="totalexp Value" type="Decimal" />
+    <!--Added below attribute for getting job id,as per "I Survived" sprint story #152967,-By RAJESH 27th July 2018 -->     
+    <apex:attribute name="JobId" description="service job Value" type="String" />
+    <!--End-->
+    <style>
+        .TTMLTable th,
+        th {
+            text-align: center;
+        }
+
+        .TTMLbold {
+            font-weight: bold;
+        }
+
+        th,
+        td {
+            border: 1px solid #d0d0d0;
+            padding: 5px;
+        }
+
+        .showRedBorder {
+            border: 2px solid red !important;
+        }
+
+    </style>
+
+
+    <script type="text/javascript">
+        function validateClaimbles(compId) {
+            var WarrTime = document.getElementById(compId.id).value;
+            var WarrTimeLength = document.getElementById(compId.id).value.length;
+            if (WarrTime > 100) {
+                document.getElementById(compId.id).value = 100;
+            }
+        }
+
+        function qtyPressClaimblesCovered(e, compId) {
+            var technicianTimeVal = document.getElementById(compId.id).value;
+            if (((e.which > 47 && e.which <= 57) || e.which == 8 || e.which ==
+                 46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=
+                                                          105))) {
+
+            } else {
+                return false;
+            }
+        }
+        function quantityClaimbles(e,compId){
+             if((e.which > 47 && e.which <=57) || e.which == 9 || e.which == 11 ||  e.which == 0 || e.which == 8) // || e.which == 37 || e.which == 09 || e.which == 01 || e.which == 11 || e.which == 39 || (e.which > 95 && e.which <=105))
+            {
+            } 
+            else 
+            {
+                return false;
+            }        
+        }
+        
+         function quantityClaimblesUnitPrice(e,compId){
+           if((e.which > 47 && e.which <=57) || e.which == 9 || e.which == 11 || e.which == 8 || e.which == 46 ||  e.which == 0) // || e.which == 37 || e.which == 09 || e.which == 01 || e.which == 11 || e.which == 39 || (e.which > 95 && e.which <=105))
+            {
+            } 
+            else 
+            {
+                return false;
+            }        
+        }
+//Added Method for not allow to enter charecters in Milage and Hours Traveled Fields as per defect #171777 related story #168028 Despicable Me,-By RAJESH 20th Nov 2018
+        function preventCharecters(e,compId){
+               if((e.which > 47 && e.which <=57) || e.which == 9 || e.which == 11 || e.which == 8 || e.which == 46 ||  e.which == 0) // || e.which == 37 || e.which == 09 || e.which == 01 || e.which == 11 || e.which == 39 || (e.which > 95 && e.which <=105))
+                {
+                } 
+                else 
+                {
+                    return false;
+                }        
+        }
+//End code for defect #171777        
+
+        function hoursTraveled(e, compId) {
+            var technicianTimeVal = document.getElementById(compId.id).value;
+            console.log('technicianTimeVal'+compId);
+            if (((e.which > 47 && e.which <= 57 || e.which == 8 || e.which ==
+                  46 || e.which == 9 || e.which == 37 || e.which == 39 ||
+                  (e.which > 95 && e.which <= 105)) || ((e.which == 190 ||
+                                                         e.which == 110) && !(technicianTimeVal.includes('.'))))) {} else {
+                return false;
+            }
+
+
+        }
+
+        function validateTTMLHoursTraveled(compId) {
+            var TTMLHoursTraveled = document.getElementById(compId.id).value;
+            var TTMLHoursTraveledLength = document.getElementById(compId.id).value
+            .length;
+            var TTMLHoursTraveledSplit = [];
+
+            if (TTMLHoursTraveled.includes('.')) {
+                TTMLHoursTraveledSplit = TTMLHoursTraveled.split(".");
+                var declength = TTMLHoursTraveledSplit[1].length;
+                if (declength > 1) {
+                    var newStr = TTMLHoursTraveled.substring(0,
+                                                             TTMLHoursTraveledLength - 1);
+                    console.log("TTMLHoursTraveledLength" + '' +
+                                TTMLHoursTraveledLength);
+                    console.log("newStr" + '' + newStr);
+                    document.getElementById(compId.id).value = newStr;
+                    return false;
+                }
+            } else {
+                if (TTMLHoursTraveledLength == 4) {
+                    var newStr1 = TTMLHoursTraveled.substring(0,
+                                                              TTMLHoursTraveled.length - 1);
+                    var newStr2 = newStr1 / 10;
+                    document.getElementById(compId.id).value = newStr2;
+                }
+            }
+            if (TTMLHoursTraveledLength == 3 && !TTMLHoursTraveled.includes('.')) {
+                var result = Number(document.getElementById(compId.id).value) /
+                    10;
+                document.getElementById(compId.id).value = result;
+            }
+        }
+
+        function validateTTMLExpenseTotal(compId) {
+            var TTMLExpenseTotal = document.getElementById(compId.id).value;
+            var TTMLExpenseTotalLength = document.getElementById(compId.id).value
+            .length;
+            var TTMLExpenseTotalSplit = [];
+
+            if (TTMLExpenseTotal.includes('.')) {
+                TTMLExpenseTotalSplit = TTMLExpenseTotal.split(".")
+                var declength = TTMLExpenseTotalSplit[1].length;
+                console.log("declength" + '' + declength);
+                if (declength > 2) {
+                    var newStr = TTMLExpenseTotal.substring(0,
+                                                            TTMLExpenseTotalLength - 1);
+                    console.log("TTMLExpenseTotalLength" + '' +
+                                TTMLExpenseTotalLength);
+                    console.log("newStr" + '' + newStr);
+                    document.getElementById(compId.id).value = newStr;
+                    return false;
+                }
+            } else
+                if (TTMLExpenseTotalLength == 7) {
+                    var newStr1 = TTMLExpenseTotal.substring(0,
+                                                             TTMLExpenseTotalLength - 1);
+                    console.log('newStr1' + ' ' + newStr1);
+                    var newStr2 = newStr1 / 100;
+                    console.log('newStr2' + ' ' + newStr2);
+                    document.getElementById(compId.id).value = newStr2;
+                }
+
+            if (TTMLExpenseTotalLength == 6 && !TTMLExpenseTotal.includes('.')) {
+                var result = Number(document.getElementById(compId.id).value) /
+                    100;
+                document.getElementById(compId.id).value = result;
+            }
+
+            if (TTMLExpenseTotalLength == 5 && !TTMLExpenseTotal.includes('.')) {
+                var result = Number(document.getElementById(compId.id).value) /
+                    10;
+                document.getElementById(compId.id).value = result;
+            }
+
+
+        }
+
+    </script>
+
+    <script type="text/javascript">
+        function amountHours(e, compId) {
+            // alert(e.which);
+            var technicianTimeValAmount = document.getElementById(compId.id).value;
+            if ((e.which > 47 && e.which <= 57) || e.which == 8 ||e.which == 9 || e.which ==
+                46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=
+                                                         105) || ((e.which == 190 || e.which == 110) && !(
+                technicianTimeValAmount.includes('.')))) {
+
+            } else {
+                return false;
+            }
+        }
+
+    </script>
+
+    <script type="text/javascript">
+        function validateAmountExpenseTotal(amtId) {
+
+            var TTMLAmountTotal = document.getElementById(amtId.id).value;
+            var TTMLAmountTotalLength = document.getElementById(amtId.id).value
+            .length;
+            var TTMLAmountTotalSplit = [];
+            if (TTMLAmountTotal.includes('.')) {
+                TTMLAmountTotalSplit = TTMLAmountTotal.split(".")
+                var declengthAmount = TTMLAmountTotalSplit[1].length;
+                console.log("declengthAmount" + '' + declengthAmount);
+                if (declengthAmount > 2) {
+                    var newStrAmount = TTMLAmountTotal.substring(0,
+                                                                 TTMLAmountTotalLength - 1);
+                    console.log("TTMLAmountTotalLength" + '' +
+                                TTMLAmountTotalLength);
+                    console.log("newStrAmount" + '' + newStrAmount);
+                    document.getElementById(amtId.id).value = newStrAmount;
+                    return false;
+                }
+            } else
+                if (TTMLAmountTotalLength == 8) {
+                    var newStrAmount1 = TTMLAmountTotal.substring(0,
+                                                                  TTMLAmountTotalLength - 1);
+                    console.log('newStrAmount1' + ' ' + newStrAmount1);
+                    var newStrAmoun2 = newStrAmount1 / 100;
+                    console.log('newStrAmoun2' + ' ' + newStrAmoun2);
+                    document.getElementById(amtId.id).value = newStrAmoun2;
+                }
+
+            if (TTMLAmountTotalLength == 7 && !TTMLAmountTotal.includes('.')) {
+                var resultAmount = Number(document.getElementById(amtId.id).value) /
+                    100;
+                document.getElementById(amtId.id).value = resultAmount;
+            }
+
+            if (TTMLAmountTotalLength == 6 && !TTMLAmountTotal.includes('.')) {
+                var resultAmount = Number(document.getElementById(amtId.id).value) /
+                    10;
+                document.getElementById(amtId.id).value = resultAmount;
+            }
+        }
+
+    </script>
+    <script type="text/javascript">
+        function callfailcodemethod1(value, value1) {
+            failcodelogic1(value, value1);
+        }
+
+        function callfailcodemethod2(value, value1) {
+            //alert(value);
+            //alert(value1);
+            failcodeChange(value, value1);
+        }
+
+        function callAccountcodemethod(value, value1, value2) {
+            Accountcodelogic(value, value1, value2);
+        }
+
+        function DisableWASaveButton(claimblescompId) {
+            claimblescompId.disabled = true;
+        }
+
+    </script>
+
+    <div class="panel-group cmi_generic-accordion">
+        <div class="panel panel-default">
+            <div class="panel-heading " id="accordion1-heading-5">
+                <h4 class="panel-title" data-toggle="collapse" data-parent="#accordion1-heading-5"
+                    data-target="#campaign-accordian3" aria-expanded="true" onclick="PartsAction2(); return false;">
+                    <a class="accordion-toggle">
+                        <span class="glyphicon glyphicon-plus"></span>
+                        <div class="cmi_accordion-title"><b>{!$Label.CSS_OtherClaimables}</b></div>
+                    </a>
+                </h4>
+            </div>
+        </div>
+        <apex:actionRegion >
+            <apex:actionFunction name="PartsAction2" action="{!getOCData}" rerender="customPartsJobPopUp2,TTMLTable"
+                                 status="callPartsStatus" /></apex:actionRegion>
+        <div id="campaign-accordian3" class="panel-collapse collapse" aria-expanded="true"
+             style="margin-top:10px">
+            <apex:actionStatus startText="requesting..." id="callPartsStatus">
+                <apex:facet name="start">Loading... <img src="/img/loading.gif" /></apex:facet>
+                <apex:facet name="stop"></apex:facet>
+            </apex:actionStatus>
+
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-sm-12" style="padding-top:20px;">
+                        <div class="hidden-xs">
+                            <div class="row cmi_jobplan-table">
+                                <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+                                  <!-- Defect # 191756 <div style="float:right;">
+                                        <i class="pencil-tealIcon"></i> -->
+                                        <apex:actionRegion >
+                             <!--Added isClaimReadOnly__C && isServiceJobReadOnly__c condition as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->            
+                                                 <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                            <apex:outputpanel rendered="{!IF(isOCCovered == true,true,false)}">
+                                                <div style="float:right;">
+                                                <i class="pencil-tealIcon"></i>
+                                            <apex:commandLink value="{!$Label.css_Edit}" html-data-target="#customPartsJobPopUp1" html-data-toggle="modal"
+                                                              html-data-backdrop="static" html-data-keyboard="false"
+                                                              onComplete="return false;" />
+                                                </div>
+                                             </apex:outputPanel>
+                                                           <!-- Defect # 191756  <apex:outputpanel rendered="{!IF(isOCCovered == false,true,false)}">
+                                                <apex:commandLink value="Edit" rerender="none"/>
+                                                </apex:outputPanel> -->
+                                                <apex:outputPanel rendered="{!if(isOCCovered == false, true, false)}">
+                                                      <div style="float: right;margin-top: -10px;margin-right:5px;">
+                                                        <i class="pencil-tealIcon"></i>         
+                                                        <font color="#007c7c">{!$Label.css_Edit}</font>
+                                                     </div><br/>
+                                                 </apex:outputPanel>
+                                          </apex:outputPanel>
+                        <!--END--as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->                              
+                                        </apex:actionRegion>
+                                  <!--  </div> -->
+
+
+                                    <table class="mytable table table-bordered table-striped" border="0" cellpadding="0"
+                                           cellspacing="0">
+                                        <thead>
+                                            <tr height="54">
+                                                <th>{!$Label.CSS_Items}</th>
+                                                <th>{!$Label.css_Description}</th>
+                                                <th>{!$Label.CSS_Qty}</th>
+                                               <!-- <th>{!$Label.CG_UnitPrice}</th>
+                                                <th>{!$Label.CSS_Claims_Amount}</th>-->
+                                                <th> {!$Label.CG_UnitPrice} ({!mainController.userRec.DefaultCurrencyIsoCode})</th>
+                                                <th>{!$Label.CSS_Amount} ({!mainController.userRec.DefaultCurrencyIsoCode})</th>
+                                                <th>{!$Label.css_Percent_Requested}</th>
+                                                <th>{!$Label.CSS_Fail_Code}</th>
+                                                <th>{!$Label.CSS_Account_Code}</th>
+                                            </tr>
+                                        </thead>
+                                        <apex:repeat value="{!otherClaimPartList}" var="otherClaimComp">
+                                            <tr>
+                                                <td>
+                                                        
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.isManual__c == false,true,false)}">
+                                                        
+                                                        <span>
+                                                            <apex:selectList value="{!otherClaimComp.Item__c}" size="1" disabled="true">
+                                                                <apex:selectOptions value="{!Items}"/>
+                                                            </apex:selectList>
+                                                        </span>
+                                                    </apex:outputPanel>
+                                                     
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.isManual__c == true,true,false)}">
+                                                        
+                                                        <b>
+                                                            <span>
+                                                                <apex:selectList value="{!otherClaimComp.Item__c}" size="1" disabled="true">
+                                                                    <apex:selectOptions value="{!Items}"/>
+                                                                </apex:selectList>
+                                                            </span>
+                                                        </b>
+                                                    </apex:outputPanel>
+                                                </td>
+
+
+                                                <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->
+                                                <td>
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.isManual__c == false,true,false)}">
+                                                        <span><apex:outputText value="{!otherClaimComp.Part_Description__c}" /></span>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.isManual__c == true,true,false)}">
+                                                        <b><span><apex:outputText value="{!otherClaimComp.Part_Description__c}" /></span></b>
+                                                    </apex:outputPanel>
+                                                </td>
+
+                                                <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->
+                                                <td>
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.isManual__c == false,true,false)}">
+                                                        <span><apex:outputtext value="{!otherClaimComp.Quantity__c}"/></span>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.isManual__c == true,true,false)}">
+                                                        <b><span><apex:outputtext value="{!otherClaimComp.Quantity__c}"/></span></b>
+                                                    </apex:outputPanel>
+                                                </td>
+                                                <td>
+                                                <!-- <apex:outputPanel >
+                                                        <b><apex:outputtext value="{!otherClaimComp.Unit_Price__c}"/></b>
+                                                    </apex:outputPanel>-->
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.isManual__c == false,true,false)}">
+                                                        <span><apex:outputtext value="{!ROUND(VALUE(otherClaimComp.Unit_Price__c), 2)}"/></span>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.isManual__c == true,true,false)}">
+                                                        <b><span><apex:outputtext value="{!ROUND(VALUE(otherClaimComp.Unit_Price__c), 2)}"/></span></b>
+                                                    </apex:outputPanel>
+                                                </td>
+
+                                                <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->
+                                                <td>
+                                                   <apex:outputPanel rendered="{!IF(otherClaimComp.isManual__c == false,true,false)}">
+                                                        <apex:outputtext value="{!ROUND(otherClaimComp.ExpenseTotal__c, 2)}" />
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.isManual__c == true,true,false)}">
+                                                        <b><apex:outputtext value="{!ROUND(otherClaimComp.ExpenseTotal__c, 2)}"/></b>
+                                                    </apex:outputPanel>
+                                                </td>
+
+                                                <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->
+                                                <td>
+                                                   <apex:outputPanel rendered="{!IF(otherClaimComp.isManual__c == false,true,false)}">
+                                                        <apex:outputtext value="{!otherClaimComp.Covered__c}" />
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.isManual__c == true,true,false)}">
+                                                        <b><apex:outputtext value="{!otherClaimComp.Covered__c}"/></b>
+                                                    </apex:outputPanel>
+                                                </td>
+
+                                                <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->
+                                                <td>
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.isManual__c == false,true,false)}">
+                                                        <apex:outputtext value="{!otherClaimComp.Fail_Code__c}" />
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.isManual__c == true,true,false)}">
+                                                        <b><apex:outputtext value="{!otherClaimComp.Fail_Code__c}"/></b>
+                                                    </apex:outputPanel>
+                                                </td>
+
+                                                <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->
+                                                <td>
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.isManual__c == false,true,false)}">
+                                                        <apex:outputtext value="{!otherClaimComp.Account_Code__c}" />
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.isManual__c == true,true,false)}">
+                                                        <b><apex:outputtext value="{!otherClaimComp.Account_Code__c}"/></b>
+                                                    </apex:outputPanel>
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </table>
+                                    <br/>
+                                    <div class="col-sm-9"> </div>
+                                    <div style="margin-top:50px;" class="col-sm-3">
+                                        <div style="border:2px solid #aaa;padding:0px 40px;">
+                                           <!-- <b>{!$Label.CSS_Other_Claimables_USD} </b> --> <b>{!$Label.CSS_OtherClaimables} ({!mainController.userRec.DefaultCurrencyIsoCode})</b>                                          &nbsp; {!ROUND(TotalUSD, 2)}
+                                        </div>
+
+                                    </div>
+                                    <div class="clearfix"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!------------------------Travel, Towing, Meals, or Lodging expenses Table for story 115024------------------------------>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-sm-12" style="padding-top:20px;">
+                        <apex:outputPanel id="TTMLTable">
+                            <div class="hidden-xs">
+                                <div class="row cmi_jobplan-table">
+                                    
+ 
+
+                                    <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+                                        
+                                            <apex:actionRegion >
+                                    <!--Added isClaimReadOnly__C && isServiceJobReadOnly__c condition as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->            
+                                                 <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                    <apex:outputpanel rendered="{!IF(isTTMLCovered == true,true,false)}">
+                                                        <div style="float:right;">
+                                                        <i class="pencil-tealIcon"></i>
+                                                    <apex:commandLink value="{!$Label.css_Edit}" html-data-target="#TTMLPopUp" html-data-toggle="modal"
+                                                                      html-data-backdrop="static" html-data-keyboard="false"
+                                                                      onComplete="return false;" style="text-decoration:underline;"
+                                                                      />
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                   <!-- Defect # 191756 <apex:outputpanel rendered="{!IF(isTTMLCovered == false,true,false)}">
+                                                        <apex:commandLink value="Edit" rerender="none"/>  
+                                                    </apex:outputPanel> -->
+                                                    <apex:outputPanel rendered="{!if(isTTMLCovered == false, true, false)}">
+                                                          <div style="float: right;margin-top: -10px;margin-right:5px;">
+                                                            <i class="pencil-tealIcon"></i>         
+                                                            <font color="#007c7c">{!$Label.css_Edit}</font>
+                                                         </div><br/>
+                                                     </apex:outputPanel>
+                                                  </apex:outputPanel>
+                                    <!--END--as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->              
+                                            </apex:actionRegion>
+                                            
+                                        
+                                        <div>
+                                            <h4><b>{!$Label.CSS_Travel_Towing_Meals_and_Lodging}</b></h4>
+                                        </div>
+                                        <table class="mytable table table-bordered table-striped TTMLTable" border="0" cellpadding="0"
+                                               cellspacing="0" style="margin-top:5px;">
+                                            <thead>
+                                                <tr height="54">
+                                                    <th>{!$Label.css_Technician}</th>
+                                                    <th>{!$Label.CSS_Type}</th>
+                                                    <!--Added below Quantity,Unit Price (USD) lables and commited Days lable as per  "I Survived" sprint story #152963,-By  23rd July 2018 -->                   
+                                                    <th style="width:10px;">{!$Label.CSS_Quantity}</th>
+                                                   <!-- <th>{!$Label.CG_UnitPrice} (USD)</th>-->
+                                                   <th>{!$Label.CG_UnitPrice} ({!mainController.userRec.DefaultCurrencyIsoCode})</th>
+                                                    <!--End-->                   
+                                                    <th>{!$Label.CSS_TTMLMileage}</th>
+                                                    <th style="width:15px;">{!$Label.CSS_HoursTraveled}</th>
+                                                   <!-- <th style="width:8px;">{!$Label.CSS_TotalExpense}</th> -->  
+                                                    <th style="width:8px;">Expense Total ({!mainController.userRec.DefaultCurrencyIsoCode})</th>
+                                                    <th>{!$Label.CSS_Fail_Code}</th>
+                                                    <th style="width:15px;">{!$Label.CSS_Account_Code}</th>
+                                                    <!-- <th>{!$Label.CSS_Covered}</th>-->
+                                                    <th>{!$Label.CSS_Coverage}</th>
+                                                </tr>
+                                            </thead>
+                                           <apex:repeat value="{!ttmlPartsList}" var="ttmlClaimComp">
+                                                <tr>
+
+                                                    <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->
+                                                    <td>
+                                                        <!--<span><apex:outputText value="{!ttmlClaimComp.Technician__c}" /></span>--->
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == false,true,false)}">
+                                                            <span><apex:outputText value="{!ttmlClaimComp.Technician__c}" /></span>
+                                                        </apex:outputPanel>
+
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == true,true,false)}">
+                                                            <b><span><apex:outputText value="{!ttmlClaimComp.Technician__c}" /></span></b>
+                                                        </apex:outputPanel>
+                                                    </td>
+
+                                                    <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->
+                                                    <td>
+                                                        <!--<span><apex:outputText value="{!ttmlClaimComp.Type__c}" /></span>-->
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == false,true,false)}">
+                                                            <span><apex:outputText value="{!ttmlClaimComp.Type__c}" /></span>
+                                                        </apex:outputPanel>
+
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == true,true,false)}">
+                                                            <b><span><apex:outputText value="{!ttmlClaimComp.Type__c}" /></span></b>
+                                                        </apex:outputPanel>
+                                                    </td>
+
+                                                    <!--Removed value for Days as per "I Survived" sprint story #152963,-By RAJESH 23rd July 2018 -->
+                                                    <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->
+                                                    <!--Added value for Quantity and UAS Price(USA) as per "I Survived" sprint story #152963,-By RAJESH 23rd July 2018 -->
+                                                    <td>
+                                                        <!--Added ttmlClaimComp.Type__c != 'Non Commercial-Travel' condition as per "I Survived" defect #156629,-By RAJESH 2nd Aug 2018 -->                                    
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.Type__c != 'Non Commercial-Travel',true,false)}">
+                                                            <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == false,true,false)}">
+                                                                <span><apex:outputtext value="{!ttmlClaimComp.Quantity__c}"/></span>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == true,true,false)}">
+                                                                <span><apex:outputtext value="{!ttmlClaimComp.Quantity__c}"/></span>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.Type__c == 'Non Commercial-Travel',true,false)}">
+                                                            <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == false,true,false)}">
+                                                                <span><apex:outputtext /></span>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == true,true,false)}">
+                                                                <span><apex:outputtext /></span>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                    
+                                                    <td>
+                                                        <!--if type Meals or loading we are not showing Milage and Hourse Travel at front end as per defetc GSSC-601,-By RAJESH 18th Feb 2020-->
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.Type__c != 'Non Commercial-Travel',true,false)}">
+                                                            <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == false,true,false)}">
+                                                                <span><apex:outputtext value="{!ROUND(VALUE(ttmlClaimComp.Unit_Price__c), 2)}"/></span>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == true,true,false)}">
+                                                                <span><apex:outputtext value="{!ROUND(VALUE(ttmlClaimComp.Unit_Price__c), 2)}"/></span>
+                                                            </apex:outputPanel> 
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.Type__c == 'Non Commercial-Travel',true,false)}">
+                                                             <span><apex:outputtext /></span>
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                    <!--End-->                                
+
+                                                    <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->
+                                                    <td>
+                                <!--if type rather then Meals or loading we are showing Milage and Hourse Travel at front end as per defetc GSSC-601,-By RAJESH 18th Feb 2020-->
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.Type__c != 'Non Commercial-Travel',true,false)}">
+                                                             <span><apex:outputtext /></span>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.Type__c == 'Non Commercial-Travel',true,false)}">
+                                                             <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == false,true,false)}">
+                                                                <span><apex:outputtext value="{!ttmlClaimComp.Mileage__c}"/></span>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == true,true,false)}">
+                                                                <b><span><apex:outputtext value="{!ttmlClaimComp.Mileage__c}"/></span></b>
+                                                            </apex:outputPanel>
+                                                             
+                                                        </apex:outputPanel>
+                                                    </td>
+
+                                                    <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->
+                                                    <td>
+                                        <!--if type rather then Meals or loading we are showing Milage and Hourse Travel at front end as per defetc GSSC-601,-By RAJESH 18th Feb 2020-->                
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.Type__c != 'Non Commercial-Travel',true,false)}">
+                                                             <span><apex:outputtext /></span>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.Type__c == 'Non Commercial-Travel',true,false)}">
+                                                            <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == false,true,false)}">
+                                                                <apex:outputtext value="{!ttmlClaimComp.HoursTravelled__c}" />
+                                                            </apex:outputPanel>
+    
+                                                            <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == true,true,false)}">
+                                                                <b><apex:outputtext value="{!ttmlClaimComp.HoursTravelled__c}"/></b>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                    </td>
+
+                                                    <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->
+                                                    <td>
+                                                        <!--<apex:outputtext value="{!ttmlClaimComp.ExpenseTotal__c}"/>-->
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == false,true,false)}">
+                                                            <apex:outputtext value="{!ROUND(ttmlClaimComp.ExpenseTotal__c, 2)}" />
+                                                        </apex:outputPanel>
+
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == true,true,false)}">
+                                                            <b><apex:outputtext value="{!ROUND(ttmlClaimComp.ExpenseTotal__c, 2)}"/></b>
+                                                        </apex:outputPanel>
+                                                    </td>
+
+
+                                                    <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->
+                                                    <td>
+                                                        <!--<apex:outputtext value="{!ttmlClaimComp.Fail_Code__c}"/></td>-->
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == false,true,false)}">
+                                                            <apex:outputtext value="{!ttmlClaimComp.Fail_Code__c}" />
+                                                        </apex:outputPanel>
+
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.isManual__c == true,true,false)}">
+                                                            <b><apex:outputtext value="{!ttmlClaimComp.Fail_Code__c}"/></b>
+                                                        </apex:outputPanel>
+                                                    </td>
+
+                                                    <td>
+                                                        <apex:outputtext value="{!ttmlClaimComp.Account_Code__c}" />
+                                                    </td>
+
+
+                                                    <td>
+                                                        <!--apex:outputPanel rendered="{!IF((ttmlClaimComp.FailurepartId__r.CoveredOCAmount__c != '0' || ttmlClaimComp.FailurepartId__r.CoveredOCAmount__c != ''),true,false)}"-->                                                         
+                                                        <!--<apex:outputPanel rendered="{!IF((ttmlClaimComp.Account_Code__c != null && ttmlClaimComp.Account_Code__c != ''),true,false)}"> -->
+                                  <!--Have commented above line and covered below line with added new conditon as per Defect #190304,-By RAJESH 6th Aug 2019-->   
+                                                        <apex:outputPanel rendered="{!IF((ttmlClaimComp.Account_Code__c != null && ttmlClaimComp.Account_Code__c != '' && ttmlClaimComp.Account_Code__c != 'Select One'),true,false)}">
+                                                            <div class="col-sm-9">
+                                                                <apex:actionRegion >
+                                                                    <!-- <apex:commandLink value="{!$Label.CSS_CoverageFound}" style="text-decoration:underline;" action="{!redirectToWarranty}"></apex:commandLink>-->
+                                                                    <apex:commandLink value="{!$Label.CSS_CoverageFound}" style="text-decoration:underline;"></apex:commandLink>
+                                                                </apex:actionRegion>
+                                                            </div>
+                                                            <div class="col-sm-3">
+                                                                <i class="cmi_solidcorrect-icon" style="margin:0px;"></i>
+                                                            </div>
+                                                        </apex:outputPanel>
+                                                        <!--apex:outputPanel rendered="{!IF((ttmlClaimComp.FailurepartId__r.CoveredOCAmount__c == '0' || ttmlClaimComp.FailurepartId__r.CoveredOCAmount__c == ''),true,false)}"/-->
+                                                        <!--<apex:outputPanel rendered="{!IF((ttmlClaimComp.Account_Code__c == null || ttmlClaimComp.Account_Code__c == '' ),true,false)}"/>-->
+                                   <!--Have commented above line and covered below line with added new conditon as per Defect #190304,-By RAJESH 6th Aug 2019-->
+                                                        <apex:outputPanel rendered="{!IF((ttmlClaimComp.Account_Code__c == null || ttmlClaimComp.Account_Code__c == '' || ttmlClaimComp.Account_Code__c == 'Select One'),true,false)}"/>
+                                                    </td>
+
+                                                </tr>
+                                            </apex:repeat>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </apex:outputPanel>
+                    <br/><br/><br/>
+
+                        <!-- Added Attachment code as per Walking Dead #115024-->
+                        <div class="row">
+                            <div class="col-sm-8">
+                                <apex:actionRegion >
+                                    <c:CG_AttachmentComp JoId="{!claimsRec.Id}" DeleteFlag="false" pgName="ClaimsPartsandOtherClaimbles"
+                                                         />
+                                </apex:actionRegion>
+                            </div>
+                            <div class="col-sm-4" style="margin-top:50px;">
+                                <fieldset style="border:2px solid #aaa">
+                                    <!-- <div class="col-sm-8 cmi-tar TTMLbold" style="padding-left:0px !important;">{!$Label.CSS_Commercial_Travel}</div>
+                                    <div class="col-sm-4">{!comt}</div>--Story GSSC 146 Venkat-->
+                                    <div class="col-sm-8 cmi-tar TTMLbold" style="padding-left:0px !important;">{!$Label.CSS_Non_Commercial_Travel}</div>
+                                    <div class="col-sm-4">{!ROUND(ncomt, 2)}</div>
+                                  <!-- <div class="col-sm-8 cmi-tar TTMLbold">{!$Label.CSS_Towing}</div>
+                                    <div class="col-sm-4">{!towt}</div>--Story GSSC 146 Venkat-->
+                                    <div class="col-sm-8 cmi-tar TTMLbold">{!$Label.CSS_Meals}</div>
+                                    <div class="col-sm-4">{!ROUND(meals, 2)}</div>
+                                    <div class="col-sm-8 cmi-tar TTMLbold">{!$Label.CSS_Lodging}</div>
+                                    <div class="col-sm-4">{!ROUND(lodg, 2)}</div>
+                                    <div class="col-sm-12"><br/></div>
+                                   <!-- <div class="col-sm-8 cmi-tar TTMLbold">{!$Label.CSS_Total_USD}</div>-->
+                                   <div class="col-sm-8 cmi-tar TTMLbold">{!$Label.CSS_Total} ({!mainController.userRec.DefaultCurrencyIsoCode})</div>
+                                    <div class="col-sm-4">{!ROUND(totalexp, 2)}</div>
+                                </fieldset>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!------------------------START Other Claimables Popup for story 115027------------------------------>
+
+        <apex:actionRegion >
+            <apex:actionFunction name="closePopup" action="{!closePopup}" reRender="claimablemodCont,TTMLModCont"
+                                 />
+            <apex:actionFunction name="failcodelogic1" action="{!onChangeofFailCode}" rerender="ClaimablePopUpId,AccountCodePart">
+                <apex:param name="FailCodeval" value="" assignTo="{!SelectedFailCode}" />
+                <apex:param name="PartsID" value="" assignTo="{!SelectedPartID}" />
+                <apex:param name="ItemID" value="" assignTo="{!SelectedItem}" />
+            </apex:actionFunction>
+
+            <apex:actionFunction name="Accountcodelogic" action="{!onChangeofAccountCode}" rerender="ClaimablePopUpId"> 
+                <apex:param name="AccountCodeval" value="" assignTo="{!SelectedAccountCode}" />
+                <apex:param name="PartsID" value="" assignTo="{!SelectedPartID}" />
+                <apex:param name="FailCodeval" value="" assignTo="{!SelectedFailCode}" />
+            </apex:actionFunction>
+
+
+
+            <apex:actionFunction name="OnItemChange" action="{!onChangeofItem}" rerender="ClaimablePopUpId"> <!--selectpicklist,claimsUnitprice,claimsAmount,quantity,rowToRerender2-->
+                <apex:param name="ItemID" value="" assignTo="{!SelectedItem}" />
+                <apex:param name="PartsID" value="" assignTo="{!SelectedPartID}" />
+            </apex:actionFunction>
+
+            <!--<apex:outputPanel id="customPartsJobPopUp3" > -->
+            <div class="modal fade" id="customPartsJobPopUp1" role="dialog">
+                <div class="modal-dialog modal-lg" style="width:1000px;">
+                    <div class="modal-content">
+                        <!-- <apex:actionRegion >-->
+                        <apex:outputPanel id="claimablemodCont">
+                            <div class="modal-header">
+                                <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.CSS_Other_Claimables}</h4>
+                            </div>
+
+                            <div class="modal-body" style="padding:0px;overflow:auto;height:470px;">
+                                <apex:outputPanel id="ClaimablePopUpId">
+
+                                    <div class="cmi_modal-body-desktop">
+                                        <apex:outputPanel id="amounterrid">
+                                                    <apex:outputPanel rendered="{!if(MaxAmtError==true,true,false)}">
+                                                        <apex:outputText value="{!$Label.CG_Other_Claimables_exceeds_the_maximum_allowable_amount}" style="color:red;font-weight:bold;margin:5px"/><br/>
+                                                    </apex:outputPanel>
+                                                </apex:outputPanel>
+                                                
+                                         <apex:outputPanel id="ocerror">      
+                                         <!--apex:outputLabel style="color:red;font-weight:bold;margin:5px" value="Other Claimables Amount claimed exceeds the coverage limit for the Fail Code: <insert Fail Code> and Account Code: <insert Account Code>"
+                                                          rendered="{!IF(stqtgtocerror == true, true, false)}"/-->       
+                                         </apex:outputPanel>         
+                                                
+                                        <apex:outputLabel style="color:red;font-weight:bold;margin:5px" value="{!$Label.css_Please_select_an_item}"
+                                                          rendered="{!IF(ErrorMessage1 == true, true, false)}"/>
+                                                          
+                                        <apex:outputLabel style="color:red;font-weight:bold;margin:5px" value="{!$Label.CSS_TowingTravel_Error}"
+                                                          rendered="{!IF(TravelTowingError == true, true, false)}"/>
+                                                          
+                                        
+                                        <!--180117 Rupesh--> 
+                                        <!--<apex:outputLabel style="color:red;font-weight:bold;margin:5px" value="Other Claimables Amount claimed exceeds the coverage limit for the Fail Code: <insert Fail Code> and Account Code: <insert Account Code>"
+                                                          rendered="{!IF(stqtgtocerror == true, true, false)}"/>-->
+                                                          
+                                        
+                                        <apex:outputLabel style="text-align:center; color: red ; display: block;" value="{!$Label.css_Please_provide_a_description_for_the_Unlisted_Other_Claimable}"
+                                                          rendered="{!IF(ErrorMessage == true, true, false)}"/>
+                                        
+                                       <!-- <apex:outputLabel style="text-align:center; color: red ; display: block;" value="Required Information Missing"
+                                                          rendered="{!IF(qtyErrorMessage == true, true, false)}"
+                                                          />-->
+                                                         
+                                    <apex:outputPanel rendered="{!qtyErrorMessage}"> 
+                                        <apex:outputText value="{!$Label.CSS_Required_information_is_missing}" style="color:red;font-weight:bold;margin:5px"/><br/>
+                                    </apex:outputPanel>
+                                    
+                                    <!--<apex:outputPanel id="reqInfoMissingErrorOC">
+                                                    <apex:outputPanel rendered="{!if(qtyErrorMessage==true,true,false)}">
+                                                        <apex:outputText value="{!$Label.CSS_Required_information_is_missing}" style="color:red;font-weight:bold;margin:5px"/><br/>
+                                                    </apex:outputPanel>
+                                                </apex:outputPanel-->
+                                                
+                                    <apex:outputPanel id="covExceedValidationErrorOC" rendered="{!IF(errMsgLstNew != null && errMsgLstNew.size > 0, true, false)}">
+                                        <apex:repeat value="{!errMsgLstNew}" var="errMsgs">
+                                            <apex:outputLabel style="text-align:left; color: red ; display: block;" value="{!errMsgs}" />
+                                        </apex:repeat>
+                                    </apex:outputPanel>
+                                    <apex:outputLabel style="text-align:left; color: red ; display: block;" value="{!$Label.css_Duplicated_Other_Claimables_are_not_allowed}"  rendered="{!IF(ErrorMessage2 == true, true, false)}"/>
+                                        <table class="table table-bordered " border="0" cellpadding="0" cellspacing="0" id="tbCustSRT">
+                                            <thead>
+                                                <tr bgcolor="#d3d3d3">
+                                                    <th style="text-align:center;width:15%;">{!$Label.CSS_Items}<span style="color: red">*</span></th>
+                                                    <!-- {!$Label.CSS_Qty} -->
+                                                    <th style="text-align:center;">{!$Label.css_Description}</th>
+                                                    <th style="text-align:center;">{!$Label.CSS_Qty}<span style="color: red">*</span></th>
+                                                   <!-- <th style="text-align:center;">{!$Label.CG_UnitPrice}<span style="color: red">*</span></th>
+                                                    <th style="text-align:center;">{!$Label.CSS_Amount}</th>-->
+                                                    <th style="text-align:center;">{!$Label.CG_UnitPrice} ({!mainController.userRec.DefaultCurrencyIsoCode})<span style="color: red">*</span></th>
+                                                    <th style="text-align:center;">{!$Label.CSS_Amount} ({!mainController.userRec.DefaultCurrencyIsoCode})</th>
+                                                    <th style="text-align:center;">{!$Label.css_Percent_Requested}</th>
+                                                    <th style="text-align:center;">{!$Label.CSS_Fail_Code}</th>
+                                                    <th style="text-align:center;">{!$Label.CSS_Account_Code}<span style="color: red">*</span></th>
+                                                    <th style="text-align:center;">{!$Label.CSS_Remove}</th>
+                                                </tr>
+                                            </thead>
+                                            <apex:actionFunction name="getAmountValue" action="{!populateAmountValue}" reRender="claimsAmount,amounterrid"> 
+                                                <apex:param name="QantityCount" value="" assignTo="{!selectedRecordRowID}"/>
+                                            </apex:actionFunction>
+                                            <apex:actionFunction name="setAccountCode" action="{!setAccountCode_Covered}" reRender="rowToRerender3"> 
+                                                <apex:param name="coveredValue" value="" assignTo="{!selectedRecordRowID}"/>
+                                            </apex:actionFunction>
+                                            <apex:repeat value="{!listpartWrapper}" var="claimcomp" id="myRepeater">
+
+                                                <tr>
+
+                                                    <td>
+                                                        <apex:selectList value="{!claimcomp.item}"
+                                                                         size="1" onchange="OnItemChange(this.value,'{!claimcomp.counting}')">
+
+                                                            <apex:selectOptions value="{!Items}" />
+                                                        </apex:selectList>
+                                                    </td>
+
+                                                    <td><span><apex:inputtextArea id="selectpicklist" value="{!claimcomp.PartDescription}" html-maxlength="50" style="resize:none;border:1px solid #d3d3d3;width:100px" /></span></td>
+                                                    <td><span><apex:inputtext id="quantity" value="{!claimcomp.quantity}" style="width:80px" styleClass="{!IF(claimcomp.errorQuaUPAC ==true,'showRedBorder','')}" maxlength="5" onkeypress="return quantityClaimbles(event,this)"  onchange="getAmountValue('{!claimcomp.counting}')" /></span></td>
+                                                    <td>
+                                                        
+                                                        <apex:inputtext value="{!claimcomp.Unitprice}" styleClass="{!IF(claimcomp.errorUP ==true,'showRedBorder','')}" id="claimsUnitprice" onkeydown="return amountHours(event,this)" onkeyup="validateAmountExpenseTotal(this)" style="width:80px" maxlength="8"  onchange="getAmountValue('{!claimcomp.counting}')"/>
+                                                    </td>
+                                                    <td>
+                                                        <apex:outputtext value="{!claimcomp.amount}" id="claimsAmount" style="width:80px" styleClass="{!IF((claimcomp.amount!=null && claimcomp.amount > 99999.99),'showRedBorder','')}"/></td>
+
+
+                                                    <td>
+                                                        <apex:outputPanel id="rowToRerender1">
+                                                            <apex:inputtext value="{!claimcomp.coveredPercent}"
+                                                                            style="width:80px" maxlength="3"
+                                                                            id="warVal" onkeyup="validateClaimbles(this);"
+                                                                            onkeypress="return qtyPressClaimblesCovered(event,this)" onchange="getAmountValue('{!claimcomp.counting}'),setAccountCode()"
+                                                                            />
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                    <td>
+                                                        <apex:outputPanel id="rowToRerender2"> 
+                                                            <apex:selectList value="{!claimcomp.failCode}" size="1" style="width:100px;" onchange="failcodelogic1(this.value,'{!claimcomp.counting}');"  styleClass="{!IF(claimcomp.isPartsCovLimitExceedPW == true,'showRedBorder','')}">
+                                                                    <!--<apex:selectOptions value="{!failcodeDropDown}" ></apex:selectOptions>-->
+                                                                <!--Have commented above line as per story GSSC-142,-By RAJESH 22nd Oct 2019-->    
+                                                                    <apex:selectOptions value="{!claimcomp.lstFailcodes}" ></apex:selectOptions>
+                                                            </apex:selectList>
+                                                        </apex:outputPanel>
+
+                                                    </td>
+
+
+                                                    <!-------------Account Code------------------------------->
+                                                    <td style="text-align:center;" id="AccountCodePart">
+                                                        <apex:outputPanel id="rowToRerender3">
+                                                           <apex:outputPanel rendered="{!IF(claimcomp.failCode != 'Select One' && claimcomp.failCode != '' && claimcomp.accountCode != 'Select One',true,false)}">
+                                                                
+                                                                <apex:selectList value="{!claimcomp.accountCode}" size="1" style="width:100px;" styleClass="{!IF(claimcomp.errorAC == true || claimcomp.isPartsCovLimitExceed == true || claimcomp.isPartsCovLimitExceedPW == true,'showRedBorder','')}" disabled="false"
+                                                                                 onchange="callAccountcodemethod(this.value,'{!claimcomp.counting}','{!claimcomp.failCode}');">
+                                                                    <apex:selectOptions value="{!claimcomp.lstAccountCodes}"></apex:selectOptions>
+                                                                </apex:selectList>
+
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(claimcomp.failCode == 'Select One' || claimcomp.failCode == '',true,false)}">
+
+                                                                <apex:selectList value="{!claimcomp.accountCode}" size="1" styleClass="{!IF(claimcomp.errorAC ==true,'showRedBorder','')}" style="width:100px;" disabled="true"
+                                                                                 readonly="false">
+                                                                    <apex:selectOption itemValue="Select One" itemLabel="Select One" />
+                                                                </apex:selectList>
+
+                                                            </apex:outputPanel>
+
+                                                            <apex:outputpanel rendered="{!IF(claimcomp.failcode!= 'Select One'  && claimcomp.accountCode == 'Select One' ,true,false)}">
+                                                                <p>
+
+                                                                    <apex:selectList value="{!claimcomp.accountCode}" size="1" style="width:100px;" styleClass="{!IF(claimcomp.errorAC ==true || claimcomp.isPartsCovLimitExceed == true || claimcomp.isPartsCovLimitExceedPW == true,'showRedBorder','')}" disabled="false"
+                                                                                     onchange="callAccountcodemethod(this.value,'{!claimcomp.counting}','{!claimcomp.failCode}');">
+                                                                        <apex:selectOptions value="{!claimcomp.lstAccountCodes}"></apex:selectOptions>
+                                                                    </apex:selectList>
+
+                                                                </p>
+                                                            </apex:outputpanel>
+                                                        </apex:outputPanel>
+                                                    </td>
+
+
+                                                    <!-------------Account Code------------------------------->
+
+                                                    <td style="text-align:center;">
+                                                        <apex:actionRegion >
+                                                            <apex:commandLink value="{!$Label.CSS_Remove}" action="{!removingRow}" style="text-decoration:underline;"
+                                                                              reRender="claimablemodCont">
+                                                                <apex:param name="assignedParts" value="{!claimcomp.counting}" assignTo="{!assignedParts}"
+                                                                            />
+                                                            </apex:commandLink>
+                                                        </apex:actionRegion>
+                                                    </td>
+
+                                                </tr>
+                                            </apex:repeat>
+                                            <apex:actionFunction name="rerenderClaimablePopUp" rerender="ClaimablePopUpId" />
+
+                                            <div class="clearfix"></div>
+                                        </table>
+
+                                        <div class="clearfix"></div>
+                                    </div>
+                                    <apex:outputPanel rendered="{!IF(cId!=null,true,false)}">
+                                        <div style="float:right;text-decoration:underline;margin-right:10px;">
+                                            <i class="cmi_add-icon"></i>
+                                            <apex:actionRegion >
+                                                <apex:commandLink value="{!$Label.css_Add}"
+                                                                  action="{!AddRow}" reRender="claimablemodCont"
+                                                                  /></apex:actionRegion>
+
+                                    </div>
+                                    </apex:outputPanel>
+                                    <div class="modal-footer" style="margin-top:20px;border-top:0px;">
+                                        <apex:outputPanel rendered="{!IF(cId!=null,true,false)}">
+                                            <div class="col-sm-offset-1 col-sm-5">
+                                                <!--180117--Rupesh-->
+                                                <apex:commandButton action="{!saveOtherClaimablesPopup}" onclick="DisableWASaveButton(this);"
+                                                                    value="{!$Label.css_save_btn}" styleClass="saveButton"
+                                                                    reRender="claimablemodCont,quantity,claimsUnitprice,AccountCodePart,ocerror"></apex:commandButton>
+                                                <!-- onComplete="return displaypop1('{!displayPopup2}'); return false;" -->
+                                                <!--Defect # 146963 DisableWASaveButton is a Java Script function which is been added here for as the button should be called only one time. After Once click we need to disable.-->
+                                            </div>
+                                        </apex:outputPanel>
+                                        <apex:outputPanel rendered="{!IF(cId==null,true,false)}">
+                                            <div class="col-sm-offset-1 col-sm-5">
+                                                <button type="button" class="saveButton">{!$Label.css_save_btn}</button>
+                                            </div>
+                                        </apex:outputPanel>
+                                        <div class="col-sm-2">
+                                            <button type="button" class="cancelButton" data-dismiss="modal" onClick="closePopup();">{!$Label.css_Cancel}</button>
+
+                                        </div>
+
+                                    </div>
+                                </apex:outputPanel>
+                            </div>
+
+                        </apex:outputPanel>
+                        <!-- </apex:actionRegion>-->
+                    </div>
+                </div>
+            </div>
+            <!--</apex:outputPanel> -->
+        </apex:actionRegion>
+
+        <!------------------------END Other Claimables Popup for story 115027------------------------------>
+
+
+        <!------------------------START TTML Popup for story 115029------------------------------>
+        <div class="modal fade" id="TTMLPopUp" role="dialog">
+            <div class="modal-dialog modal-lg" style="width:1000px;">
+                <div class="modal-content">
+                    <apex:actionRegion >
+                        <apex:outputPanel id="TTMLModCont">
+                            <div class="modal-header">
+                                <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.CSS_Travel_Towing_Meals_and_Lodging}</h4> <!--{!$Label.CSS_TTML} label changed as part of the story GSSC-146-->
+                            </div>
+
+                        <div class="modal-body" style="height:350px;padding:0px;overflow:auto;">
+                            <apex:outputPanel id="TTMLPopUpId">
+                                <apex:outputPanel rendered="{!ttmlReqErrMsg}">
+                                     <div class="col-sm-12">
+                                    <apex:outputText value="{!$Label.CSS_Required_information_is_missing}" style="color:red;font-weight:bold;margin:5px"/>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!IF(travelRateError == true && claimsRec.IsDealerCreatedClaim__c == true,true,false)}">
+                                     <div class="col-sm-12">
+                                    <apex:outputText value="{!$Label.CSS_Travel_Rate_Error_Msg_Dealer_Claim}" style="color:red;font-weight:bold;margin:5px"/>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!IF(TravelTowingTTMLError == true,true,false)}">
+                                     <div class="col-sm-12">
+                                    <apex:outputText value="{!$Label.CSS_TowingTravel_Error}" style="color:red;font-weight:bold;margin:5px"/>
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!IF(travelRateError == true && claimsRec.IsDealerCreatedClaim__c == false,true,false)}">
+                                     <div class="col-sm-12">
+                                    <apex:outputText value="{!$Label.CSS_Travel_Rate_Error_Msg_Distributor_Claim}" style="color:red;font-weight:bold;margin:5px"/>
+                                    </div>
+                                </apex:outputPanel>
+                                
+                                <!--apex:outputPanel -->
+                                     <apex:outputPanel id="experrid" rendered="{!if(isExpenseTotalError==true,true,false)}">
+                                          <div class="col-sm-12">
+                                    <apex:outputText value="{!$Label.Error_message_for_Expense}" style="color:red;font-weight:bold;margin:-10px"/>
+                                         </div>
+                                    </apex:outputPanel>
+                                      <!--/apex:outputPanel-->
+              <!--Start code for as per story #148925 ,By RAJESH 09th Jan 2019-->
+                                         <apex:outputPanel id="mealsEX" rendered="{!if(isMealsExpenseTotalError==true,true,false)}">
+                                              <div class="col-sm-12">
+                                               <apex:outputText value="{!$Label.CG_Meals_exceeds_the_maximum_allowable_amount}" style="color:red;font-weight:bold;margin:-10px"/>
+                                             </div>
+                                         </apex:outputPanel>
+                                         <apex:outputPanel id="lodgingEX" rendered="{!if(isLodgingExpenseTotalError==true,true,false)}">
+                                              <div class="col-sm-12">
+                                               <apex:outputText value="{!$Label.Cg_Lodging_exceeds_the_maximum_allowable_amount}" style="color:red;font-weight:bold;margin:-5px"/>
+                                             </div>
+                                         </apex:outputPanel>
+                                         <apex:outputPanel id="towingEX" rendered="{!if(isTowingExpenseTotalError==true,true,false)}">
+                                              <div class="col-sm-12">
+                                               <apex:outputText value="{!$Label.CG_Towing_exceeds_the_maximum_allowable_amount}" style="color:red;font-weight:bold;margin:-10px"/>
+                                             </div>
+                                         </apex:outputPanel>
+              <!--End code  as per story #148925 ,By RAJESH 09th Jan 2019 --->   
+              
+                                <!--Prabhakar Aded below code for error message------->
+                                
+                                <apex:outputPanel id="Accerr"> 
+                                    <apex:outputPanel rendered="{!duplicateAccountCode}">
+                                         <div class="col-sm-12">
+                                        <apex:outputText value="{!$Label.CG_Travel_and_Towing_cannot_be_claimed_together}"
+                                                         style="color:red;font-weight:bold;margin:5px"/>
+                                        </div>
+                                    </apex:outputPanel>
+                                   
+                                    
+                        </apex:outputPanel>
+                                             
+                                              <apex:outputPanel id="covExceedValidationError" rendered="{!IF(errMsgLstNew != null && errMsgLstNew.size > 0, true, false)}">
+                                                    <apex:repeat value="{!errMsgLstNew}" var="errMsgs">
+                                                         <apex:outputLabel style="text-align:left; color: red ; display: block;" value="{!errMsgs}"/>
+                                                    </apex:repeat>
+                                                </apex:outputPanel>
+                                                                            
+                                    <!--Prabhakar Aded below code for error message- END------>
+                                    <table class="mytable table table-bordered table-striped TTMLTable" border="0" cellpadding="0"
+                                           cellspacing="0">
+                                        <thead>
+                                            <tr height="54">
+                                                <th>{!$Label.css_Technician}<span style="color: red">*</span></th>
+                                                <th>{!$Label.CSS_Type}<span style="color: red">*</span></th>
+                                                <!--Added below Quantity,Unit Price (USD) lables and commited Days lable as per  "I Survived" sprint story #152963,-By RAJESH 23rd July 2018 -->                                      
+                                                <!--th>{!$Label.CSS_Days}<span style="color: red">*</span></th-->
+                                                <th>{!$Label.CSS_Quantity}<span style="color: red">*</span></th>
+                                               <!-- <th>{!$Label.CG_UnitPrice} (USD)<span style="color: red">*</span></th>-->
+                                                <th>{!$Label.CG_UnitPrice} ({!mainController.userRec.DefaultCurrencyIsoCode})<span style="color: red">*</span></th>
+                                                <!--End-->                   
+                                                <th>{!$Label.CSS_TTMLMileage}<span style="color: red">*</span></th>
+                                                <th>{!$Label.CSS_HoursTraveled}<span style="color: red">*</span></th>
+                                               <!-- <th>{!$Label.CSS_TotalExpense}<!--span style="color: red">*</span--><!--</th>-->
+                                                <th>Expense Total ({!mainController.userRec.DefaultCurrencyIsoCode})</th>
+                                                <th>{!$Label.CSS_Fail_Code}</th>
+                                                <th>{!$Label.CSS_Account_Code}<apex:outputText rendered="{!DealerTypeFlag}"><span style="color: red">*</span></apex:outputText></th> <!--GSSC-601-->
+                                                <th>{!$Label.CSS_Coverage}</th>
+                                                  
+
+                                                <apex:outputText rendered="{!IF(JobId==null && JobId=='',true,false)}">
+                                                    <th>{!$Label.CSS_Remove}</th>
+                                                </apex:outputText>
+                                                 <apex:outputText rendered="{!IF(JobId!=null,true,false) }">
+                                                    <th>{!$Label.CSS_Remove}</th>
+                                                </apex:outputText>
+                    
+                                            </tr>
+                                        </thead>
+                                       
+                                        <apex:repeat value="{!listTTMLWrapper}" var="ttmlComp">
+                                            <tr>
+
+                                                <td>
+                                                    <apex:outputPanel rendered="{!IF(claimsRec.id!=null && claimsRec.id!='',true,false)}">
+                                                        <apex:selectList value="{!ttmlComp.technician}" style="width:70px" styleClass="{!IF(ttmlComp.mandateTechnician == true,'showRedBorder','')}"
+                                                                         size="1">
+                                                            <apex:selectOptions value="{!Technicians}" />
+                                                            </apex:selectList>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF(claimsRec.id == null || claimsRec.id =='',true,false)}">
+                                                        <apex:selectList value="{!ttmlComp.technician}" style="width:70px" size="1">
+                                                            <apex:selectOption itemValue="Select One" itemLabel="Select One" />
+                                                        </apex:selectList>
+                                                    </apex:outputPanel>
+                                                </td>
+
+
+                                                <td>
+                                                    <!--apex:actionRegion-->
+                                                    <apex:selectList onchange="typeChange(this.value,'{!ttmlComp.counting}');" value="{!ttmlComp.type}"
+                                                                     style="width:100px" styleClass="{!IF(ttmlComp.mandateType == true,'showRedBorder','')}"
+                                                                     size="1">
+                                                        <apex:selectOptions value="{!TTMLType}" />
+                                                    </apex:selectList>
+                                                    <!--/apex:actionRegion-->
+                                                </td>
+                                                <!--Commited Day lable as per  "I Survived" sprint story #152963,-By RAJESH 23rd July 2018 -->                                                    
+                                                <!--Added Quantuty and Unit price values as per  "I Survived" sprint story #152963,-By RAJESH 23rd July 2018 -->
+                                                <td> 
+                                                    <apex:outputPanel rendered="{!IF(ttmlComp.showDays,false,true)}">
+                                                        <apex:inputtext disabled="true" style="width:70px" />
+                                                    </apex:outputPanel>
+                                                    
+                                                    <apex:outputPanel rendered="{!IF(ttmlComp.showDays,true,false)}" >
+                                                        <!--apex:outputText rendered="{!IF(JobId==null && JobId=='',true,false)}"> Since both auto & manual claim outputTexts are same, commented one
+                                                            <apex:inputText value="{!ttmlComp.quantity}" style="width:70px" maxlength="5" onkeypress="return quantityClaimbles(event,this)" onchange="calExpTot(this.value,'{!ttmlComp.counting}');"/>
+                                                        </apex:outputText
+                                                        
+                                                        <apex:outputText rendered="{!IF(JobId!=null && JobId!='',true,false)}">-->
+                                                         <apex:inputText value="{!ttmlComp.quantity}" onkeypress="return quantityClaimbles(event,this)" maxlength="5" style="width:70px" onchange="calExpTot(this.value,'{!ttmlComp.counting}');" styleClass="{!IF(ttmlComp.mandateDays == true,'showRedBorder','')}"/>
+                                                    <!--/apex:outputText-->
+                                                </apex:outputPanel>
+   
+                                                </td>
+                                                <td>
+                                                    <apex:outputPanel rendered="{!IF(ttmlComp.showUp,false,true)}">
+                                                        <apex:inputtext disabled="true" style="width:70px" />
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF(ttmlComp.showUp,true,false)}">
+                                                        <!--apex:outputText rendered="{!IF(JobId==null && JobId=='',true,false)}">
+                                                            <apex:inputText value="{!ttmlComp.unitPrice}"  style="width:70px" maxlength="8" id="claimsUP1" onkeydown="return hoursTraveled(event,this)" onchange="calExpTot(this.value,'{!ttmlComp.counting}');"/>
+                                                        </apex:outputText> 
+                                                        <apex:outputText rendered="{!IF(JobId!=null && JobId!='',true,false)}"-->
+                                                            <apex:inputText value="{!ttmlComp.unitPrice}" onkeypress="return quantityClaimbles(event,this)" style="width:70px" maxlength="8" id="claimsUP" onkeydown="return amountHours(event,this)" onkeyup="validateAmountExpenseTotal(this)" onchange="calExpTot(this.value,'{!ttmlComp.counting}');" styleClass="{!IF(ttmlComp.mandateUP == true,'showRedBorder','')}" />
+                                                        <!--/apex:outputText-->
+                                                    </apex:outputPanel>                                                    
+                                                </td>
+                                                <!--End-->              
+                                                <td>
+                                                    <apex:outputPanel rendered="{!IF(ttmlComp.showMileage,false,true)}">
+                                                        <apex:inputtext disabled="true" style="width:70px" />
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF(ttmlComp.showMileage,true,false)}">
+                                                       <!--Added calExpTot method as per defect GGSC-601,-By RAJESH 13th Feb 2020--> 
+                                                             <apex:inputText value="{!ttmlComp.mileage}" onkeypress="return preventCharecters(event,this)" style="width:70px" maxlength="8" id="MileageCLaims" onkeydown="return hoursTraveled(event,this)" onchange="calExpTot(this.value,'{!ttmlComp.counting}');" styleClass="{!IF(ttmlComp.mandateMileage == true,'showRedBorder','')}"/>
+                                                    </apex:outputPanel>
+                                                </td>
+                                                <td>
+                                                    <apex:outputPanel rendered="{!IF(ttmlComp.showMileageHT,false,true)}">
+                                                        <apex:inputtext disabled="true" style="width:70px" />
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF(ttmlComp.showMileageHT,true,false)}">
+                                                        <!--apex:outputText rendered="{!IF(JobId==null && JobId=='',true,false)}"-->
+                                                             <apex:inputText value="{!ttmlComp.hoursTraveled}" onkeypress="return preventCharecters(event,this)" style="width:70px" maxlength="4" id="CLaimsHoursTravelled" onkeydown="return hoursTraveled(event,this)" onchange="calExpTot(this.value,'{!ttmlComp.counting}');" styleClass="{!IF(ttmlComp.mandateHrTr == true,'showRedBorder','')}"/>
+                                                        <!--/apex:outputText>
+                                                        <apex:outputText rendered="{!IF(JobId!=null && JobId!='',true,false)}">
+                                                            <apex:inputText value="{!ttmlComp.hoursTraveled}" style="width:70px" maxlength="4" id="CLaimsHoursTravelled1" onkeydown="return hoursTraveled(event,this)" onchange="calExpTot(this.value,'{!ttmlComp.counting}');"/>
+                                                        </apex:outputText-->
+                                                    </apex:outputPanel>
+                                                </td>
+                                                <td>
+                                                    <apex:outputPanel rendered="{!IF(ttmlComp.type=='Select One',true,false)}">
+                                                        <apex:inputtext disabled="true" style="width:70px" />
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF(ttmlComp.type!='Select One',true,false)}">
+                                                        <apex:outputText value="{!ROUND(VALUE(ttmlComp.expenseTotal), 2)}" id="TTMLExpenseTotal" style="width:70px" rendered="{!IF(ttmlComp.expenseTotal!=null || ttmlComp.expenseTotal!='',true,false)}" styleClass="{!IF(ttmlComp.isExpenseTotal == true,'showRedBorder','')}" >
+                                                        </apex:outputText>
+                                                    </apex:outputPanel>
+                                                </td>
+                                                <!-----Fail Code Starts ---->
+                                                <td>
+                                                   
+                                                  <apex:selectList value="{!ttmlComp.failCode}" id="ttmlfailcodesvalue" size="1" style="width:100px;" styleClass="{!IF(ttmlComp.isTTMLFailcodeCovLimitExceed == true,'showRedBorder','')}"
+                                                                     onchange="failcodelogic2(this.value,'{!ttmlComp.counting}','{!ttmlComp.type}');" disabled="{!IF(AND(NOT(ISBLANK(ttmlComp.failCodelst)),ttmlComp.failCodelst.size>1),false,true)}">
+                                                        <apex:selectOptions value="{!ttmlComp.failCodelst}"></apex:selectOptions>
+                                                    </apex:selectList>
+                                                </td>
+                                                
+                                                
+                                                <!-----Fail Code End ---->
+                                                
+                                                
+
+                                                <!-----Account Code Start ---->
+                                                <td>
+                                                    <!--<apex:outputtext value="{!ttmlComp.accountCode}" style="width:80px" id="warVal1"/  -->
+                                                    <apex:outputPanel id="accCodePanel">
+                                                                    <!--                {!NOT(ISNULL(ttmlComp.accCodelst))}**{!ttmlComp.accCodelst}**{!ttmlComp.accCodelst.size}**{!ttmlComp.failCode}-->
+                                                              <!--apex:outputLabel rendered="{!IF(reqaccountcode, true, false)}" style="color:red;font-weight:bold;" > {!$Label.css_You_must_enter_value}.</apex:outputLabel-->            
+                                                           
+                                                            <apex:outputPanel rendered="{!IF(ttmlComp.type != 'Towing', true, false)}">
+                                                               <apex:selectList value="{!ttmlComp.accountCode}" size="1" style="width:100px;" styleClass="{!IF(ttmlComp.mandateaccountcode == true || ttmlComp.isTTMLPartsCovLimitExceed == true || ttmlComp.isTTMLMlsLodPartsCovLimitExceed == true,'showRedBorder','')}" disabled="{!IF(AND(NOT(ISBLANK(ttmlComp.accCodelst)),ttmlComp.accCodelst.size>1,ttmlComp.failCode!='Select One',hideAccCode==false),false,true)}" >
+                                                                    <apex:selectOptions value="{!ttmlComp.accCodelst}"></apex:selectOptions>
+                                                                </apex:selectList>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(ttmlComp.type == 'Towing', true, false)}">
+                                                              <apex:selectList value="{!ttmlComp.accountCode}" size="1" style="width:100px;" styleClass="{!IF(ttmlComp.mandateaccountcode == true || ttmlComp.isTTMLPartsCovLimitExceed == true ||  ttmlComp.isTTMLMlsLodPartsCovLimitExceed == true,'showRedBorder','')}" disabled="{!IF(AND(NOT(ISBLANK(ttmlComp.accCodelst)),ttmlComp.accCodelst.size>1,ttmlComp.failCode!='Select One'),false,true)}" >
+                                                                    <apex:selectOptions value="{!ttmlComp.accCodelst}"></apex:selectOptions>
+                                                                </apex:selectList>
+                                                            </apex:outputPanel>
+
+                                                       
+                                                        <!--apex:outputPanel rendered="{!IF(ttmlComp.failCode == 'Select One' || ttmlComp.failCode == '',true,false)}">
+
+                                                            <apex:selectList value="{!ttmlComp.accountCode}" size="1" style="width:100px;" disabled="true"
+                                                                             readonly="false">
+                                                                <apex:selectOption itemValue="Select One" itemLabel="Select One" />
+                                                            </apex:selectList>
+
+                                                        </apex:outputPanel>
+
+                                                        <apex:outputpanel rendered="{!IF(ttmlComp.failcode!= 'Select One'  && ttmlComp.accountCode == 'Select One' ,true,false)}">
+                                                            <p>
+
+                                                                <apex:selectList value="{!ttmlComp.accountCode}" size="1" style="width:100px;" disabled="false">
+                                                                    <apex:selectOptions value="{!AccountCodeDropDown}"></apex:selectOptions>
+                                                                </apex:selectList>
+
+                                                            </p>
+                                                        </apex:outputpanel-->
+                                                    </apex:outputPanel></td>
+
+
+                                                
+
+                                                <!-----Account Code End ---->
+
+                                                <td>
+                                                    
+                                                    <apex:outputPanel rendered="{!ttmlComp.accCoverage}">
+                                                        <div class="col-sm-9">
+                                                            <apex:commandLink value="Coverage found" style="text-decoration:underline" />
+                                                            <!-- <apex:outputText value="Coverage found" style="text-decoration:underline"/>action="{!redirectToWarranty}"-->
+                                                        </div>&nbsp;&nbsp;
+                                                        <div class="col-sm-3">
+                                                            <i class="cmi_solidcorrect-icon"></i>
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                </td> 
+                                                <!--Added value for Notes lable as per  "I Survived" sprint story #152963,-By RAJESH 23rd July 2018 -->                      
+                                                <!--<td>
+                                                    <apex:outputPanel >
+                                                        <apex:inputText value="{!ttmlComp.Notes}"/>
+                                                    </apex:outputPanel> 
+                                                </td>-->
+                                                 
+                                              <!-- <apex:outputText rendered="{!IF(JobId==null && JobId=='',true,false)}">
+                                                  <td>
+                                                    <apex:outputPanel >
+                                                        <apex:inputText value="{!ttmlComp.Notes}"/>
+                                                    </apex:outputPanel> 
+                                                </td>  
+                                                </apex:outputText>--->
+                                                <!--Added condiition below "I Survived" sprint story #152967,-By RAJESH 27th July 2018 -->                     
+                                                <!--<apex:outputText rendered="{!IF(JobId==null || JobId=='',true,false)}">
+                                                <td style="text-align:center;margin-right:15px;">
+                                                        <apex:actionRegion >
+                                                            <apex:commandLink value="{!$Label.CSS_Remove}" action="{!removingTTMLRow}" style="text-decoration:underline;"
+                                                                              reRender="TTMLModCont">
+                                                                <apex:param name="assignedParts" value="{!ttmlComp.counting}" assignTo="{!selectedRemoveRow}"/>
+                                                            </apex:commandLink>
+                                                        </apex:actionRegion>
+                                                    </td>
+                                                </apex:outputText>-->
+                                                
+                                                <!--For Automated Claim (Dealer/Distributor) as Remove was not working hence Commented this original Block. --Rupesh-->
+                                                <!--<apex:outputText rendered="{!IF(JobId!=null,true,false) }">
+                                                     <td style="text-align:center;margin-right:15px;">
+                                                        <apex:actionRegion >
+                                                            <apex:commandLink value="{!$Label.CSS_Remove}" action="{!removingTTMLRow}" style="text-decoration:underline;"
+                                                                              reRender="TTMLModCont">
+                                                                <apex:param name="assignedParts" value="{!ttmlComp.counting}" assignTo="{!selectedRemoveRow}"/>
+                                                            </apex:commandLink>
+                                                        </apex:actionRegion>
+                                                    </td>
+                                                </apex:outputText>-->
+                                                <apex:outputText >
+                                                     <td style="text-align:center;margin-right:15px;">
+                                                        <apex:actionRegion >
+                                                            <apex:commandLink value="{!$Label.CSS_Remove}" action="{!removingTTMLRow}" style="text-decoration:underline;"
+                                                                              reRender="TTMLModCont">
+                                                                <apex:param name="assignedParts" value="{!ttmlComp.counting}" assignTo="{!selectedRemoveRow}"/>
+                                                            </apex:commandLink>
+                                                        </apex:actionRegion>
+                                                    </td>
+                                                </apex:outputText>
+                                                
+     
+                                                <!--Added condiition below "Despiccable Me" sprint story #168028,-By Rupesh 13/11/2018 -->   
+                                                <!--For Automated Claim (Dealer/Distributor) is working. --Rupesh-->
+                                                <!--<apex:outputText rendered="{!IF(JobId!=null && JobId!='',true,true) || !IF($Setup.css_header_nav__c.RSWButtonEnable__c == true,false,true) }">
+                                                  <td style="text-align:center;margin-right:15px;">
+                                                        <apex:actionRegion >
+                                                            <apex:commandLink value="{!$Label.CSS_Remove}" action="{!removingTTMLRow}" style="text-decoration:underline;"
+                                                                              reRender="TTMLModCont">
+                                                                <apex:param name="assignedParts" value="{!ttmlComp.counting}" assignTo="{!selectedRemoveRow}" />
+                                                            </apex:commandLink>
+                                                        </apex:actionRegion>
+                                                    </td>
+                                                </apex:outputText>-->
+                                               <!--End-->                       
+                                            </tr>
+                                        </apex:repeat>
+                                        <apex:actionFunction name="typeChange" action="{!typeListChange}" rerender="TTMLModCont,Accerr,experrid,TTMLPopUp,mealsEX,lodgingEX,towingEX">
+                                            <apex:param name="ItemID" value="" assignTo="{!SelectedType}" />
+                                            <apex:param name="PartsID" value="" assignTo="{!SelectedPartID}" />
+                                        </apex:actionFunction>
+                                        <apex:actionFunction name="calExpTot" action="{!getExpenseTotal}" rerender="TTMLModCont,Accerr,experrid,TTMLPopUpId,TTMLPopUp,experrid,mealsEX,lodgingEX,towingEX">
+                                            <apex:param name="ItemSel" value="" assignTo="{!SelectedItem}" />
+                                            <apex:param name="PartsID" value="" assignTo="{!SelectedPartID}" />
+                                        </apex:actionFunction>
+                                          
+                                        
+                                        <apex:actionFunction name="failcodelogic2" action="{!typeListChangeNewttmlacc}"   rerender="accCodePanel" >   <!--Have removed oncomplete="accouncodererender()" from this line and as per GSSC-601-->
+                                            <apex:param name="FailCodeval2" value="" assignTo="{!SelectedFailCode}" />
+                                            <apex:param name="PartsID2" value="" assignTo="{!SelectedPartID}" />
+                                            <apex:param name="selTypeVal" value="" assignTo="{!SelectedType}" /><!--Passing a type value as new param  --GSSC-601- By RAJESH 17th Feb 2020-->
+                                        </apex:actionFunction>
+            
+                    <!--<apex:actionFunction name="accouncodererender" rerender="accCodePanel" />   commented because Account code rerender functionality is not working praperly as a part of defect GSSC-601,-By RAJESH 18th Feb 2020-->
+                                        
+                                        
+                                        
+                                        <tbody>
+
+                                        </tbody>
+                                    </table>
+
+                                    <!--Added condition for visible the Add lable as per  "I Survived" sprint story #152967,-By RAJESH 26rd July 2018 -->                   
+                                    <!--<apex:outputPanel rendered="{!IF(JobId==null && JobId=='',true,false)}">-->
+                                    <!-- For the story 168028 the Output panel condition is commented as it is presebt in Story Document--Rupesh ->
+                                    <!--Because Add Functionality is present everywhere below to be there without any condition.--Rupesh-->
+                                    
+                                    <!--START ADD Button-->
+                                    <apex:outputPanel >
+                                        <div style="float:right;text-decoration:underline;margin-right:10px;">
+                                            <i class="cmi_add-icon"></i>
+                                            <apex:commandLink value="{!$Label.css_Add}" action="{!addTTMLRow}" reRender="TTMLModCont"/>
+                                        </div>
+                                    </apex:outputPanel>
+                                    <!--END ADD Button-->
+                                    
+                                    <div class="modal-footer" style="margin-top:20px;border-top:0px;">
+                                        <apex:outputPanel rendered="{!IF(cId!=null,true,false)}">
+                                            <div class="col-sm-offset-1 col-sm-5">
+                                        <apex:commandButton action="{!saveTTMLPopup}" onclick="DisableWASaveButton(this);"
+                                                                    value="{!$Label.css_save_btn}" styleClass="saveButton"
+                                                                    reRender="covExceedValidationError,TTMLModCont,experrid,TTMLPopUpId,mealsEX,lodgingEX,towingEX" onComplete="return displaypop1('{!displayPopup2}'); return false;"/>
+                                            </div>
+                                        </apex:outputPanel>
+                                        <apex:outputPanel rendered="{!IF(cId==null,true,false)}">
+                                            <div class="col-sm-offset-1 col-sm-5">
+                                                <button type="button" class="saveButton">{!$Label.css_save_btn}</button>
+                                            </div>
+                                        </apex:outputPanel>
+                                        <div class="col-sm-2">
+                                            <apex:commandButton styleClass="cancelButton" html-data-dismiss="modal" onclick="closePopup();"
+                                                                value="{!$Label.css_Cancel}" />
+                                        </div>
+                                    </div>
+                                </apex:outputPanel>
+                            </div>
+                        </apex:outputPanel>
+
+                    <apex:actionFunction name="failcodeChange" action="{!getAccCodesonChngofFailCode}"
+                                             rerender="TTMLModCont">
+                            <apex:param name="FailCodeval" value="" assignTo="{!SelectedFailCode}" />
+                            <apex:param name="PartsID" value="" assignTo="{!SelectedPartID}" />
+                        </apex:actionFunction>
+                    </apex:actionRegion>
+
+                </div>
+            </div>
+        </div>
+        <!------------------------END TTML Popup for story 115029------------------------------>
+    </div>
+
+</apex:component>

@@ -1,0 +1,122 @@
+<apex:page controller="cnx.MyCallsTodayController" sidebar="false" showHeader="false" applyHtmlTag="false" applyBodyTag="false" docType="html-5.0">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <apex:includeScript value="{!URLFOR($Resource.cnx__CnxSfdcResources,'js/ConnectsIntegrationAPI.min.js')}"/>
+    <apex:outputPanel layout="none" rendered="{!$User.UIThemeDisplayed  == 'Theme4u' || $User.UIThemeDisplayed  == 'Theme4d' || $User.UITheme  == 'Theme4u' || $User.UITheme  == 'Theme4d'}">
+        <script>
+            var messageChannel = "{!$MessageChannel.cnx__ConnectsIntegrationAPI__c}";
+            ConnectsIntegrationAPI.setLMSEnvironment({
+                mode: 'Visualforce',
+                channel: messageChannel
+            });
+        </script>
+    </apex:outputPanel>
+    <style>
+        .slds-scope .slds-section {
+            margin: 0;
+        }
+        .slds-scope .bPageBlock {
+            border-top: 1px solid #eaeaea;
+        }
+    </style>
+    <script>
+        var closedSize = 34;
+        var openedSize = 150;
+        var isOpen = false;
+        function openToolbar() {
+            ConnectsIntegrationAPI.setCustomToolbarSize(ConnectsIntegrationAPI.GENERAL.TOOLBAR_POSITION.AUTO, openedSize);
+            document.querySelector('.slds-section').classList.add('slds-is-open');
+            isOpen = true;
+            localStorage.setItem('MyCallsTodayToolbar', 'open');
+        }
+
+        function closeToolbar() {
+            ConnectsIntegrationAPI.setCustomToolbarSize(ConnectsIntegrationAPI.GENERAL.TOOLBAR_POSITION.AUTO, closedSize);
+            document.querySelector('.slds-section').classList.remove('slds-is-open');
+            isOpen = false;
+            localStorage.setItem('MyCallsTodayToolbar', 'closed');
+        }
+
+        function toggleToolbar() {
+            if (isOpen) {
+                closeToolbar();
+            }
+            else {
+                openToolbar();
+            }
+        }
+
+        function doScreenPop(toPop) {
+            ConnectsIntegrationAPI.screenPop(toPop);
+        }
+
+        //wait until page is loaded
+        ConnectsIntegrationAPI.waitReady(function () {
+                //read default size from call center definition
+                ConnectsIntegrationAPI.getCustomToolbarDefaultSize(ConnectsIntegrationAPI.GENERAL.TOOLBAR_POSITION.AUTO,
+                    function (response) {
+                        //we got an answer with default height from settings
+                        openedSize = response.data.height;
+                        if (localStorage.getItem('MyCallsTodayToolbar') === 'open') {
+                            openToolbar();
+                        }
+                        else {
+                            closeToolbar();
+                        }
+                    }
+                );
+                //register a function called after a call ended
+                ConnectsIntegrationAPI.onWorkItemEnd = function () {
+                    //refresh the table view
+                    getLastCallsToday();
+                };
+
+                document.querySelector('.slds-section__title').addEventListener('click', function () {
+                    toggleToolbar();
+                });
+
+                //fill the table view
+                getLastCallsToday();
+            }
+        );
+    </script>
+    <body>
+    <apex:slds />
+    <div class="slds-scope">
+        <div class="slds-section slds-is-open">
+            <h3 class="slds-section__title">
+                <button aria-controls="expando-unique-id" aria-expanded="true" class="slds-button slds-section__title-action">
+                    <svg class="slds-section__title-action-icon slds-button__icon slds-button__icon_left" aria-hidden="true">
+                        <use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/svg/symbols.svg#switch')}"></use>
+                    </svg>
+                    <span class="slds-truncate" title="Section Title">My Calls Today</span>
+                </button>
+            </h3>
+            <div aria-hidden="false" class="slds-section__content" id="expando-unique-id">
+                <apex:form >
+                    <apex:pageBlock mode="edit" id="activities">
+                        <apex:pageBlockTable value="{!activities}" var="task">
+                            <apex:param name="taskid" value="{!task.Id}" />
+                            <apex:column >
+                                <apex:facet name="header">
+                                    <apex:outputText value="Subject"/>
+                                </apex:facet>
+                                <a href="#" onclick="doScreenPop('{!task.Id}');">
+                                    <apex:outputField value="{!task.Subject}"/>
+                                </a>
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">
+                                    <apex:outputText value="Comments"/>
+                                </apex:facet>
+                                <apex:outputText value="{!task.Description}"/>
+                            </apex:column>
+                        </apex:pageBlockTable>
+                    </apex:pageBlock>
+                    <apex:actionFunction name="getLastCallsToday" action="{!getCallActivities}" rerender="activities"/>
+                </apex:form>
+            </div>
+        </div>
+    </div>
+    </body>
+    </html>
+</apex:page>

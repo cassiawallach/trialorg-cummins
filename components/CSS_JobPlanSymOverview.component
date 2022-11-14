@@ -1,0 +1,264 @@
+<apex:component controller="CSS_JobPlanOverviewControllerNew" id="jobplanoverview" allowDML="true">
+    
+    <style>
+        .table > thead > tr > th {
+        vertical-align: top;
+        }
+        
+        .jobplanSymoverviewTable td {
+        border-left:0px !important;
+        }
+        
+    </style>
+    <!--  <apex:attribute name="partsListWrap" type="CSS_WPR_JobPlanOverview[]" required="false" description="Parts"/>
+<apex:attribute name="workjob" type="CSS_Job_Order__c" required="false" description="WorkJob" />-->
+    <div class="panel-body">  
+        
+        <div class="col-md-15 col-xs-15">
+            <div class="container-fluid">
+                <div class="form-horizontal" role="form"> 
+                    <div class="form-group">
+                        <h4><b>{!$Label.css_Troubleshooting_Overview} </b></h4>
+                    </div>
+                </div>
+                <apex:outputpanel > 
+                    <div class="">
+                        <div class="form-horizontal" role="form"> 
+                            <div class="form-group form-group1">
+                                <div class="col-md-15">
+                                    <table class="mytable table table-striped jobplanSymoverviewTable"><!----Defect 64438---->
+                                        <thead>
+                                            <tr>
+                                                <th style="width:10%">{!$Label.CSS_Fault_Code_Symptom}
+                                                </th>
+                                                <th style="width:70%">
+                                                    <div class="row">
+                                                        <div class="col-sm-2">
+                                                            {!$Label.css_Solutions}
+                                                        </div>
+                                                        <div class="col-sm-1">
+                                                            <b>{!$Label.CSS_Available_SRT_Total}</b>
+                                                        </div>
+                                                        <div class="col-sm-1">
+                                                            <b> {!$Label.CSS_Selected_Parts}</b>
+                                                        </div>
+                                                        <div class="col-sm-2">
+                                                            <b> {!$Label.CSS_Parts_Name_Identified_By_Technician}</b>
+                                                        </div>
+                                                        <div class="col-sm-2">
+                                                            <b> {!$Label.CSS_Fail_Code}</b>
+                                                        </div>
+                                                        <div class="col-sm-offset-1 col-sm-2">
+                                                            <b> {!$Label.CSS_Account_Code}</b>
+                                                        </div>
+                                                    </div>
+                                                </th>
+                                                
+                                            </tr>
+                                        </thead>
+                                        <tbody> 
+                                            <apex:variable var="fcCnt" value="{!1}" />
+                                            <apex:repeat value="{!partsListWrap}" var="parts" id="theRepeat2" >
+                                                <tr>
+                                                    <!-- Diagnose -->
+                                                    <td> <!--<div><b><apex:outputText value="{!parts.Name}"></apex:outputText></b></div>-->
+                                                        <div>
+                                                            <b><a href="/apex/CSS_JobTnDTs?id={!workJob.Id}">{!parts.Name}</a></b>
+                                                        </div>
+                                                        <apex:repeat value="{!parts.relatedName}" var="symFcName">
+                                                            <apex:outputPanel rendered="{!IF(symFcName!=null || symFcName!='',true,false)}">
+                                                                <b>{!$Label.CSS_Related}</b>
+                                                            </apex:outputPanel>
+                                                            <div><apex:outputText value="{!symFcName}"></apex:outputText></div>
+                                                            
+                                                        </apex:repeat>
+                                                        <apex:outputpanel rendered="{!IF(parts.solList == null || parts.solList == '' ,false,true)}">
+                                                            <apex:repeat value="{!parts.solList}" var="out">
+                                                                <apex:outputpanel rendered="{!IF(out.outOfOrder == true,true,false)}">
+                                                                    <b>Note:</b> {!$Label.CSS_Solutions_Not_Performed_in_Order}
+                                                                </apex:outputpanel>
+                                                            </apex:repeat>
+                                                        </apex:outputpanel>
+                                                    </td> 
+                                                    <!-- End for Diagnose -->
+                                                    <!--Solutions-->
+                                                    <td>
+                                                        
+                                                        <span style="font-size: 12px;"> {!parts.solList.size} {!$Label.css_Solutions_Found} </span> <br/>
+                                                        
+                                                        <apex:variable var="Solcounter" value="{!0}" />
+                                                        <apex:repeat value="{!parts.solList}" var="solName">
+                                                            
+                                                            
+                                                            <apex:outputpanel rendered="{!IF(solName.solResponse == '' ,false,true)}"> 
+                                                                <apex:variable var="Solcounter" value="{!Solcounter+1 }" />   
+                                                                <div class="row">
+                                                                    <div class="col-sm-2"> <!-- Solutions  --> 
+                                                                        <apex:outputpanel rendered="{!IF(solName.solNumber == null || solName.solNumber == '' ,true,false)}">
+                                                                            <div>
+                                                                                <span style="font-size: 12px;"> 0 {!$Label.css_Solutions_Found}</span> <br/>
+                                                                            </div>
+                                                                        </apex:outputpanel>
+                                                                        <apex:outputpanel rendered="{!IF(solName.solNumber == null || solName.solNumber == ''  ,false,true)}">
+                                                                            
+                                                                            <!--  <apex:outputpanel rendered="{!IF(solName.solResponse == '' ,false,true)}">   -->
+                                                                            <div class="col-sm-2">
+                                                                                <i class="cmi-icon {!IF(solName.solResponse == 'Most likely the solution', 'icon-correct',
+                                                                                          IF(solName.solResponse == 'Not the solution', 'icon-wrong','icon-qtn'))}"></i>
+                                                                            </div>
+                                                                            <div class="col-sm-10">
+                                                                                <b>{!solName.solNumber}</b> <br/>
+                                                                                <div>{!solName.solTitle}</div> 
+                                                                                
+                                                                            </div>
+                                                                            <!--    </apex:outputpanel>  -->
+                                                                            
+                                                                        </apex:outputpanel>
+                                                                    </div>
+                                                                    
+                                                                    <div class="col-sm-1"> <!-- SRTs --->
+                                                                        <apex:outputPanel rendered="{!IF(Solcounter==1, true, false)}">
+                                                                            <apex:outputpanel rendered="{!IF(parts.solList == null || parts.solList == '' ,false,true)}">
+                                                                                <div>
+                                                                                    <b>{!$Label.css_Diagnosis}: </b>
+                                                                                    <br/>
+                                                                                    {!IF(contains(parts.diagTime, "."), parts.diagTime, parts.diagTime+".0")}                                                                                 
+                                                                                    <!--{!parts.diagTime}-->
+                                                                                </div>
+                                                                            </apex:outputpanel>
+                                                                            
+                                                                            <apex:outputpanel rendered="{!IF(parts.solList == null || parts.solList == '' ,false,true)}">
+                                                                                <div>
+                                                                                    <b>{!$Label.css_Repair}: </b>
+                                                                                    <br/>
+                                                                                    {!parts.repTime}
+                                                                                </div>
+                                                                            </apex:outputpanel>
+                                                                            
+                                                                        </apex:outputPanel>    
+                                                                    </div>   
+                                                                    
+                                                                    <div class="col-sm-1"> <!-- Parts Quantity --->
+                                                                        <apex:outputText value="0" rendered="{!IF(solName.solResponse == 'Most likely the solution' && solName.partsListCount==null,true, false)}" />    
+                                                                        <apex:outputText value="{!solName.partsListCount.size}" rendered="{!IF(solName.partsListCount==null,false,true && solName.solResponse == 'Most likely the solution')}" /> &nbsp; 
+                                                                        <apex:commandLink value="{!$Label.CSS_View_Parts}" action="{!jobplan_prt}" rendered="{!IF(solName.solResponse != 'Most likely the solution',false,true)}"/>
+                                                                    </div>   
+                                                                    
+                                                                    
+                                                                    
+                                                                    <div class="col-sm-2"> <!-- Parts Name Identified by Technician--->
+                                                                        <apex:outputpanel rendered="{!IF(parts.solList == null || parts.solList == '' ,false,true)}">
+                                                                            <div>  
+                                                                                
+                                                                                <apex:repeat value="{!solName.solCompWrap}" var="solwrap">
+                                                                                    
+                                                                                    <apex:outputPanel rendered="{!solwrap.selectedcomp}">
+                                                                                        <apex:outputpanel rendered="{!IF(solwrap.compName == null || solwrap.compName == '' ,false,true) && (solName.solResponse != null || solName.solResponse != '') && (solName.solResponse=='Most likely the solution')}">
+                                                                                            
+                                                                                            <p> {!solwrap.compName}</p>
+                                                                                        </apex:outputPanel>
+                                                                                    </apex:outputpanel>
+                                                                                    
+                                                                                </apex:repeat>
+                                                                                
+                                                                            </div>
+                                                                        </apex:outputpanel>
+                                                                    </div>
+                                                                    
+                                                                    <div class="col-sm-3"> <!-- Fail Code --->
+                                                                        <apex:outputpanel rendered="{!IF(parts.solList == null || parts.solList == '' ,false,true)}">
+                                                                            <div>  
+                                                                                
+                                                                                <apex:repeat value="{!solName.solCompWrap}" var="solwrap">
+                                                                                    <apex:outputPanel rendered="{!solwrap.selectedcomp}">
+                                                                                        <apex:outputpanel rendered="{!IF(solwrap.failcodelist == null || solwrap.failcodelist == '' ,false,true) && (solName.solResponse != null || solName.solResponse != '') && (solwrap.selectedcomp==true) && (solName.solResponse=='Most likely the solution')}">
+                                                                                            
+                                                                                            <p> {!solwrap.compName}-{!solwrap.failcodelist}  </p>
+                                                                                        </apex:outputPanel> 
+                                                                                        
+                                                                                        <apex:outputpanel rendered="{!IF(solwrap.failcodelist == null || solwrap.failcodelist == '',true,false) && (solName.solResponse=='Most likely the solution') && (solName.hasComponent==true)  && (solwrap.selectedcomp==true)}">
+                                                                                            <!--apex:inputtext value="{!solwrap.failcodeEditable}" maxlength="8" style="margin-left:-20px;"/-->
+                                                                                            <p>
+                                                                                                <apex:selectList value="{!solwrap.failcodeEditable}" size="1" style="width:100px;" >
+                                                                                                    <apex:selectOptions value="{!solwrap.lstConcatenatedFailcodes}"></apex:selectOptions>
+                                                                                                </apex:selectList>
+                                                                                                
+                                                                                                <b></b>
+                                                                                                <apex:commandlink value="Go" action="{!partssave}" status="callAccountCode" styleclass="saveButton" onComplete="window.location.reload()"  style="padding:0px 4px;">
+                                                                                                    <apex:param name="compParam" value="{!solwrap.compId}"/>
+                                                                                                    <apex:param name="selectFailCode" value="{!solwrap.failcodeEditable}" assignTo="{!selectedFailCode}"/>
+                                                                                                </apex:commandlink>
+                                                                                            </p>
+                                                                                            <apex:actionStatus startText="requesting..." id="callAccountCode">
+                                                                                                <apex:facet name="start">Requesting... <img src="/img/loading.gif"/></apex:facet>
+                                                                                                <apex:facet name="stop"></apex:facet>
+                                                                                            </apex:actionStatus>
+                                                                                        </apex:outputpanel>
+                                                                                    </apex:outputpanel>     
+                                                                                </apex:repeat>
+                                                                                
+                                                                            </div>
+                                                                        </apex:outputpanel>
+                                                                    </div>
+                                                                    <div class="col-sm-3" style="margin-right:-44px"> <!-- Account Code --->
+                                                                        <apex:outputpanel rendered="{!IF(parts.solList == null || parts.solList == '' ,false,true)}">
+                                                                            <div>  
+                                                                                
+                                                                                <apex:repeat value="{!solName.solCompWrap}" var="solwrap">
+                                                                                    <apex:outputPanel rendered="{!solwrap.selectedcomp}">
+                                                                                        <!--{!solwrap.failcodeEditable}
+{!solwrap.failcodelist}
+{!solwrap.accountCode}-->
+                                                                                        <apex:outputpanel rendered="{!IF((solwrap.failcodeEditable == 'Select One' || solwrap.failcodeEditable == '') && (solwrap.failcodelist  == ''),true,false)}">
+                                                                                            <apex:outputText value=""></apex:outputText>
+                                                                                        </apex:outputpanel>
+                                                                                        
+                                                                                        <apex:outputpanel rendered="{!IF((solwrap.failcodeEditable == 'Select One' || solwrap.failcodeEditable == '') && (solwrap.failcodelist  == ''),false,true)}">
+                                                                                            
+                                                                                            <apex:outputpanel rendered="{!IF(solwrap.accountCode == null || solwrap.accountCode == '' ,false,true) && (solName.solResponse != null || solName.solResponse != '') && (solName.solResponse=='Most likely the solution')}">
+                                                                                                <p> {!solwrap.accountCodeType} {!solwrap.accountCode} </p>
+                                                                                            </apex:outputpanel>
+                                                                                            
+                                                                                            <apex:outputpanel rendered="{!IF(solwrap.accountCode == null || solwrap.accountCode == '',true,false) && IF(solName.solResponse != null || solName.solResponse != '',true,false) && IF(solwrap.failcodeEditable != 'Select One',true,false) && (solName.solResponse=='Most likely the solution')}">
+                                                                                                <p>  <apex:selectList value="{!solwrap.accountCodeEditable}" size="1" style="width:100px;">
+                                                                                                    <apex:selectOptions value="{!solwrap.lstAccountCodes}"></apex:selectOptions>
+                                                                                                    </apex:selectList> </p>
+                                                                                            </apex:outputpanel>
+                                                                                        </apex:outputpanel>
+                                                                                        
+                                                                                        <apex:outputpanel rendered="{!IF(solwrap.failcodeEditable != 'Select One',false,true) }">
+                                                                                            <br/><br/>
+                                                                                        </apex:outputpanel>
+                                                                                    </apex:outputpanel>   
+                                                                                    
+                                                                                </apex:repeat>
+                                                                                
+                                                                            </div>
+                                                                        </apex:outputpanel>
+                                                                        
+                                                                        
+                                                                    </div>
+                                                                    
+                                                                </div>
+                                                                
+                                                            </apex:outputpanel>  
+                                                        </apex:repeat>
+                                                    </td>
+                                                </tr>
+                                                <apex:variable value="{!fcCnt+1}" var="fcCnt"/>
+                                            </apex:repeat>      
+                                        </tbody>
+                                    </table>          
+                                </div>
+                            </div>
+                        </div>  
+                        <br/>            
+                    </div>
+                </apex:outputpanel>
+            </div>
+        </div>
+    </div>
+    <div align="center">
+        <apex:commandLink action="{!updateFailCodeComponents}" value="{!$Label.css_save_btn}" styleclass="saveButton"/>
+    </div>
+</apex:component>

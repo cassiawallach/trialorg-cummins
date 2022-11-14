@@ -1,0 +1,306 @@
+<aura:component  controller="FSL_CL_LaunchInsite" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,lightning:availableForFlowScreens" access="global" >
+    <aura:attribute name="servicejobname" type="String"  />
+    <aura:attribute name="Assetname" type="String"  />
+    <aura:attribute name="ContactName" type="String"  />
+    <aura:attribute name="LoggedInUserId" type="String"  /> 
+    <aura:attribute name="errormesaage" type="String"  />
+    <aura:attribute name="InsiteESN" type="String"  />
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="isErrorModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="assetBlankModal" type="boolean" default="false"/>
+    <aura:attribute name="showPriorityTable" type="boolean" default="false"/>
+    <!--Changed Ravikanth bolean true from False for Defect CT2-154 both 12 and 13 th line -->
+    <aura:attribute name="hidelaunchinsite" type="boolean" default="false"/>
+    <aura:attribute name="hidelaunchinsitebutton" type="boolean" default="false"/>
+    <lightning:workspaceAPI aura:id="workspace" />
+    <aura:attribute name="errorMsg" type="String"/>
+    <aura:handler name="init" action="{!c.doInit}" value="{!this}" />  
+    <!--Added Ravikanth to refresh the page after updating the controll user -->
+    <aura:handler event="force:refreshView" action="{!c.isRefreshed}" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="previoususr" type="String" />
+    <aura:attribute name="showNoFaultCode" type="boolean" default="false"/>
+    <aura:attribute name="isopenModelTakecontroll" type="boolean" default="false"/> <!-- Added Ravikanth-->
+    <!--Piyush--> 
+    <aura:attribute name="faultCodeMaxSequence" type="integer"/>
+    <aura:attribute name="assetLockedErr" type="boolean" default="false"/>
+    <aura:attribute name="accountId" type="String" />
+    <aura:attribute name="fetchLatest" type="boolean" default="false"/>
+    <aura:attribute name="source" type="boolean" />
+    <aura:attribute name="showlaunch" type="boolean" default="false"/>
+    <aura:attribute name="showTable" type="boolean" default="false"/>    
+    <aura:handler event="aura:waiting" action="{!c.showSpinner}"/>
+    <aura:handler event="aura:doneWaiting" action="{!c.hideSpinner}"/>
+     
+    <!--Added Ravi -->
+    <!--exception message handling when take controller method invoked -->
+    {!v.errorMsg} 
+    <aura:attribute name="record" type="WorkOrder" />
+    
+    <!--loading spinner start-->
+    <aura:if isTrue="{!v.spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading...</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+    <!-- Loading spinner end--> 
+    <!--added by Piyush VGRS2-36 -->
+    <aura:attribute name="ShowSpinner" type="Boolean" default="false"></aura:attribute>
+    <aura:if isTrue="{!v.ShowSpinner}">
+        <lightning:spinner aura:id="busyIndicator" variant="brand" size="large"/>
+    </aura:if> 
+     <!-- VGRS2-36 End-->
+    
+    <force:recordData aura:id="recordLoader"
+                      layoutType="FULL"
+                      recordId="{!v.recordId}"
+                      targetFields="{!v.record}"
+                      recordUpdated="{!c.handleRecordUpdated}"
+                       fields="User__r.Id,isCICOVisible__c,Clock_In_User_Ids_Formula__c" /> <!--Added by Krishna as part of TW-73--><!-- User__r.Id , is removed from Fields as part of enabling CICO -->
+    
+    <div class="slds-box">
+       <!-- line 61 to 64 UNcommented as part of enabling CICO -->
+             <aura:if isTrue="{!v.showlaunch}">
+           <center><B>{!$Label.c.Hide_Take_Control}</B></center>
+        </aura:if>  
+        <aura:if isTrue="{!v.hidelaunchinsitebutton}"> 
+            <center> <lightning:button label="{!$Label.c.CSS_Take_Control_Btn}" 
+                                       class="slds-m-top--medium"
+                                       variant="brand" 
+                                       onclick="{!c.takecontroll}" /></center>
+            
+            <aura:if isTrue="{!v.isopenModelTakecontroll}">
+                <!-- Modal/Popup Box starts here-->
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container"> 
+                        <!-- Modal/Popup Box Header Starts here--> 
+                        <header class="slds-modal__header"> <B>{!$Label.c.CSS_Take_Control_Btn}</B> </header>
+                        <!--Modal/Popup Box Body Starts here-->
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                            <B>{!$Label.c.CSS_Notice}</B> 
+                            <br/>
+                            <p> {!$Label.c.CSS_TakeCtrl_1} </p>
+                            <p>{!$Label.c.FSL_CurrentOwner}&ensp;<B>{!v.previoususr}</B>&ensp;{!$Label.c.FSL_takecntrlpopup}</p>
+                        </div>
+                        <!--Modal/Popup Box Footer Starts here-->
+                        <footer class="slds-modal__footer">
+                            <lightning:button label="{!$Label.c.CSS_Take_Control_Btn}" 
+                                              class="slds-m-top--medium"
+                                              variant="brand" 
+                                              onclick="{!c.updatetakecontrolusr}" />
+                            <lightning:button label="Cancel" 
+                                              class="slds-m-top--medium"
+                                              variant="brand" 
+                                              onclick="{!c.closeNofaultErrorModel}" />
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </aura:if>      
+            
+        </aura:if>
+        
+        
+        <aura:if isTrue="{!v.hidelaunchinsite}"> 
+            <aura:if isTrue="{!!v.source}"> 
+                <!--<div class="slds-box"> -->
+                
+                <!--Select All Top LEVEL Elements With specify Class-->
+                
+                <h1 class="h1Class"><b>{!$Label.c.css_Troubleshooting_Overview}</b></h1>
+                <p class="PClass"><b>{!$Label.c.css_Connect_to_the_ECM}</b></p>
+                <!--Nested level Wrap in DIV-->
+                <div>
+                    <h1 class="h1Class" style= ""> {!$Label.c.FSL_TroubleshootingOverview_Line1} </h1>
+                    <p class="PClass"> {!$Label.c.FSL_TroubleshootingOverview_Line2} </p>
+                    <p class="PClass"> {!$Label.c.FSL_TroubleshootingOverview_Line3} </p>
+                </div>
+                
+                <div class="slds-align_absolute-left" style="height: 5rem;">
+                    <lightning:button label="{!$Label.c.css_Lau_Ret_But}" 
+                                      class="slds-m-top--medium"
+                                      variant="brand"
+                                      onclick="{!c.launchinsite}" /> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <!-- Start- Get Fault Codes/Solutions -Piyush  -->
+                    <lightning:button label="{!$Label.c.css_Pull_in_Fault_Codes}" 
+                                      class="slds-m-top--medium"
+                                      variant="brand" 
+                                   onclick="{!c.warningmsg}" /> &nbsp;&nbsp;&nbsp;
+                    <!-- added by sailaja to show spinner till we get respone-->
+                    <lightning:spinner aura:id="Spinner" alternativeText="Loading..." title="Loading.." variant="brand" size="medium" class="slds-hide"/>
+                    <!-- End - Get Fault Codes/Solutions -Piyush -->
+                </div>   
+                <!-- Piyush Start-->
+                <div> 
+                     </div>
+                      </aura:if>
+            <!-- Piyush End-->
+        </aura:if>
+        <aura:if isTrue="{!v.showPriorityTable}">
+            <c:FSL_FaultCodeService aura:id="childCmp" recordId="{!v.recordId}"  maxSeqFromInsite="{!v.faultCodeMaxSequence}" />
+        </aura:if>
+               
+          
+        <!-- end Ravikanth -->
+        <!--Piyush start-->
+        <aura:if isTrue="{!v.isModalOpen}">
+            
+            <!-- Modal/Popup Box starts here-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModel }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate"> {!$Label.c.FSL_TriageandDiagnosis_CumminsGuidanz} </h2> 
+                    </header>
+                    <!--Modal/Popup Box Body Starts here-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        
+                        <p><b> {!$Label.c.FSL_Insitepsnpopup1} </b><br/>
+                            <p><b> {!$Label.c.FSL_Insitepsnpopup2} </b></p></p><center>
+                        <br/>
+                        <p>
+                            <lightning:button variant="brand" aura:id="button" Title="{!$Label.c.FSL_Insitepsnpopup3}" class="button btnSpacing" 
+                                              onclick="{!c.useInsite}"><b><center>{!v.InsiteESN}</center> {!$Label.c.FSL_Insitepsnpopup4} </b><br/>{!$Label.c.FSL_Insitepsnpopup5}</lightning:button>
+                        </p>
+                        
+                        <br/>
+                        <p><lightning:button variant="brand" aura:id="button2" Title="{!$Label.c.FSL_Insitepsnpopup6}" class="button btnSpacing" 
+                                             onclick="{!c.useCSSEngine}" > <b><center>{!v.Assetname}</center>{!$Label.c.FSL_Insitepsnpopup7}</b><br/>{!$Label.c.FSL_Insitepsnpopup8}</lightning:button>
+                        </p>
+                        </center>
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="{!$Label.c.css_Cancel}"
+                                          title="{!$Label.c.css_Cancel}"
+                                          onclick="{! c.closeModel }"/>
+                        
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+        <!--Piyush -->
+        <aura:if isTrue="{!v.isErrorModalOpen}">
+            
+            <!-- Modal/Popup Box starts here-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header">
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate"> {!$Label.c.FSL_Insitevalidationpopup} </h2>
+                    </header>
+                    
+                    <!--Modal/Popup Box Body Starts here-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p> {!$Label.c.FSL_InsitePSNerror} </p>
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="{!$Label.c.css_Ok}"
+                                          title="{!$Label.c.css_Ok}"
+                                          onclick="{! c.closeErrorModel }"/>
+                        
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+        
+        <aura:if isTrue="{!v.assetBlankModal}">
+            
+            <!-- Modal/Popup Box starts here-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header">
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate"> {!$Label.c.FSL_Insitevalidationpopup} </h2>
+                    </header>
+                    
+                    <!--Modal/Popup Box Body Starts here-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p> {!$Label.c.FSL_InsitePSNerror} </p>
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="{!$Label.c.css_Ok}"
+                                          title="{!$Label.c.css_Ok}"
+                                          onclick="{! c.closeErrorModel }"/>
+                        
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+        
+        <aura:if isTrue="{!v.assetLockedErr}">
+            
+            <!-- Modal/Popup Box starts here-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header"> <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate"> {!$Label.c.FSL_Insitevalidationpopup} </h2></header>
+                    <!--Modal/Popup Box Body Starts here-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p> {!$Label.c.FSL_Insitevalidationpopup2} </p>
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="{!$Label.c.css_Ok}"
+                                          title="{!$Label.c.css_Ok}"
+                                          onclick="{! c.closeAssetErrorModel }"/>
+                        
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+        <!--Added Ravi -->
+        <aura:if isTrue="{!v.showNoFaultCode}">
+            
+            <!-- Modal/Popup Box starts here-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header"> <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate"> {!$Label.c.FSL_Insitevalidationpopup} </h2></header>
+                    <!--Modal/Popup Box Body Starts here-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p> <b>{!$Label.c.fsl_getfcpopup1} </b>
+                            <br/>
+                            <div >
+                                <ul>  
+                                    <li> {!$Label.c.fsl_getfcpopup2} </li>
+                                    <li> {!$Label.c.fsl_getfcpopup3}</li>
+                                    <li> {!$Label.c.fsl_getfcpopup4}  </li>
+                                </ul>
+                            </div>
+                        </p>
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="{!$Label.c.css_Ok}"
+                                          title="{!$Label.c.css_Ok}"
+                                          onclick="{! c.closeNofaultErrorModel }"/>
+                        
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+        <!--Piyush End-->
+    </div>
+</aura:component>

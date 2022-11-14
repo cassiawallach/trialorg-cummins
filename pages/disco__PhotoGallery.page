@@ -1,0 +1,297 @@
+<apex:page showHeader="true" sidebar="false" controller="disco.Ctl_PhotoGallery">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<head>
+	<title>Youreka - Photo Gallery</title>
+	<apex:includeScript value="{!$Resource.disco__customModalJS}"/>
+	<apex:includeScript value="{!URLFOR($Resource.disco__jquery_3_6_0, 'jquery.min.js')}"/>
+	<apex:includeScript value="{!URLFOR($Resource.disco__jquerymodal, '/jquerymodal/jquery.modal.js')}"/>
+	<apex:includeScript value="{!URLFOR($Resource.disco__lightgallery, '/lightgallery/js/lightgallery-all.js')}"/>
+	<apex:includeScript value="{!$Resource.disco__tokenfieldJS}"/>
+	<apex:includeScript value="{!URLFOR($Resource.disco__jquery_ui_1_12_1, 'jquery-ui.min.js')}"/>
+	<!-- <script src="https://localhost:9009/photoGallery/dist/bundle.js"></script> -->
+	<apex:includeScript value="{!$Resource.disco__photoBrowserJS}"/>
+
+	<apex:styleSheet value="{!URLFOR($Resource.disco__SLDS250, '/assets/styles/salesforce-lightning-design-system-vf.min.css')}" />
+	<apex:styleSheet value="{!URLFOR($Resource.disco__lightgallery, '/lightgallery/css/lightgallery.css')}" />
+	<apex:styleSheet value="{!$Resource.disco__tokenfieldCSS}" />
+	<apex:styleSheet value="{!$Resource.disco__photoBrowserCSS}" />
+	<script>
+		let allDocInfos = JSON.parse('{!JSENCODE(allDocInfosJSON)}');
+		const availFormTemplates = JSON.parse('{!JSENCODE(availFormTemplatesJSON)}');
+		const templateID2PhotoQuestions = JSON.parse('{!JSENCODE(templateID2PhotoQuestionsJSON)}');
+		const ns = '{!JSENCODE(ns)}';
+		const photoOwners = JSON.parse('{!JSENCODE(photoOwnersJSON)}');
+		const availPhotoTags = JSON.parse('{!JSENCODE(availPhotoTagsJSON)}')
+		const reloadPhotosVFR = '{!JSENCODE($RemoteAction.Ctl_PhotoGallery.reloadPhotosVFR)}';
+		const updateImageVFR = '{!JSENCODE($RemoteAction.Ctl_PhotoGallery.updateImageVFR)}';
+	</script>
+</head>
+<body>
+	<div class="slds-scope">
+		<div id="custom-modal-container"/>
+		<apex:outputPanel rendered="{!yourekaDisabled}">
+			<c:YourekaDisabled messageText="{!yourekaDisabledMessage}"/>
+		</apex:outputPanel>
+		<apex:outputPanel layout="block" rendered="{!NOT(userHasYourekaLicense)}" >
+            <div class="slds-notify slds-notify_alert slds-theme_alert-texture" role="alert">
+                 A Youreka User License is required to use the Photo Gallery.
+                    Please contact your System Admin for more information.
+            </div>
+        </apex:outputPanel>
+        <apex:outputPanel layout="block" rendered="{!(inFreeOrg)}" >
+            <div class="slds-notify slds-notify_alert slds-theme_alert-texture" role="alert">
+                 Photo Gallery is not available in Non-Premium Orgs
+                    Please contact your System Admin for more information.
+            </div>
+        </apex:outputPanel>
+        <apex:outputPanel layout="block" rendered="{!NOT(validFLSandCRUD)}" >
+            <div class="slds-notify slds-notify_alert slds-theme_alert-texture" role="alert">
+                <apex:messages />
+            </div>
+        </apex:outputPanel>
+		<apex:outputPanel layout="none" rendered="{!AND(NOT(yourekaDisabled),userHasYourekaLicense,NOT(inFreeOrg), validFLSandCRUD)}">
+
+			<button type="button" class="slds-button slds-button_neutral clear-all-filters">Reset</button>
+					
+			<!-- page header -->
+			<div class="slds-page-header">
+				<div class="slds-page-header__row">
+					<div class="slds-page-header__col-title">
+						<div class="slds-media">
+							<div class="slds-media__figure">
+								<span class="slds-icon_container slds-icon-standard-drafts">
+									<svg class="slds-icon slds-page-header__icon" aria-hidden="true">	
+										<use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/standard-sprite/svg/symbols.svg#photo')}"/>
+									</svg>
+								</span>
+							</div>
+							<div class="slds-media__body">
+								<div class="slds-page-header__name">
+									<div class="slds-page-header__name-title">
+										<h1>
+											<span class="slds-page-header__title slds-truncate" title="Youreka - Photo Gallery">Youreka - Photo Gallery</span>
+										</h1>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="intro-steps tooltip-active">
+				<ol>
+					<li>Select at least one template.</li>
+					<li>Select at least one question.</li>
+					<li>Apply additional filters if needed.</li>
+					<li>Click photo thumbnails to: view additional details, add comments, add photo tags. 
+						<svg class="slds-button__icon" aria-hidden="true" title="Available photo tags can be created and activated through the custom metadata type 'Photo Tag'.">
+							<use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/action-sprite/svg/symbols.svg#info')}"></use>
+						</svg>
+					</li>
+				</ol>
+			</div>
+			</div>
+
+			<div id="mainContent">
+				<!-- filters -->
+				<div id="filterSection" class="tooltip-active slds-box slds-m-top_small">
+					<div class="slds-text-heading_medium slds-m-bottom_medium">Step 1</div>
+					<div class="slds-form-element">
+						<div class="label-wrapper">
+							<label class="slds-form-element__label" for="filterTemplates">Select Form Template(s)</label>
+							<div class="filter-actions">
+								<button type="button" class="slds-button slds-button_icon slds-button_icon-border-filled show-filter" data-field-api-name="Form_Template__c" title="Show filter value on photo thumbnail">
+									<svg class="slds-button__icon" aria-hidden="true">
+										<use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/action-sprite/svg/symbols.svg#preview')}"></use>
+									</svg>
+								</button>
+							</div>
+						</div>
+						<div class="slds-form-element__control">
+							<div class="slds-select_container">
+								<select class="slds-select" id="filterTemplates" multiple="true">
+									
+								</select>
+							</div>
+						</div>
+					</div>
+					<div class="slds-text-heading_medium slds-m-vertical_large">Step 2</div>
+					<div class="slds-form-element">
+						<div class="label-wrapper">
+							<label class="slds-form-element__label" for="filterQuestions">Select Question(s)</label>
+							<div class="filter-actions">
+								<button type="button" class="slds-button slds-button_icon slds-button_icon-border-filled show-filter" data-field-api-name="Question__c" title="Show filter value on photo thumbnail">
+									<svg class="slds-button__icon" aria-hidden="true">
+										<use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/action-sprite/svg/symbols.svg#preview')}"></use>
+									</svg>
+								</button>
+							</div>
+						</div>
+						<div class="slds-form-element__control">
+							<div class="slds-select_container">
+								<select class="slds-select" id="filterQuestions" multiple="true">
+									
+								</select>
+							</div>
+						</div>
+					</div>
+					<div class="slds-text-heading_medium slds-m-vertical_large">
+						Additional Filters
+						<svg class="slds-button__icon" aria-hidden="true" title="Additonal Filters can be added via the Photo Gallery Fieldset on the Form object.">
+							<use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/action-sprite/svg/symbols.svg#info')}"></use>
+						</svg>
+						<button class="slds-button slds-button_neutral clear-additional-filters" type="button">Clear</button>
+					</div>
+					<div class="additional-filters-disabled">
+						<div class="slds-notify slds-notify_alert slds-theme_alert-texture" role="alert">
+	  						<h2>Additional Filters are not available until Template(s) and Question(s) are selected.</h2>
+						</div>
+					</div>
+					<div class="additional-filters">
+						<div class="slds-form-element">
+							<div class="label-wrapper">
+								<label class="slds-form-element__label" for="filterOwners">Photo Owner(s)</label>
+								<div class="filter-actions">
+									<button type="button" class="slds-button slds-button_icon slds-button_icon-border-filled show-filter" data-field-api-name="OwnerId" title="Show filter value on photo thumbnail">
+										<svg class="slds-button__icon" aria-hidden="true">
+											<use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/action-sprite/svg/symbols.svg#preview')}"></use>
+										</svg>
+									</button>
+								</div>
+							</div>
+							<div class="slds-form-element__control">
+								<div class="slds-select_container">
+									<select class="slds-select" id="filterOwners" multiple="true">
+										
+									</select>
+								</div>
+							</div>
+						</div>
+						<br/>
+						<div class="slds-form-element">
+							<div class="label-wrapper">
+								<label class="slds-form-element__label" for="filterStartDate">Start Date (Date Photo Taken)</label>
+								<div class="filter-actions">
+									<button type="button" class="slds-button slds-button_icon slds-button_icon-border-filled show-filter" data-field-api-name="CreatedDate" title="Show filter value on photo thumbnail">
+										<svg class="slds-button__icon" aria-hidden="true">
+											<use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/action-sprite/svg/symbols.svg#preview')}"></use>
+										</svg>
+									</button>
+								</div>
+							</div>
+							<div class="slds-form-element__control">
+								<input type="date" id="filterStartDate" class="slds-input" name="filterStartDate"/>
+							</div>
+						</div>
+						<br/>
+						<div class="slds-form-element">
+							<div class="label-wrapper">
+								<label class="slds-form-element__label" for="filterEndDate">End Date (Date Photo Taken)</label>
+								<div class="filter-actions">
+									<button type="button" class="slds-button slds-button_icon slds-button_icon-border-filled show-filter" data-field-api-name="CreatedDate" title="Show filter value on photo thumbnail">
+										<svg class="slds-button__icon" aria-hidden="true">
+											<use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/action-sprite/svg/symbols.svg#preview')}"></use>
+										</svg>
+									</button>
+								</div>
+							</div>
+							<div class="slds-form-element__control">
+								<input type="date" id="filterEndDate" class="slds-input" name="filterEndDate"/>
+							</div>
+						</div>
+						<br/>
+						<apex:form >
+						<div class="fieldset-filters">
+							<apex:repeat value="{!filterFields}" var="formField">
+								<div class="slds-form-element" data-field-api-name="{!formField.fieldPath}" data-field-type="{!formField.type}">
+									<div class="label-wrapper">
+										<label class="slds-form-element__label">{!formField.Label}</label>
+										<div class="filter-actions">
+											<apex:outputPanel rendered="{!formField.type=='boolean'}" layout="none">
+												<button type="button" class="slds-button slds-button_icon slds-button_icon-border-filled enable-filter" data-field-api-name="{!formField.fieldPath}" title="Enable filter">
+													<svg class="slds-button__icon" aria-hidden="true">
+														<use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/action-sprite/svg/symbols.svg#filter')}"></use>
+													</svg>
+												</button>
+											</apex:outputPanel>
+											<button type="button" class="slds-button slds-button_icon slds-button_icon-border-filled show-filter" data-field-api-name="{!formField.fieldPath}" title="Show filter value on photo thumbnail">
+												<svg class="slds-button__icon" aria-hidden="true">
+													<use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/action-sprite/svg/symbols.svg#preview')}"></use>
+												</svg>
+											</button>
+										</div>
+									</div>
+									<div class="slds-form-element__control">
+										<apex:inputField styleClass="{!IF(formField.type=='multipicklist','multipicklist','')} {!CASE(formField.type,'picklist','slds-select','boolean','slds-checkbox','slds-input')}" value="{!blankForm[formField]}"/>
+									</div>
+								</div>
+								<br/>
+							</apex:repeat>
+						</div>
+						</apex:form>
+					</div>
+				</div>
+				<!-- photo gallery -->
+				<div id="lightgallery" class="slds-box slds-m-top_small slds-m-left_small">
+					<div class="select-question">
+						<div class="slds-notify slds-notify_alert slds-theme_alert-texture" role="alert">
+	  						<span class="slds-icon_container slds-icon-utility-warning slds-m-right_x-small">
+	    						<svg class="slds-icon slds-icon_small" aria-hidden="true">
+	      							<use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/svg/symbols.svg#info')}"></use>
+	    						</svg>
+	  						</span>
+	  						<h2>Please Select a Template and a Question</h2>
+						</div>
+					</div>
+					<div class="no-results">
+						<div class="slds-notify slds-notify_alert slds-theme_alert-texture" role="alert">
+	  						<span class="slds-icon_container slds-m-right_x-small">
+	    						<svg class="slds-icon slds-icon_small" aria-hidden="true">
+	      							<use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+	    						</svg>
+	  						</span>
+	  						<h2>No Photos Match Filter Criteria</h2>
+						</div>
+					</div>
+					<div class="unable-to-complete">
+						<div class="slds-notify slds-notify_alert slds-theme_alert-texture" role="alert">
+	  						<span class="slds-icon_container slds-m-right_x-small">
+	    						<svg class="slds-icon slds-icon_small" aria-hidden="true">
+	      							<use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+	    						</svg>
+	  						</span>
+	  						<h2>More than 2000 photos matching filters. Please select more restrictive filter criteria.</h2>
+						</div>
+					</div>
+					<div id="initLoader">
+						<div aria-hidden="false" role="dialog" class="slds-modal slds-fade-in-open">
+							<div class="slds-modal__container">
+								<div class="slds-modal__content OR-modal_loading">
+									<div class="slds-spinner_large OR-spinner">
+										<img class="slds-m-top_large" src="{!URLFOR($Resource.SLDS250, '/assets/images/spinners/slds_spinner_brand.gif')}" alt="Loading..." />
+									</div>
+									<div>
+										<h3 class="modal-title slds-text-heading_medium slds-m-vertical_large slds-text-align_center">Loading Photos...</h3>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="slds-backdrop slds-backdrop_open"></div>
+					</div>
+					<div class="gallery-scroll-view">
+						<!-- JS adds gallery -->
+					</div>
+				</div>
+			</div>
+		</apex:outputPanel>
+	</div>
+</body>
+<!-- IE Support for SVGS-->
+<script src="{!URLFOR($Resource.svg4everybody, '/svg4everybody/svg4everybody.min.js')}"></script>
+<script>
+	// Init SVG Support
+	$(document).ready(function() { 
+		svg4everybody();
+	});
+</script>
+</html>
+</apex:page>

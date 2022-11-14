@@ -1,0 +1,73 @@
+<aura:component controller = "EVL_CL_ServiceOrder_LightningPath"
+                implements="flexipage:availableForRecordHome,force:hasRecordId"
+                access="global" >
+    <lightning:overlayLibrary aura:id="overlayLibClose"/>
+    <aura:attribute name="currentStage" type="String"/>
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="cssSolns" type="object[]"/>
+    <aura:attribute name="showPopup" type="Boolean" default="false"/>
+    <aura:attribute name="repairRespList" type="String[]" />
+     <aura:attribute name="WorkOrder" type="Object"/>
+    <aura:attribute name="resolutionSection" type="Boolean" default="false" />
+    <aura:attribute name="DisableClose" type="Boolean" default="false" />
+    <aura:attribute name="SelectedRepair" type="String" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.loadChevron}"/> 
+	  <!--added by Priyanka VGRS2-330 -->
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:if isTrue="{!v.showSpinner}">
+        <c:FSL_WaitingIconUtility></c:FSL_WaitingIconUtility>     
+    </aura:if>
+    <aura:if isTrue ="{!or(and(v.currentStage == 'Triage &amp; Diagnosis',not(v.cssSolns.length>0)),and(not(v.currentStage == 'Triage &amp; Diagnosis'), not(v.cssSolns.length>0)))}">
+     <lightning:recordEditForm aura:id="recordScheduleForm"
+                                  onsubmit="{!c.handleScheduleClose}"
+                                  recordId="{!v.recordId}"
+                                  objectApiName="WorkOrder">
+             {!$Label.c.FSL_Close}
+            <lightning:inputField fieldName="FSL_Resolution__c" aura:id="resolution" required="true"/>
+            <lightning:inputField fieldName="FSL_Feedback_Comments__c" />
+            <div class="slds-float_right">
+                <lightning:button variant="brand" name="cancel" label="Cancel" onclick="{!c.handleCancelModal}" />
+                <lightning:button variant="brand"  name="save" label="Close" disabled="{!v.DisableClose}" onclick="{!c.handleScheduleClose}" />
+            </div>
+        </lightning:recordEditForm>
+   </aura:if>
+    
+    <aura:if isTrue="{!and(v.showPopup,v.cssSolns.length>0)}">
+        <p>{!$Label.c.FSL_Close}<br/>
+            {!$Label.c.FSL_PopUp}</p>
+       <aura:iteration items="{!v.cssSolns}" var="cs">
+        <lightning:recordEditForm aura:id="recordSolutionForm"
+                                      onsubmit="{!c.handleSolutionClose}"
+                                      recordId="{!cs.Id}"
+                                      objectApiName="CSS_Solutions__c">
+                <lightning:messages />
+                <lightning:outputField fieldName="Name"/>
+                <lightning:outputField fieldName="Solution_Title__c"/>
+       			<lightning:inputField fieldName="Repair_Response__c" class="{!cs.Id}" required="true" aura:id="RepairResponseId" onchange="{!c.handleRepairValueChange}" /> 
+           </lightning:recordEditForm> 
+            </aura:iteration> 
+           <aura:if isTrue="{!!v.resolutionSection}">
+            <div class="slds-float_right">
+            <lightning:button variant="brand" name="cancel" label="Cancel" onclick="{!c.handleCancelModal}" />
+            <lightning:button variant="brand"  name="save" label="Close" disabled="{!v.DisableClose}" onclick="{!c.handleRepairClose}" />
+        </div>
+           </aura:if>
+       
+         <aura:if isTrue="{!v.resolutionSection}">
+        <lightning:recordEditForm aura:id="recordSolutionForm"
+                                      onsubmit="{!c.handleSolutionClose}"
+                                      recordId="{!v.recordId}"
+                                      objectApiName="WorkOrder">
+            <lightning:inputField fieldName="FSL_Resolution__c" required="true" aura:id="resolutionmsg"/>
+            <lightning:inputField fieldName="FSL_Feedback_Comments__c" />
+            </lightning:recordEditForm>
+    	
+        <div class="slds-float_right">
+            <lightning:button variant="brand" name="cancel" label="Cancel" onclick="{!c.handleCancelModal}" />
+            <lightning:button variant="brand"  name="save" label="Close" disabled="{!v.DisableClose}" onclick="{!c.handleSolutionClose}" />
+        </div>
+        </aura:if>
+       </aura:if>
+    
+</aura:component>

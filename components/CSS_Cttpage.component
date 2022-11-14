@@ -1,0 +1,162 @@
+<apex:component controller="CSS_QSol_V1" allowDML="true" >
+    <apex:attribute name="jobSFDCID" type="ID" required="false" assignTo="{!JobID}"  description="Job ESN"/>
+    <apex:attribute name="jobSFDCESN" type="String" required="false" assignTo="{!JobESN}" description="Job ESN"/>
+    <apex:attribute name="displaytype" type="String" required="false"  description="Display Type"/>
+    <apex:attribute name="pgName" description="Page name where it is called form" type="String"/>
+    <apex:attribute name="mainController" description="Main Controller Type" type="CG_CL_IntakeRJ" assignTo="{!mainContrRJ}"/>
+    <apex:attribute name="jobServiceModel" type="String" required="false" assignTo="{!jobSModel}"  description="Job Service Model"/>
+    <apex:attribute name="jobFailureDate" type="Date" required="false" assignTo="{!JobFailDate}"  description="Job Failure Date"/>
+   
+    <script>
+        $(document).ready(function() {
+
+            function toggleChevron(e) {
+                $(e.target)
+                    .prev('.panel-heading')
+                    .find("i.indicator")
+                    .toggleClass('fa-caret-right fa-caret-down');
+            }
+            $('#accordion').on('hidden.bs.collapse', toggleChevron);
+            $('#accordion').on('shown.bs.collapse', toggleChevron);
+        });
+        function textCounter(field,field2,maxlimit)
+        {
+            var countfield = document.getElementById(field2);
+            if ( field.value.length > maxlimit ) 
+            {
+                field.value = field.value.substring( 0, maxlimit );
+                return false;
+            } else 
+            {
+                countfield.value = maxlimit - field.value.length;
+            }
+        }
+
+        var newWin=null; 
+    </script>
+    <style>
+        .tbody {
+            display:table-footer-group; !important;
+        }
+    </style>
+    
+   <!-- Below code as part of defect fix 191060 -->
+    <apex:actionRegion >
+        <apex:actionFunction name="myMethodCttpageComp" action="{!getCampTRPATCs}" rerender=""></apex:actionFunction>
+    </apex:actionRegion>
+    
+    <!-- defect fix 191060 End -->
+ 
+ 
+    <apex:outputPanel id="idESN1" rendered="{!IF(jobSFDCESN != '' && pgName = 'Camp', true, false)}"> 
+        CAM's
+        <apex:repeat value="{!CampRecords}" var="fc1" id="theRepeatCamp" >
+            <div>
+                <!--Story# 118800 kalpana: Disabling hyperlink, if the URL is null-->
+                <!-- <apex:outputLink value="{!fc.URL__c}" target="_blank">{!LEFT(fc.Doc_Num__c+fc.Doc_Title__c,20)}</apex:outputLink>-->
+                <apex:outputPanel rendered="{!IF(fc1.URL__c != '' || fc1.URL__c != null, true, false)}">
+                    <td><b>
+                        <apex:outputLink value="{!fc1.URL__c}" target="_blank">{!LEFT(fc1.Doc_Num__c + ' - ' + fc1.Doc_Title__c,20)}</apex:outputLink>  </b></td>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!IF(fc1.URL__c==null || fc1.URL__c=='',true,false)}">
+                    <td><b>
+                        <apex:outputText value="{!LEFT(fc1.Doc_Num__c + ' - ' + fc1.Doc_Title__c,20)}"></apex:outputText>  </b></td>
+                </apex:outputPanel>
+            </div>
+        </apex:repeat>
+
+        ({!CampaignsCount} {!$Label.CSS_Available})<br/><br/>
+
+        <apex:outputpanel id="plusimageA" rendered="{!IF(CampaignsCount > 2 && pgName = 'Camp', true, false)}">
+            <apex:outputpanel onclick="switchMenu('{!$Component.inlinetablesecA}','{!$Component.minusimageA}','{!$Component.plusimageA}','{!$Component.minusimageA1}')" title="Expand - View More">
+                <a ><i class="fa fa-caret-down fa-lg"/> {!$Label.css_View_more} </a>
+            </apex:outputpanel> 
+        </apex:outputpanel>
+        <apex:outputpanel id="minusimageA" style="display:none;">
+            <apex:outputpanel onclick="switchMenu('{!$Component.inlinetablesecA}','{!$Component.plusimageA}','{!$Component.minusimageA}','{!$Component.minusimageA1}')" title="Collapse - View More">
+                <a><i class="fa fa-caret-down fa-lg"/> {!$Label.css_View_less}</a>
+            </apex:outputpanel>
+        </apex:outputpanel>
+        <apex:outputPanel id="inlinetablesecA" style="display:none;">
+            <div class="panel-body">
+                <apex:repeat value="{!CampaignsRecords}" var="fc" id="theRepeata" >
+                    <div>
+                        <apex:outputPanel rendered="{!IF(fc.URL__c != '' || fc.URL__c != null, true, false)}">
+                            <apex:outputLink value="{!fc.URL__c}" target="_blank">{!LEFT(fc.Doc_Num__c+fc.Doc_Title__c,20)}</apex:outputLink>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!IF(fc.URL__c==null || fc.URL__c=='',true,false)}">
+                            <apex:outputText value="{!LEFT(fc.Doc_Num__c + ' - ' + fc.Doc_Title__c,20)}"></apex:outputText>  
+                        </apex:outputPanel>
+                    </div>
+                </apex:repeat>
+            </div>
+        </apex:outputPanel>                        
+    </apex:outputPanel>
+    <apex:outputPanel id="idESN4" rendered="{!IF(jobSFDCESN != '' && pgName = 'Trp', true, false)}">
+        TRPs
+        <!--   <div class="col-md-12 col-xs-12"> </div> -->
+
+        <apex:repeat value="{!TrpsRecords}" var="fc" id="theRepeatac1" >
+            <div>
+                <apex:outputPanel rendered="{!IF(fc.URL__c != '' || fc.URL__c != null, true, false)}">
+                    <apex:outputLink value="{!fc.URL__c}" target="_blank">{!LEFT(fc.Doc_Num__c+fc.Doc_Title__c,20)}</apex:outputLink>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!IF(fc.URL__c==null || fc.URL__c=='',true,false)}">
+                    <apex:outputText value="{!LEFT(fc.Doc_Num__c + ' - ' + fc.Doc_Title__c,20)}"></apex:outputText>  
+                </apex:outputPanel>
+            </div>
+        </apex:repeat>
+
+        ({!TrpsCount} {!$Label.CSS_Available})<br/><br/>
+
+        <apex:outputpanel id="plusimageA1" rendered="{!IF(TrpsCount > 2 && pgName = 'Trp', true, false)}">
+            <apex:outputpanel onclick="switchMenu('{!$Component.inlinetablesecA1}','{!$Component.minusimageA1}','{!$Component.plusimageA1}','{!$Component.minusimageA11}')" title="Expand - View More">
+                <a ><i class="fa fa-caret-down fa-lg"/>{!$Label.css_View_more} </a>
+            </apex:outputpanel> 
+        </apex:outputpanel>
+        <apex:outputpanel id="minusimageA1" style="display:none;">
+            <apex:outputpanel onclick="switchMenu('{!$Component.inlinetablesecA1}','{!$Component.plusimageA1}','{!$Component.minusimageA1}','{!$Component.minusimageA11}')" title="Collapse - View More">
+                <a><i class="fa fa-caret-down fa-lg"/> {!$Label.css_View_less}</a>
+            </apex:outputpanel>
+        </apex:outputpanel>
+        <apex:outputPanel id="inlinetablesecA1" style="display:none;">
+            <div class="panel-body">
+                <apex:repeat value="{!TrpRecords}" var="fc" id="theRepeata1" >
+                    <div>
+                        <apex:outputPanel rendered="{!IF(fc.URL__c != '' || fc.URL__c != null, true, false)}">
+                            <apex:outputLink value="{!fc.URL__c}" target="_blank">{!LEFT(fc.Doc_Num__c+fc.Doc_Title__c,20)}</apex:outputLink>
+                        </apex:outputPanel>
+                        <apex:outputPanel rendered="{!IF(fc.URL__c==null || fc.URL__c=='',true,false)}">
+                            <apex:outputText value="{!LEFT(fc.Doc_Num__c + ' - ' + fc.Doc_Title__c,20)}"></apex:outputText>  
+                        </apex:outputPanel>
+                    </div>
+
+                </apex:repeat>
+                ({!TsbsCount}{!$Label.CSS_Available})
+            </div>
+        </apex:outputPanel>
+
+
+
+        <div class="col-md-12 col-xs-12"> </div>
+    </apex:outputPanel>
+
+    <apex:outputpanel id="idESN5" rendered="{!IF(pgName = 'TSBs', true, false)}">
+        TSB's
+        <div class="panel-body">
+            <apex:repeat value="{!TsbRecords}" var="fc" id="theRepeata4" >
+                <div>
+                    <apex:outputPanel rendered="{!IF(fc.URL__c != '' || fc.URL__c != null, true, false)}">
+                        <apex:outputLink value="{!fc.URL__c}" target="_blank">{!LEFT(fc.Doc_Num__c+" "+fc.Doc_Title__c,255)}</apex:outputLink>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!IF(fc.URL__c==null || fc.URL__c=='',true,false)}">
+                        <apex:outputText value="{!LEFT(fc.Doc_Num__c + ' - ' + fc.Doc_Title__c,20)}"></apex:outputText>  
+                    </apex:outputPanel>
+                </div>
+            </apex:repeat>
+            ({!TsbsCount} {!$Label.CSS_Available})<br/><br/>
+        </div></apex:outputpanel>
+
+
+
+</apex:component>

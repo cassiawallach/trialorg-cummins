@@ -1,0 +1,274 @@
+<!--**********************************************************************
+Name:CG_IntakeRJApprovedCamp
+Copyright Â© 2017  Cummins
+======================================================
+======================================================
+Purpose:                                                            
+-------  
+We are using this component for Customer Approved/Completed Campaigns,TRPS in Reviewjob Page.
+======================================================
+======================================================
+History                                                            
+-------                                                            
+VERSION  AUTHOR            DATE                DETAIL                                 
+1.0 - Karthik Gorantla      12/27/2017      INITIAL DEVELOPMENT                    
+***********************************************************************-->
+
+<apex:component Controller="CG_CL_ApprovedCamp" allowDML="true">
+    <apex:attribute name="mainController" description="Main Controller Type" type="CG_CL_IntakeRJ" assignTo="{!mainContrRJ}"/>
+    <script>
+        //written by venkat
+        function stopDoubleClick(){ 
+            countDown=waitTime+1;
+            if(clickAllowed==true){
+                clickAllowed=false;
+                runCountDown(); 
+                return true;
+            }
+            else{ return false; } 
+        }
+        function runCountDown(){ 
+            countDown--;
+            if(countDown<=0){ 
+                clickAllowed=true; 
+            }
+            else{
+                window.setTimeout(runCountDown,1000);
+            } 
+        }
+        
+        function showCampaignATCPopup(CampaignPopup,e){
+            //alert('Hello');
+            //alert(CampaignPopup);            
+            if(CampaignPopup == 'true'){
+                // alert('Inside IF');
+                $('#showCampaignPopuponsave').modal(
+                    {backdrop: 'static',
+                     keyboard: false,
+                     show:true
+                    });
+            }
+            else{
+                // alert('Inside Else');
+            }
+        }
+        
+        function DisableSaveButtonforcamp(claimblescompId) {
+            claimblescompId.disabled = true;
+        }
+        
+        
+    </script>
+    <!--
+<apex:attribute name="jobSFDCESN" type="String" required="false" assignTo="{!JobESN}" description="Job ESN"/>
+<apex:attribute name="jobServiceModel" type="String" required="false" assignTo="{!jobSModel}"  description="Job Service Model"/>
+<apex:attribute name="jobFailureDate" type="Date" required="false" assignTo="{!JobFailDate}"  description="Job Failure Date"/>
+-->
+    <div class="col-xs-12 hidden-xs" style="padding: 0 !important;">
+
+        <div class="panel-group cmi_generic-accordion" id="expandAllAccordion"> 
+            <div class="panel panel-default">
+                <div class="panel-heading" id="accordion1-heading-0">
+                    <h4 class="panel-title"  data-toggle="collapse" data-parent="#accordion1-heading-0" data-target="#collapseZero" >
+                        <a class="accordion-toggle">
+                            <div class="accordion-title"><span class="glyphicon glyphicon-plus"></span>{!$Label.css_Customer_Approved_Completed_Campaigns_TRPS_TSBs}</div> 
+                        </a>
+                    </h4>
+                </div>
+                <apex:actionRegion >
+                   <!-- <apex:outputpanel >-->
+                        <div id="collapseZero" class="panel-collapse collapse in">
+                            <div class="panel-body" id="accordion1-body-1">
+                                <apex:outputpanel id="CTT501" rendered="{!IF(mainController.workjob.ESN__c ==null , false , true)}">
+                                    <div class="panel-body">
+                                        <div class="table-responsive" style="max-height:285px;"> 
+                                            <table stlye="overflow;">
+                                                <tbody>
+                                                    <apex:outputpanel id="CTTComp11" >
+                                                        <table class="mytable table table-striped table-bordered">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th class="tblhead"><b>{!$Label.css_Activity} </b></th>
+                                                                    <th class="tblhead"><b>{!$Label.css_Technician} <br/>{!$Label.css_check_if_Reviewed}</b></th>
+                                                                    <th class="tblhead"><b>{!$Label.css_Technician} <br/> {!$Label.css_check_if_Performed}</b></th>
+                                                                    <th class="tblhead"><b>{!$Label.css_Required_to} <br/> {!$Label.css_Perform_Review}</b></th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody> 
+                                                                <apex:repeat value="{!ALLRecords}" var="CTT1" id="theRepeat" >
+                                                                    <tr> 
+                                                                        <apex:outputPanel rendered="{!IF(CTT1.URL__c!=null || CTT1.URL__c !='',true,false)}">
+                                                                            <td><b>
+                                                                                <!--<apex:outputLink value="{!CTT1.URL__c}" target="_blank">{!LEFT(CTT1.Component_Id__c + ' - ' + CTT1.Campaign_Description__c,20)}</apex:outputLink>-->
+                                                                                <apex:outputLink value="{!CTT1.URL__c}" target="_blank">{!LEFT(CTT1.Component_Id__c + ' - ' + CTT1.Campaign_Description__c,20)}</apex:outputLink>
+
+                                                                                </b></td>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(CTT1.URL__c==null || CTT1.URL__c=='',true,false)}">
+
+                                                                            <td><b>
+                                                                                <!--<apex:outputText value="{!LEFT(CTT1.Component_Id__c + ' - ' + CTT1.Campaign_Description__c,20)}"></apex:outputText>-->
+                                                                                <apex:outputText value="{!LEFT(CTT1.Component_Id__c + ' - ' + CTT1.Campaign_Description__c,20)}"></apex:outputText>
+                                                                                </b></td>
+                                                                        </apex:outputPanel>
+                                                                        
+                                                                        <!-- Added Conditions to Grey Out the Select Checkboxes -- KungFu Panda Rajasekhar 174419-->
+                                                                        
+                                                                         <apex:outputPanel rendered="{!IF(mainController.workjob.Account__r.isCampTrp__c == 'Y',true,false)}">
+                                                                        <td style="text-align:center"><apex:inputCheckbox value="{!CTT1.Performed__c}"/></td>
+                                                                          </apex:outputPanel>
+                                                                          
+                                                                           <apex:outputPanel rendered="{!IF(mainController.workjob.Account__r.isCampTrp__c != 'Y',true,false)}">
+                                                                        <td style="text-align:center"><apex:inputCheckbox value="{!CTT1.Performed__c}" disabled="true"/></td>
+                                                                          </apex:outputPanel>
+                                                                          
+                                                                        <apex:outputPanel rendered="{!IF(mainController.workjob.Account__r.isCampTrp__c == 'Y',true,false)}">
+                                                                        <td style="text-align:center;"><apex:inputCheckbox value="{!CTT1.Reviewed__c}"/></td>
+                                                                          </apex:outputPanel>
+                                                                          
+                                                                        <apex:outputPanel rendered="{!IF(mainController.workjob.Account__r.isCampTrp__c != 'Y',true,false)}">
+                                                                        <td style="text-align:center;"><apex:inputCheckbox value="{!CTT1.Reviewed__c}" disabled="true"/></td>
+                                                                          </apex:outputPanel>  
+                                                                        
+                                                                         <apex:outputPanel rendered="{!IF(mainController.workjob.Account__r.isCampTrp__c == 'Y',true,false)}">
+                                                                        <td style="text-align:center;"><apex:inputCheckbox value="{!CTT1.Performed_Review__c}" disabled="{!$Setup.css_header_nav__c.CampReviewedRO__c}"/></td>
+                                                                          </apex:outputPanel>
+                                                                          
+                                                                         <apex:outputPanel rendered="{!IF(mainController.workjob.Account__r.isCampTrp__c != 'Y',true,false)}">
+                                                                        <td style="text-align:center;"><apex:inputCheckbox value="{!CTT1.Performed_Review__c}" disabled="true"/></td>
+                                                                          </apex:outputPanel>
+                                                                          
+                                                                    </tr>
+                                                                </apex:repeat> 
+                                                            </tbody>
+                                                        </table>
+                                                    </apex:outputpanel>
+                                                </tbody>
+                                            </table>  
+                                        </div> 
+                                        <apex:outputpanel id="CTTCompComm" >
+                                            <div class="row">
+                                                <div class="col-md-12 ">
+                                                    <H3><b>{!$Label.css_Comments}:</b></H3>
+                                                </div> 
+                                                <div class="col-md-12 ">
+                                                    <apex:inputTextarea id="description_upla" style="min-height:100px; resize:initial; overflow-x:hidden; overflow-y:scroll;" value="{!mainController.comm}" rows="1" cols="20" onkeyup="textCounter(this,'counter',1000);"/>
+                                                </div>  
+                                            </div> 
+                                            <div class="row">    
+                                                <div class="col-md-12 ">
+
+
+                                                    {!$Label.css_Remaining_Characters} <input  disabled="true" value ="1000"   id="counter" style="border:none; background:none" /> <br/>
+                                                    <!--   Remaining characters:<span id="count"></span>  -->
+
+                                                    <br/></div>
+                                            </div>
+
+                                            <div>
+                                                <apex:repeat value="{!workjob2}" var="wj" id="repeatNotes"> 
+                                                    <div class="col-sm-3  cmi-tar"> 
+                                                        <apex:outputLabel value="{!wj.CreatedBy.firstname} {!wj.CreatedBy.lastname}  :"/> 
+                                                    </div>
+                                                    <div class="col-sm-9 " style="word-break: break-word;">        
+                                                        <apex:outputField value="{!wj.body}"/>  <br/><br/>
+                                                    </div>
+                                                </apex:repeat> 
+                                            </div>
+                                        </apex:outputpanel>
+                                        <!-- buttons -->
+
+                                        <!--   <c:CSS_Cttpage jobSFDCID="{!workJob.ID}" jobSFDCESN="{!workjob.ESN__c}" pgName="Trp"/> -->
+                                    </div>
+                                </apex:outputpanel>
+                                <apex:outputPanel id="CTT502" rendered="{!IF(mainController.workJob.ESN__c =='', true, false)}">
+                                    <div class="col-sm-12" height="100%">
+                                        <apex:outputpanel id="TRP1panel" rendered="{!IF(mainContrRJ.workJob.ESN__c ==null, true, false)}">         
+                                            <fieldset style="border: 1px solid grey;">
+                                                <legend class="fs_legend">Approved/Completed Campaigns,TRPs,TSBs</legend>
+                                                <div class="row intakerow">
+                                                    <div class="col-md-12 col-xs-12">
+                                                        {!$Label.css_Youwillbeableto_view_Customer_Approved_Completed_CampaignsTRPs_TSBs} <b>{!$Label.css_Review_Job_section}</b>.
+                                                    </div>
+                                                </div>   
+                                            </fieldset>
+                                        </apex:outputpanel>
+                                    </div>                                            
+                                </apex:outputPanel>
+                                <div class="panel-body">
+                                    <div class="row">
+                                        <div class="col-sm-5 cmi-tar desk-ulist">
+
+                                            <!-- <apex:commandLink value="{!$Label.css_save_btn}" action="{!saveCheckBoxComp}" styleClass="saveButton" status="Actstatusid" onclick="return stopDoubleClick();"/> --> <!--</apex:commandButton>-->
+   <!-- <apex:commandButton value="{!$Label.css_save_btn}"  styleClass="saveButton" 
+                                                            onclick="showCampaignATCPopup('true',this);" reRender="none" status="Actstatusid" /> <!-- oncomplete="showCampaignATCPopup('true',this);"  onclick="DisableSaveButtonforcamp(this);" -->
+                                            
+                                            <apex:commandButton value="{!$Label.css_save_btn}"  action="{!showFieldActionPopup}" styleClass="saveButton" 
+                                                            reRender="DeletePopupRJ" status="Actstatusid" oncomplete="showCampaignATCPopup('{!showCampaignPopup}',this);"  onclick="DisableSaveButtonforcamp(this);" />
+                                            <apex:actionStatus id="Actstatusid">
+                                                <apex:facet name="start">
+                                                    <img src = "/img/loading.gif"/>
+                                                </apex:facet>
+                                            </apex:actionStatus>
+                                        </div>
+                                        <div class="col-sm-3 cmi-tar desk-ulist">
+                                            <apex:commandButton value="{!$Label.css_Reset}" onclick="this.form.reset(); return false;" styleClass="cancelButton" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>                    
+                        </div>
+                   <!-- </apex:outputpanel>-->
+                    
+                   <!-- Delete associated line items popup start -->
+                   <apex:outputPanel id="DeletePopupRJ"> 
+                            <div class="modal fade" id ="showCampaignPopuponsave" role="dialog">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">      
+                                        <div class="modal-header">
+                                            <!-- <h4 class="modal-title" style="color: #FFFFFF;"> Failures and Campaigns - {!$Label.css_cummins_service_system}</h4>-->
+                                            <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_cummins_service_system}</h4> <!-- Commented above line and changed the Header as per story 179356 -->
+                                        </div> 
+                                        <div class="modal-body">
+                                            <form class="form-horizontal" role="form">
+                                                <div class="form-group">  
+                                                    <div class="clearfix"></div>
+                                                    <div class="col-sm-12 col-xs-12">
+                                                        <apex:outputPanel rendered="true">
+                                                            <!--<b> <font size="2px" weight="bold">Deselection of Field Action will result in:<br/>-->
+                                                            <b> <font size="2px" weight="bold">{!$Label.CSS_Deselection_of_Field_Action_will_result_in}<br/>
+                                                                &nbsp;<br/>
+                                                                <!--Deletion of associated Parts, Travel, SRTs and Other Claimables <br/>-->
+                                                                {!$Label.CSS_Deletion_of_associated_parts} <br/>
+                                                                &nbsp;<br/>
+                                                                {!$Label.CSS_WS_Global_E006}</font> </b>
+                                                            <!--Do you want to continue?</font> </b>-->
+                                                        </apex:outputPanel>
+                                                    </div>
+                                                </div></form>
+
+                                            <hr/>
+                                            <!--<div class="clearfix"></div>-->
+                                            <div class="clearfix"></div><!--<br/>-->
+                                            <div class="col-sm-5 col-xs-4 cmi-tar">
+                                                <apex:commandButton value="{!$Label.css_Yes}" action="{!saveCheckBoxComp_New}" styleClass="saveButton" reRender="DeletePopupRJ"/>
+                                            </div>
+                                            <div class="col-sm-5 col-xs-4 cmi-tar">
+                                                <apex:actionRegion >
+                                                    <apex:commandButton value="{!$Label.CSS_No}"  html-data-dismiss="modal" styleClass="cancelButton" reRender="DeletePopupRJ" ></apex:commandButton>
+                                                </apex:actionRegion>
+
+                                            </div> 
+                                            <!--<div class="clearfix"></div>--><hr style="border:0;"/>
+                                        </div>   
+                                    </div>
+                                </div>
+                            </div>     
+                        </apex:outputPanel>
+                        <!-- Delete associated line items popup end -->
+                    </apex:actionRegion> 
+            </div>
+
+        </div>
+    </div> 
+</apex:component>

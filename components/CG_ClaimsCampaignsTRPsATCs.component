@@ -1,0 +1,313 @@
+<apex:component id="ClaimsIntks" controller="CG_CL_ClaimsCampaignsTRPsATCs" allowDML="true" >
+
+    <!--This style class will be showing the border around the claim type-->
+    <style>
+        .cmi_asterisk1
+        {
+            color: #D02323 ;
+        }
+        .showRedBorder{
+            border: 2px solid red !important;
+        } 
+    </style>
+    <apex:attribute name="mainController" description="Main Controller Type" type="CG_CL_ClaimsFC" assignTo="{!mainContr}"/><!--Passing Parent Controller -->
+    <!--<apex:actionRegion >-->
+    <script>
+        function showCampaignATCPopup(CampaignPopup,e){
+            // alert('Hello');
+            //alert(CampaignPopup);            
+            if(CampaignPopup == 'true'){
+                // alert('Inside IF');
+                $('#showCampaignPopuponsave').modal(
+                    {backdrop: 'static',
+                     keyboard: false,
+                     show:true
+                    });
+            }
+            else{
+                // alert('Inside Else');
+            }
+        }
+        function DisableSaveButtonforcamp(claimblescompId) {
+            claimblescompId.disabled = true;
+        }
+    </script>
+
+
+    <div class="col-md-3 col-xs-12"></div> 
+    <fieldset class="cmi_field_set" style="width:100%">
+        <!--<apex:actionRegion>-->
+        <apex:outputpanel id="claimsPanel" >
+            <div class="panel-body">  
+                <div class="col-md-15 col-xs-15">
+                    <div class="container-fluid">
+                        <div class="form-horizontal" role="form"> 
+                            <div class="form-group">
+                                <h4><b>{!if(checkmultipsn,$Label.CSS_Camp_ATC,$Label.css_Camp_TRP_ATC)}</b></h4>
+                            </div>
+                        </div>
+                        <!--Place holder for error message-->
+                        <apex:outputLabel style="text-align:center; color: red ; display: block;" value="Please enter value"  
+                                          rendered="{!IF(noclvalueerror == true, true, false)}"/> 
+                        <!--End Placeholder for error message-->
+
+                        <apex:outputpanel id="claimsDataId" >
+                            <div class="">
+                                <div class="form-horizontal" role="form">
+                                    <div class="form-group form-group1">
+                                        <div class="col-md-15">
+                                            <apex:outputText id="displayText" value="{!errormsg}" style="color:red" rendered="{!IF(errormsg!=null,true,false)}" />
+                                            <!--::{!listSolcompWrapper}-->
+                                            <table class="mytable table table-striped table-bordered" style="width:100%; " id="tab">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="tblhead" style="text-align:center;"><b>{!$Label.CSS_Select}</b></th>
+                                                        <th class="tblhead" style="text-align:center;"><b>{!$Label.CSS_Field_Action}</b></th>
+                                                        <th class="tblhead" style="text-align:center;"><b>{!$Label.CSS_Field_Action_Number}</b></th>
+                                                        <th class="tblhead" style="text-align:center;"><b>{!$Label.CSS_Fail_Code}</b></th>
+                                                        <th class="tblhead" style="text-align:center;"><b>{!$Label.CSS_Account_Code}</b></th>
+
+                                                        <!--New Label Added here for stroy 142757 Rupesh-->
+                                                        <!--Orginal START-->
+                                                        <!--<apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,false,true)}">
+
+<th class="tblhead" style="text-align:center;">
+<b><span style="color: red">*</span>&nbsp;{!$Label.CG_Claimtype}</b>
+</th>
+
+<th class="tblhead" style="text-align:center;"><b>{!$Label.CSS_PayCode}</b></th>
+</apex:outputText>-->
+                                                        <!--Orginal END-->
+
+                                                        <!--Story 161403 Rupesh-->
+
+                                                        <apex:outputText rendered="{!If(claimsRec.IsDealerCreatedClaim__c == true,false,true)}"> 
+
+                                                            <th class="tblhead" style="text-align:center;">
+                                                                <b><span style="color: red">*</span>&nbsp;{!$Label.CG_Claimtype}</b>
+                                                            </th>
+                                                        </apex:outputText>
+
+                                                        <!--apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,false,true)}"-->
+                                                        <!--apex:outputText rendered="{!If(claimsRec.Account__r.Type == 'Dealer Account',false,true)}"-->
+                                                        <apex:outputText rendered="{!If(claimsRec.Account__r.Type == 'Distributor Account' || (claimsRec.Account__r.Type == 'Dealer Account' && CONTAINS($UserRole.Name,'Factory')),true,false)}" >        
+                                                            <th class="tblhead" style="text-align:center;"><b>{!$Label.CSS_PayCode}</b></th>
+                                                        </apex:outputText>
+                                                        <!--Story 161403 Rupesh-->
+
+                                                    </tr>
+                                                </thead>
+
+                                                <tbody> 
+                                                    
+                                                    <apex:outputText rendered="{!If(claimsRec.Account__r.isCampTrp__c == 'Y' && showFieldActionPaccar == true ,true,false)}">
+                                                           <apex:repeat value="{!listSolcompWrapper}" var="CRec" id="theRepeat" >
+                                                            <tr>
+
+
+                                                                <td style="text-align:center;">
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true,true,false)}">
+                                                                        
+                                                                    <apex:outputPanel rendered="{!IF(claimsRec.Catastrophic__c != true || claimsRec.IsDealerCreatedClaim__c ==  false || CONTAINS($UserRole.Name,'Factory'),true,false)}">
+                                                                        <apex:inputCheckbox value="{!CRec.SelectedComp}"/>
+                                                                    </apex:outputPanel>
+                                                                    
+                                                                    <apex:outputPanel rendered="{!IF(claimsRec.Catastrophic__c == true && claimsRec.IsDealerCreatedClaim__c ==  true && !CONTAINS($UserRole.Name,'Factory'),true,false)}">
+                                                                        <apex:inputCheckbox value="{!CRec.SelectedComp}" disabled="true"/>
+                                                                    </apex:outputPanel>
+                                                                    
+                                                                    </apex:outputPanel>
+                                                                    
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c == true,true,false)}">
+                                                                        <apex:inputCheckbox value="{!CRec.SelectedComp}" disabled="true"/>
+                                                                    </apex:outputPanel>
+                                                                    
+                                                                </td>
+                                                                <apex:outputText rendered="{!IF(CRec.QsolURL!=null || CRec.QsolURL !='',true,false)}" id="link">
+                                                                    <td><b><U><apex:outputLink value="{!CRec.QsolURL}" target="_blank">{!CRec.FieldAction}</apex:outputLink></U> </b></td>
+                                                                </apex:outputText>
+                                                                <apex:outputText rendered="{!IF(CRec.QsolURL==null || CRec.QsolURL=='',true,false)}" id="link1">
+
+                                                                    <td><b>
+                                                                        <apex:outputText value="{!CRec.FieldAction}"></apex:outputText>  </b></td>
+                                                                </apex:outputText>
+
+                                                                <td style="text-align:center;"><apex:outputText value="{!CRec.FieldActNum}"/></td>
+                                                                <td style="text-align:center;"><apex:outputText value="{!CRec.FailCode}"/></td>
+                                                                <td style="text-align:center;"><apex:outputText value="{!CRec.AccountCode}"/></td>
+                                                                <!--td for claim type-->
+
+
+                                                                <apex:outputText rendered="{!If(claimsRec.IsDealerCreatedClaim__c == true,false,true)}">
+                                                                    <td style="text-align:center;">
+                                                                        <!--apex:outputText value="{!CRec.Selectedclaimtype}"></apex:outputText-->
+                                                                        <apex:outputPanel rendered="{!if(claimsRec.CSS_Job__c!=null && CRec.Selectedclaimtype!=null && 
+                                                                                                    CRec.Selectedclaimtype !='Select One' && CRec.Selectedclaimtype !='', true,false)}">
+                                                                            <apex:outputText value="{!CRec.Selectedclaimtype}"></apex:outputText>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!if(claimsRec.CSS_Job__c!=null && (CRec.Selectedclaimtype=='Select One'
+                                                                                                    || CRec.Selectedclaimtype==''|| CRec.Selectedclaimtype==null), true,false)}">
+                                                                            <apex:selectList size="1" value="{!CRec.Selectedclaimtype}" styleClass="{!if((noclvalueborder=true && CRec.Selectedclaimtype=='Select One'|| 
+                                                                                                                                                    CRec.Selectedclaimtype==' '|| CRec.Selectedclaimtype==null) && (noclvalueerror=true),'showRedBorder','')}">
+                                                                                <apex:selectOptions value="{!fetchclaimtypes}"></apex:selectOptions>
+                                                                            </apex:selectList>    
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!if(claimsRec.CSS_Job__c==null ,true,false)}">
+                                                                            <apex:selectList size="1" value="{!CRec.Selectedclaimtype}" styleClass="{!if((noclvalueborder=true && CRec.Selectedclaimtype=='Select One'|| 
+                                                                                                                                                    CRec.Selectedclaimtype==' '|| CRec.Selectedclaimtype==null) && (noclvalueerror=true),'showRedBorder','')}">
+                                                                                <apex:selectOptions value="{!fetchclaimtypes}"></apex:selectOptions>
+                                                                            </apex:selectList>    
+                                                                        </apex:outputPanel>          
+                                                                    </td>
+                                                                </apex:outputText>
+
+                                                                <!--End for claim type-->
+
+                                                                <!--apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,false,true)}"-->
+                                                                <!--apex:outputText rendered="{!If(claimsRec.Account__r.Type == 'Dealer Account',false,true)}"-->
+                                                                <apex:outputText rendered="{!If(claimsRec.Account__r.Type == 'Distributor Account' || (claimsRec.Account__r.Type == 'Dealer Account' && CONTAINS($UserRole.Name,'Factory')),true,false)}" >        
+                                                                    <td style="text-align:center;">
+                                                                        <apex:selectList value="{!CRec.SelectedPayCode}" size="1">
+                                                                            <apex:selectOptions value="{!CRec.PayCodes}"></apex:selectOptions> 
+                                                                        </apex:selectList>
+                                                                    </td> 
+                                                                </apex:outputText>
+                                                            </tr>
+                                                        </apex:repeat>
+                                                    </apex:outputText>
+                                                </tbody>
+                                            </table>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </apex:outputpanel>
+                        <!--RAJESH Start
+<apex:outputPanel id="DeletePopup">
+<div class="modal fade" id ="showCampaignPopuponsave" role="dialog">
+<div class="modal-dialog">
+<div class="modal-content">      
+<div class="modal-header">
+<h4 class="modal-title" style="color: #FFFFFF;"> Failures and Campaigns - {!$Label.css_cummins_service_system}</h4>
+</div> 
+<div class="clearfix"></div>
+<div class="modal-body">
+<form class="form-horizontal" role="form">
+<div class="form-group">  
+<div class="clearfix"></div>
+<div class="col-sm-12 col-xs-12">
+<b> <font size="3px" weight="bold">Deletion of Failure / Campaign / ATC or Change of Account Code will 
+result in deletion of data on Multi – PSN Details chevron. Do you wish to continue?</font> </b>
+</div>
+</div></form>
+
+<hr/>
+<div class="col-sm-5 col-xs-4 cmi-tar"> 
+
+<apex:commandButton value="{!$Label.css_Yes}"  action="{!deleteCamATCRecord}" styleClass="saveButton" reRender="DeletePopup"/>
+
+</div>
+<div class="col-sm-5 col-xs-4 cmi-tar">
+<apex:actionRegion >
+<apex:commandButton value="{!$Label.CSS_No}"  html-data-dismiss="modal" styleClass="cancelButton" reRender="DeletePopup" ></apex:commandButton>
+</apex:actionRegion>
+
+</div>  <hr style="border:0;"/>
+</div>   
+</div>
+</div>
+</div>
+</apex:outputPanel>   
+RAJESH End-->
+                        <!--RAJESH Start-->
+                        <apex:outputPanel id="DeletePopup"> 
+                            <div class="modal fade" id ="showCampaignPopuponsave" role="dialog">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">      
+                                        <div class="modal-header">
+                                            <!-- <h4 class="modal-title" style="color: #FFFFFF;"> Failures and Campaigns - {!$Label.css_cummins_service_system}</h4>-->
+                                            <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_cummins_service_system}</h4> <!-- Commented above line and changed the Header as per story 179356 -->
+                                        </div> 
+                                        <div class="modal-body">
+                                            <form class="form-horizontal" role="form">
+                                                <div class="form-group">  
+                                                    <div class="clearfix"></div>
+                                                    <div class="col-sm-12 col-xs-12">
+                                                        <apex:outputPanel rendered="{!checkmultipsn}">
+                                                            <!-- <b> <font size="2px" weight="bold">Deselection of Field Action will result in:<br/>-->
+                                                            <b> <font size="2px" weight="bold">{!$Label.CSS_Deselection_of_Field_Action_will_result_in}<br/>
+                                                                &nbsp;<br/>
+                                                                <!-- Deletion of Multi - PSN Details and associated Parts, Travel, SRTs and Other Claimables <br/>-->
+                                                                {!$Label.CSS_Deletion_of_Multi_PSN} <br/>
+                                                                &nbsp;<br/>
+                                                                {!$Label.CSS_WS_Global_E006}</font> </b>
+                                                            <!-- Do you want to continue?</font> </b>-->
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(checkmultipsn == false,true,false)}">
+                                                            <!--<b> <font size="2px" weight="bold">Deselection of Field Action will result in:<br/>-->
+                                                            <b> <font size="2px" weight="bold">{!$Label.CSS_Deselection_of_Field_Action_will_result_in}<br/>
+                                                                &nbsp;<br/>
+                                                                <!--Deletion of associated Parts, Travel, SRTs and Other Claimables <br/>-->
+                                                                {!$Label.CSS_Deletion_of_associated_parts} <br/>
+                                                                &nbsp;<br/>
+                                                                {!$Label.CSS_WS_Global_E006}</font> </b>
+                                                            <!--Do you want to continue?</font> </b>-->
+                                                        </apex:outputPanel>
+                                                    </div>
+                                                </div></form>
+
+                                            <hr/>
+                                            <!--<div class="clearfix"></div>-->
+                                            <div class="clearfix"></div><!--<br/>-->
+                                            <div class="col-sm-5 col-xs-4 cmi-tar">
+                                                <apex:commandButton value="{!$Label.css_Yes}" action="{!deleteCamATCRecord}" styleClass="saveButton" reRender="DeletePopup"/>
+                                            </div>
+                                            <div class="col-sm-5 col-xs-4 cmi-tar">
+                                                <apex:actionRegion >
+                                                    <apex:commandButton value="{!$Label.CSS_No}"  html-data-dismiss="modal" styleClass="cancelButton" reRender="DeletePopup" ></apex:commandButton>
+                                                </apex:actionRegion>
+
+                                            </div> 
+                                            <!--<div class="clearfix"></div>--><hr style="border:0;"/>
+                                        </div>   
+                                    </div>
+                                </div>
+                            </div>     
+                        </apex:outputPanel>
+                        <!-- RAJESH End-->
+
+                        <apex:outputPanel id="buttonpanel">
+                            <div class="row"  id="divid" align="center">
+                                <div class="col-sm-offset-3 col-sm-3 col-xs-12" style="margin-bottom: 10px;">
+                                    <apex:outputPanel rendered="{!IF(claimsRec.Catastrophic__c != true || claimsRec.IsDealerCreatedClaim__c ==  false || CONTAINS($UserRole.Name,'Factory'),true,false)}">
+
+                                        <apex:commandButton value="{!$Label.css_save_btn}" action="{!campaignPopupshow}" styleClass="saveButton" 
+                                                            oncomplete="showCampaignATCPopup('{!showCampaignPopup}',this);" 
+                                                            reRender="claimsDataId,displayText,claimsPanel" status="statusId" onclick="DisableSaveButtonforcamp(this);"/>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!IF(claimsRec.Catastrophic__c == true && claimsRec.IsDealerCreatedClaim__c ==  true && !CONTAINS($UserRole.Name,'Factory'),true,false)}">
+                                        <apex:commandButton value="{!$Label.css_save_btn}" action="{!campaignPopupshow}" styleClass="cmi_lighttealbutton" status="statusId" />
+                                    </apex:outputPanel>
+
+                                    <apex:actionStatus startText="requesting..." id="statusId">
+                                        <apex:facet name="start">Saving... <img src="/img/loading.gif" /></apex:facet>
+                                        <apex:facet name="stop"></apex:facet>
+                                    </apex:actionStatus>&nbsp;&nbsp;
+
+                                </div>
+                                <div class="col-sm-3 col-xs-12" style="margin-bottom: 10px;">  
+                                    <apex:commandButton value="{!$Label.css_Reset}" action="{!resetAllData}"  styleClass="cancelButton" reRender="claimsPanel"  status="resetId" />
+                                    <apex:actionStatus startText="requesting..." id="resetId">
+                                        <apex:facet name="start">Reseting... <img src="/img/loading.gif" /></apex:facet>
+                                        <apex:facet name="stop"></apex:facet>
+                                    </apex:actionStatus>&nbsp;&nbsp;
+                                </div>
+                            </div>
+                        </apex:outputPanel>
+                    </div>
+                </div>
+            </div>
+        </apex:outputpanel>
+    </fieldset>
+</apex:component>

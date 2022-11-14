@@ -1,0 +1,714 @@
+<!--**********************************************************************
+Name:CG_IntakeUENoERP
+Copyright Â© 2017  Cummins
+======================================================
+======================================================
+Purpose:                                                            
+-------  
+This component is used for NoERP system's Unit&Engine UI
+======================================================
+======================================================
+History                                                            
+-------                                                            
+VERSION  AUTHOR            DATE                DETAIL                                 
+1.0    Surender M        12/20/2017      INITIAL DEVELOPMENT                 
+***********************************************************************-->
+<apex:component layout="none" access="global" controller="CG_CL_IntakeUENoERP" id="noERPUEComp" AllowDML="true">
+    <!-- START ATTRIBUTES -->
+    <apex:attribute name="pgName" description="Page Name" type="String" /><!--Passing Page name -->
+    <apex:attribute name="mainController" description="Main Controller Type" type="CG_CL_IntakeUE" assignTo="{!mainContr}"/><!--Passing Parent Controller -->
+    <!-- STOP ATTRIBUTES -->
+    <script>
+        function assignhiddenval(e)
+        {
+
+            document.getElementById('{!$Component.Failuedt}').value=e.value;
+            FailureDateAction();
+        }
+        
+        function onChangeOfPSNOpenModalNoERP(){
+            $('#loadingModal').modal('show');
+        }
+        
+        function onCompleteOfPSNCloseModalNOERP(){
+            $('#loadingModal').modal('hide');
+            rerenderStartReqPanelNoERP();
+        }
+    </script>
+    <apex:actionRegion >
+        <apex:actionFunction name="rerenderStartReqPanelNoERP" rerender="IntakeUE:Intakefrm:setDataStringValue" />
+    </apex:actionRegion>
+    <apex:actionRegion >
+        <apex:outputPanel rendered="true" id="noERPPnlId">
+
+            <div class="col-sm-9">   
+                <span class="cmi_required"> <span class="cmi_asterisk1"></span>{!$Label.css_req_message}</span>                       
+                <fieldset class="cmi_field_set">
+                    <legend class="fs_legend">{!$Label.CSS_Unit_Engine_Information}</legend>
+                    <div class="row">                                                
+                        <div class="form-horizontal" role="form">
+                            <!----story 63538 fix start--------->
+                            <div class="col-sm-4"></div>
+                            <div class="col-sm-4" style="font-style:italic;font-size:12px;margin-left:25px;">
+                                <apex:outputLabel value=" {!$ObjectType.CSS_Job_Order__c.fields.PSN_Not_Available__c.Label}" /> &nbsp;
+                                <apex:inputCheckbox value="{!mainContr.workJob.PSN_Not_Available__c}"  id="psn_na_nonbms">
+                                    <apex:actionSupport action="{!startRequestNullPSN}" event="onchange" rerender="IntakeUE:Intakefrm:SPDataWarMsg,IntakeUE:Intakefrm:psnerrflag,IntakeUE:Intakefrm:faerrflag,noERPPnlId,Displayappcodeerror"/>
+                                </apex:inputCheckbox>                            
+                                <!--<apex:inputCheckbox value="{!mainContr.workJob.PSN_Not_Available__c}" styleClass="css_ipfiel_size" id="psn_na_nonbms"> &nbsp;
+<apex:actionSupport action="{!startRequestNullPSN}" event="onchange" rerender="noERPPnlId"/>
+</apex:inputCheckbox>-->
+                            </div>
+                            <div class="clearfix"></div>
+                            <apex:outputPanel rendered="{!IF(mainContr.workJob.ESN_IA__c == null || mainContr.workJob.ESN_IA__c == '',false,true)}" id="mobilePSNId2">
+                                <div class="col-sm-4 cmi-tar">
+                                    <apex:outputLabel value="Mobile PSN" />
+                                </div>
+                                <div class="col-sm-1">
+                                    <apex:outputLabel value="{!mainContr.workJob.ESN_IA__c}" />
+                                </div>
+                                <div class="col-sm-3">
+                                    <i style="font-size:12px;"><b>Use this PSN?</b></i> &nbsp;
+
+                                     <apex:commandButton value="{!$Label.CSS_Go}" status="updating_esn_status2" rerender="noERPPnlId,certpopup,servModelPopup,servModelPopup1,UnitLookupSearch" action="{!esnGo}" onclick="onChangeOfPSNOpenModalNoERP();" oncomplete="onCompleteOfPSNCloseModalNOERP();" id="goBtn2" styleClass="saveButton" style="padding:0px 4px;"/><br/>
+
+                                </div>
+                            </apex:outputPanel>
+                            <div class="clearfix"></div>
+                            <div class="col-sm-4 cmi-tar">
+                                <apex:outputLabel value=" {!$Label.css_Product_Serial_Number} " />
+                            </div>
+                            <div class="col-sm-8 col-xs-12 ">
+                                <apex:actionFunction name="callCampaigns" action="{!startRequest}" status="updating_esn_status2" reRender="noERPPnlId,certpopup,servModelPopup,servModelPopup1,Displayappcodeerror">
+                                    <apex:param name="Stopfailuredataupdate" value="stopupdate" assignTo="{!state}"/>
+                                </apex:actionFunction>  
+
+                                <apex:actionFunction name="FailureDateAction" action="{!getCampaignDetails}" status="IntakeUE:Intakefrm:noERPCompId:noERPUEComp:updating_esn_status2" reRender="checkFailureDateerror,noERPPnlId,IntakeUE:Intakefrm:SPDataWarMsg,IntakeUE:Intakefrm:faerrflag" /> 
+
+                                <apex:inputText value="{!mainContr.workJob.ESN__c}" styleClass="css_ipfiel_size" disabled="false" rendered="{!(mainContr.workJob.PSN_Not_Available__c == false)}" id="the_esn1">
+                                    <apex:actionSupport event="onchange" action="{!startRequest}" onsubmit="onChangeOfPSNOpenModalNoERP();" oncomplete="onCompleteOfPSNCloseModalNOERP();" rerender="IntakeUE:Intakefrm:SPDataWarMsg,IntakeUE:Intakefrm:faerrflag,IntakeUE:Intakefrm:psnerrflag,noERPPnlId,certpopup,servModelPopup,servModelPopup1,UnitLookupSearch,Displayappcodeerror" immediate="false"/> 
+                                </apex:inputText>
+                                <apex:inputText styleClass="css_ipfiel_size" disabled="true" rendered="{!(mainContr.workJob.PSN_Not_Available__c != false)}" id="the_esn2" />
+                                <a data-target="#ueESNQMarkPopup" data-toggle="modal" ><span class="cmi_intake_help" /></a>
+
+                                <apex:actionStatus startText="(fetching additional values...)" onstart="DisableButton2()" onstop="DisableStopButton2()" id="updating_esn_status2"/>
+                                <!--<apex:actionStatus rendered="{!IF(mainContr.workJob.Customer_Code__c == '' || mainContr.workJob.Customer_Code__c == null,true,false)}" stopText="(Missing Customer Code during Intake)" id="updating_esn_status1" /> -->
+                                <font color="red">
+                                    <apex:outputLabel value="{!$Label.CSS_Recon_Engine}" rendered="{!showOutageError1}" />
+                                </font>
+                            </div>
+                            <!----story 63538 fix end--------->
+
+                            <div class="clearfix"></div> 
+                            <div class="col-sm-4 cmi-tar">
+                                <apex:outputLabel value="{!$Label.CSS_Unit_Number}" />
+                            </div>
+                            <div class="col-sm-8 col-xs-12 ">
+                                <apex:inputField value="{!mainContr.workJob.Unit_Number__c}" styleClass="css_ipfiel_size"/> &nbsp;
+                                <a data-target="#ueUnitNoPopup" data-toggle="modal" ><span class="cmi_intake_help" /></a>
+                            </div>
+                            <div class="clearfix"></div> 
+
+                            <!----story 63538 fix start--------->
+                            <div class="col-sm-4 cmi-tar">
+                                <label for="">{!$Label.CSS_Application}<div class="cmi_asterisk">*</div></label>
+                            </div>
+                            <apex:actionFunction name="callmarketappcode" action="{!updateproductappcode}" reRender="Displayappcodeerror,MakeModelPanelNonBMSId,faultneds"></apex:actionFunction>
+                           <!--Added for the story#189951-->
+                           <apex:actionFunction name="callfieldactionmethod" action="{!getfieldactionmethod}" reRender="faultneds" />
+                            <div class="col-sm-8 col-xs-12 ">
+                                <!--<apex:inputField value="{!mainContr.workJob.Application__c}" styleClass="css_ipfiel_size" ></apex:inputField>-->
+
+                                <apex:selectList value="{!mainContr.filterApplication}" size="1" id="ApplicationnonBMS" onchange="callmarketappcode()">
+                                    <!--apex:actionSupport event="onchange" reRender="MakeModelPanelNonBMSId"/-->
+                                    <apex:selectOptions value="{!Application}"></apex:selectOptions>
+                                </apex:selectList>
+                                <apex:outputPanel id="Displayappcodeerror" >
+                                    
+
+                                    <apex:outputLabel rendered="{!IF(prodcodeErrormessage == true || mainContr.workJob.ProductAppcodeErrorflag__c == true,true,false)}" style="color:red"> <b>{!$Label.CSS_Application_code_Error_flag} </b> </apex:outputLabel>
+                                </apex:outputPanel>
+                                <apex:outputLabel rendered="{!reqAppBoolean}" style="color:red"> You must enter value.</apex:outputLabel>
+                            </div>
+                            
+                           <!--siva ganesh added for story GSSC-55-->
+                            
+                            <div class="clearfix"></div>
+                            <div class="col-sm-4 cmi-tar">
+                                 <label for="">{!$ObjectType.CSS_Job_Order__c.fields.License_Plate__c.Label}</label>
+                            </div>
+                            
+                            <div class="col-sm-8 col-xs-12 ">
+                            <apex:selectList value="{!mainContr.workJob.License_Plate__c}" size="1">
+                                <apex:selectOptions value="{!licensePlateList}"></apex:selectOptions>
+                            </apex:selectList>
+                            </div>
+            
+                           <!--siva ganesh end -->
+                           
+                            
+                            <!----story 63538 fix end--------->
+                            <div class="clearfix"></div>
+                            <div class="col-sm-4 cmi-tar">
+                                <apex:outputLabel value="{!$Label.css_service_model}" />
+                            </div>
+                            <div class="col-sm-8 col-xs-12 ">
+                                <apex:OutputField value="{!mainContr.workJob.Service_Model__c}" styleClass="css_ipfiel_size" /> &nbsp;
+                            </div>
+                            <div class="clearfix"></div>
+                            <div class="col-sm-4 cmi-tar" id="Model">
+                                <label for="">{!$Label.CSS_Make}<div class="cmi_asterisk">*</div></label>
+                            </div>
+
+
+                            <apex:outputPanel id="MakeModelPanelNonBMSId" >
+                                <div class="col-sm-8 col-xs-12 ">
+
+                                    <apex:selectList value="{!mainContr.filterMake}"  size="1">
+                                        <apex:actionSupport event="onchange" reRender="abc1"/>
+                                        <apex:selectOptions value="{!Make}"></apex:selectOptions>
+                                    </apex:selectList>
+                                </div>
+                                <div class="clearfix"></div>
+                                <div class="col-sm-4 col-xs-12 cmi-tar">
+                                    <label for="">{!$Label.CSS_Model}<div class="cmi_asterisk">*</div></label>
+                                </div>
+                                <apex:outputPanel id="abc1" >
+                                    <div class="col-sm-8 col-xs-12 ">
+                                        <apex:selectList value="{!mainContr.filterModel}" size="1">
+                                            <apex:selectOptions value="{!Model}"></apex:selectOptions>
+                                        </apex:selectList>
+                                    </div>
+                                </apex:outputPanel>
+                                <div class="clearfix"></div>
+                            </apex:outputPanel>
+
+                            <div class="col-sm-4 cmi-tar">
+                                <apex:outputLabel value="{!$Label.css_Model_VIN}" />
+                            </div>
+                            <apex:outputPanel rendered="{!IF(mainContr.workJob.VIN_Flag__c == false,true,false)}">
+                                <div class="col-sm-8 col-xs-12 ">
+                                    <apex:outputField value="{!mainContr.workJob.VIN__c}" styleClass="css_ipfiel_size" /> &nbsp;
+                                </div>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!IF(mainContr.workJob.VIN_Flag__c == true,true,false)}"> 
+                                <div class="col-sm-8 col-xs-12 ">
+                                    <apex:inputText value="{!mainContr.workJob.VIN__c}" styleClass="css_ipfiel_size" maxlength="30"/> &nbsp;
+                                </div>
+                            </apex:outputPanel>
+                            <div class="clearfix"></div>
+                            <apex:outputPanel id="WarDt">
+                                <div class="col-sm-4 cmi-tar">
+                                    <apex:outputLabel value="{!$Label.css_Warranty_Start_Date}" />
+                                    <apex:outputPanel rendered="{!IF((mainContr.workJob.Warranty_Start_Date__c == null && mainContr.workJob.Before_In_Service__c==false && mainContr.workJob.ESN__c == '')|| (mainContr.workJob.ESN__c != '' && mainContr.workJob.Before_In_Service__c==false), true,false)}">
+                                        <div class="cmi_asterisk">*</div>
+                                    </apex:outputPanel>
+                                </div>
+                                <div class="col-sm-8 col-xs-12 ">
+                                    <apex:outputPanel rendered="{!IF((mainContr.workJob.Warranty_Start_Date__c == null && mainContr.workJob.ESN__c != '' && ReadonlyWSD== false && mainContr.workJob.Before_In_Service__c==false)|| higherdateErrFlag== true || builddateErrFlag ==true || (mainContr.workJob.Warranty_Start_Date__c != null && mainContr.workJob.Warranty_Start_Date__c > TODAY()),true,false)}" id="WarrantyDate">
+                                        <!--<apex:outputPanel rendered="{!IF((mainContr.workJob.ESN__c != '')|| higherdateErrFlag== true || builddateErrFlag ==true,true,false)}" id="WarrantyDate">-->
+                                        <div class="input-group date" id="failureDate" data-provide="datepicker" data-date-format="{!mainContr.datebyLocaleValue}">
+                                            <!----<input type='text' class="form-control cmi-cal"/>---->
+                                            <apex:inputField value="{!mainContr.workJob.Warranty_Start_Date__c}" styleclass="form-control cmi-cal css_ipfiel_size" showDatePicker="false" onchange="CompareDatesfun(this.value)" html-placeholder="mm/dd/yyyy"/> &nbsp;
+
+                                            <span class="input-group-addon" style="width:100px; border: 0px; background: none;">
+                                                <span class=""><div class="calendar"></div></span>
+                                            </span>                                                     
+                                        </div>
+
+                                        <!----Story 14884 start--->
+
+                                        <!--   <b><apex:outputText value="{!$Label.Warranty_Start_Date_must_be_later_than_Engine_Build_Date}" rendered="{!builddateErrFlag}" style="color: red ; display: block;" id="BuidDateErr"/></b>-->
+                                        <!----Story 14884 end--->
+                                    </apex:outputPanel>
+                                    <apex:outputPanel id="readOnlyWSD"  rendered="{!IF((mainContr.workJob.Warranty_Start_Date__c != null  && mainContr.workJob.Warranty_Start_Date__c <= TODAY()) || ReadonlyWSD==true ||(mainContr.workJob.Warranty_Start_Date__c == null && mainContr.workJob.ESN__c != '' && ReadonlyWSD== false && mainContr.workJob.Before_In_Service__c==true),true,false)}">
+                                        <apex:outputField value="{!mainContr.workJob.Warranty_Start_Date__c}" />
+                                    </apex:outputPanel>
+                                    <apex:outputPanel id="DateErr">
+                                        <b><apex:outputText value="{!$Label.CSS_Warranty_Start_Date_should_be_less_than_or_equal_to_current_date}" rendered="{!IF(higherdateErrFlag==true || (mainContr.workJob.Warranty_Start_Date__c != null && mainContr.workJob.Warranty_Start_Date__c > TODAY()),true,false)}" style="color: red ; display: block;" /></b>
+                                        <b><apex:outputText value="{!$Label.Warranty_Start_Date_must_be_later_than_Engine_Build_Date}" rendered="{!builddateErrFlag}" style="color: red ; display: block;" id="BuidDateErr"/></b>
+                                    </apex:outputPanel>
+                                </div>
+                            </apex:outputPanel>
+
+                            <div class="clearfix"></div>
+                            <div class="col-sm-4 cmi-tar" style="word-wrap: break-word;">
+                                <apex:outputLabel value=" {!$ObjectType.CSS_Job_Order__c.fields.Before_In_Service__c.Label} " />
+                            </div>
+                            <apex:outputPanel id="BISChk">
+                                <div class="col-sm-6 col-xs-12 ">
+                                    <!--<apex:outputField value="{!mainContr.workJob.Before_In_Service__c}"  styleClass="css_ipfiel_size"  rendered="{!(mainContr.workJob.Warranty_Start_Date__c!= null)}"/>-->
+                                    <apex:outputPanel id="readOnlyBIS" rendered="{!IF(mainContr.workJob.Warranty_Start_Date__c!= null || ReadonlyBIS==true || mainContr.workJob.ESN__c ==null,true,false)}">
+                                        <apex:outputField value="{!mainContr.workJob.Before_In_Service__c}"  styleClass="css_ipfiel_size"/>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel id="InputBIS" rendered="{!IF(mainContr.workJob.Warranty_Start_Date__c==null && ReadonlyBIS==false && mainContr.workJob.ESN__c!=null,true,false)}">
+                                        <apex:InputCheckbox value="{!mainContr.workJob.Before_In_Service__c}" style="width:16px;margin-bottom:19px;" styleClass="css_ipfiel_size"> <!-- rendered="{!IF(mainContr.workJob.Warranty_Start_Date__c == NULL , true, false)} "/> -->&nbsp;
+                                            <apex:actionSupport event="onchange" action="{!onChangeBIS}" reRender="WarDt,readOnlyWSD,WarrantyDate"/>
+                                        </apex:InputCheckbox>
+                                    </apex:outputPanel>    
+                                </div>
+                            </apex:outputPanel>  
+                            <div class="clearfix"></div>
+
+                            <apex:actionFunction name="QMark3" action="{!showPopup7}" reRender="failDateqmarkpopup"/> 
+                            <apex:actionFunction name="CompareDatesfun" action="{!CompareDates}" reRender="DateErr,readOnlyBIS,InputBIS,BISChk">
+                                <apex:param name="warrantyDate" value="" assignTo="{!warrantyDate}"></apex:param>
+                            </apex:actionFunction>
+
+                            <div class="col-sm-4 cmi-tar">
+                                <apex:outputLabel value="{!$Label.CSS_Failure_date}" />
+                            </div>
+
+                            <apex:outputPanel id="checkFailureDateerror">
+                                <div class="col-sm-2 col-xs-12 ">
+
+
+                                    <apex:inputField id="Failuedt" value="{!mainContr.workJob.Failure_Date__c}" styleclass="{!if((checkFailureDateerror||faildtwsdtflag||faildtshdtflag),'showRedBorder','')}" showDatePicker="false" onchange="FailureDateAction()" 
+                                                     onfocus="DatePicker.pickDate(false, this , false);" > 
+                                        <apex:actionSupport event="onchange" action="{!getCampaignDetails}" status="IntakeUE:Intakefrm:noERPCompId:noERPUEComp:updating_esn_status2" rerender="IntakeUE:Intakefrm:SPDataWarMsg,checkFailureDateerror,noERPPnlId,IntakeUE:Intakefrm:faerrflag"/>
+                                    </apex:inputField>
+
+
+                                    <!--         <apex:outputPanel rendered="{!checkFailureDateerror}"  >
+<span style="color:red">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>{!$Label.CSS_Failure_Date_cannot_be_greater_than_today}</b></span> 
+</apex:outputPanel>
+
+<apex:outputPanel rendered="{!faildtwsdtflag}"  >
+<span style="color:red">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>{!$Label.CG_Failure_Date_Validation}</b></span> 
+</apex:outputPanel>
+
+
+<apex:outputPanel rendered="{!faildtshdtflag}"  >
+<span style="color:red">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>{!$Label.CSS_Failure_Date_should_be_after_the_Ship_Date} &nbsp;&nbsp; 
+<apex:outputtext value="{!mainContr.workJob.ShipDate__c}"/>
+</b>
+</span>
+</apex:outputPanel>  -->
+
+                                    <!--   <div class="input-group date" id="failureDate" data-provide="datepicker" data-date-format="{!mainContr.datebyLocaleValue}">
+
+<span class="input-group-addon" style="width:100px; border: 0px; background: none;">
+<apex:input value="{!failuredthidden}" onchange="assignhiddenval(this);" style="display:none;" />
+<span class="calendar" style="left: 95px; top: -18px;"></span>
+<a data-target="#failDateqmarkpopup" data-toggle="modal" >
+<span class="cmi_intake_help" style="left: 90px; top: -32px;" /></a> 
+</span> 
+
+
+</div>  -->
+                                    <div class="input-group date" id="failureDate" data-provide="datepicker" data-date-format="{!mainContr.datebyLocaleValue}">                               
+                                        <span class="input-group-addon" style="width:100px;border: 0px;background: none;padding-left: 0px;">
+                                            <apex:input value="{!failuredthidden}" onchange="assignhiddenval(this);" style="display:none;" />
+                                            <span class="calendar" style="top: -14px;left: 105px;"></span>
+                                            <!-- <a data-target="#failDateqmarkpopup" data-toggle="modal" >
+<span class="cmi_intake_help" style="top: -29px;right: -29px;" /></a> -->
+                                        </span>                                                               
+                                    </div>
+
+
+                                </div>
+                                <div class="col-sm-1">
+                                    <a data-target="#failDateqmarkpopup" data-toggle="modal" >
+                                        <span class="cmi_intake_help" /></a>
+                                </div>
+                                <div class="col-sm-5">
+
+                                    <apex:outputPanel rendered="{!checkFailureDateerror}"  >
+                                        <span style="color:red"><b>{!$Label.CSS_Failure_Date_cannot_be_greater_than_today}</b></span>   <br/>
+                                    </apex:outputPanel>
+
+                                    <apex:outputPanel rendered="{!faildtwsdtflag}"  >
+                                        <span style="color:red"><b>{!$Label.CG_Failure_Date_Validation}</b></span> <br/>
+                                    </apex:outputPanel> 
+
+
+                                    <apex:outputPanel rendered="{!faildtshdtflag}"  >
+                                        <span style="color:red"><b>{!$Label.CSS_Failure_Date_should_be_after_the_Ship_Date}&nbsp;&nbsp; 
+                                            <!-- <apex:outputtext value="{!mainContr.workJob.ShipDate__c}"/> -->
+                                            <apex:outputText value="{0,date,yyyy/MM/dd}">
+                                                <apex:param value="{!mainContr.workJob.ShipDate__c}" />
+                                            </apex:outputText>
+                                            </b>
+                                        </span>
+                                    </apex:outputPanel>
+
+                                </div>
+
+                                <!--<div class="col-sm-7">
+<apex:outputPanel rendered="{!checkFailureDateerror}"  id="checkFailureDateerror">
+<span style="font-size:12px;color:red">{!$Label.CSS_Failure_Date_cannot_be_greater_than_today}</span> 
+</apex:outputPanel>
+</div>-->
+                                </apex:outputpanel>
+                            <div class="clearfix"></div>
+
+
+
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-4 cmi-tar" style="word-wrap: break-word;">
+                                <apex:outputLabel value="{!$Label.CSS_Product_Mileage_Hours}" />
+                            </div>
+                            <div id="divMileageId" class="col-sm-6 col-xs-12">
+                                <!-- <apex:inputField value="{!mainContr.workJob.Mileage__c}" styleClass="css_ipfiel_size"/> &nbsp;-->
+                                <!--Added onchange event for the story 189951-->
+                                <apex:inputText value="{!mainContr.workJob.Mileage__c}" styleClass="css_ipfiel_size" maxlength="8" onKeyPress="mileagePress(event);" onchange="callfieldactionmethod();"/> &nbsp;
+                            </div>
+                            <div class="clearfix"></div>
+                            <div class="col-sm-4 cmi-tar"></div>
+                            <div class="col-sm-4 col-xs-4" >
+                                <div>
+                                    <apex:selectRadio layout="lineDirection" styleClass="cmi-td" value="{!mainContr.mil_measure}">
+                                        <apex:selectOptions value="{!items}"/>
+                                    </apex:selectRadio>
+                                </div>
+                            </div>
+                            <!--------------------Added Hours Text Box Start---------------->
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-4 cmi-tar" style="word-wrap: break-word;">
+                                <apex:outputLabel value="{!$Label.CSS_Product_Hours}" />
+                            </div>
+                            <div id="divHoursII" class="col-sm-6 col-xs-12">
+                                <!-- <apex:inputField value="{!mainContr.workJob.Mileage__c}" styleClass="css_ipfiel_size"/> &nbsp;-->
+                                <!--Added onchange event for the story 189951-->
+                                <apex:inputText value="{!mainContr.workJob.CSS_Hours__c}" styleClass="css_ipfiel_size" maxlength="8" onKeyPress="hoursPress(event);" onchange="callfieldactionmethod();"/> &nbsp;
+                            </div>
+
+
+                            <!---------------------Added Hours Text Box End----------------->
+                            <!---------------------Mission Disabling start------------------------------------>
+                            <apex:outputPanel rendered="{!IF(mainContr.isClaimEnabled == true,true,false)}">
+                                <div class="clearfix"></div>
+                                <div class="col-sm-4 cmi-tar" style="word-wrap: break-word;">
+                                    <apex:outputLabel value=" {!$ObjectType.CSS_Job_Order__c.fields.CSS_Mission_Disabling__c.Label} " />
+                                </div>
+                                <div class="col-sm-2 col-xs-12 ">
+                                    <apex:InputCheckbox value="{!mainContr.workJob.CSS_Mission_Disabling__c}" style="width:16px;margin-bottom:19px;" styleClass="css_ipfiel_size"/> 
+                                </div>
+                            </apex:outputPanel>
+                            <!---------------------Mission Disabling End-------------------------------------->
+                            <div class="clearfix"></div>
+
+                            <div class="col-sm-4 cmi-tar" style="word-wrap: break-word;">
+                                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.Warranty_Authorization_Flag__c.Label}" />
+                            </div>
+                            <div class="col-sm-2 col-xs-12 ">
+                                <apex:OutputText value="{!IF(mainContr.workJob.Warranty_Authorization_Flag__c == 'Certified', '<font color=green>Certified</font>', IF(mainContr.workJob.Warranty_Authorization_Flag__c == 'Not Certified', '<font color=red>Not Certified</font>', IF(mainContr.workJob.ESN__c != null && mainContr.workJob.ESN__c != '', 'Not Applicable', ''))) }" escape="false" /> &nbsp;
+                                <i class="{!IF(mainContr.workJob.Warranty_Authorization_Flag__c == 'Certified', 'cmi-icon icon-correct', IF(mainContr.workJob.Warranty_Authorization_Flag__c == 'Not Certified', 'cmi-icon icon-wrong', ''))}"></i>
+                            </div>  
+                            <div class="col-sm-6 col-xs-12">
+                                <font color="">
+                                    <!--apex:OutputText value="{!IF(LEFT(mainContr.workJob.Warranty_Authorization_Flag__c,1) == 'G', $Label.CSS_Warranty_Cert_Msg, IF(LEFT(mainContr.workJob.Warranty_Authorization_Flag__c,1) == 'Y', $Label.CSS_Warranty_Cert_Msg, IF(LEFT(mainContr.workJob.Warranty_Authorization_Flag__c,1) == 'R', $Label.CSS_Warranty_NotCert_Msg, ''))) }" escape="false" html-font-color="red"/--> 
+                                    <apex:OutputText value="{!IF(mainContr.workJob.Warranty_Authorization_Flag__c == 'Certified', $Label.CSS_Warranty_Cert_Msg, IF(mainContr.workJob.Warranty_Authorization_Flag__c == 'Not Certified', $Label.CSS_Warranty_NotCert_Msg, '')) }" escape="false" html-font-color="red"/> 
+                                </font>
+                            </div> 
+
+                            <div class="clearfix"></div> 
+
+                            <div class="col-sm-4 cmi-tar">
+                                <apex:outputLabel value="{!$Label.CSS_Location_Certification}" />
+                            </div>
+                            <div class="col-sm-8 col-xs-12 ">
+                                 <apex:OutputText value="{!IF(mainContr.workJob.Location_Certification__c == 'Certified', '<font color=green>Certified</font>', IF(mainContr.workJob.Location_Certification__c == 'NotCert', '<font color=red>Not Certified</font>', IF(mainContr.workJob.Location_Certification__c == 'NotAppble', 'Not Applicable', ''))) }" escape="false" /> &nbsp;
+                                <i class="{!IF(mainContr.workJob.Location_Certification__c == 'Certified', 'cmi-icon icon-correct', IF(mainContr.workJob.Location_Certification__c == 'NotCert', 'cmi-icon icon-wrong', IF(mainContr.workJob.Location_Certification__c == 'NotAppble', '', ''))) }"></i>
+                            </div> 
+                            <div class="clearfix"></div>
+                            <div class="col-sm-4 col-xs-12">&nbsp;</div>
+                            <div class="col-sm-8 col-xs-12">
+                                <apex:outputpanel id="RecVst1" rendered="{!IF(mainContr.workJob.RecentVisit__c== true, true, false)}">  
+                                    <c:CSS_RR_Message jobESN="{!mainContr.workJob.ESN__c}" jobOrdId="{!mainContr.workJob.Id}" d1Created="{!mainContr.workJob.createdDate}" rec_rep_flag="{!mainContr.workJob.Repeat_Or_Recent_Calc__c}"/>
+                                </apex:outputpanel>
+                            </div>     
+
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+
+            <div class="col-sm-3 col-xs-12">
+                <apex:outputpanel id="faultneds" rendered="{!IF(mainContr.workJob.ESN__c!= null, true, false)}">
+                    <c:CSS_QSOLDocs jobSFDCID="{!mainContr.workJob.ID}" jobESN="{!mainContr.workJob.ESN__c}" lstQSOLCamp="{!mainContr.lstCAM}" lstQSOLTSB="{!mainContr.lstTSB}" lstQSOLTRP="{!mainContr.lstTRP}" lstQSOLATC="{!mainContr.lstATC}" lstQSOLCampsize="{!Camps}" lstQSOLTRPsize="{!Trps}" lstQSOLTSBsize="{!Tsbs}" lstQSOLATCsize="{!Atcs}" pgName="Intake" />
+                </apex:outputpanel>
+            </div>
+        </apex:outputPanel>
+
+
+        <!-- PopUp code start -->
+        <!-- UnitNumber Popup start -->
+        <div class="container">  
+            <div class="modal fade" id="ueUnitNoPopup"  role="dialog">
+                <div class="modal-dialog">
+                    <div class="modal-content"> 
+                        <div class="modal-header">  
+                            <Button title="Close the popup" class="cross_butten" data-dismiss="modal" />
+                            <h4 class="modal-title" style="color: #FFFFFF;"> {!$Label.css_unit} &amp; {!$Label.css_Engine} -{!$Label.css_Cummins_Service_System} </h4>
+                        </div>
+                        <div class="modal-body">
+                            <!--<form class="form-horizontal" role="form">---> 
+                            <div class="form-group">
+                                <div class="col-sm-12 col-xs-12">
+                                    <div class="intake_help1 intake_help-popup"></div>
+                                    <div class="col-sm-11 col-xs-12" >
+                                        <b> {!$Label.CSS_Unit_Number} </b>{!$Label.css_ue_ESN_popup2}
+                                    </div>
+                                </div>
+                            </div>
+                            <!--</form>--->
+                            <div class="clearfix"></div>
+                            <hr/>
+
+                            <div class="col-sm-12" align="center" draggable="false" >
+                                <button type="button"  class="cancelButton" data-dismiss="modal">ok</button>
+
+                            </div> <br/>
+                            <div class="clearfix"></div>
+                            <div class="clearfix"></div>
+                        </div></div></div></div></div>
+        <!-- UnitNumber Popup end -->
+
+        <!-- FailureDate Popup start -->
+        <div class="modal fade" id="failDateqmarkpopup"  role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content"> 
+                    <div class="modal-header">
+                        <Button title="Close the popup" class="cross_butten" data-dismiss="modal" />
+                        <h4 class="modal-title" style="color: #FFFFFF;"> {!$Label.css_unit} &amp; {!$Label.css_Engine} -{!$Label.css_Cummins_Service_System} </h4>
+                    </div>
+                    <div class="modal-body">
+                        <!--<form class="form-horizontal" role="form">---> 
+                        <div class="form-group">
+                            <div class="col-sm-12 col-xs-12">
+                                <div class="intake_help1 intake_help-popup"></div>
+                                <div class="col-sm-11 col-xs-12" >
+                                    <!--Defect 58006-->
+                                    {!$Label.css_is_typically_used_by_the_customer_to_identify_the_Failure_Date_individual_ve}
+                                </div>
+                            </div>
+                        </div>
+                        <!--</form>--->
+                        <div class="clearfix"></div>
+                        <hr/>
+
+                        <div class="col-sm-12" align="center" draggable="false" >
+                            <button type="button"  class="cancelButton" data-dismiss="modal">ok</button>
+
+                        </div> <br/>
+                        <div class="clearfix"></div>
+                        <div class="clearfix"></div>
+                    </div></div></div></div>
+        <!-- FailureDate Popup end -->
+
+        <!-- ueESNQMarkPopup -->
+
+        <apex:outputPanel id="ueESNQMarkPopup">
+            <div class="container">  
+                <div class="modal fade" id="ueESNQMarkPopup"  role="dialog">
+                    <div class="modal-dialog">
+                        <div class="modal-content"> 
+                            <div class="modal-header">  
+                                <Button title="Close the popup" class="cross_butten" data-dismiss="modal" />
+                                <h4 class="modal-title" style="color: #FFFFFF;"> {!$Label.css_unit} &amp; {!$Label.css_Engine} - {!$Label.css_Cummins_Service_System} </h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <div class="col-sm-12 col-xs-12">
+                                        <div class="intake_help1 intake_help-popup"></div>
+                                        <div class="col-sm-11 col-xs-12" style=" text-align: justify;">
+                                            <apex:outputLabel value="{!$Label.css_ue_ESN_popup}" escape="false" style="font-weight: normal;"></apex:outputLabel>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="clearfix"></div>
+                                <hr/>                       
+                                <div class="col-sm-12" align="center" draggable="false" >
+                                    <button type="button"  class="cancelButton" data-dismiss="modal">ok</button>                                
+                                </div> <br/>
+                                <div class="clearfix"></div>
+                                <div class="clearfix"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </apex:outputPanel>
+
+        <!-- ueESNQMarkPopup -->
+
+        <!--popup for Certification Start-->
+        <apex:outputPanel id="certpopup">
+            <apex:outputPanel id="certpopInnerOutputPnl" styleClass="customPopup" layout="block" rendered="{!displaycertPopUp}">                  
+                <div class="modal-header">  
+                    <apex:commandButton title="Close the popup" action="{!closecertPopup}" styleClass="cross_butten" rerender="certpopup"/>
+                    <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Cummins_Service_System} </h4>
+                </div>
+                <div class="clearfix"></div> 
+                <div class="col-md-12 col-xs-12">
+                    <b>Your location does not have the level of certification recommended for this engine. </b>
+                </div>
+                <div class="clearfix"></div>
+                <hr/>
+                <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                    <apex:commandButton value="OK" action="{!closecertPopup}" styleClass="saveButton" rerender="certpopup"/>
+                </div>
+            </apex:outputPanel> 
+        </apex:outputPanel>
+        <!--popup for Certification End --> 
+
+        <!--popup for Service Model Name Start-->
+        <apex:outputPanel id="servModelPopup">
+
+            <apex:outputPanel id="servModelInnerOutputPnl" styleClass="customPopup" layout="block" rendered="{!if(displaySrvModPopup==true && mainContr.PSNFlag==false,true,false)}">     
+                <div class="modal-header">  
+                    <apex:commandButton title="Close the popup" action="{!closeSrvModPopup}" styleClass="cross_butten" rerender="servModelPopup"/>
+                    <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_cummins_service_system} </h4>
+                </div>
+                <div class="clearfix"></div> 
+                <div class="modal-body">
+                    <fieldset class="HHP_fieldSet">
+                        <div class="col-sm-2 col-xs-12">
+                            <div class="css_alert_red" style="zoom:1.95"/> 
+                        </div>
+                        <div class="col-md-10 col-xs-12">
+                            <b>{!$Label.css_Engine_Serial_Number_ESN_was_not_recognised}.</b><br/>
+                            <b>{!$Label.css_Please_verify_your_ESN}</b><br/>
+                            <b>{!$Label.css_If_you_feel_you_have_recieved_this_message}<br/>{!$Label.css_in_error_please_contact_Customer_Support}</b><br/>
+                        </div>
+                    </fieldset>        </div>
+                <div class="clearfix"></div>
+                <hr/>
+                <div class="modal-footer">
+                    <div class="col-sm-7 col-xs-4 cmi-tar"> 
+                        <apex:commandButton value="OK" action="{!closeSrvModPopup}" styleClass="saveButton" rerender="servModelPopup"/>
+                    </div>
+                </div>
+            </apex:outputPanel> 
+        </apex:outputPanel>
+        <!--popup for Service Model Name End-->
+
+        <!--popup for HHP Engine Start -->                                 
+        <apex:outputPanel id="servModelPopup1">
+            <apex:outputPanel id="servModelInnerOutputPnl1" styleClass="customPopup" layout="block" rendered="{!displaySrvModPopup1}">                  
+                <div class="modal-header">  
+                    <apex:commandButton title="Close the popup" action="{!closeSrvModPopup1}" styleClass="cross_butten" rerender="servModelPopup1"/>
+                    <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Cummins_Service_System} </h4>
+                </div>
+                <div class="clearfix"></div> 
+                <fieldset style="border: 1px solid grey; height:100%;" id="HHPCer">  
+                    <div class="col-md-12 col-xs-12">
+                        <b>{!$Label.css_Warning_HHP_Certification_needed_to_continue}!</b><br/><br/>
+                        {!$Label.css_A_CSS_job_cannot_be_created_because_the_Engine_Serial_Number_ESN_is_for_a_S} <br/> {!$Label.css_ModelName_that_is_NOT_available_for_accesslevel}.<br/><br/>
+                        {!$Label.css_Click_OK_to_close_the_job}.<br/>
+                        Or <br/> {!$Label.css_Click_Cancel_to_enter_adifferent_ESN}
+
+                    </div>
+                </fieldset>
+                <div class="clearfix"></div>
+                <hr/>
+                <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                    <apex:commandButton value="OK" action="{!pgSaveFinish}" styleClass="saveButton" rerender="servModelPopup1"/>
+                </div>
+                <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                    <apex:commandButton value="CANCEL" action="{!closeSrvModPopup1}" styleClass="saveButton" oncomplete="clearValue()" rerender="servModelPopup1"/>
+                </div>
+            </apex:outputPanel> 
+        </apex:outputPanel>  
+        <!--popup for HHP Engine End -->
+    </apex:actionRegion>
+    <!---Loading Popup --->
+            <div class="modal fade" id ="loadingModal" role="dialog" data-backdrop="static" data-keyboard="false">
+                    <div class="modal-dialog">
+                        <div class="modal-content" style="width:0px;margin: 100px;height: 0px;">
+                            <div class="modal-body" style="padding:0px;margin: 200px 0px;">
+                                <apex:image url="{!$Resource.LoadingImg}" width="100" height="100" style="align:center"/>  
+                            </div>
+                        </div>
+                    </div>
+                </div>
+    <!---Loading Popup End---->
+    <!-- PopUps code end -->
+
+
+    <!--- Scripts Start ---->
+    <script type="text/javascript">
+
+        function DisableButton2(){
+            document.getElementById("IntakeUE:Intakefrm:noERPCompId:noERPUEComp:goBtn2").disabled=true;
+            document.getElementById("IntakeUE:Intakefrm:noERPCompId:noERPUEComp:goBtn2").className = 'cmi_lighttealbutton';
+            //document.getElementById('{!$Component.goBtn}').disabled=true;
+            //alert(document.getElementById('{!$Component.goBtn}').value);
+        }
+
+        function DisableStopButton2(){
+            var esnIAValue = '{!mainContr.workJob.ESN_IA__c}';
+            var esdIdEle = document.getElementById("IntakeUE:Intakefrm:noERPCompId:noERPUEComp:the_esn1");
+            if(esdIdEle !=null && esdIdEle !='undefined'){
+                var givenESN = document.getElementById("IntakeUE:Intakefrm:noERPCompId:noERPUEComp:the_esn1").value;
+                //alert('22 esnIAValue>>>:'+esnIAValue+' givenESN>>>:'+givenESN);
+                if(esnIAValue==givenESN){
+                    //alert('Equalled... esnIAValue>>>:'+esnIAValue+' givenESN>>>:'+givenESN);
+                    document.getElementById("IntakeUE:Intakefrm:noERPCompId:noERPUEComp:goBtn2").disabled=true;
+                    document.getElementById("IntakeUE:Intakefrm:noERPCompId:noERPUEComp:goBtn2").className = 'cmi_lighttealbutton';
+                }else{
+                    //alert('Not Equalled... esnIAValue>>>:'+esnIAValue+' givenESN>>>:'+givenESN);
+                    document.getElementById("IntakeUE:Intakefrm:noERPCompId:noERPUEComp:goBtn2").disabled=false;
+                    document.getElementById("IntakeUE:Intakefrm:noERPCompId:noERPUEComp:goBtn2").className = 'saveButton';
+                }
+            }
+        }
+
+        function mileagePress(e){
+            $('#divMileageId').keypress(function(e){
+                //alert('keycode:'+e.which);
+                if(e.which == 48 || e.which == 49 || e.which == 50 || e.which == 51 || e.which == 52 || e.which == 53 || e.which == 54 || e.which == 55 || e.which == 56 || e.which == 57 || e.which == 8){
+
+                } else {
+                    return false;
+                }
+            });
+        }
+
+        //Defect fix 61124 end
+        function hoursPress(e){
+            $('#divHoursII').keypress(function(e){
+                //alert('keycode:'+e.which);
+                if(e.which == 48 || e.which == 49 || e.which == 50 || e.which == 51 || e.which == 52 || e.which == 53 || e.which == 54 || e.which == 55 || e.which == 56 || e.which == 57 || e.which == 8 )
+                {
+
+                } else {
+                    return false;
+                }
+            });
+
+        }
+
+        function clearValue(){     
+            document.getElementById('{!$Component.page:frm:pblck:ESN}').value = '';
+            alert();
+            return false;
+        }
+
+        function changeCampaigns(){
+            //alert('in changecampaigns change event fired...');
+            callCampaigns();
+
+        }
+        function CompareDates(value1){
+            //alert('Moulika');
+            // alert(value1);
+            var wardate = document.getElementById("IntakeUE:Intakefrm:noERPCompId:noERPUEComp:Wdate").value;
+            // alert(wardate);
+            //CompareDatesfun(wardate);
+            CompareDatesfun(value1);
+        }      
+
+    </script>
+
+    <style>
+        .showRedBorder{
+            border: 2px solid red !important;
+        }
+    </style>
+
+    <!--- Scripts End ---->
+
+</apex:component>

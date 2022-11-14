@@ -1,0 +1,271 @@
+<apex:page showHeader="true" sidebar="true" standardController="disco__Form__c" extensions="disco.Ctl_NewForm" applyBodyTag="false" docType="html-5.0" action="{!checkIfGoDirect}">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<apex:styleSheet value="{!URLFOR($Resource.disco__SLDS100, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+<apex:includeScript value="{!URLFOR($Resource.disco__jquery_3_6_0, 'jquery.min.js')}"/>
+<apex:includeScript value="{!$Resource.disco__customModalJS}"/>
+<apex:includeScript value="{!$Resource.disco__newformJS}"/>
+<head>
+	<meta http-equiv="x-ua-compatible" content="ie=edge"/>
+	<title>New {!thisForm.name}</title>
+	<!-- Lightning Design -->
+	<style>
+	/* override position from SLDS style */
+	.slds-notify_container.slds-notify_container-OR {
+		position:static;
+	}
+	.slds .slds-notify--alert-OR {
+		padding:0; /* removed padding so it will be invisible when there are no messages */
+	}
+
+	.slds-grid-OR {
+		display:block !important;
+		margin-top:20px; /* not an override */
+	}
+
+	.slds-col--padded-OR {
+		display:inline-block !important;
+		width:33%; /* 33.33 (repeating of course) wraps for some reason */
+		vertical-align: top; /* not an actual override */
+		padding-bottom: 40px;  /* not an actual override */
+	}
+	/* Styling for the CRUD/FLS error */
+	.page-error-cont {
+		text-align: center;
+		width: 400px;
+		max-width:90%;
+		margin: 40px auto;
+		padding: 20px;
+		background-color: #353f54;
+		color: #fff;
+		border-radius: 10px;
+	}
+
+	.page-error-cont button {
+		color: #353f54;
+		margin-top: 10px;
+	}
+	.page-error-cont button:hover {
+		background-color: #F4F6F9;
+	}
+	.new-record-container {
+		display: inline-block;
+	}
+	.sf1-small .new-record-text-wrapper {
+		display: table;
+	}
+	.sf1-small .new-record-container {
+		display: inherit;
+	}
+
+	.error-text {
+		color:#c23934;
+	}
+	#goToSpinner {
+		width:100%;
+		height:100%;
+		position:fixed;
+		top:0;
+		left:0;
+		background-color:rgba(255,255,255,.8);
+	}
+	.OR-spinner {
+		position:fixed;
+		top:100px;
+		left:170px;
+	}
+	.errorMsg {
+		width: 200px;
+	}
+
+	@media screen and (min-width: 480px) {
+		/* margin for when lookup mag. glass is removed */
+		.new-record-text-wrapper.margin-left {
+			margin-left: 23.5px;
+		}
+	}
+	</style>
+	<script>
+	var sfEnv = {};
+	sfEnv.namespace = '{!JSENCODE(namespace)}';
+	sfEnv.templateID = '{!JSENCODE(templateID)}';
+	sfEnv.sfTheme = '{!JSENCODE(userTheme)}';
+	sfEnv.isLEX = sfEnv.sfTheme === 'Theme4d' ? true : false;
+	sfEnv.isSF1 = sfEnv.sfTheme === 'Theme4t' ? true : false;
+
+	var relsAllowingInserts = '{!JSENCODE(thisTemplate.rels_allowing_inserts__c)}';
+	var allURLParameters = JSON.parse('{!JSENCODE(allURLParamsJSON)}');
+	var isWizard = false;
+
+	/* returns to form template */
+	function returnToTemplate() {
+		$('#saveSpinner').removeClass('slds-hide');
+
+		if (sfEnv.isLEX || sfEnv.isSF1) {
+			sforce.one.navigateToURL('/apex/'+sfEnv.namespace+'SF1FormsList');
+		}
+		else {
+			window.location.href = '/apex/'+sfEnv.namespace+'SF1FormsList';
+		}
+	}
+	function nav(formId) {
+		// Display error message and return
+		if(!formId) {
+			$('#saveSpinner').addClass('slds-hide');
+			console.log(`nav error: ${formId} The form could not be created.`); // eslint-disable-line no-console
+			window.openCustomModal({bodyStringArray:['The form could not be created.']});
+			return;
+		}
+
+		// Start navigation
+		if (sfEnv.isSF1 || sfEnv.isLEX) {
+            sforce.one.navigateToURL('/apex/'+sfEnv.namespace+'CompleteForm?id='+formId);     
+            $('#saveSpinner').addClass('slds-hide');
+        } else {
+            window.location.href = '/apex/'+sfEnv.namespace+'CompleteForm?id='+formId;
+            $('#saveSpinner').addClass('slds-hide');
+        } 
+	}
+
+	$(document).ready(function(){
+		$('.requiredInput input').prop('required',true);
+		$('.js-start-spinner').on('click', function(){
+			$('#saveSpinner').removeClass('slds-hide');
+		});
+		if(sfEnv.isSF1) {
+			$('.slds').addClass('sf1');
+		}
+		if(sfEnv.isSF1 && $(window).width() < 500) {
+			$('.slds').addClass('sf1-small');
+		}
+	});
+	</script>
+</head>
+<body>
+<div id="custom-modal-container"/>
+<apex:form >
+	<apex:actionFunction name="saveFormGotoCompleteAF" action="{!goToCompleteFormFromPage2}"/>
+	<apex:actionFunction name="saveFormGotoLWCAF" action="{!goToLWCFromPage2}"/>
+
+	<apex:outputPanel id="refreshJSVars">
+		<script>relsAllowingInserts = '{!JSENCODE(thisTemplate.disco__Rels_Allowing_Inserts__c)}';</script>
+	</apex:outputPanel>
+
+	<apex:outputPanel layout="block" styleClass="slds ">
+
+		<!-- CRUD/FLS errors (can't be a directive or VF component since it has to load the apex:pagemessages for content) -->
+		<apex:outputPanel layout="none"  id="messagepanel">
+			<apex:outputPanel rendered="{!NOT(HasCRUDFLS)}">
+			<div class="page-error-cont">
+				<div>
+					<apex:messages />
+				</div>
+				<button onclick="returnToTemplate();" type="button" class="btn cancelBtn">Cancel</button>
+			</div>
+		</apex:outputPanel>
+		</apex:outputPanel>
+
+		<apex:outputPanel layout="none" rendered="{!hasCRUDFLS}">
+			<!-- display handled errors -->
+			<div class="slds-notify_container slds-notify_container-OR">
+				<div class="slds-notify slds-notify--alert slds-notify--alert-OR slds-theme--error slds-theme--alert-texture" role="alert">
+					<span class="slds-assistive-text">Info</span>
+					<h2 id="allErrors">
+						<apex:messages />
+					</h2>
+				</div>
+			</div>
+
+			<apex:outputPanel layout="none" rendered="{!NOT(yourekaDisabled)}" id="pageHeader">
+				<!-- PAGE HEADER -->
+				<div class="slds-page-header" role="banner">
+					<div class="slds-grid">
+						<div class="slds-col">
+							<div class="slds-media">
+								<apex:outputPanel styleClass="slds-media__body" layout="block" id="headingText">
+									<h1 class="slds-text-heading--medium">
+										New Form 
+										<apex:outputPanel rendered="{!thisTemplate.name!=null}" layout="none">
+											for&nbsp;<apex:outputText value="{!thisTemplate.name}"/>
+										</apex:outputPanel>
+									</h1>
+								</apex:outputPanel>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- / PAGE HEADER -->
+				<apex:outputPanel id="mainContent">
+					<div class="slds-grid slds-grid-OR">
+									
+					<div class="slds-card">
+						<div class="slds-card__header slds-grid">
+							<h2 class="slds-text-heading--small">Select a Form Template</h2>
+						</div>
+						<div class="slds-card__body">
+							<div class="slds-col--padded slds-col--padded-OR">
+								<dl>
+									<dt>
+										<p class="slds-text-heading--label ">
+											<abbr class="slds-required" title="required">*</abbr>
+											<apex:outputText value="Form Template"/>
+										</p>
+									</dt>
+									<dd>
+										<apex:actionregion >
+										<apex:inputField value="{!thisForm.disco__Form_Template__c}">
+											<apex:actionSupport event="onchange" rerender="mainContent,headingText,messagepanel" action="{!buildFieldList}"/>
+										</apex:inputField>
+										</apex:actionregion>
+										
+									</dd>
+								</dl>
+							</div>
+						</div>
+					</div>
+					
+					<apex:outputPanel layout="block" styleClass="slds-card" rendered="{!NOT(requiredFormFieldsList.empty)}">
+						<div class="slds-card__header slds-grid">
+							<h2 class="slds-text-heading--small">Template Required Fields</h2>
+						</div>
+						<div class="slds-card__body">
+							<div class="slds-grid slds-wrap">
+								<apex:repeat value="{!requiredFormFields}" var="fieldName">
+									<div class="slds-col--padded slds-size--1-of-1 slds-medium-size--1-of-2">
+										<dl>
+											<dt>
+												<p class="slds-text-heading--label ">
+													<abbr class="slds-required" title="required">*</abbr>
+													<apex:outputText value="{!$ObjectType.disco__Form__c.fields[fieldName].Label}"/>
+												</p>
+											</dt>
+											<dd>
+												<apex:inputField html-data-required="true" html-data-relname="{!fieldName}" value="{!thisForm[fieldName]}"/>
+											</dd>
+										</dl>
+									</div>
+								</apex:repeat>
+							</div>
+						</div>
+					</apex:outputPanel>
+					</div>
+					<div class="slds-col slds-no-flex slds-align-middle slds-m-vertical--large">
+						<div class="slds-button-group" role="group">
+							<button type="button" class="slds-button slds-button--neutral" onclick="returnToTemplate();">
+								Cancel
+							</button>
+							<button type="button" class="slds-button slds-button--brand" onClick="validateAndSubmit('complete');">Save</button>
+						</div>
+					</div>
+					<div id="goToSpinner" class="slds-hide">
+						<div class="slds-spinner--large OR-spinner slds-m-top-x-large">
+					      <img src="{!JSENCODE($Resource.SLDS100) + '/assets/images/spinners/slds_spinner_brand.gif'}" alt="Saving..." />
+					    </div>
+				    </div>
+				</apex:outputPanel>
+			</apex:outputPanel>
+		</apex:outputPanel>
+	</apex:outputPanel>
+</apex:form>
+</body>
+</html>
+</apex:page>

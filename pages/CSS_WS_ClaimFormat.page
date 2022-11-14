@@ -1,0 +1,1506 @@
+<apex:page id="ClaimFormPage" action="{!getRouter}" standardController="CSS_WS_Warranty__c" Extensions="CSS_WS_ControllerClaim,CSS_WS_HistoricalFailuresController,CSS_WS_DynamicFailureController,CSS_WS_DynamicMultiESNController,CSS_WS_Narrative,CSS_WS_SRTGridController,CSS_WS_PartsGridController,CSS_WS_DynamicOtherClaimablesController">
+    <style type="text/css">
+        .customPopup {
+            background-color: white;
+            border-style: solid;
+            border-width: 2px;
+            left: 37%;
+            padding: 10px;
+            position: absolute;
+            z-index: 9999;
+            width: 325px;
+            top: 40%;
+       }     
+        .lockBckgrnd {
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 9998;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            float: left;
+            top: 0;
+            left: 0;
+        }        
+        .closeButton {
+            float: right;
+        }
+    </style>
+    <apex:pageMessages id="showmsg"/>
+    <apex:form id="formClaim" rendered="{!CSS_WS_Warranty__c.CSS_WS_Claim_Status__c != 'Pending DR Payment to DL'}">
+        <apex:tabPanel id="theTabPanel" switchType="ajax" value="{!TabInFocus}">
+            
+            <!-- TAB for HEADER -->
+            <apex:tab id="headerTab" label="{!$Label.CSS_WS_Header_Information}" name="HeaderTab" disabled="{!disableHeader}">            
+                <apex:pageBlock title="{!$Label.CSS_WS_Header_Information}" id="HeaderInfo" rendered="{!showHeader}">    
+                    
+                    <apex:pageBlockSection id="dealerDR" columns="2">
+                        <apex:selectList id="serviceProviderDR" value="{!CSS_WS_Warranty__c.CSS_WS_Service_Provider_DR__c }" size="1" style="width: 350px !important;" onChange="rerenderDealers(this.value)" disabled="{!distributorsDisable}">
+                            <apex:selectOptions value="{!distributorsSelectList}"/>
+                        </apex:selectList>
+                        <apex:selectList id="serviceProviderDealer" value="{!CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c }" size="1" style="width: 350px !important;" disabled="{!dealersDisable}">
+                            <apex:selectOptions value="{!dealersSelectList}"/>
+                            <apex:actionSupport event="onchange" rerender="policyFlag, policyFlagSection"/>
+                        </apex:selectList>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection id="ESNSection" columns="2" >  
+                        <apex:inputField id="engineSerialNumber"  value="{!CSS_WS_Warranty__c.CSS_WS_Engine_Serial_Number__c}">
+                            <apex:actionSupport rerender="claimTypeSection, accountCodeSection, customerSection, warrantyTypeSection, warrantySubtypeSection, policyFlagSection, engineSerialNumber, claimTypeDisabled, warrantySubtypeDisabled, warrantyTypeDisabled, policyFlagDisabled, engineSerialNumberDisabled, failureMeasure, failureMeasureDisabled, engineApplication, engineApplicationDisabled, serviceModel, serviceModelDisabled, warrantyStartDateSection, warrantyStartDateSectionDisabled, manufacturer, manufacturerDisabled, modelSeries, modelSeriesDisabled, showmsg, inputHiddenFields" event="onchange" action="{!getESN}" status="ESNWebServiceCall"/>
+                            <apex:actionstatus id="ESNWebServiceCall"> 
+                                <apex:facet name="start">
+                                    <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-left: 2px !important;"/>                     
+                                </apex:facet>
+                            </apex:actionstatus>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10"  height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                        <apex:inputField id="multiESN" value="{!CSS_WS_Warranty__c.CSS_WS_Multi_ESN__c}" rendered="{!CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c != 'Policy' || (CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy' && (CSS_WS_Warranty__c.CSS_WS_Account_Code__c == 'P90' || CSS_WS_Warranty__c.CSS_WS_Account_Code__c == 'P89'))}">
+                            <apex:actionSupport event="onchange" rerender="campaignsTrpsSection, campaignsTrpsSectionDisabled"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>  
+                    
+                    <apex:pageBlockSection id="policyFlagSection" columns="2">
+                        <apex:selectList id="policyFlag" value="{!CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c}" size="1" required="true" style="width: 173px !important;" onChange="rerenderAccountCodes(this.value)">
+                            <apex:selectOptions value="{!PolicyOptionsByDR}"/>
+                        </apex:selectList>
+                        <apex:inputField id="belongTo" value="{!CSS_WS_Warranty__c.CSS_WS_Belongs_To__c }" style="width: 90px !important;" rendered="{!isPaccar && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Warranty'}"/>
+                        <apex:inputText id="belongTo2" value="{!CSS_WS_Warranty__c.CSS_WS_Belongs_To__c }" rendered="{!!isPaccar || (isPaccar && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c != 'Warranty')}" disabled="true"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2" id="warrantyTypeSection">
+                        <apex:inputField id="warrantyType" value="{!CSS_WS_Warranty__c.CSS_WS_Warranty_Type__c}" style="width: 90px !important;" rendered="{!CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c != 'Policy'}">
+                            <apex:actionSupport event="onchange" rerender="claimTypeSection, claimTypeSectionDisabled, warrantySubtypeSection, warrantySubtypeSectionDisabled, campaignsTrpsSection, campaignsTrpsSectionDisabled, warrantyStartDateSection, showmsg" action="{!clearSubTypeFailure}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 4px !important;"/>  
+                        </apex:inputField>
+                        <apex:outputField id="warrantyType2" value="{!CSS_WS_Warranty__c.CSS_WS_Warranty_Type__c}" rendered="{!CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy'}"/>
+                        <apex:inputField id="authorizationNumber" value="{!CSS_WS_Warranty__c.CSS_Authorization_Number__c}" rendered="{!CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c != 'Policy'}">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;" rendered="{!CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy WW'}"/> 
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2" id="warrantySubtypeSection">
+                        <apex:inputField id="warrantySubtype" value="{!CSS_WS_Warranty__c.CSS_WS_Warranty_Subtype__c }" style="width: 90px !important;" rendered="{!(CSS_WS_Warranty__c.CSS_WS_Warranty_Type__c == 'Motor' || CSS_WS_Warranty__c.CSS_WS_Warranty_Type__c == 'Engine') && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c != 'Policy'}">
+                            <apex:actionSupport event="onchange" rerender="showmsg, warrantyStartDateSection, warrantySubtypeSection, claimTypeSection, customerSection" action="{!warrantyChanges}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                        <apex:outputField id="warrantySubtype2" value="{!CSS_WS_Warranty__c.CSS_WS_Warranty_Subtype__c}" rendered="{!CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy'}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2" id="claimTypeSection">
+                        <apex:inputField id="claimType" value="{!CSS_WS_Warranty__c.CSS_WS_Claim_Type__c}" rendered="{!CSS_WS_Warranty__c.CSS_WS_Warranty_Type__c == 'Part' || CSS_WS_Warranty__c.CSS_WS_Warranty_Type__c == 'Parte'}"/><!--Rule SF6-->
+                    </apex:pageBlockSection><hr style="background-color: #088A4B; height: 1px;"/> 
+                    
+                    <apex:pageBlockSection columns="2" id="accountCodeSection">
+                        <apex:selectList id="accountCode" value="{!CSS_WS_Warranty__c.CSS_WS_Account_Code__c }" size="1" style="width: 173px !important;" rendered="{!CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy WW' || CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy'}"><!--Rule SF-P02-->
+                            <apex:actionSupport event="onchange" rerender="campaignsTrpsSection, showmsg, campaignsTrpsSectionDisabled, ESNSection, accountCodeSection" action="{!sendApprovalCode}"/> 
+                            <apex:selectOptions value="{!accountCodesSelectList}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin-left: 178px !important; margin-top: 5px;"/> 
+                        </apex:selectList> 
+                        <apex:outputField id="yearsOnService" value="{!CSS_WS_Warranty__c.CSS_WS_Years_On_Service__c }" style="width: 90px !important;" rendered="{!CSS_WS_Warranty__c.CSS_WS_Account_Code__c = 'P90'}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2" id="payCodeSection">                                       
+                        <apex:selectList id="payCode" value="{!CSS_WS_Warranty__c.CSS_WS_Pay_Code__c }" size="1" style="width: 173px !important;" rendered="{!(CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy WW' || CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy WW')}"> 
+                            <apex:selectOptions value="{!payCodeList}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin-left: 178px !important; margin-top: 5px;"/> 
+                        </apex:selectList>
+                    </apex:pageBlockSection> 
+                    
+                    <apex:pageBlockSection columns="2" id="warrantyStartDateSection"> <!-- Engine Area -->                        
+                        <apex:inputField id="warrantyStartDate"  value="{!CSS_WS_Warranty__c.CSS_WS_Warranty_Start_Date__c}" rendered="{!!warrantyStartDateFlag}" style="width: 169px !important;">
+                            <apex:actionSupport event="onchange" rerender="failureDateTime, showmsg, campaignsTrpsSection, accountCodeSection" action="{!R04127_SF32}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                        <apex:outputField id="warrantyStartDate2" value="{!CSS_WS_Warranty__c.CSS_WS_Warranty_Start_Date__c}" label="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Warranty_Start_Date__c.Label}" rendered="{!warrantyStartDateFlag}"/>
+                        <apex:inputField id="failureDateTime" value="{!CSS_WS_Warranty__c.CSS_WS_Failure_Date_Time__c}">
+                            <apex:actionSupport rerender="failureDateTime, showmsg, campaignsTrpsSection, yearsOnService, endRepairDateTime, repairDays" event="onchange" action="{!R040611_SF16}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection id="manufacturerSection" columns="2">
+                        <apex:selectList id="manufacturer" value="{!CSS_WS_Warranty__c.CSS_WS_Manufacturer__c }" style="width: 173px !important;" size="1"><!--- disabled="{!(editManufacturerFlag == 2)}">--->
+                            <apex:selectOptions value="{!manufacturerSelectList}"/>
+                            <apex:actionSupport event="onchange" rerender="modelSeries, manufacturer, showmsg"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin-left: 178px !important; margin-top: 5px;"/>
+                        </apex:selectList>                          
+                        <apex:inputField id="endRepairDateTime" value="{!CSS_WS_Warranty__c.CSS_WS_End_Repair_Date_Time__c }">
+                            <apex:actionSupport rerender="showmsg, manufacturerSectionDisabled, endRepairDateTime, repairDays" event="onchange" action="{!alertCautionEnd}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 4px !important;"/> 
+                        </apex:inputField>
+                    </apex:pageBlockSection>  
+                    
+                    <apex:pageBlockSection id="repairDaysSection" columns="2">
+                        <apex:selectList id="modelSeries" value="{!CSS_WS_Warranty__c.CSS_WS_Model_Series__c}" style="width: 90px !important; " size="1"><!--- disabled="{!editModelSeriesFlag}">--->
+                            <apex:selectOptions value="{!modelSeriesSelectList}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin-left: 95px !important; margin-top: 5px;"/>
+                        </apex:selectList>  
+                        <apex:outputField id="repairDays" value="{!CSS_WS_Warranty__c.CSS_WS_Repair_Days__c }" style="width: 90px !important;"/>
+                        <!---<apex:inputText id="repairDays" value="{!String.ValueOf(CSS_WS_Warranty__c.CSS_WS_Repair_Days__c)}" style="width: 90px !important;" disabled="true"/>--->
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection id="modelSeriesSection" columns="2">
+                        <apex:outputField id="customerName" value="{!CSS_WS_Warranty__c.CSS_WS_Customer_Name__c}" rendered="{!CSS_WS_Warranty__c.CSS_WS_Customer_Name__c == 'BIS'}">
+                            <!--<apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>-->
+                        </apex:outputField>
+                        <apex:inputField id="customerNameInternal" value="{!CSS_WS_Warranty__c.CSS_WS_Customer_Name_Internal__c }" rendered="{!CSS_WS_Warranty__c.CSS_WS_Customer_Name__c != 'BIS'}">
+                            <apex:actionSupport event="onchange" rerender="campaignsTrpsSection, showmsg, campaignsTrpsSectionDisabled"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin-top: 5px !important;"/>
+                        </apex:inputField>                        
+                        <apex:inputField id="failurePointQuantity" value="{!CSS_WS_Warranty__c.CSS_WS_Failure_Point_Quantity__c }">
+                            <apex:actionSupport event="onchange" rerender="failurePointQuantity, showmsg, failurePointQuantityDisabled" action="{!R04067_SF17}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 4px !important;"/>
+                        </apex:inputField>  
+                    </apex:pageBlockSection>    
+                    
+                    <apex:pageBlockSection id="customerSection" columns="2">  
+                        <apex:selectList id="engineApplication" size="1" style="width: 173px !important;" label="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Engine_Application__c.Label}" value="{!CSS_WS_Warranty__c.CSS_WS_Engine_Application_Code__c }"><!-- disabled="{!editEngineApplicationFlag}">-->
+                            <apex:actionSupport event="onchange" rerender="failureMeasure, failureMeasureDisabled, showmsg" action="{!reloadEngineApplication}" />
+                            <apex:selectOptions value="{!engineApplications}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important; margin-left: 178px !important;"/>
+                        </apex:selectList>
+                        <apex:inputText id="failureMeasure" value="{!CSS_WS_Warranty__c.CSS_WS_Failure_Measure__c }" style="width: 90px !important;" disabled="true"/>
+                    </apex:pageBlockSection>   
+                    
+                    <apex:pageBlockSection columns="2" id="campaignsTrpsSection">  
+                        <apex:inputText id="serviceModel" value="{!CSS_WS_Warranty__c.CSS_WS_Service_Model__c }" disabled="true" style="width: 169px !important;">
+                            <apex:actionSupport event="onchange" rerender="serviceModelDisabled, showmsg" action="{!R04328_SF48}"/>
+                        </apex:inputText>
+                        <apex:selectList id="campaignsTrps" value="{!CSS_WS_Warranty__c.CSS_WS_Campaigns_TRPs__c}" style="width: 173px !important;" size="1" rendered="{!CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Warranty' && CSS_WS_Warranty__c.CSS_WS_Warranty_Type__c == 'Motor'}"> 
+                            <apex:selectOptions value="{!Campaings}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin-left: 178px !important; margin-top: 5px;" rendered="{!CSS_WS_Warranty__c.CSS_WS_Multi_ESN__c == True}"/>
+                        </apex:selectList>
+                        <apex:selectList id="policyCampaign" value="{!CSS_WS_Warranty__c.CSS_WS_Policy_Campaign__c }" style="width: 173px !important;" size="1" rendered="{!CSS_WS_Warranty__c.CSS_WS_Account_Code__c == 'P90' && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy'}">
+                            <apex:selectOptions value="{!policyCampaignList}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSection>   
+                    
+                    <apex:pageBlockSection columns="2">
+                        <apex:selectList id="complaints1" value="{!CSS_WS_Warranty__c.CSS_WS_Complaints1__c }" style="width: 173px !important;" size="1" onChange="rerenderComplaints1(this.value)">
+                            <apex:selectOptions value="{!complaintsSelectList}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin-left: 178px !important; margin-top: 5px;"/>
+                            <apex:actionstatus id="clearComplaint1"> 
+                                <apex:facet name="start" >
+                                    <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-left: 175px !important;"/>                     
+                                </apex:facet>
+                            </apex:actionstatus>
+                        </apex:selectList>
+                        <apex:inputField id="VIN" value="{!CSS_WS_Warranty__c.CSS_WS_VIN__c }"/>
+                    </apex:pageBlockSection>   
+                    
+                    <apex:pageBlockSection columns="2">  
+                        <apex:selectList id="complaints2" value="{!CSS_WS_Warranty__c.CSS_WS_Complaints2__c}" style="width: 173px !important;" size="1" onChange="rerenderComplaints2(this.value)">
+                            <apex:selectOptions value="{!complaintsRest1}"/>
+                            <apex:actionstatus id="clearComplaint2"> 
+                                <apex:facet name="start" >
+                                    <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-left: 175px !important;"/>                     
+                                </apex:facet>
+                            </apex:actionstatus>
+                        </apex:selectList>
+                        <apex:inputField id="repairWorkOrderNumber" value="{!CSS_WS_Warranty__c.CSS_WS_Repair_Work_Order_Number__c }">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 4px !important;"/> 
+                        </apex:inputField>
+                    </apex:pageBlockSection>   
+                    
+                    <apex:pageBlockSection columns="2">  
+                        <apex:selectList id="complaints3" value="{!CSS_WS_Warranty__c.CSS_WS_Complaints3__c}" style="width: 173px !important;" size="1">
+                            <apex:selectOptions value="{!complaintsRest2}"/>
+                        </apex:selectList>
+                        <apex:inputField id="TSRNumber" value="{!CSS_WS_Warranty__c.CSS_WS_TSR_Number__c }"/>
+                    </apex:pageBlockSection>   
+                    
+                    <apex:pageBlockSection columns="2">   
+                        <apex:inputField id="DSID" value="{!CSS_WS_Warranty__c.CSS_WS_DSID__c}"/>
+                    </apex:pageBlockSection>    <hr style="background-color: #088A4B; height: 1px;"/>
+                    
+                    <apex:pageBlockSection columns="2">   
+                        <apex:inputField id="missionDisablingSeverityCode" value="{!CSS_WS_Warranty__c.CSS_WS_Mission_Disabling_Severity_Code__c }" style="width: 90px !important;"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1" id="catastrophicSection">
+                        <apex:inputField id="catastrophic" value="{!CSS_WS_Warranty__c.CSS_WS_Catastrophic__c }" style="width: 90px !important;">
+                            <apex:actionSupport event="onchange" rerender="catastrophicSection, catastrophicSectionDisabled, replacementPartSection, repairDescriptionSection">
+                                <apex:param value="" assignTo="{!CSS_WS_Warranty__c.CSS_WS_Replacement_Part__c}"/>
+                            </apex:actionSupport>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+
+                    <apex:pageBlockSection columns="2" id="replacementPartSection">   
+                        <apex:inputField id="replacementPart" value="{!CSS_WS_Warranty__c.CSS_WS_Replacement_Part__c }" style="width: 173px !important;" rendered="{!CSS_WS_Warranty__c.CSS_WS_Catastrophic__c == 'Si' || CSS_WS_Warranty__c.CSS_WS_Catastrophic__c == 'Yes'}">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+
+                    <apex:pageBlockSection columns="2" id="repairDescriptionSection">   
+                        <apex:inputTextarea id="repairDescription" value="{! CSS_WS_Warranty__c.CSS_WS_Repair_Description__c }" style="width: 300px !important; height:150px" html-maxlength="3000" rendered="{!CSS_WS_Warranty__c.CSS_WS_Catastrophic__c == 'Si' || CSS_WS_Warranty__c.CSS_WS_Catastrophic__c == 'Yes'}">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin-left: 310px !important; margin-top: 5px;" rendered="{!CSS_WS_Warranty__c.CSS_WS_Catastrophic__c == 'Si' || CSS_WS_Warranty__c.CSS_WS_Catastrophic__c == 'Yes'}"/>
+                        </apex:inputTextarea>
+                    </apex:pageBlockSection>     
+                    
+                    <apex:pageBlockSection columns="1" id="inputHiddenFields" rendered="false">
+                        <apex:inputHidden id="laborRate" value="{!CSS_WS_Warranty__c.CSS_WS_Labor_Rate__c}"/>
+                        <apex:inputHidden id="deductibleAmount" value="{!CSS_WS_Warranty__c.CSS_WS_Deductible_Amount__c }"/>
+                        <apex:inputHidden id="inShoplaborRate" value="{!CSS_WS_Warranty__c.CSS_WS_In_shop_Labor_Rate__c}"/>
+                        <apex:inputHidden id="engineFamilyCode" value="{!CSS_WS_Warranty__c.CSS_WS_Engine_Family_Code__c}"/>
+                        <apex:inputHidden id="accessCode" value="{!CSS_WS_Warranty__c.CSS_WS_Access_Code__c}"/>
+                        <apex:inputHidden id="penaltyPercentage" value="{!CSS_WS_Warranty__c.CSS_WS_SRTPenaltyPercentage__c}"/>
+                        <apex:inputHidden id="loginvariable" value="{!CSS_WS_Warranty__c.CSS_WS_Login_Variable__c}"/>
+                        <apex:inputHidden id="productApplicationCode" value="{!CSS_WS_Warranty__c.CSS_WS_Product_Application_Code__c}"/>
+                        <apex:inputHidden id="gsqFailureFlag" value="{!CSS_WS_Warranty__c.CSS_WS_GSQ_Failure_Flag__c}"/>
+                        <apex:inputHidden id="gsqSRTFlag" value="{!CSS_WS_Warranty__c.CSS_WS_GSQ_SRT_Flag__c}"/>
+                        <apex:inputHidden id="equipmentCode" value="{!CSS_WS_Warranty__c.CSS_WS_Equipment_Code__c}"/>
+                    </apex:pageBlockSection> 
+                    
+                    <!----------------------------------- Area Functions Header ----------------------------------->
+                    <apex:actionFunction name="rerenderComplaints1" rerender="complaints2, complaints3, complaints2Disabled, complaints3Disabled" status="clearComplaint1">
+                        <apex:param name="firstParam" assignTo="{!complaints1}" value=""/>
+                    </apex:actionFunction>
+                    <apex:actionFunction name="rerenderComplaints2" rerender="complaints1, complaints3, complaints1Disabled, complaints3Disabled" status="clearComplaint2">
+                        <apex:param name="firstParam" assignTo="{!complaints2}" value=""/>
+                    </apex:actionFunction>
+                    <!--<apex:actionFunction name="rerenderModel" rerender="modelSeries, modelSeriesDisabled" >
+                        <apex:param name="firstParam" assignTo="{!manufacturer}" value=""/>
+                    </apex:actionFunction>-->
+                    <apex:actionFunction name="rerenderDealers" rerender="dealerDR, policyFlag, campaignsTrpsSection, campaignsTrpsSectionDisabled, serviceProviderDealer, policyFlagSection">
+                        <apex:param name="dealersParam" assignTo="{!serviceProviderDR}" value="" />
+                    </apex:actionFunction> 
+                    <apex:actionFunction name="rerenderAccountCodes" rerender="accountCodeSection, customerSection, warrantyStartDateSection, payCodeSection, payCodeSectionDisabled, warrantyTypeSection, claimTypeSection, warrantySubtypeSection, warrantyTypeSectionDisabled, warrantySubtypeSectionDisabled, campaignsTrpsSection, campaignsTrpsSectionDisabled, ESNSectionDisabled, ESNSection, policyFlagSection" action="{!changePolicyField}">
+                        <apex:param name="accountParam" assignTo="{!policyFlag}" value=""/>
+                    </apex:actionFunction>
+                    <apex:actionFunction action="{!validateHeader}" name="validateHeader_JS" rerender="loginvariable,laborRate, deductibleAmount, inShoplaborRate, engineFamilyCode, accessCode, travelTab, HeaderInfoDisabled" oncomplete="saveHeader_JS();"  status="nextHeader"/>
+                    <apex:actionFunction action="{!saveHeader}" name="saveHeader_JS"/>
+                    <!----------------------------------- Area Functions Header ----------------------------------->
+                    
+                    <apex:pageBlockButtons >
+                        <apex:commandButton onclick="validateHeader_JS();return false;" value="{!$Label.CSS_WS_Button_Next}"/>
+                        <apex:commandButton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!!showHeader}"/>
+                        <apex:actionstatus id="nextHeader"> 
+                            <apex:facet name="start" >
+                                <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                       
+                            </apex:facet>
+                        </apex:actionstatus>
+                    </apex:pageBlockButtons>  
+                    
+                </apex:pageBlock>  
+                <apex:pageBlock title="{!$Label.CSS_WS_Header_Information}" id="HeaderInfoDisabled" rendered="{!!showHeader}">
+                    
+                    <apex:pageBlockSection columns="2" >
+                        <apex:selectList id="serviceProviderDRDisabled" disabled="true" value="{!CSS_WS_Warranty__c.CSS_WS_Service_Provider_DR__c }" size="1" style="width: 350px !important;">
+                            <apex:selectOptions value="{!distributorsSelectList}"/>
+                        </apex:selectList>
+                        <apex:selectList id="serviceProviderDealerDisabled" disabled="true" value="{!CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c }" size="1" style="width: 350px !important;">
+                            <apex:selectOptions value="{!dealersSelectList}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2" id="ESNSectionDisabled">  
+                        <apex:outputField id="engineSerialNumberDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Engine_Serial_Number__c}"/>                        
+                        <apex:outputField id="multiESNDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Multi_ESN__c}" rendered="{!CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c != 'Policy' || (CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy' && CSS_WS_Warranty__c.CSS_WS_Account_Code__c == 'P90')}"/>
+                    </apex:pageBlockSection>  
+                    
+                    <apex:pageBlockSection columns="2">
+                        <apex:outputField id="policyFlagDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c}"/>
+                        <apex:outputField id="belongToDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Belongs_To__c }"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2" id="warrantyTypeSectionDisabled">
+                        <apex:outputField id="warrantyTypeDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Warranty_Type__c}" rendered="{!CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c != 'Policy'}"/>                        
+                        <apex:outputField id="authorizationNumberDisabled" value="{!CSS_WS_Warranty__c.CSS_Authorization_Number__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2" id="warrantySubtypeSectionDisabled">
+                        <apex:outputField id="warrantySubtypeDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Warranty_Subtype__c }" rendered="{!(CSS_WS_Warranty__c.CSS_WS_Warranty_Type__c == 'Motor' || CSS_WS_Warranty__c.CSS_WS_Warranty_Type__c == 'Engine') && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c != 'Policy'}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2" id="claimTypeSectionDisabled">
+                        <apex:outputField id="claimTypeDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Claim_Type__c}" rendered="{!CSS_WS_Warranty__c.CSS_WS_Warranty_Type__c == 'Part' || CSS_WS_Warranty__c.CSS_WS_Warranty_Type__c == 'Parte'}"/>
+                    </apex:pageBlockSection><hr style="background-color: #088A4B; height: 1px;"/> 
+                    
+                    <apex:pageBlockSection columns="2">
+                        <apex:outputField id="accountCodeDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Account_Code__c }" rendered="{!CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy' || CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy WW'}"/>
+                        <apex:outputField id="yearsOnServiceDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Years_On_Service__c }" style="width: 90px !important;" rendered="{!CSS_WS_Warranty__c.CSS_WS_Account_Code__c = 'P90'}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2" id="payCodeSectionDisabled">                                       
+                        <apex:selectList id="payCodeDisabled" disabled="true" value="{!CSS_WS_Warranty__c.CSS_WS_Pay_Code__c }" size="1" style="width: 200px !important;" rendered="{!CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy WW' && (CSS_WS_Warranty__c.CSS_WS_Service_Provider_DR__c == '54734' || CSS_WS_Warranty__c.CSS_WS_Service_Provider_DR__c == '56153' || CSS_WS_Warranty__c.CSS_WS_Service_Provider_DR__c == '55910' || CSS_WS_Warranty__c.CSS_WS_Service_Provider_DR__c == '04734' || CSS_WS_Warranty__c.CSS_WS_Service_Provider_DR__c == '55108')}">
+                            <apex:selectOptions value="{!payCodeList}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSection> 
+                    
+                    <apex:pageBlockSection columns="2" id="warrantyStartDateSectionDisabled">
+                        <apex:outputField id="warrantyStartDateDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Warranty_Start_Date__c}"/>
+                        <apex:outputField id="failureDateTimeDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Failure_Date_Time__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2" id="manufacturerSectionDisabled">
+                        <apex:selectList id="manufacturerDisabled" disabled="true" value="{!CSS_WS_Warranty__c.CSS_WS_Manufacturer__c }" style="width: 173px !important;" size="1" >
+                            <apex:selectOptions value="{!manufacturerSelectList}"/>
+                        </apex:selectList>   
+                        <apex:outputField id="endRepairDateTimeDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_End_Repair_Date_Time__c }"/>
+                    </apex:pageBlockSection>  
+                    
+                    <apex:pageBlockSection columns="2">
+                        <apex:selectList id="modelSeriesDisabled" disabled="true" value="{!CSS_WS_Warranty__c.CSS_WS_Model_Series__c}" style="width: 90px !important; " size="1">
+                            <apex:selectOptions value="{!modelSeriesSelectList}"/>
+                        </apex:selectList>  
+                        <apex:outputField id="failurePointQuantityDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Failure_Point_Quantity__c }"/>
+                    </apex:pageBlockSection>    
+                    
+                    <apex:pageBlockSection columns="2">  
+                        <apex:outputField id="customerNameDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Customer_Name__c}" rendered="{!CSS_WS_Warranty__c.CSS_WS_Customer_Name__c == 'BIS'}"/>
+                        <apex:outputField id="customerNameInternalDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Customer_Name_Internal__c }" rendered="{!CSS_WS_Warranty__c.CSS_WS_Customer_Name__c != 'BIS'}"/>
+                        <apex:outputField id="failureMeasureDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Failure_Measure__c }" style="width: 90px !important;"/>
+                    </apex:pageBlockSection>   
+                    
+                    <apex:pageBlockSection columns="2" id="campaignsTrpsSectionDisabled">  
+                        <apex:selectList id="engineApplicationDisabled" disabled="true" size="1" style="width: 173px !important;" label="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Engine_Application__c.Label}" value="{!CSS_WS_Warranty__c.CSS_WS_Engine_Application_Code__c }">
+                            <apex:selectOptions value="{!engineApplications}"/>
+                        </apex:selectList>
+                        <apex:outputField id="campaignsTrpsDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Campaigns_TRPs__c}" rendered="{!((CSS_WS_Warranty__c.CSS_WS_Warranty_Type__c == 'Motor' || CSS_WS_Warranty__c.CSS_WS_Warranty_Type__c == 'Engine') && (CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Warranty') && (CSS_WS_Warranty__c.CSS_WS_Warranty_Subtype__c == 'No BIS'))}"/>
+                        <apex:selectList id="policyCampaignDisabled" disabled="true" value="{!CSS_WS_Warranty__c.CSS_WS_Policy_Campaign__c }" style="width: 173px !important;" size="1" rendered="{!CSS_WS_Warranty__c.CSS_WS_Account_Code__c == 'P90' && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy'}">
+                            <apex:selectOptions value="{!policyCampaignList}"/>
+                        </apex:selectList>
+                    </apex:pageBlockSection>   
+                    
+                    <apex:pageBlockSection columns="2">
+                        <apex:outputField id="serviceModelDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Service_Model__c }"/>
+                        <apex:outputField id="VIN" value="{!CSS_WS_Warranty__c.CSS_WS_VIN__c }"/>
+                    </apex:pageBlockSection>   
+                    
+                    <apex:pageBlockSection columns="2">  
+                        <apex:selectList id="complaints1Disabled" disabled="true" value="{!CSS_WS_Warranty__c.CSS_WS_Complaints1__c }" style="width: 173px !important;" size="1">
+                            <apex:selectOptions value="{!complaintsSelectList}"/>
+                        </apex:selectList>
+                        <apex:outputField id="repairWorkOrderNumberDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Repair_Work_Order_Number__c }"/>                           
+                    </apex:pageBlockSection>   
+                    
+                    <apex:pageBlockSection columns="2">  
+                        <apex:selectList id="complaints2Disabled" disabled="true" value="{!CSS_WS_Warranty__c.CSS_WS_Complaints2__c}" style="width: 173px !important;" size="1">
+                            <apex:selectOptions value="{!complaintsRest1}"/>
+                        </apex:selectList>
+                        <apex:outputField id="TSRNumberDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_TSR_Number__c }"/>
+                    </apex:pageBlockSection>   
+                    
+                    <apex:pageBlockSection columns="2">   
+                        <apex:selectList id="complaints3Disabled" disabled="true" value="{!CSS_WS_Warranty__c.CSS_WS_Complaints3__c}" style="width: 173px !important;" size="1">
+                            <apex:selectOptions value="{!complaintsRest2}"/>
+                        </apex:selectList>
+                        <apex:outputField id="DSIDDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_DSID__c}"/>
+                    </apex:pageBlockSection><hr style="background-color: #088A4B; height: 1px;"/>
+                    
+                    <apex:pageBlockSection columns="2">   
+                        <apex:outputField id="missionDisablingSeverityCodeDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Mission_Disabling_Severity_Code__c }"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1" id="catastrophicSectionDisabled">
+                        <apex:outputField id="catastrophicDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Catastrophic__c }"/>
+                        <apex:outputField id="replacementPartDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Replacement_Part__c }" rendered="{!CSS_WS_Warranty__c.CSS_WS_Catastrophic__c == 'Si' || CSS_WS_Warranty__c.CSS_WS_Catastrophic__c == 'Yes'}"/>               
+                        <apex:outputField id="repairDescriptionDisabled" value="{!CSS_WS_Warranty__c.CSS_WS_Repair_Description__c}" rendered="{!CSS_WS_Warranty__c.CSS_WS_Catastrophic__c == 'Si' || CSS_WS_Warranty__c.CSS_WS_Catastrophic__c == 'Yes'}"/>
+                    </apex:pageBlockSection>     
+
+                    <apex:pageBlockButtons >
+                        <apex:commandButton action="{!saveHeaderDisabled}" value="{!$Label.CSS_WS_Button_Next}" status="nextHeader"/>
+                        <apex:commandButton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!!showHeader}"/>
+                        <!--<apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!!showHeader && enableCloneButton}"/>-->
+                        <apex:actionstatus id="nextHeader"> 
+                            <apex:facet name="start" >
+                                <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                       
+                            </apex:facet>
+                        </apex:actionstatus>
+                    </apex:pageBlockButtons>  
+                </apex:pageBlock>
+            </apex:tab>
+            
+            <!-- TAB for POLICY -->
+            <apex:tab id="policyTab" label="{!$Label.CSS_WS_Policy_Information}" name="PolicyTab" disabled="{!disablePolicy}" rendered="{!showPolicy}">
+                <apex:pageBlock title="{!$Label.CSS_WS_Policy_Information}" >
+                    
+                    <apex:pageBlockSection columns="2" id="PolicyTabInfo">
+                        <apex:inputField value="{! CSS_WS_Warranty__c.CSS_WS_Request_Justification__c }" style="width: 300px !important;">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;" rendered="{!CSS_WS_Warranty__c.CSS_WS_Account_Code__c == 'P101'}"/>
+                        </apex:inputField>
+                        <apex:outputField value="{!CSS_WS_Warranty__c.CSS_WS_Customer_Support_Engineer__c  }" rendered="{!CSS_WS_Warranty__c.CSS_WS_Account_Code__c != 'P101'}"/>
+                        <apex:inputField value="{! CSS_WS_Warranty__c.CSS_WS_Customer_Support_authorization_da__c}" rendered="{!CSS_WS_Warranty__c.CSS_WS_Account_Code__c != 'P101'}">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                            <apex:actionSupport event="onchange" rerender="PolicyTabInfo, showmsg" action="{!SF_P05}"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection id="DRToCharge" columns="2" rendered="{!CSS_WS_Warranty__c.CSS_WS_Account_Code__c == 'P101'}">
+                        <apex:selectList id="serviceProviderDRToCharge" value="{!CSS_WS_Warranty__c.CSS_WS_Service_Provider_DR_ToCharge__c }" size="1" style="width: 300px !important;" onChange="rerenderDealersToCharge(this.value)">
+                            <apex:selectOptions value="{!DRtoChargeSelectList}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin-left: 305px !important; margin-top: 5px;"/>
+                        </apex:selectList>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection id="DealerToCharge" columns="2" rendered="{!CSS_WS_Warranty__c.CSS_WS_Account_Code__c == 'P101'}">
+                        <apex:selectList id="serviceProviderDealerToCharge" value="{!CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer_ToCharge__c }" size="1" style="width: 300px !important;">
+                            <apex:selectOptions value="{!DealersToChargeSelectList}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin-left: 305px !important; margin-top: 5px;"/>
+                        </apex:selectList>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1" id="quotationAmountSection" rendered="{!CSS_WS_Warranty__c.CSS_WS_Account_Code__c != 'P101'}">
+                        <apex:inputField value="{! CSS_WS_Warranty__c.CSS_WS_Quotation_Total_Amount__c  }">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                            <apex:actionSupport event="onchange" rerender="quotationAmountSection, showmsg" action="{!SF_P08}"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <!--<apex:pageBlockSection columns="1" id="requestedAmountSection">
+                        <apex:inputField value="{! CSS_WS_Warranty__c.CSS_WS_Requested_Amount__c  }">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>                            
+                            <apex:actionSupport event="onchange" rerender="requestedAmountSection, showmsg" action="{!SF_P07}"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>-->
+                    
+                    <apex:pageBlockSection columns="1" id="authorizedAmountSection" rendered="{!CSS_WS_Warranty__c.CSS_WS_Account_Code__c != 'P101'}">
+                        <apex:inputField value="{! CSS_WS_Warranty__c.CSS_WS_Authorized_Amount__c }">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px !important;"/>
+                            <apex:actionSupport event="onchange" rerender="authorizedAmountSection, showmsg" action="{!SF_P08}"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:outputPanel onclick="refreshAttachmentPolicy()" rendered="{!CSS_WS_Warranty__c.CSS_WS_Account_Code__c != 'P101'}"> 
+                        <apex:pageBlockSection columns="2"><apex:outputText label=""/></apex:pageBlockSection>
+                        
+                        <apex:pageBlockSection columns="2">
+                            <apex:outputText label="{!$Label.CSS_WS_Attachments_M001}">
+                                <apex:commandLink value="Attach Files" reRender="AttachmentSectionPolicy" onclick="window.open('/p/attach/NoteAttach?pid={!CSS_WS_Warranty__c.Id}&isdtp=mn&parentname={!CSS_WS_Warranty__c.Id}&retURL=apex/CSS_WS_CloseWindowPage','_blank','height=350,width=650,left=100,top=100,scrollbars=yes,toolbar=no,status=no'); return false;" />
+                            </apex:outputText>
+                        </apex:pageBlockSection>
+                        
+                        <apex:pageBlockSection columns="2" id="AttachmentSectionPolicy">
+                            <apex:outputText label="{!$Label.CSS_WS_Attachments_M002}">                       
+                                <apex:pageBlockTable value="{!attachment_list}" var="att"> 
+                                    <apex:column width="20px">
+                                        <apex:commandButton action="{!deleteAttachmentRow}" immediate="true" reRender="AttachmentSectionPolicy" value="{!$Label.CSS_WS_Label_Delete}">
+                                            <apex:param name="rowIdPolicy" value="{!att.Id}" assignTo="{!SelectedRowId}"/>
+                                        </apex:commandButton>
+                                    </apex:column>
+                                    <apex:column value="{!att.name}">
+                                    </apex:column>  
+                                </apex:pageBlockTable> 
+                            </apex:outputText>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                    
+                    <!----------------------------------- Area Functions Policy ----------------------------------->
+                    <apex:actionFunction name="refreshAttachmentPolicy" action="{!attachment}" rerender="AttachmentSectionPolicy"/>                    
+                    <apex:actionFunction name="rerenderDealersToCharge" rerender="DRToCharge, DealerToCharge, serviceProviderDealerToCharge">
+                        <apex:param name="dealersParamToCharge" assignTo="{!serviceProviderDRToCharge}" value="" />
+                    </apex:actionFunction>                     
+                    <!----------------------------------- Area Functions Policy ----------------------------------->
+                    
+                    <apex:pageBlockSection >    
+                        <apex:outputField value="{!CSS_WS_Warranty__c.CSS_WS_Claim_Number__c}"/>
+                    </apex:pageBlockSection>
+                    <apex:pageBlockButtons >
+                        <apex:commandButton action="{!backToHeaderDisabled}" value="{!$Label.CSS_WS_Button_Back}"/>
+                        <apex:commandButton action="{!savePolicy}" value="{!$Label.CSS_WS_Button_Next}"/>
+                        <apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!!showHeader}"/>
+                    </apex:pageBlockButtons>                    
+                    
+                </apex:pageBlock>               
+            </apex:tab>
+            
+            <!-- TAB for FAILURE -->
+            <apex:tab id="failureTab" label="{!$Label.CSS_WS_Failure_Information}" name="FailureTab" disabled="{!disableFailure}">
+                <apex:pageBlock title="{!$Label.CSS_WS_Failure_Information}">
+                    
+                    <apex:pageBlockSection columns="2">
+                        <apex:pageBlockSection columns="2">
+                            <apex:selectList label="{!$ObjectType.CSS_WS_Failure__c.fields.CSS_WS_EngineSystem__c.Label}" size="1" value="{!EngineSystemSelectListValue}" multiselect="false" style="width:173px;">
+                                <apex:actionSupport event="onchange" action="{!SetComponentList}" reRender="ComponentList" focus="ComponentList"/>
+                                <apex:selectOptions value="{!GetFailureList}"/>
+                                <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin-left: 178px !important; margin-top: 5px;"/>
+                            </apex:selectList>
+                            
+                            <apex:selectList label="{!$ObjectType.CSS_WS_Failure__c.fields.CSS_WS_ComponentName__c.Label}" id="ComponentList" size="1" value="{!ComponentSelectListValue}" multiselect="false" style="width: 173px;">
+                                <apex:selectOptions value="{!GetComponentList}"/>
+                                <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin-left: 178px !important; margin-top: 5px;"/>
+                            </apex:selectList>
+                        </apex:pageBlockSection>
+
+                        <apex:pageBlockSection columns="2">
+                            <apex:selectList id="failMode" label="{!$ObjectType.CSS_WS_Failure__c.fields.CSS_WS_FailureModeName__c.Label}" size="1" value="{!FailureModeSelectListValue}" multiselect="false" style="width: 173px;">
+                                <apex:selectOptions value="{!GetFailureModeList}"/>
+                                <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin-left: 178px !important; margin-top: 5px;"/>
+                            </apex:selectList>
+                            
+                            <apex:commandButton onclick="SetNameAndCodeOfFailureJS(); return false;" value="{!$Label.CSS_WS_Button_Add_new_failure}" rerender="FailureSection, showmsg, certificateNumber"><!--disabled="{!CSS_WS_Warranty__c.CSS_WS_Campaigns_TRPs__c != null}">-->
+                                <apex:actionstatus id="addFailure"> 
+                                    <apex:facet name="start" >
+                                        <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-left: 88px !important;"/>       
+                                    </apex:facet>
+                                </apex:actionstatus>
+                            </apex:commandButton>
+                        </apex:pageBlockSection>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:pageBlockTable value="{!FailureList}" var="failure" id="FailureSection" style="text-align: center !important;">
+                            <apex:column headerValue="Action">
+                                <apex:commandButton value="{!$Label.CSS_WS_Label_Delete}" action="{!DeleteFailure}" rerender="FailureSection, otherApproverSection" disabled="{!(failure.disableFlag)}"> <!--|| CSS_WS_Warranty__c.CSS_WS_Campaigns_TRPs__c != null)}">-->
+                                    <apex:param name="FailureToDelete" value="{!failure.Index}" assignTo="{!FailureToDelete}"/> 
+                                </apex:commandButton>
+                            </apex:column>
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Failure__c.fields.CSS_WS_Failure_Name__c.Label}">
+                                <apex:outputText value="{!failure.Failure.CSS_WS_Failure_Name__c}" />
+                            </apex:column>
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Failure__c.fields.CSS_WS_FailureModeName__c.Label}">
+                                <apex:outputText value="{!failure.Failure.CSS_WS_FailureModeCode__c + ' - ' + failure.Failure.CSS_WS_FailureModeName__c}" />
+                            </apex:column>
+                        </apex:pageBlockTable>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2" id="otherApproverSection">
+                        <apex:outputField id="otherApprover" value="{!CSS_WS_Warranty__c.CSS_WS_Other_Approver__c}" style="width: 90px !important; margin: 0 auto !important;" rendered="{!(CSS_WS_Warranty__c.CSS_WS_Account_Code__c == '52' || CSS_WS_Warranty__c.CSS_WS_Account_Code__c == '35') && (CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Warranty') && (CSS_WS_Warranty__c.CSS_WS_Other_Approver__c != null || CSS_WS_Warranty__c.CSS_WS_Other_Approver__c != '')}"/>
+                        <apex:inputField id="otherApprover1" value="{!CSS_WS_Warranty__c.CSS_WS_Other_Approver__c}" rendered="{!CSS_WS_Warranty__c.CSS_WS_Account_Code__c == '61' && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Warranty'}"/>
+                        <apex:inputField id="otherApprover2" value="{!CSS_WS_Warranty__c.Other_Approver_Picklist_WW__c}" style="width: 173px !important;" rendered="{!(CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy WW')}">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin: 5px;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2" id="authorizationNumberSection">
+                        <apex:inputField id="authorizationNumber2" value="{!CSS_WS_Warranty__c.CSS_Authorization_Number__c}" rendered="{!CSS_WS_Warranty__c.CSS_WS_Reinstatement_Flag__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2">   
+                        <apex:inputText id="certificateNumber" value="{!CSS_WS_Warranty__c.CSS_WS_Certificate_Number__c}" style="width: 90px !important;" disabled="true"/>
+                    </apex:pageBlockSection>
+                    
+                     <apex:pageBlockSection columns="1" id="inputHiddenFieldsFailure" rendered="false">
+                        <apex:inputHidden id="reinstatement" value="{!CSS_WS_Warranty__c.CSS_WS_Reinstatement_Flag__c}"/>
+                    </apex:pageBlockSection> 
+
+                    
+                    
+                    <!----------------------------------- Area Functions Failure ----------------------------------->
+                    <apex:actionFunction action="{!SetNameAndCodeOfFailure}" name="SetNameAndCodeOfFailureJS" rerender="FailureSection, otherApproverSection, showmsg" status="addFailure" oncomplete="CallWSToGetAccCoverageJS();"/>
+                    <apex:actionFunction action="{!CallWSToGetAccCoverage}" name="CallWSToGetAccCoverageJS"  rerender="FailureSection, otherApproverSection, showmsg" oncomplete="UpdateClaimWithResponseJS();" status="addFailure"/>
+                    <apex:actionFunction action="{!UpdateClaimWithResponse}" name="UpdateClaimWithResponseJS"  rerender="FailureSection, otherApproverSection, showmsg, certificateNumber" oncomplete="FailureCallWSODMJS();" status="addFailure"/>
+                    <apex:actionFunction action="{!FailureCallWSODM}" name="FailureCallWSODMJS"  rerender="FailureSection, otherApproverSection, showmsg" oncomplete="AddNewFailureJS();"/>
+                    <apex:actionFunction action="{!AddNewFailure}" name="AddNewFailureJS" rerender="FailureSection, otherApproverSection, showmsg"/>
+                    
+                    <apex:actionFunction action="{!validateFailure}" name="ValidateFailureJS" oncomplete="SaveFailuresJS();" />
+                    <apex:actionFunction action="{!SaveFailures}" name="SaveFailuresJS" oncomplete="FailureCallWSODMJS_Next();" status="nextFailure"/>
+                    <apex:actionFunction action="{!FailureCallWSODM}" name="FailureCallWSODMJS_Next" oncomplete="GSQSRTData_Call();" status="nextFailure"/>
+                    <apex:actionFunction action="{!GSQSRTData}" name="GSQSRTData_Call" oncomplete="SaveGSQSRTData_Call();" status="nextFailure"/>
+                    <apex:actionFunction action="{!SaveGSQSRTData}" name="SaveGSQSRTData_Call" oncomplete="NextTabJS();" status="nextFailure"/>
+                    <apex:actionFunction action="{!saveFailure}" name="NextTabJS" />
+                    <!----------------------------------- Area Functions Failure ----------------------------------->
+                    
+                    <apex:pageBlockSection >
+                        <apex:outputField value="{!CSS_WS_Warranty__c.CSS_WS_Claim_Number__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockButtons >
+                        <apex:commandButton action="{!backFailure}" value="{!$Label.CSS_WS_Button_Back}" rendered="{!showPolicy}"/>
+                        <apex:commandButton action="{!backToHeaderDisabled}" value="{!$Label.CSS_WS_Button_Back}" rendered="{!!showPolicy}"/>
+                        <apex:commandButton onclick="this.disabled='disabled'; ValidateFailureJS(); return false;" value="{!$Label.CSS_WS_Button_Next}" reRender="FailureSection, showmsg" />
+                        <!--<apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!$Profile.Name != 'CSS_WS_Paccar'}"/>-->
+                        <apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!enableCloneButton}"/>
+                        <apex:actionstatus id="nextFailure">    
+                            <apex:facet name="start" >
+                                <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                      
+                            </apex:facet>
+                        </apex:actionstatus>
+                    </apex:pageBlockButtons>
+                    
+                </apex:pageBlock>
+                <apex:pageBlock title="{!$Label.CSS_WS_HistoricalFailure}">
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputPanel layout="block" style="overflow:auto!important;width:100%;height:200px!important;">
+                            <apex:pageBlockTable value="{!failures}" var="failure" >
+                                <apex:column value="{!failure.CSS_WS_Warranty__r.CSS_WS_Claim_Number__c}"/>
+                                <apex:column value="{!failure.CSS_WS_Warranty__r.CSS_WS_Service_Provider_Name_Dealer__c}"/>
+                                <apex:column value="{!failure.CSS_WS_Failure_Name__c}"/>
+                                <apex:column value="{!failure.CSS_WS_Warranty__r.CSS_WS_Failure_Date_Time__c }"/>
+                                <apex:column value="{!failure.CSS_WS_Warranty__r.CSS_WS_Failure_Point_Quantity__c }"/>
+                                <apex:column value="{!failure.CSS_WS_Warranty__r.CSS_WS_Failure_Measure__c  }"/>
+                                <apex:column value="{!failure.CSS_WS_Warranty__r.CSS_WS_Account_Code__c  }"/>
+                                <apex:column value="{!failure.CSS_WS_Warranty__r.CSS_WS_Claim_Status__c}"/>
+                            </apex:pageBlockTable>
+                        </apex:outputPanel>
+                    </apex:pageBlockSection>
+                </apex:pageBlock>
+            </apex:tab>
+            
+            <!-- TAB for MULTIESN -->
+            <apex:tab id="multipleESNTab" label="{!$Label.CSS_WS_Multiple_ESNs}" name="MultipleESNTab" disabled="{!disableMultiESN}" rendered="{!showMultiESN}">
+                <apex:pageBlock title="{!$Label.CSS_WS_Multiple_ESNs}">
+                    
+                    <apex:pageBlockSection >
+                        <apex:commandButton action="{!AddNewESN}" value="{!$Label.CSS_WS_Button_Add_New}" rerender="MultiESNSection" />
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:pageBlockTable value="{!ESNsList}" var="EsnVar" id="MultiESNSection">
+                            <apex:column headerValue="Action" style="text-align: center !important;" >
+                                <apex:commandButton value="{!$Label.CSS_WS_Label_Delete}" action="{!DeleteESN}" rerender="MultiESNSection">
+                                    <apex:param name="ESNToDelete" value="{!EsnVar.Index}" assignTo="{!ESNToDelete}"/> 
+                                </apex:commandButton>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_MultiESN__c.fields.CSS_WS_MultiESN__c.Label}">
+                                <apex:inputText value="{!EsnVar.ESN.CSS_WS_MultiESN__c}" style="width:92px" maxlength="8">
+                                    <apex:actionSupport event="onchange" action="{!MultiESNCallWSToGetEngineData}" rerender="MultiESNSection, showmsg" status="MultiESNWebServiceCall">
+                                        <apex:param name="PositionOfThisESN" value="{!EsnVar.Index}" assignTo="{!PositionOfThisESN}"/>
+                                    </apex:actionSupport>
+                                    <apex:actionstatus id="MultiESNWebServiceCall"> 
+                                        <apex:facet name="start">
+                                            <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-left: 97px !important;"/>                     
+                                        </apex:facet>
+                                    </apex:actionstatus>
+                                </apex:inputText>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_MultiESN__c.fields.CSS_WS_WarrantyStartDate__c.Label}" style="text-align: center !important;">
+                                <apex:outputField value="{!EsnVar.ESN.CSS_WS_WarrantyStartDate__c}" rendered="{!EsnVar.WADEditable}"/>
+                                <apex:inputField value="{!EsnVar.ESN.CSS_WS_WarrantyStartDate__c}" rendered="{!!EsnVar.WADEditable}"/>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_MultiESN__c.fields.CSS_WS_FailureDate__c.Label}" style="text-align: center !important;">
+                                <apex:outputField value="{!EsnVar.ESN.CSS_WS_FailureDate__c}" style="width:115px"/>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_MultiESN__c.fields.CSS_WS_FailurePoint__c.Label}" style="text-align: center !important;">
+                                <apex:inputField value="{!EsnVar.ESN.CSS_WS_FailurePoint__c}" style="width:70px"/>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_MultiESN__c.fields.CSS_WS_FailurePointType__c.Label}" style="text-align: center !important;">
+                                <apex:inputText value="{!EsnVar.ESN.CSS_WS_FailurePointType__c}" style="width:70px" disabled="true"/>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_MultiESN__c.fields.CSS_WS_ESNCalibrationStart__c.Label}" style="text-align: center !important;">
+                                <apex:inputField value="{!EsnVar.ESN.CSS_WS_ESNCalibrationStart__c}" style="width:80px"/>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_MultiESN__c.fields.CSS_WS_Revision_Before__c.Label}" style="text-align: center !important;">
+                                <apex:inputField value="{!EsnVar.ESN.CSS_WS_Revision_Before__c}" style="width:60px"/>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_MultiESN__c.fields.CSS_WS_ESNCalibrationEnd__c.Label}" style="text-align: center !important;">
+                                <apex:inputField value="{!EsnVar.ESN.CSS_WS_ESNCalibrationEnd__c}" style="width:80px"/>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_MultiESN__c.fields.CSS_WS_Revision_After__c.Label}" style="text-align: center !important;">
+                                <apex:inputField value="{!EsnVar.ESN.CSS_WS_Revision_After__c}" style="width:60px"/>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_MultiESN__c.fields.CSS_WS_BIS_2__c.Label}" style="text-align: center !important;">
+                                <apex:outputField value="{!EsnVar.ESN.CSS_WS_BIS_2__c}" />
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_MultiESN__c.fields.CSS_WS_Detail__c.Label}" style="text-align: center !important;">
+                                <apex:inputField label="Detail" value="{!EsnVar.ESN.CSS_WS_Detail__c}" style="width:100px"/>
+                            </apex:column>
+                        </apex:pageBlockTable>
+                    </apex:pageBlockSection>
+
+                    <apex:pageBlockSection >
+                        <apex:outputField id="failureDateTime" value="{!CSS_WS_Warranty__c.CSS_WS_Failure_Date_Time__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection >
+                        <apex:outputField value="{!CSS_WS_Warranty__c.CSS_WS_Claim_Number__c}"/>
+                    </apex:pageBlockSection>                  
+                    
+                    <!----------------------------------- Area Functions MultiESN ----------------------------------->
+                    <apex:actionFunction action="{!SaveMultiESNs}" name="SaveMultiESNsJS" oncomplete="saveMultiESNJS();" status="nextMultiESN"/>
+                    <apex:actionFunction action="{!saveMultiESN}" name="saveMultiESNJS" />
+                    <!----------------------------------- Area Functions MultiESN ----------------------------------->
+                    
+                    <apex:pageBlockButtons >
+                        <apex:commandButton action="{!backMultiESN}" value="{!$Label.CSS_WS_Button_Back}"/>
+                        <apex:commandButton value="{!$Label.CSS_WS_Button_Next}" onclick="SaveMultiESNsJS(); return false;" reRender="MultiESNSection, showmsg"/>
+                        <!--<apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!$Profile.Name != 'CSS_WS_Paccar'}"/>-->
+                        <apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!enableCloneButton}"/>
+                        <apex:actionstatus id="nextMultiESN"> 
+                            <apex:facet name="start" >
+                                <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                     
+                            </apex:facet>
+                        </apex:actionstatus>
+                    </apex:pageBlockButtons>
+                    
+                </apex:pageBlock>
+            </apex:tab>
+            
+            <!-- TAB for NARRATIVE -->
+            <apex:tab id="narrativeTab" label="{!$Label.CSS_WS_Narrative_Information}" name="NarrativeTab" disabled="{!disableNarrative}">
+                <apex:pageBlock title="{!$Label.CSS_WS_Narrative_Information}">
+                                        
+                    <apex:pageBlockSection columns="1">
+                        <apex:selectList id="promotionIds" value="{!CSS_WS_Warranty__c.CSS_WS_Promotion_ID__c}" size="1"  style="width: 173px !important;">
+                            <apex:selectOptions value="{!promotionIDsList}"/>
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin-left: 178px !important; margin-top: 5px;"/>
+                        </apex:selectList>
+                        <apex:inputField value="{! CSS_WS_Warranty__c.CSS_WS_Claim_Narrative__c  }" style="width:350px;height:150px;">
+                            <apex:image url="{!$Resource.RequiredFieldIcon}" width="10" height="10" style="position: absolute !important; margin-left: 5px !important; margin-top: 5    px;"/>
+                        </apex:inputField>
+                    </apex:pageBlockSection>
+                    
+                    <!----------------------------------- Area Functions Narrative ----------------------------------->
+                    <apex:actionFunction action="{!saveNarratives}" name="SaveNarrativesJS" oncomplete="ValidateNarrativeJS();" status="nextNarrative"/>
+                    <apex:actionFunction action="{!validateNarrative}" name="ValidateNarrativeJS" oncomplete="SumSRTTotalsJS();" status="nextNarrative"/>
+                    <apex:actionFunction action="{!SumSRTTotals}" name="SumSRTTotalsJS" oncomplete="makePartListJS();" status="nextNarrative" reRender="SRTSection, total"/>
+                    <apex:actionFunction action="{!saveNarrative}" name="SaveNarrativeJS"/>
+                    <apex:actionFunction action="{! executeMakePartList }" name="makePartListJS" oncomplete="SaveNarrativeJS()" status="nextSRT"/>
+                    <!----------------------------------- Area Functions Narrative ----------------------------------->
+                    
+                    <apex:pageBlockSection >
+                        <apex:outputField value="{!CSS_WS_Warranty__c.CSS_WS_Claim_Number__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockButtons >
+                        <apex:commandButton action="{!backNarrative}" value="{!$Label.CSS_WS_Button_Back}"/>
+                        <apex:commandButton onclick="SaveNarrativesJS(); return false;" value="{!$Label.CSS_WS_Button_Next}" rerender="showmsg" rendered="{!!showSaveNarrativeButton}"/>
+                        <apex:commandButton onclick="ValidateNarrativeJS()" value="{!$Label.CSS_WS_Button_Review}" rerender="showmsg" rendered="{!showSaveNarrativeButton}"/>
+                        <!--<apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!$Profile.Name != 'CSS_WS_Paccar'}"/>-->
+                        <apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!enableCloneButton}"/>
+                        <apex:actionstatus id="nextNarrative"> 
+                            <apex:facet name="start" >
+                                <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 173px !important; margin-right: 5px !important;"/>                     
+                            </apex:facet>
+                        </apex:actionstatus>
+                    </apex:pageBlockButtons>
+                </apex:pageBlock>
+            </apex:tab>
+            
+            <!-- TAB for SRT -->
+            <apex:tab id="sRTTab" label="{!$Label.CSS_WS_SRT_Information}" name="SRTTab" disabled="{!disableSRT}">
+                <apex:pageBlock title="{!$Label.CSS_WS_SRT_Information}"> 
+                    
+                    <apex:pageBlockSection columns="1" >
+                        <apex:outputLabel value="{!$Label.CSS_WS_SRTGrid_E009}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2" >
+                        <apex:commandButton action="{!AddNewSRT}" value="{!$Label.CSS_WS_Button_Add_SRT}" rerender="SRTSection, TotalAmountSRTHours, TotalAmountSRTHoursExtended, TotalAmountSRTHoursToPay, TotalAmountSRTAmount"/>
+                        <apex:inputText label="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Labor_Rate__c.Label}" id="laborRate" value="{!laborRate}" style="width: 90px !important;" disabled="true"/><!--Rule SF37-->
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1" id="srtsTable">
+                        <apex:pageBlockTable value="{!SRTsList}" var="srt" id="SRTSection" >
+                            <apex:column headerValue="{!$Label.CSS_WS_Action}" style="width: 75px !important;">
+                                <apex:commandButton value="{!$Label.CSS_WS_Label_Delete}" action="{!DeleteSRT}" rerender="SRTSection, showmsg, TotalAmountSRTHours, TotalAmountSRTHoursExtended, TotalAmountSRTHoursToPay, TotalAmountSRTAmount" style="width: 50px !important;" status="deleteSRT">
+                                    <apex:param name="SRTToDelete" value="{!srt.Index}" assignTo="{!SRTToDelete}"/>                                     
+                                </apex:commandButton>
+                                <apex:actionstatus id="deleteSRT"> 
+                                    <apex:facet name="start" >
+                                        <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                      
+                                    </apex:facet>
+                                </apex:actionstatus>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_SRT__c.Label}" style="width: 115px !important;">
+                                <apex:inputText id="srtCode" value="{!srt.SRT.CSS_WS_SRT__c}" maxlength="9" style="width: 90px !important;">
+                                    <apex:actionSupport action="{!AssignSRTDescription}" status="searchingSRT" event="onchange" reRender="SRTSection, TotalAmountSRTHours, TotalAmountSRTHoursExtended, TotalAmountSRTHoursToPay, TotalAmountSRTAmount, showmsg">
+                                        <apex:param name="SRTToUpdate" value="{!srt.Index}" assignTo="{!SRTToUpdate}"/>
+                                    </apex:actionSupport>
+                                </apex:inputText>
+                                <apex:actionstatus id="searchingSRT"> 
+                                    <apex:facet name="start" >
+                                        <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin: 2px !important;"/>                      
+                                    </apex:facet>
+                                </apex:actionstatus>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_Description__c.Label}" style="text-align:center !important; width: 255px !important;">
+                                <apex:outputText value="{!srt.SRT.CSS_WS_Description__c}" rendered="{! (srt.SRT.CSS_WS_SRT__c != '99-999-00' && srt.SRT.CSS_WS_SRT__c != '99-999')}"/>
+                                <apex:inputText value="{!srt.SRT.CSS_WS_Description__c}" maxlength="1000" rendered="{! (srt.SRT.CSS_WS_SRT__c == '99-999-00' || srt.SRT.CSS_WS_SRT__c == '99-999' )}" style="width: 260px !important;"/>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_GSQ_Assignment__c.Label}" style="text-align:center !important;  width: 65px !important;">
+                                <apex:outputText id="GSQAssignment" value="{!srt.SRT.CSS_WS_GSQ_Assignment__c}"/>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_Access_Code__c.Label}" style="text-align:center !important;  width: 65px !important;">
+                                <apex:outputText id="accessCode" value="{!srt.SRT.CSS_WS_Access_Code__c}"/>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_Quantity__c.Label}" style="text-align:center !important; width: 45px !important;">
+                                <apex:inputText value="{!srt.SRT.CSS_WS_Quantity__c}" style="width: 45px !important;">
+                                    <apex:actionSupport event="onchange" action="{!SumSRTTotals}" reRender="srthours, accessCode, extendedHours, actualHours, amount, TotalAmountSRTHours, TotalAmountSRTHoursExtended, TotalAmountSRTHoursToPay, TotalAmountSRTAmount">
+                                        <apex:param name="SRTToUpdate" value="{!srt.Index}" assignTo="{!SRTToUpdate}"/>
+                                    </apex:actionSupport>
+                                </apex:inputText>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_Hours__c.Label}" style="text-align:center !important; width: 50px !important;">
+                                <apex:outputText id="srthours" value="{!srt.SRT.CSS_WS_Hours__c}" rendered="{!(srt.SRT.CSS_WS_SRT__c != '99-999-00' && srt.SRT.CSS_WS_SRT__c != '99-999')}"/>
+                                <apex:inputText value="{!srt.SRT.CSS_WS_Hours__c}" maxlength="10" rendered="{!(srt.SRT.CSS_WS_SRT__c == '99-999-00' || srt.SRT.CSS_WS_SRT__c == '99-999' )}" style="width: 50px !important;">
+                                    <apex:actionSupport event="onchange" action="{!SumSRTTotals}" reRender="srthours, accessCode, extendedHours, actualHours, amount, TotalAmountSRTHours, TotalAmountSRTHoursExtended, TotalAmountSRTHoursToPay, TotalAmountSRTAmount">
+                                        <apex:param name="SRTToUpdate" value="{!srt.Index}" assignTo="{!SRTToUpdate}"/>
+                                    </apex:actionSupport>
+                                </apex:inputText>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_Extended_Hours__c.Label}" style="text-align:center !important; width: 70px !important;">
+                                <apex:outputText id="extendedHours" value="{!srt.SRT.CSS_WS_Extended_Hours__c}"/>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_OutOfChassis__c.Label}" style="text-align:center !important; width: 70px !important;">
+                                <apex:inputCheckbox id="outOfChassis" value="{!srt.SRT.CSS_WS_OutOfChassis__c}">
+                                    <apex:actionSupport event="onclick" status="searchingOutOfChasis" action="{!CheckOutOfChassis}" reRender="srthours, accessCode, extendedHours, actualHours, amount, TotalAmountSRTHours, TotalAmountSRTHoursExtended, TotalAmountSRTHoursToPay, TotalAmountSRTAmount">
+                                        <apex:param name="SRTToUpdate" value="{!srt.Index}" assignTo="{!SRTToUpdate}"/>
+                                    </apex:actionSupport>
+                                </apex:inputCheckbox>
+                                <apex:actionstatus id="searchingOutOfChasis"> 
+                                    <apex:facet name="start" >
+                                        <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                      
+                                    </apex:facet>
+                                </apex:actionstatus>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_Adjust_Percentage__c.Label}" style="text-align:center !important; width: 70px !important;">
+                                <apex:outputText value="{!srt.SRT.CSS_WS_Adjust_Percentage__c}" />%
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_Actual_Hours__c.Label}" style="text-align:center !important; width: 70px !important;">
+                                <apex:outputText id="actualHours" value="{!srt.SRT.CSS_WS_Actual_Hours__c}" />
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_Amount__c.Label}" style="text-align:center !important; width: 50px !important;">
+                                <apex:outputText id="amount" value="{!srt.SRT.CSS_WS_Amount__c}" />
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_Overlap_Hours__c.Label}" style="text-align:center !important; width: 60px !important;">
+                                <apex:outputText id="overlapHours" value="{!srt.SRT.CSS_WS_Overlap_Hours__c}" />
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_Offsite__c.Label}" style="text-align:center !important; width: 50px !important;">
+                                <apex:inputCheckbox id="offsite" value="{!srt.SRT.CSS_WS_Offsite__c}" disabled="{!CSS_WS_Warranty__c.CSS_WS_Covered_Travel_Labor__c == 0}"/>
+                            </apex:column>
+                        </apex:pageBlockTable>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2">
+                        <apex:pageBlockTable value="{!TableTotals}" id="total" var="srt">
+                            <apex:column headerValue="{!$Label.CSS_WS_Label_Calibration_After}">
+                                <apex:facet name="footer">
+                                    <apex:inputField id="ecmCalibrationAfter" value="{!CSS_WS_Warranty__c.CSS_WS_ECM_Calibration_After__c }" style="width: 110px !important;">
+                                        <apex:actionSupport rerender="ECMCalibrationAfter, ECMCalibrationBefore, showmsg" event="onchange" action="{!Rule1108}"/>
+                                    </apex:inputField>
+                                </apex:facet>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_MultiESN__c.fields.CSS_WS_Revision_After__c.Label}">
+                                <apex:facet name="footer">
+                                    <apex:inputField id="ecmRevisionAfter" value="{!CSS_WS_Warranty__c.CSS_WS_Revision_After__c }" style="width: 80px !important;">
+                                        <!--<apex:actionSupport rerender="ECMCalibrationAfter, ECMCalibrationBefore, showmsg" event="onchange" action="{!Rule1108}"/>-->
+                                    </apex:inputField>
+                                </apex:facet>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$Label.CSS_WS_Label_Calibration_Before}">
+                                <apex:facet name="footer">
+                                    <apex:inputField id="ecmCalibrationBefore" value="{!CSS_WS_Warranty__c.CSS_WS_ECM_Calibration_Before__c  }" style="width: 110px !important;">
+                                        <apex:actionSupport rerender="ECMCalibrationAfter, ECMCalibrationBefore, showmsg" event="onchange" action="{!Rule1108}"/>
+                                    </apex:inputField>
+                                </apex:facet>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_MultiESN__c.fields.CSS_WS_Revision_Before__c.Label}">
+                                <apex:facet name="footer">
+                                    <apex:inputField id="ecmRevisionBefore" value="{!CSS_WS_Warranty__c.CSS_WS_Revision_Before__c }" style="width: 80px !important;">
+                                        <!--<apex:actionSupport rerender="ECMCalibrationAfter, ECMCalibrationBefore, showmsg" event="onchange" action="{!Rule1108}"/>-->
+                                    </apex:inputField>
+                                </apex:facet>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_ECM_Calib_Justification__c.Label}">
+                                <apex:facet name="footer">
+                                    <apex:inputField id="ecmJustification" value="{!CSS_WS_Warranty__c.CSS_WS_ECM_Calib_Justification__c }" style="width: 120px !important;">
+                                        <!--<apex:actionSupport rerender="ECMCalibrationAfter, ECMCalibrationBefore, showmsg" event="onchange" action="{!Rule1108}"/>-->
+                                    </apex:inputField>
+                                </apex:facet>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$Label.CSS_WS_Label_Hours}">
+                                <apex:facet name="footer">
+                                    <apex:outputText value="{!TotalAmountSRTHours}" id="TotalAmountSRTHours"/>
+                                </apex:facet>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$Label.CSS_WS_Label_Extended_Hours}">
+                                <apex:facet name="footer">
+                                    <apex:outputText value="{!TotalAmountSRTHoursExtended}" id="TotalAmountSRTHoursExtended" />
+                                </apex:facet>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$Label.CSS_WS_Label_Actual_Hours}">
+                                <apex:facet name="footer">
+                                    <apex:outputText value="{!TotalAmountSRTHoursToPay}" id="TotalAmountSRTHoursToPay" />
+                                </apex:facet>                                
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$Label.CSS_WS_Label_Total_Amount}">
+                                <apex:facet name="footer">
+                                    <apex:outputText value="{!TotalAmountSRTAmount}" id="TotalAmountSRTAmount" />
+                                </apex:facet>  
+                            </apex:column>
+                        </apex:pageBlockTable>
+                    </apex:pageBlockSection>
+                    
+                    
+
+                    
+                    <!--<apex:pageBlockSection columns="1" id="inputHiddenFields2" rendered="false">
+                        <apex:inputHidden id="ODMSuccess_id" value="{!CSS_WS_Warranty__c.CSS_WS_ODM_SRT_Success_Flag__c}"/>
+                    </apex:pageBlockSection> -->
+
+                    
+                    <!----------------------------------- Area Functions SRT ----------------------------------->
+                    <apex:actionFunction action="{!SRCallODMWebService}" name="SRCallODMWebServiceJS" oncomplete="SaveSRTGridsJS();" status="nextSRT"/>
+                    <apex:actionFunction action="{!SaveSRTGrids}" name="SaveSRTGridsJS" oncomplete="makePartListJS();" status="nextSRT"/>
+                    <apex:actionFunction name="RerenderValues" rerender="SRTSection, TotalAmountSRTHours, TotalAmountSRTHoursExtended, TotalAmountSRTHoursToPay, TotalAmountSRTAmount, showmsg" />
+                    <apex:actionFunction action="{!saveSRT}" name="saveSRTJS"/>
+                    <apex:actionFunction action="{!executeMakePartList}" name="makePartListJS" oncomplete="saveSRTJS()" status="nextSRT"/>
+                    <!----------------------------------- Area Functions SRT ----------------------------------->     
+                    
+                    <apex:pageBlockSection >
+                        <apex:outputField value="{!CSS_WS_Warranty__c.CSS_WS_Claim_Number__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockButtons >
+                        <apex:commandButton action="{!backSRT}" value="{!$Label.CSS_WS_Button_Back}"/> 
+                        <apex:commandButton onclick="SRCallODMWebServiceJS();" value="{!$Label.CSS_WS_Button_Next}" rerender="SRTSection" />
+                        <!--<apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!$Profile.Name != 'CSS_WS_Paccar'}"/>-->
+                        <apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!enableCloneButton}"/>
+                        <apex:actionstatus id="nextSRT"> 
+                            <apex:facet name="start" >
+                                <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                      
+                            </apex:facet>
+                        </apex:actionstatus>                        
+                    </apex:pageBlockButtons>
+                    
+                </apex:pageBlock>
+                
+                <!-- New section for available GSQ Items -->
+                <apex:pageBlock title="{!$Label.CSS_WS_SRTGrid_E010}">
+                
+                    <apex:pageBlockSection id="selectall" columns="2" rendered="{!GSQEnabled}">
+                        <apex:inputCheckbox id="selectAll" value="{!SelectAll}" label="{!$Label.CSS_WS_SRTGrid_E011}">
+                            <apex:actionSupport event="onchange" action="{!enableDisabledSelectAll}" rerender="addAllButton, gsqTable, GSQSection, showmsg"/>
+                        </apex:inputCheckbox>
+
+                        <apex:commandButton id="addAllButton"  value="{!$Label.CSS_WS_SRTGrid_E012}" action="{!addAllSelectedClaims}" status="addSelectedSRT" rerender="gsqTable, GSQSection, addAllButton, showmsg, SRTSection, TotalAmountSRTHours, TotalAmountSRTHoursExtended, TotalAmountSRTHoursToPay, TotalAmountSRTAmount" style="width: 170px !important;" disabled="{!!ButtonAddAll}">
+                            <apex:actionstatus id="addSelectedSRT"> 
+                                <apex:facet name="start" >
+                                    <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-left: 175px !important;"/>                      
+                                </apex:facet>
+                            </apex:actionstatus>
+                        </apex:commandButton>
+                    </apex:pageBlockSection>                
+                                                        
+                    <apex:pageBlockSection columns="1" id="gsqTable">                         
+                        <apex:outputPanel layout="block" style="overflow:auto!important;width:100%;height:150px!important;" rendered="{!GSQEnabled}">                        
+                        
+                            <apex:pageBlockTable value="{!GSQsList}" var="srt" id="GSQSection" >
+                                
+                                <apex:column headerValue="{!$Label.CSS_WS_Statement_E005}" style="text-align:center !important; width: 30px !important;">
+                                    <apex:inputCheckbox id="selectedGSQ" value="{!srt.SelectedGSQ}">
+                                        <apex:actionSupport event="onclick" action="{!CheckSelected}" rerender="selectall, selectAll, showmsg"/>
+                                    </apex:inputCheckbox>
+                                </apex:column>
+                                
+                                <apex:column headerValue="{!$Label.CSS_WS_Action}" style="width: 75px !important;">              
+                                    <apex:commandButton value="{!$Label.CSS_WS_Button_Add_SRT}" action="{!AddGSQSRT}" rerender="SRTSection, showmsg, TotalAmountSRTHours, TotalAmountSRTHoursExtended, TotalAmountSRTHoursToPay, TotalAmountSRTAmount" status="addSRT">
+                                        <apex:param name="SRTToAdd" value="{!srt.Index}" assignTo="{!SRTToAdd}"/>                                     
+                                    </apex:commandButton>
+                                    <apex:actionstatus id="addSRT"> 
+                                        <apex:facet name="start" >
+                                            <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                      
+                                        </apex:facet>
+                                    </apex:actionstatus>
+                                </apex:column>                            
+                                
+                                <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_SRT__c.Label}" style="width: 115px !important;">
+                                    <apex:outputText value="{!srt.SRT.CSS_WS_SRT__c}" />      
+                                </apex:column>
+                                
+                                <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_Description__c.Label}" style="text-align:center !important; width: 255px !important;">
+                                    <apex:outputText value="{!srt.SRT.CSS_WS_Description__c}" />                        
+                                </apex:column>
+                                
+                                <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_GSQ_Assignment__c.Label}" style="text-align:center !important;  width: 65px !important;">
+                                    <apex:outputText id="gsq_GSQAssignment" value="{!srt.SRT.CSS_WS_GSQ_Assignment__c}"/>
+                                </apex:column>
+                                
+                                <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_Access_Code__c.Label}" style="text-align:center !important;  width: 65px !important;">
+                                    <apex:outputText id="gsq_accessCode" value="{!srt.SRT.CSS_WS_Access_Code__c}"/>
+                                </apex:column>
+                                
+                                <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_Quantity__c.Label}" style="text-align:center !important; width: 45px !important;">
+                                    <apex:outputText id="gsq_quantity" value="{!srt.SRT.CSS_WS_Quantity__c}"/>
+                                </apex:column>
+                                
+                                <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_SRT__c.fields.CSS_WS_Hours__c.Label}" style="text-align:center !important; width: 50px !important;">
+                                    <apex:outputText id="gsq_Hours" value="{!srt.SRT.CSS_WS_Hours__c}"/>
+                                </apex:column>                           
+                                
+                            </apex:pageBlockTable>                    
+                        </apex:outputPanel>
+                        
+                        <apex:outputPanel layout="block" style="overflow:auto!important;width:100%;height:50px!important;" rendered="{!!GSQEnabled}">
+                            <table rendered="{!!GSQEnabled}" Style="border: 1px solid #e0e3e5; width: 100%;"><tboby Style="display: table-row-group; vertical-align: middle !important;"><tr style="height: 15px !important; display: table-row; vertical-align: inherit; border-color: inherit;"><th style="background-color: #f8f8f8; background-image: none; font-size: 1em; font-weight: normal;">{!$Label.CSS_WS_Global_E011}</th></tr></tboby></table>
+                        </apex:outputPanel>
+                    
+                    </apex:pageBlockSection>
+                    
+                </apex:pageBlock>
+                
+            </apex:tab>
+            
+            <!-- TAB for PARTS -->
+            <apex:tab id="partsTab" label="{!$Label.CSS_WS_Engine_Parts}" name="PartsTab" disabled="{!disableParts}">
+                <apex:pageBlock title="{!$Label.CSS_WS_Engine_Parts}">
+                    
+                    <apex:pageBlockSection columns="2">
+                        <apex:commandButton action="{!addRow}" value="{!$Label.CSS_WS_Button_Add_New_Part}" rerender="PartsGridSection"/>
+                    </apex:pageBlockSection>                 
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:pageBlockTable style="text-align: center !important;" value="{!PartList}" var="part" id="PartsGridSection">
+                            <apex:column headerValue="Action">
+                                <apex:commandButton value="{!$Label.CSS_WS_Label_Delete}" action="{!DeletePart}" rerender="PartsGridSection, showmsg" >
+                                    <apex:param name="PartsToDelete" value="{!part.Index}" assignTo="{!PartToDelete}"/> 
+                                </apex:commandButton>
+                            </apex:column>
+                            
+                            <apex:column headerValue="Row">
+                                <apex:outputText value="{!part.Index}" >
+                                </apex:outputText>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_Parts__c.fields.CSS_WS_PartNumber__c.Label}">
+                                <apex:inputText value="{!part.Part.CSS_WS_PartNumber__c}">
+                                    <apex:actionSupport action="{! GetPartsInfo }" event="onchange" reRender="PartsGridSection,showmsg" status="searchingPartNumber" >
+                                        <apex:param name="PartsTUpdate" value="{!part.Index}" assignTo="{!PartToUpdate}"/> 
+                                        <apex:param name="OldPartNum" value="{!part.Part.CSS_WS_PartNumber__c}" assignTo="{!OldPartNum}"/>
+                                    </apex:actionSupport>
+                                </apex:inputText>
+                                <apex:actionstatus id="searchingPartNumber"> 
+                                    <apex:facet name="start" >
+                                        <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                      
+                                    </apex:facet>
+                                </apex:actionstatus>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_Parts__c.fields.CSS_WS_Description__c.Label}">
+                                <apex:outputField value="{!part.Part.CSS_WS_Description__c}" />
+                            </apex:column>
+                            
+                            <!----
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_Parts__c.fields.CSS_WS_Kit__c.Label}">
+                                <apex:inputCheckbox value="{!part.Part.CSS_WS_Kit__c}" disabled="true" />
+                            </apex:column>
+                            ----->
+                                                        
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_Parts__c.fields.CSS_WS_ReplacementReason__c.Label}">
+                                <apex:inputField value="{!part.Part.CSS_WS_ReplacementReasonPicklist__c}" >
+                                    <apex:actionSupport event="onchange" action="{!getERPFlag}" reRender="PartsGridSection, showmsg" status="searchingERP">
+                                        <apex:param name="PartsTFind" value="{!part.Index}" assignTo="{!PartToFind}"/>
+                                        <!----<apex:param name="Replacement_Reason" value="{!part.Part.CSS_WS_ReplacementReasonPicklist__c}" assignTo="{!Replacement_Reason}"/>----->
+                                    </apex:actionSupport>
+                                </apex:inputField>
+                                <apex:actionstatus id="searchingERP"> 
+                                    <apex:facet name="start" >
+                                        <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                      
+                                    </apex:facet>
+                                </apex:actionstatus>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_Parts__c.fields.CSS_WS_Part_Return_Flag__c.Label}" style="text-align:center !important; width: 50px !important;">
+                                <apex:inputCheckbox id="returnflag" value="{!part.Part.CSS_WS_Part_Return_Flag__c}" disabled="true"/>
+                            </apex:column>
+                                                        
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_Parts__c.fields.CSS_WS_Tracking_Guide_Code__c.Label}">
+                                <apex:inputText value="{!part.Part.CSS_WS_Tracking_Guide_Code__c}" disabled="{!!part.Part.CSS_WS_Part_Return_Flag__c || part.Part.CSS_WS_Shipping_Company__c == 'XBU en SLP'}"/>
+                            </apex:column>
+                            
+                            <!----
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_Parts__c.fields.CSS_WS_Shipping_Company__c.Label}">
+                                <apex:inputText value="{!part.Part.CSS_WS_Shipping_Company__c}" disabled="{!!part.Part.CSS_WS_Part_Return_Flag__c}"/>
+                            </apex:column>
+                            ----->
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_Parts__c.fields.CSS_WS_Shipping_Company__c.Label}">
+                                <apex:selectList id="shippingCompany" value="{!part.Part.CSS_WS_Shipping_Company__c }" size="1" style="width: 180px !important;"  disabled="{!!part.Part.CSS_WS_Part_Return_Flag__c}">
+                                    <apex:selectOptions value="{!ShippingCompanyList}"/>
+                                    <apex:actionSupport event="onchange" action="{!ValidateShippingCompany}" reRender="PartsGridSection, showmsg"/>
+                                </apex:selectList>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_Parts__c.fields.CSS_WS_Waiver_Process__c.Label}">
+                                <apex:selectList id="waiverProcess" value="{!part.Part.CSS_WS_Waiver_Process__c }" size="1" style="width: 180px !important;"  disabled="{!!part.Part.CSS_WS_Part_Return_Flag__c || part.Part.CSS_WS_Shipping_Company__c != 'WAIVER'}">
+                                    <apex:selectOptions value="{!WaiverProcessList}"/>
+                                </apex:selectList>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_Parts__c.fields.CSS_WS_Superseaded__c.Label}">
+                                <apex:outputText value="{!part.Part.CSS_WS_Superseaded__c}" />
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_Parts__c.fields.CSS_WS_PartService__c.Label}">
+                                <apex:outputText value="{!part.Part.CSS_WS_PartService__c}" />
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_Parts__c.fields.CSS_WS_Quantity__c.Label}" >
+                                <apex:inputText value="{!part.Part.CSS_WS_Quantity__c}">
+                                    <apex:actionSupport event="onchange" action="{!computeSubTotal}"  rerender="subtotal, total, PartsGridSection, showmsg"></apex:actionSupport>
+                                </apex:inputText>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_Parts__c.fields.CSS_WS_Unit_Part_Price__c.Label}">
+                                <apex:outputField label="Before In Service" value="{!part.Part.CSS_WS_Unit_Part_Price__c}" >    
+                                </apex:outputField>
+                                <apex:facet name="footer">
+                                    Total                            
+                                </apex:facet>
+                            </apex:column>
+                            
+                            <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty_Parts__c.fields.CSS_WS_SubTotal__c.Label}" id="subtotal">
+                                <apex:outputField label="Detail" value="{!part.Part.CSS_WS_SubTotal__c}" />
+                                <apex:facet name="footer">
+                                    <apex:outputText value="{0, number, currency}" id="total">
+                                        <apex:param value="{!TotalAmountParts}" />
+                                     </apex:outputText>
+                                </apex:facet>
+                            </apex:column>
+                            
+                        </apex:pageBlockTable>
+                    </apex:pageBlockSection>
+                   
+                    <apex:outputPanel onclick="refreshAttachmentParts()">
+                        <apex:pageBlockSection columns="2">
+                            <apex:outputText label=""/>
+                        </apex:pageBlockSection>
+                        
+                        <apex:pageBlockSection columns="1">
+                            <apex:outputText label="{!$Label.CSS_WS_Attachments_M001}">
+                                <apex:commandLink value="Attach Files" onclick="window.open('/p/attach/NoteAttach?pid={!CSS_WS_Warranty__c.Id}&isdtp=mn&parentname={!CSS_WS_Warranty__c.Id}&retURL=apex/CSS_WS_CloseWindowPage','_blank','height=350,width=650,left=100,top=100,scrollbars=yes,toolbar=no,status=no'); return false;" />
+                            </apex:outputText>
+                        </apex:pageBlockSection>
+                        
+                        <apex:pageBlockSection columns="2" id="AttachmentSectionParts">
+                            <apex:outputText label="{!$Label.CSS_WS_Attachments_M002}">                        
+                                <apex:pageBlockTable value="{!attachment_list}" var="att"> 
+                                    <apex:column >
+                                        <apex:commandButton action="{!deleteAttachmentRow}" immediate="true" rerender="AttachmentSectionParts" value="{!$Label.CSS_WS_Label_Delete}">
+                                            <apex:param name="rowIdParts" value="{!att.Id}" assignTo="{!SelectedRowId}"/>
+                                        </apex:commandButton>
+                                    </apex:column>
+                                    <apex:column value="{!att.name}"/>  
+                                </apex:pageBlockTable>  
+                            </apex:outputText>
+                        </apex:pageBlockSection>
+                    </apex:outputPanel>
+                    
+                    <!----------------------------------- Area Functions Part ----------------------------------->
+                    <apex:actionFunction action="{!SavePartsGrids}" name="SavePartsGridsJS" status="nextParts" oncomplete="savePartsJS();"  />
+                    <!--<apex:actionFunction action="{!SaveFailures}" name="SaveFailuresJS" oncomplete="NextTabJS();" />-->
+                    <apex:actionFunction action="{!saveParts}" name="savePartsJS"  />
+                    <apex:actionFunction name="refreshAttachmentParts" action="{!attachment}" rerender="AttachmentSectionParts"/>
+                    <!----------------------------------- Area Functions Part ----------------------------------->
+                    
+                    <apex:pageBlockSection >
+                        <apex:outputField value="{!CSS_WS_Warranty__c.CSS_WS_Claim_Number__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockButtons >
+                        <apex:commandButton action="{!backParts }" value="{!$Label.CSS_WS_Button_Back}"/>
+                        <apex:commandButton onclick="SavePartsGridsJS(); return false;" value="{!$Label.CSS_WS_Button_Next}" rerender="showmsg,travelTab"/>
+                        <!--<apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!$Profile.Name != 'CSS_WS_Paccar'}"/>-->
+                        <apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!enableCloneButton}"/>
+                        <apex:actionstatus id="nextParts"> 
+                            <apex:facet name="start" >
+                                <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                     
+                            </apex:facet>
+                        </apex:actionstatus>
+                    </apex:pageBlockButtons>      
+                    
+                </apex:pageBlock>
+                
+            </apex:tab>
+            
+            <!-- TAB for TRAVEL -->
+            <apex:tab id="travelTab" label="{!$Label.CSS_WS_Travel_Information}" name="TravelTab" disabled="{!disableTravel}" rendered="{!showTravel}">
+                <apex:pageBlock title="{!$Label.CSS_WS_Travel_Information}" id="travelInfo">
+                    
+                    <apex:pageBlockSection columns="1" rendered="{!NOT(ISNULL(rescue))}">
+                        <apex:outputText value="{! CSS_WS_Warranty__c.CSS_WS_RescueNumber__c }"  />
+                    </apex:pageBlockSection>              
+                    
+                    <apex:pageBlockSection columns="2">
+                        <apex:pageBlockSection columns="1">
+                            <apex:pageBlockSection columns="3" rendered="{!NOT(ISNULL(rescue))}">
+                                <apex:outputText value="{!$Label.CSS_WS_TravelItem }" style="font-weight: bold; color: #424242;"/>
+                                <apex:outputText value="{!$Label.CSS_WS_Quantity }" style="font-weight: bold; color: #424242;"/>
+                                <apex:outputText value="{!$Label.CSS_WS_AmountUSD }" style="font-weight: bold; color: #424242;"/>
+                            </apex:pageBlockSection>
+                            
+                            <apex:pageBlockSection columns="3" rendered="{!NOT(ISNULL(rescue))}">
+                                <apex:outputText value="{!$Label.CSS_WS_TravelBaseFare}" style="font-weight: bold; color: #424242;"/>
+                                <apex:outputText label="" value="{! rescue.CSS_WS_BaseFare__c }" /> 
+                                <apex:outputText value="{0, number, currency}" >
+                                    <apex:param value="{!rescue.CSS_WS_MinimumFare__c}" />
+                                </apex:outputText>
+                                <!-- <apex:outputText label="" value="{!rescue.CSS_WS_MinimumFare__c}"/> -->
+                            </apex:pageBlockSection>
+                            
+                            <apex:pageBlockSection columns="3" rendered="{!NOT(ISNULL(rescue))}">
+                                <apex:outputText value="{!$Label.CSS_WS_AdditionalKMDriven}" style="font-weight: bold; color: #424242;"/>
+                                <apex:outputText label="" value="{!rescue.CSS_WS_AdditionalKmDriven__c}" />
+                                <apex:outputText value="{0, number, currency}">
+                                    <apex:param value="{!rescue.CSS_WS_AdditionalKMDrivenAmount__c}" />
+                                </apex:outputText>
+                                <!-- <apex:outputText label="" value="{!rescue.CSS_WS_AdditionalKMDrivenAmount__c}" /> -->
+                            </apex:pageBlockSection>
+                            
+                            <apex:pageBlockSection columns="3" rendered="{!NOT(ISNULL(rescue))}">
+                                <apex:outputText value="{!$Label.CSS_WS_AdditionalHours }" style="font-weight: bold; color: #424242;"/>
+                                <apex:outputText label="" value="{!rescue.CSS_WS_AdditionalHours__c}" />
+                                <apex:outputText value="{0, number, currency}">
+                                    <apex:param value="{!rescue.CSS_WS_AdditionalHoursAmount__c}" />
+                                </apex:outputText>
+                                <!-- <apex:outputText label="" value="{!rescue.CSS_WS_AdditionalHoursAmount__c}" /> -->
+                            </apex:pageBlockSection>
+                            
+                            <apex:pageBlockSection columns="3" rendered="{!NOT(ISNULL(rescue))}">
+                                <apex:outputText value="" />
+                                <apex:outputText label="" value="{!$ObjectType.CSS_WS_Rescue__c.fields.CSS_WS_RescueCost__c.Label}" style="font-weight: bold; color: #424242;"/>
+                                <apex:outputText value="{0, number, currency}">
+                                    <apex:param value="{!rescue.CSS_WS_RescueCost__c}" />
+                                </apex:outputText>
+                                <!-- <apex:outputText label="" value="{!rescue.CSS_WS_MinimumFare__c + rescue.CSS_WS_AdditionalKMDrivenAmount__c + rescue.CSS_WS_AdditionalHoursAmount__c}" /> -->
+                            </apex:pageBlockSection>
+                        </apex:pageBlockSection>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="2">
+                        <apex:outputText label="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Towing_Amount__c.Label}" value="{0, number, currency}" rendered="{! (isMexico && CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c != '54734') || (CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c == '54734' && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c != 'Policy WW')}">
+                            <apex:param value="{!CSS_WS_Warranty__c.CSS_WS_Towing_Amount__c}"></apex:param>
+                            <apex:actionSupport rerender="travelInfo,showmsg" event="onchange" action="{!calculateTotalTravelAmount}" />
+                        </apex:outputText>
+                        
+                        <apex:inputText value="{!CSS_WS_Warranty__c.CSS_WS_Towing_Amount__c }" rendered="{!NOT(isMexico) || (CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c == '54734' && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy WW')}">
+                            <apex:actionSupport rerender="travelInfo,showmsg" event="onchange" action="{!calculateTotalTravelAmount}" />
+                        </apex:inputText>
+                        
+                        <apex:outputText id="towingTotal" />
+                        
+                        <apex:outputText value="{!CSS_WS_Warranty__c.CSS_WS_Travel_Hours__c}" rendered="{!(isMexico && CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c != '54734') || (CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c == '54734' && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c != 'Policy WW')}" label="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Travel_Hours__c.Label}">
+                            <apex:actionSupport rerender="travelInfo,showmsg" event="onchange" action="{!R04133_SF72}" />
+                        </apex:outputText>
+                        
+                        <apex:inputText id="travelHours" value="{!CSS_WS_Warranty__c.CSS_WS_Travel_Hours__c}" rendered="{!NOT(isMexico) || (CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c == '54734' && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy WW')}">
+                            <apex:actionSupport rerender="travelInfo,showmsg" event="onchange" action="{!R040815_SF24}" />
+                        </apex:inputText>
+                        
+                        <apex:outputText label="USD" id="travelHoursAmount" value="${! additionalHrAmount }" rendered="{! NOT(isMexico) || (CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c == '54734' && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy WW')}"/>
+                        <!--<apex:outputText id="travelHoursAmount" value="{ 0, number, currency }" rendered="{! NOT(isMexico)}">
+                            <apex:param value="{!additionalHrAmount}"></apex:param>
+                        </apex:outputText>-->
+                        
+                        <apex:outputText rendered="{! (isMexico && CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c != '54734') || (CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c == '54734' && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c != 'Policy WW')}" />
+                        
+                        <apex:outputText value="{!CSS_WS_Warranty__c.CSS_WS_Travel_Distance__c}" rendered="{!(isMexico && CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c != '54734') || (CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c == '54734' && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c != 'Policy WW')}">
+                            <apex:actionSupport rerender="travelInfo,showmsg" event="onchange" action="{!R040816_SF25}"/>
+                        </apex:outputText>
+                        
+                        <apex:inputText id="travelDistance" value="{!CSS_WS_Warranty__c.CSS_WS_Travel_Distance__c}" rendered="{!NOT(isMexico) || (CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c == '54734' && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy WW')}">
+                            <apex:actionSupport rerender="travelInfo,showmsg" event="onchange" action="{!R040816_SF25}"/>
+                        </apex:inputText>
+                        
+                        <apex:outputText label="USD" id="travelDistanceAmount" value="${! additionalKmAmount }" rendered="{!NOT(isMexico) || (CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c == '54734' && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy WW')}"/>
+                        <!--<apex:outputText id="travelDistanceAmount" value="{ 0, number, currency }" rendered="{! NOT(isMexico)}">
+                            <apex:param value="{!additionalKmAmount}"></apex:param>
+                        </apex:outputText>-->
+                        
+                        <apex:outputText rendered="{!(isMexico && CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c != '54734') || (CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c == '54734' && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c != 'Policy WW')}" />
+                        
+                        <apex:outputText value="{0, number, currency}"  rendered="{!isMexico && CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c != '54734'}" label="{!$Label.CSS_WS_Rescue_E058}">
+                            <apex:param value="{!CSS_WS_Warranty__c.CSS_WS_Lodging__c}"></apex:param>
+                            <apex:actionSupport rerender="travelInfo,showmsg" event="onchange" action="{!R040813_SF22}"/>
+                        </apex:outputText>
+                        
+                        <apex:inputText id="lodging" value="{!CSS_WS_Warranty__c.CSS_WS_Lodging__c}" rendered="{!NOT(isMexico) || (CSS_WS_Warranty__c.CSS_WS_Service_Provider_Dealer__c == '54734' && CSS_WS_Warranty__c.CSS_WS_Policy_Flag__c == 'Policy WW')}">
+                            <apex:actionSupport rerender="travelInfo,showmsg" event="onchange" action="{!R040813_SF22}"/>
+                        </apex:inputText>
+                        
+                        <apex:outputText id="lodgingAmount"/>
+                        
+                        <apex:inputField id="travelMode" value="{! CSS_WS_Warranty__c.CSS_WS_Travel_Mode__c }" >
+                            <apex:actionSupport event="onchange"   action="{! clearTravelModeDetail }"/>
+                        </apex:inputField><apex:outputText /> 
+                        
+                        <apex:inputText id="travelDetailMode" value="{! CSS_WS_Warranty__c.CSS_WS_Travel_Detail_Mode__c }" rendered="{! CSS_WS_Warranty__c.CSS_WS_Travel_Mode__c == 'Other' }"/>
+                        
+                        <apex:outputText id="travelDetailMode2"  value="{! CSS_WS_Warranty__c.CSS_WS_Travel_Detail_Mode__c }" rendered="{! CSS_WS_Warranty__c.CSS_WS_Travel_Mode__c != 'Other' }"/><apex:outputText />
+                        
+                        <apex:outputText id="totalTravel" value="{0, number, currency}" label="{! $ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Total_Amount_Travel__c.Label}">
+                            <apex:param value="{! CSS_WS_Warranty__c.CSS_WS_Total_Amount_Travel__c }"/>
+                        </apex:outputText>
+                    </apex:pageBlockSection>
+                    
+                    <!----------------------------------- Area Functions Travel ----------------------------------->
+                    <!----------------------------------- Area Functions Travel ----------------------------------->
+                    
+                    <apex:pageBlockSection >
+                        <apex:outputField value="{!CSS_WS_Warranty__c.CSS_WS_Claim_Number__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockButtons >
+                        <apex:commandButton action="{!backTravel}" value="{!$Label.CSS_WS_Button_Back}"/> 
+                        <apex:commandButton action="{!saveTravel}" value="{!$Label.CSS_WS_Button_Next}" rendered="{!!showSaveTravelButton}"/>
+                        <apex:commandButton action="{!saveTravel}" value="{!$Label.CSS_WS_Button_Review}" rerender="showmsg" rendered="{!showSaveTravelButton}"/>
+                        <!--<apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!$Profile.Name != 'CSS_WS_Paccar'}"/>-->
+                        <apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!enableCloneButton}"/>
+                        <apex:actionstatus id="nextTravel"> 
+                            <apex:facet name="start" >
+                                <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                      
+                            </apex:facet>
+                        </apex:actionstatus>
+                    </apex:pageBlockButtons>   
+                    
+                </apex:pageBlock>      
+            </apex:tab>
+            
+            <!-- TAB for CLAIMABLE -->
+            <apex:tab id="claimableTab" label="{!$Label.CSS_WS_Other_Claimable}" name="ClaimableTab" disabled="{!disableClaimable}">
+                <apex:pageBlock title="{!$Label.CSS_WS_Other_Claimable}">
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:commandButton action="{!AddNewClaimable}" value="{!$Label.CSS_WS_Button_Add_New}" rerender="OtherClaimableSection, showmsg"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockSection columns="1">
+                        <apex:pageBlockTable value="{!ClaimablesList}" var="claimable" id="OtherClaimableSection" style="text-align: center !important;" >
+                            <apex:column headerValue="{!$Label.CSS_WS_Action}">
+                                <apex:commandButton value="{!$Label.CSS_WS_Label_Delete}" action="{!DeleteClaimable}" rerender="OtherClaimableSection">
+                                    <apex:param name="ClaimableToDelete" value="{!claimable.Index}" assignTo="{!ClaimableToDelete}"/> 
+                                </apex:commandButton>
+                            </apex:column>
+                            <apex:column headerValue="{!$Label.CSS_WS_Other_Claimable}">
+                                <apex:inputField value="{!claimable.Claimable.CSS_WS_Claimable__c}">
+                                    <apex:actionSupport event="onchange" action="{!ValidateOtherClaimableSelectList}" reRender="OtherClaimableSection, showmsg"/>
+                                </apex:inputField>
+                            </apex:column>
+                            <apex:column headerValue="{!$Label.CSS_WS_AmountUSD}">
+                                <apex:inputField value="{!claimable.Claimable.CSS_WS_Requested_Amount__c}">
+                                    <apex:actionSupport event="onchange" action="{!SumClaimablesAmount}" reRender="TotalAmountClaimables, showmsg, OtherClaimableSection"/>
+                                </apex:inputField>
+                                <apex:facet name="footer">
+                                    <apex:outputText id="TotalAmountClaimables" value="Total {!TotalAmountClaimables}"/>
+                                </apex:facet>
+                            </apex:column>
+                            <apex:column headerValue="{!$Label.CSS_WS_Description}">
+                                <apex:inputText disabled="{!claimable.ReadOnly}" value="{!claimable.Claimable.CSS_WS_Description__c}" />
+                            </apex:column>
+                        </apex:pageBlockTable>
+                    </apex:pageBlockSection>                    
+                    
+                    <!----------------------------------- Area Functions Claimable ----------------------------------->
+                    <apex:actionFunction action="{!BeforeSaveClaimables}" name="BeforeSaveClaimablesJS" status="saveClaimable" oncomplete="SaveClaimablesJS();"/>
+                    <apex:actionFunction action="{!SaveClaimables}" name="SaveClaimablesJS" status="saveClaimable" oncomplete="saveClaimableJS();"/>
+                    <apex:actionFunction action="{!saveClaimable}" name="saveClaimableJS" status="saveClaimable"/>
+                    <!----------------------------------- Area Functions Claimable ----------------------------------->         
+                    
+                    <apex:pageBlockSection >
+                        <apex:outputField value="{!CSS_WS_Warranty__c.CSS_WS_Claim_Number__c}"/>
+                    </apex:pageBlockSection>
+                    
+                    <apex:pageBlockButtons >
+                        <apex:commandButton action="{!backClaimable}" value="{!$Label.CSS_WS_Button_Back}"/>
+                        <apex:commandButton onclick="BeforeSaveClaimablesJS(); return false;" value="{!$Label.CSS_WS_Button_Review}" reRender="OtherClaimableSection, showmsg" />
+                        <!--<apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!$Profile.Name != 'CSS_WS_Paccar'}"/>-->
+                        <apex:commandbutton value="{!$Label.CSS_WS_Button_Clone}" onclick="window.location='/apex/CSS_WS_ClaimFormat?id={!CSS_WS_Warranty__c.Id}&clone=1'; return false;" rendered="{!enableCloneButton}"/>
+                        <apex:actionstatus id="saveClaimable"> 
+                            <apex:facet name="start" >
+                                <apex:image url="{!$Resource.LoadIcon}" width="20" height="20" style="position: absolute !important; margin-right: 5px !important;"/>                      
+                            </apex:facet>
+                        </apex:actionstatus>
+                    </apex:pageBlockButtons>
+                    
+                </apex:pageBlock>
+            </apex:tab>
+            
+        </apex:tabPanel> 
+    </apex:form>
+    
+    <apex:form id="payment" rendered="{!CSS_WS_Warranty__c.CSS_WS_Claim_Status__c == 'Pending DR Payment to DL'}">
+        <apex:pageBlock title="Dealer Payment Details">
+            
+            <apex:pageBlockSection columns="1">
+                <apex:inputField id="dlrPaymentDate" value="{!CSS_WS_Warranty__c.CSS_WS_DLR_Payment_Date__c}"/>
+                <apex:inputField id="dlrCreditNumber" value="{!CSS_WS_Warranty__c.CSS_WS_DLR_Credit_Number__c}"/>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockButtons >                                                
+                <apex:commandButton action="{!saveDLRDetails}" value="Save"/>
+            </apex:pageBlockButtons>
+            
+        </apex:pageBlock>
+    </apex:form>   
+    
+    <apex:form id="lock">
+        <apex:outputPanel styleClass="lockBckgrnd" layout="block" rendered="{!displayPopUp && NOT(disableClaimable)}"/>
+        <apex:outputPanel id="popup">
+            <apex:outputPanel id="popInnerOutputPnl" styleClass="customPopup" layout="block" rendered="{!displayPopUp && NOT(disableClaimable)}"> 
+                <div class="clearfix"></div> 
+                <div class="col-md-12 col-xs-12">
+                    <b> {! $Label.CSS_WS_Global_E005} </b>
+                </div>
+                <div class="clearfix"></div>
+                <hr/>
+                <div class="col-sm-5 col-xs-4 cmi-tar">
+                    <apex:repeat value="{!odmWarnings}" var="w" id="theRepeat">
+                        
+                        <apex:outputText value="{!w}" id="theValue"/><br/>
+                        
+                    </apex:repeat>
+                </div>
+                <hr/> 
+                <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                    <b>{! $Label.CSS_WS_Global_E006  }</b>
+                    <apex:commandButton value="{! $Label.CSS_WS_No}" action="{!closePopup}" styleClass="cancelButton" rerender="lock"/>
+                    <apex:commandButton value="{! $Label.CSS_WS_Yes }" onclick="continueSubmission()" styleClass="saveButton" rerender="popup" />
+                </div>
+            </apex:outputPanel> 
+        </apex:outputPanel>
+        <apex:actionFunction action="{!showPopup}" name="showPopup" oncomplete="SaveClaimablesJS()"/>
+        <apex:actionFunction action="{!continueSubmission}" name="continueSubmission" />
+    </apex:form>       
+    
+    <apex:form id="lock2">
+        <apex:outputPanel styleClass="lockBckgrnd" layout="block" rendered="{!displayPopUp && NOT(disableHeader)}"/>
+        <apex:outputPanel id="popup2">
+            <apex:outputPanel id="popInnerOutputPnl2" styleClass="customPopup" layout="block" rendered="{!displayPopUp && NOT(disableHeader)}"> 
+                <div class="clearfix"></div> 
+                <div class="col-md-12 col-xs-12">
+                    <b> {! $Label.CSS_WS_Global_E005} </b>
+                </div>
+                <div class="clearfix"></div>
+                <hr/>
+                <div class="col-sm-5 col-xs-4 cmi-tar">
+                    <apex:repeat value="{!odmWarnings}" var="w" id="theRepeat2">
+                        
+                        <apex:outputText value="{!w}" id="theValue2"/><br/>
+                        
+                    </apex:repeat>
+                </div>
+                <hr/> 
+                <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                    <b>{! $Label.CSS_WS_Global_E006  }</b>
+                    <apex:commandButton value="{! $Label.CSS_WS_No}" action="{!closePopup}" styleClass="cancelButton" rerender="lock2"/>
+                    <apex:commandButton value="{! $Label.CSS_WS_Yes }" onclick="continueHeader()" styleClass="saveButton" rerender="popup2" />
+                </div>
+            </apex:outputPanel> 
+        </apex:outputPanel>
+        <apex:actionFunction action="{!showPopup}" name="showPopup" oncomplete="SaveClaimablesJS()"/>
+        <apex:actionFunction action="{!continueHeader}" name="continueHeader" />
+    </apex:form>    
+</apex:page>

@@ -1,0 +1,479 @@
+<!-- 
+Name:FSL_TroubleshootingOverview
+Copyright © 2019  Cummins
+======================================================
+======================================================
+Purpose:                                                            
+
+This component is to display table on Troublsehooting Overview. 
+========================================================================================================
+========================================================================================================
+History                                                            
+                                                      
+VERSION     AUTHOR                     DATE                                   
+1.0     MALLIKA SUBHASHINI         	 5/21/2019 
+1.1		RAJASHEKAR NALLAPATI
+1.2     Harsha Ragam                12/2/2020       Added Custom labels
+1.2     Charan Teja                  02/22/2021 (CT3-277) 
+1.3     Shirisha Pedditi             7/6/2022 Added FTR 
+-->
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,lightning:availableForFlowScreens"
+                controller="FSL_CL_TSoverview" access="global" >
+    
+    
+    <aura:attribute name="CustomerPossPart" type="List" default="[{'label' : 'Yes', 'value' : 'Yes'},
+                                                                 {'label' : 'No', 'value' : 'No'}
+                                                                 ]" />
+    <aura:attribute name="CustomerPossPartSelected" type="String" />
+    <aura:attribute name="faultype" type="String"/>
+    <aura:attribute name="type" type="String"/>
+    <aura:attribute name="FailureMeasureValues" type="List" default="[{'label' : 'Miles', 'value' : 'Miles'},
+                                                                     {'label' : 'Kilometers', 'value' : 'Kilometers'},
+                                                                     {'label' : 'Hours', 'value' : 'Hours'}
+                                                                     ]"/>
+    <aura:attribute name="FaultCode" type="Integer" />
+    
+    <aura:attribute name="errorFieldList" type="List" default="[]" />
+    <aura:attribute name="selectedFailureMeasure" type="String"/>
+    <aura:attribute name="updateAccountCode" type="String"/>
+    <aura:attribute name="wrapperList" type="object"/>
+    <aura:attribute name="recordId" type="String"/> 
+    <!--   <aura:attribute name="accountId" type="String"/> -->
+    <aura:attribute name="selectedRecordId" type="String"/> 
+    <aura:attribute name="coverageMsg" type="String" default=""/>
+    <aura:attribute name="selectedAccountCode" type="String" />
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+    <aura:attribute name="blnValidateFailure" type="boolean" default="false"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="saveRecHelperCheck" type="Boolean" default="false" />
+    <aura:attribute type="CSS_Solution_Component__c[]" name="EditRec" default="{ 'sobjectType' : 'CSS_Solution_Component__c' }"></aura:attribute>
+    <aura:attribute name="isValidApprovalCode" type="Boolean" default="true"/>
+    <aura:attribute name="ApprovalCodeValue" type="String"/>
+    <aura:attribute name="FaultcodeID" type="String"/>
+    <aura:attribute name="requiredCheck" type="boolean" default="false"/>
+    <aura:attribute name="partWarantyValue" type="String"/>
+    <aura:attribute name="FailureDateValue" type="String"/>
+    <aura:attribute name="FailurePointValue" type="String"/>
+    <aura:attribute name="FailureDate" type="Date"/>
+    <aura:attribute name="PartWarrentyDate" type="Date"/>
+    <aura:attribute name="Errorcheck" type="boolean" default="false"/>
+    <aura:attribute name="AccountCodecheck" type="string"/>
+    <aura:attribute name="hideCheck" type="boolean" default="false"/>
+    <aura:attribute name="noCoverageFoundCheck" type="boolean" default="false"/> <!-- Added CT3-277  --> 
+    <aura:attribute name="disableButtons" type="boolean" default="false"/>
+    <!--  <lightning:overlayLibrary aura:id="overlayLib"/>  -->
+    <aura:attribute name="workOrderRecord" type="Object"/>
+    <aura:attribute name="recordLoadError" type="String"/>
+    <aura:attribute name="solId" type="String"/>
+    <aura:attribute name="Headertitle" type="boolean" default="false"/>
+    <aura:attribute name="ProfileName" type="String"/>
+    <aura:attribute name="DealerProfile" type="String"/>
+    <aura:attribute name="userInfo" type="User"/>
+    <aura:attribute name="isFactoryRole" type="User" default="false"/> <!-- Priyanka VGRS2-17-->
+    <aura:attribute name="FTRFlag" type="boolean" default="false"/> <!-- Shirisha ROAD-477-->
+    <aura:attribute name="showTroubleshooting" type="boolean" default="true"/> <!-- Shirisha ROAD-477-->
+    <aura:registerEvent name="sampleComponentEvent" type="c:EVL_TDSCompEvent"/>
+    
+    
+    <!--added by sai as part of CT1-350 -->
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.recordId}"
+                      fields="Type__c"
+                      targetFields="{!v.workOrderRecord}"
+                      targetError="{!v.recordLoadError}"
+                      />
+    <aura:handler name="init" value="{!this}" action="{!c.jobplanDetails}"/>
+    
+    
+    <div class="slds"> 
+        <aura:if isTrue="{!AND(v.DealerProfile, v.showTroubleshooting)}"> <!-- Priyanka VGRS2-17-->
+            <lightning:accordion aura:id="accordion" activeSectionName="A">
+                <!--Soft Coding labels as part of NIN-44 - Adam -->
+                <lightning:accordionSection name="" label="{!$Label.c.css_Troubleshooting}"/>
+            </lightning:accordion>
+        </aura:if>
+        <!-- Added by Shirisha ROAD-477-->
+        <aura:if isTrue="{!AND(v.DealerProfile, v.FTRFlag)}">
+            <lightning:accordion aura:id="accordion" activeSectionName="A">
+                <lightning:accordionSection name="" label="{!$Label.c.FSL_FTR_Label}"/>
+            </lightning:accordion>
+        </aura:if>
+        
+        <div class="slds-table--header-fixed_container">
+            <div class="slds-scrollable_x" style="height:auto;" >
+                <table class="slds-table slds-table--bordered slds-table--cell-buffer">
+                    <thead> 
+                        <tr class="slds-text-title--caps"> 
+                            <th scope="col">
+                                <div class="slds-truncate-sm" title="Faultcode/Symptoms">{!$Label.c.FSL_Faultcode_Symptoms}</div>
+                            </th>
+                            <!--image header start -->
+                            <th scope="col-sm">
+                                <div class="slds-truncate-sm" title="Solution img"> {!$Label.c.FSL_Icon}</div>
+                            </th> 
+                            <!--image header end -->
+                            <th scope="col-sm">
+                                <div class="slds-truncate-sm" title="Solutions" style="width:50px;">{!$Label.c.css_Solutions}</div>
+                            </th>
+                            <!-- <th scope="col-sm">
+                                <div class="slds-truncate-sm" title="SRTs">{!$Label.c.CSS_SRTs}</div>
+                            </th> -->
+                            <th scope="col-sm">
+                                <div class="slds-truncate-sm" title="Selected Parts">{!$Label.c.CSS_Selected_Parts}</div>
+                            </th>
+                            <th scope="col-sm">
+                                <div class="slds-truncate-sm" title="Failure">{!$Label.c.CSS_Failure}</div>
+                            </th> 
+                            
+                            <th scope="col-sm">
+                                <div class="slds-truncate-sm" title="Fail Mode">{!$Label.c.FSL_Fail_Mode}</div>
+                            </th> 
+                            <th scope="col-sm">
+                                <div class="slds-truncate-sm" title="Account Code">{!$Label.c.CSS_Account_Code}</div>
+                            </th> 
+                            
+                            <!-- <th scope="col-sm">
+                            <div class="slds-truncate-sm" title="Action">Action</div>
+                        </th> -->
+                            
+                        </tr>
+                    </thead>
+                    <!--table body start, 
+                    Iterate wrapperList as a <tr>
+                    -->
+                    <tbody>
+                        <aura:iteration items="{!v.wrapperList}" var="wl">
+                            <tr>
+                                <th scope="row"></th>
+                                <th scope="row"></th>
+                                <th scope="row"></th>
+                                <th scope="row"></th>
+                                <th scope="row"></th>
+                                <th scope="row"></th>
+                                <th scope="row"></th>
+                                <th scope="row"></th>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    
+                                    <div class="slds-truncate" style="word-wrap: break-word;" title="{!wl.FaultCodeDescription}">
+                                        <!--  <aura:iteration items="{!wl.solList}" var="w"> -->
+                                        <!--<a target="_blank" href="" data-id="{!wl.Name}" id="{!wl.solList[0].Id}" onclick = "{!c.getSolutions}">{!wl.Name}</a>-->
+                                        <!--  added Shirisha for removing html link when FTR flag is true -->
+                                       <aura:if isTrue="{!v.FTRFlag}"> 
+                                            <div>{!wl.Name}</div> 
+                                            <aura:set attribute="else">
+                                                <a target="_blank" href="" data-id="{!wl.Name}" id="{!wl.solList[0].Id}" onclick = "{!c.getSolutions}">{!wl.Name}</a>
+                                            </aura:set>
+                                        </aura:if> 
+									
+                                        <!--   </aura:iteration> -->
+                                        
+                                    </div>
+                                </th>
+                                <!--image start -->
+                                <th scope="row-sm">
+                                    <div class="slds-truncate" title="Solution Img">
+                                        <aura:iteration items="{!wl.solList}" var="w">
+                                            
+                                            <aura:if isTrue="{!w.Diagnostic_Response__c == 'Most likely the solution. Repair recommended.'}">    
+                                                <div>
+                                                    <img src="{!$Resource.passed_png}" width="15" height="15" alt="img"/><br/><br/>
+                                                </div>
+                                                <div><br/></div>
+                                            </aura:if> 
+                                            <div>
+                                                <aura:if isTrue="{!w.Diagnostic_Response__c == 'Not the solution. Continue troubleshooting.'}">                                 
+                                                    <div>
+                                                        <img src="{!$Resource.not_passed_png}" width="15" height="15"/><br/><br/>
+                                                    </div>
+                                                    <div><br/></div>
+                                                </aura:if>
+                                            </div>
+                                            <div>
+                                                <aura:if isTrue="{!w.Diagnostic_Response__c == 'Could not perform the solution verification'}">  
+                                                    <div>
+                                                        <img src="{!$Resource.not_answered_png}" width="15" height="15"/><br/><br/>
+                                                    </div>
+                                                    <div><br/></div>
+                                                </aura:if>
+                                            </div>
+                                        </aura:iteration> 
+                                    </div>
+                                </th> 
+                                <!--image end -->
+                                <th scope="row">
+                                    <div class="incr">
+                                        <!--  <div class="slds-truncate-sm" title="{!wl.solCount}">{!wl.solCount} </div> -->
+                                        <aura:iteration items="{!wl.solList}" var="w">
+                                           <aura:if isTrue="{!NOT(w.FSL_Service_Job__r.Service_Order_Extension__r.FSL_ABRFlag__c)}"><!-- Added by Prasanna to remove the displaying Solution ID for FTR Event - ROAD -474 -->
+                   								<div><b>{!w.Name}</b></div> 
+                    					   </aura:if>   
+                                            
+                                            <div>{!w.Solution_Title__c}</div> 
+                                            <div><br/></div>
+                                        </aura:iteration> 
+                                    </div> 
+                                </th>
+                                <!-- <th scope="col">
+                                    <div class="slds-truncate" title="Repairs Made"></div>
+                                    <b>Diagnosis: </b>{!wl.digTime}<br />
+                                    <b>Repair: </b>{!wl.repTime}
+                                </th> -->
+                                <th scope="row">
+                                    <div class="incr">
+                                        <aura:iteration items="{!wl.solList}" var="w">             
+                                            <aura:if isTrue="{!empty(w.Parts__r)}">
+                                                <div><b>0</b></div>
+                                                <div><br/></div>
+                                                <aura:set attribute="else">
+                                                    <div style="align-center"><b>{!w.Parts__r.length}</b></div>
+                                                    <div><br/></div>
+                                                </aura:set>
+                                            </aura:if>
+                                            <br/>
+                                        </aura:iteration>  
+                                    </div>   
+                                </th>
+                                
+                                <!--   <th scope="row">
+                                <div class="incr">
+                                    <aura:iteration items="{!wl.complist}" var="w">
+                                       <div class="slds-truncate" title="Failure">
+                                           {!w.Failure_value__c} <br/>
+                                        </div>
+                                    </aura:iteration>
+                                </div>
+                            </th> -->
+                                <th scope="col">
+                                    <div class="incr">
+                                        <aura:iteration items="{!wl.compList}" var="w">  
+                                            <div class="slds-truncate" title="Failure">
+                                                {!w.Failure_Value__c}<br/> 
+                                            </div>
+                                            <div><br/></div>
+                                        </aura:iteration>
+                                    </div>
+                                </th>
+                                <th scope="col">
+                                    <div class="incr">
+                                        <aura:iteration items="{!wl.compList}" var="w">  
+                                            <div class="slds-truncate" title="{!$Label.c.FSL_Fail_Mode}">
+                                                {!w.Fail_Mode__r.Name}  <br/> 
+                                            </div>
+                                            <div><br/></div>
+                                        </aura:iteration>
+                                    </div>
+                                </th>
+                                <th scope="col">
+                                    <div class="incr">
+                                        <aura:iteration items="{!wl.compList}" var="w">  
+                                            <div class="slds-truncate" title="{!$Label.c.EVL_Account_Codes}">
+                                                {!w.FSL_Account_Code__c} <br/>
+                                            </div>
+                                            <div><br/></div>
+                                        </aura:iteration>
+                                    </div>
+                                </th>
+                                <th scope="col">
+                                    <div class="slds-truncate" title="Action">
+                                        
+                                        <aura:iteration items="{!wl.compList}" var="w">
+                                            <!--<aura:if isTrue="{!w.solutions__r.Diagnostic_Response__c == 'Most likely the solution. Repair recommended.'}">-->
+                                            <!-- <a target="_blank">Edit</a> <br /><br /> -->
+                                            <!-- Base variant: Makes a button look like a link -->
+                                            
+                                            <!--<lightning:button variant="base" class="slds-text-link" label="Edit"  onclick="{! c.editComp}"/> <br/>-->
+                                            <!-- Adding soft coded labels for Edit - NIN-34 Adam -->
+                                            <div>
+                                                <a  onclick="{!c.editComp}" 
+                                                   name="{!wl.name}" 
+                                                   aura:id="EditLink"
+                                                   data-value="{!w.Id}">{!$Label.c.css_Edit}</a><br /> 
+                                            </div>
+                                            <div><br/></div>
+                                            <!-- </aura:if> -->
+                                        </aura:iteration>
+                                    </div>
+                                </th>
+                            </tr>
+                        </aura:iteration>
+                    </tbody>
+                </table>
+            </div>
+        </div> 
+        <!-- for edit record popup-->
+        <!-- end of edit record popup-->
+        
+        
+        
+        <aura:if isTrue="{!v.isOpen}">
+            
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1"  class="slds-modal slds-fade-in-open"
+                     >
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.CloseDialog}"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">{!$Label.c.FSL_JobPlan_Edit_Failure}</h2> 
+                    </header>
+                    <div class="slds-modal__content slds-p-around_small" id="modal-content-id-1"  style="height:40rem;" >
+                        <lightning:recordViewForm recordId="{!v.selectedRecordId}"  objectApiName="CSS_Solution_Component__c">
+                            <!-- <lightning:outputField fieldName="Solutions__r.CSS_Fault_Code__c" />  --> 
+                        </lightning:recordViewForm>
+                        <lightning:recordEditForm aura:id="editForm" 
+                                                  recordId="{!v.selectedRecordId}" 
+                                                  objectApiName="CSS_Solution_Component__c" 
+                                                  onsubmit="{!c.SaveRecord}">
+                            <lightning:messages/>
+                            <aura:if isTrue="{!(v.errorFieldList.length != 0)}">  
+                                Error Message
+                                {!v.errorFieldList}
+                            </aura:if>  
+                            
+                            <div class="slds-row">
+                                <div class="slds-row">
+                                    <aura:If isTrue="{!(v.faultype == 'Symptom')}">
+                                        <lightning:inputField aura:id="CumminsCode" 
+                                                              fieldName="Cummins_Fault_Code__c"  
+                                                              label="Cummins Code"
+                                                              /> 
+                                        <lightning:inputfield fieldName="Faultcode_Description__c"/> 
+                                    </aura:If>
+                                    <aura:If isTrue="{!(v.faultype == 'Fault')}">
+                                        <lightning:inputfield fieldName="FC_Description__c"/> 
+                                        <!-- <lightning:input label="Fault Code" 
+                                                 name ="Fault Code"
+                                                 value ="{!v.Faultcode_Description__c}"/>-->
+                                        {!v.Failure_Code__c} 
+                                    </aura:If>
+                                    
+                                    <lightning:inputField fieldName="Failure_Value__c" 
+                                                          label="{!$Label.c.EVL_Failure_Name}"
+                                                          aura:id="FailureNameId"/>
+                                    
+                                    <lightning:inputField  fieldName="Fail_Mode__c" 
+                                                          label="{!$Label.c.FSL_Fail_Mode}"
+                                                          aura:id="FailModeId"/>
+                                    <span id="FailModeError" style="color: rgb(194, 57, 52);"></span>
+                                    <aura:if isTrue="{!v.hideCheck}">
+                                        
+                                        <lightning:inputField aura:id="accountCode" 
+                                                              fieldName="FSL_Account_Code__c"
+                                                              label="{!$Label.c.EVL_Account_Codes}" 
+                                                              onchange="{!c.fetchCoverageType}"/> </aura:if>
+                                    <!--   <force:inputField aura:id="accountCode"
+                                                      value="{!v.CSS_Solution_Component__c.FSL_Account_Code__c}"/> -->
+                                    <lightning:input class="slds-hide" type="string" label="Temp" name="temp" value="{!v.AccountCodecheck}" disabled="true"/>
+                                </div> 
+                            </div>
+                            <br/> 
+                            
+                            <aura:if isTrue="{!(v.selectedAccountCode=='NPW' ||
+                                             v.selectedAccountCode=='RPW'||
+                                             v.selectedAccountCode=='RRW')
+                                             }">
+                                <aura:if isTrue="{!(v.selectedAccountCode!='RRW')}">
+                                    <div class="slds-col slds-align_absolute-center slds-form_horizontal slds-form slds-grid slds-wrap">
+                                        <lightning:radioGroup name="CustomerPossPart"
+                                                              label="{!$Label.c.css_Did_customer}"
+                                                              options="{!v.CustomerPossPart }"
+                                                              value="{!v.CustomerPossPartSelected }"
+                                                              type="radio"
+                                                              aura:id="CustomerPossPartId"
+                                                              required = "{!v.requiredCheck}"
+                                                              /> 
+                                    </div>
+                                </aura:if>
+                                <div class="slds-col slds-align_absolute-center slds-form_horizontal slds-form slds-grid slds-wrap">
+                                    <lightning:inputField  fieldName="Part_Warranty_Start_Date__c" 
+                                                          aura:id = "PartWarrantyId"                                                
+                                                          label="{!$Label.c.CSS_PartWarrantyStartDate}" 
+                                                          required="{!v.requiredCheck}"
+                                                          onchange = "{!c.handlePartWSDChange}"/>
+                                    <span id="partsWarrantyDateError" style="color: rgb(194, 57, 52);"></span>
+                                    <lightning:inputField fieldName = "Failure_Date__c" 
+                                                          aura:id = "FailureDateId"
+                                                          label = "{!$Label.c.EVL_Failure_Date}"
+                                                          required="{!v.requiredCheck}"
+                                                          onchange = "{!c.handleFailureDateChange}"/>
+                                    <ul>
+                                        <li>
+                                            <span id="partsWarrantyFailureError" style="color: rgb(194, 57, 52);"/>
+                                        </li>
+                                        <li>
+                                            <span id="failureDateError" style="color: rgb(194, 57, 52);"></span>
+                                        </li>
+                                    </ul>
+                                    <lightning:inputField fieldName = "Failure_Point__c"
+                                                          aura:id = "FailurePointId"
+                                                          label="{!$Label.c.CSS_Failure_Pointc}" 
+                                                          required="{!v.requiredCheck}"
+                                                          onchange="{!c.handleFailurePointChange}"/>
+                                    
+                                    <ul>
+                                        <li>
+                                            <span id="failurePointError" style="color: rgb(194, 57, 52);"/>
+                                        </li>
+                                    </ul>
+                                    <lightning:radioGroup name="failureMeasure"
+                                                          label="{!$Label.c.EVL_Failure_Measure}"
+                                                          aura:id = "FailureMeasureId"
+                                                          options="{!v.FailureMeasureValues}"
+                                                          value="{!v.selectedFailureMeasure}"
+                                                          required="{!v.requiredCheck}"
+                                                          type="radio"
+                                                          />
+                                    
+                                </div>
+                                
+                            </aura:if>
+                            
+                            
+                        </lightning:recordEditForm>
+                        
+                        <aura:if isTrue="{!v.showSpinner}" >
+                            <div class="slds-is-fixed spinnercss">  
+                                <c:FSL_Spinner recordId="{!v.recordId}" />
+                            </div>
+                            
+                        </aura:if> 
+                        
+                        <!--MSG  -->
+                        <aura:if isTrue="{!(v.coverageMsg!='')}" >
+                            <div style="Color:red"> {!v.coverageMsg} </div>
+                        </aura:if>                 
+                        
+                    </div> 
+                    
+                    <footer class="slds-modal__footer">
+                        
+                        <lightning:button variant="brand" 
+                                          label="{!$Label.c.css_Check_Coverage}"
+                                          title="Check Coverage"
+                                          disabled="{!v.disableButtons}"
+                                          onclick="{!c.CheckCoverage}"/> 
+                        <lightning:button variant="neutral" 
+                                          label="{!$Label.c.css_Cancel}"
+                                          title="Cancel"
+                                          onclick="{! c.CloseDialog }"/>
+                        <lightning:button variant="brand" 
+                                          label="{!$Label.c.css_save_btn}"
+                                          title="Save"
+                                          disabled="{!v.disableButtons}"
+                                          onclick="{!c.SaveRecord}"/>
+                        
+                    </footer>
+                </div>
+                
+            </section> 
+            
+            <div class="slds-backdrop slds-backdrop_open"></div> 
+            
+        </aura:if>
+        
+    </div>
+</aura:component>

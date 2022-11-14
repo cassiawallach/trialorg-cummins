@@ -1,0 +1,724 @@
+<!-- 
+Version      Author                  Date             Comments
+1.0        Anvesh Reddy              01/08/2018     Added TTML Table and popup 
+2.0        Rajesh Pasupuleti         01/08/2018     Added Attachment component 
+-->
+<apex:component controller="CSS_OtherClaimablesController_RO" allowDML="true" id="temporary">
+<apex:attribute name="JobOrdId" assignto="{!JobId}" description="Job Id" type="String" /> 
+<apex:attribute name="JobRecord" description="Service Job Values" type="CSS_Job_Order__c" assignTo="{!workJob}"/>
+<!-- job plan parts ui --> 
+<style>
+
+    .TTMLTable th {
+        text-align : center;
+    }
+
+    .TTMLbold {
+        font-weight:bold;
+    }
+    th, td {
+        border:none;
+        padding:5px;
+    } 
+    .showRedBorder{
+        border: 2px solid red !important;
+    }
+
+</style>
+
+<script type="text/javascript">
+    function DisableSaveButton1(claimblescompId){
+        claimblescompId.disabled=true;
+    }
+</script>
+
+<script type="text/javascript">
+
+    function amountHours(e,compId){
+        var technicianTimeValAmount= document.getElementById(compId.id).value;
+        if((e.which > 47 && e.which <=57) || e.which == 9 || e.which == 11 || e.which == 8 || e.which == 46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105) || ((e.which == 190 || e.which == 110) && ! (technicianTimeValAmount.includes('.'))))
+        {
+
+        } 
+        else 
+        {
+            return false;
+        }     
+    }     
+</script>
+<script type="text/javascript">  
+    function validateAmountExpenseTotal(amtId) {
+
+        var TTMLAmountTotal= document.getElementById(amtId.id).value;
+        var TTMLAmountTotalLength=document.getElementById(amtId.id).value.length;
+        var TTMLAmountTotalSplit = [];
+        if(TTMLAmountTotal.includes('.')){
+            TTMLAmountTotalSplit = TTMLAmountTotal.split(".")
+            var declengthAmount = TTMLAmountTotalSplit[1].length;
+            console.log("declengthAmount" + '' + declengthAmount);
+            if(declengthAmount > 2) {                    
+                var newStrAmount = TTMLAmountTotal.substring(0, TTMLAmountTotalLength-1);
+                console.log("TTMLAmountTotalLength" + '' + TTMLAmountTotalLength);
+                console.log("newStrAmount" + '' + newStrAmount);
+                document.getElementById(amtId.id).value = newStrAmount;
+                return false;
+            }
+        }           
+        else 
+            if( TTMLAmountTotalLength ==8 ){
+                var newStrAmount1 = TTMLAmountTotal.substring(0, TTMLAmountTotalLength-1);
+                console.log('newStrAmount1' + ' ' + newStrAmount1);
+                var newStrAmoun2 = newStrAmount1/100;
+                console.log('newStrAmoun2' + ' ' + newStrAmoun2);
+                document.getElementById(amtId.id).value = newStrAmoun2;
+            }
+
+        if(TTMLAmountTotalLength == 7 && !TTMLAmountTotal.includes('.')){
+            var resultAmount = Number(document.getElementById(amtId.id).value)/100;
+            document.getElementById(amtId.id).value=resultAmount;
+        }
+
+        if(TTMLAmountTotalLength == 6 && !TTMLAmountTotal.includes('.')){
+            var resultAmount = Number(document.getElementById(amtId.id).value)/10;
+            document.getElementById(amtId.id).value=resultAmount;
+        }
+    } 
+
+</script>
+
+<script type="text/javascript">
+    function validateClaimbles(compId){
+        var WarrTime= document.getElementById(compId.id).value;
+        var WarrTimeLength= document.getElementById(compId.id).value.length;
+        if(WarrTime > 100) {
+            document.getElementById(compId.id).value=100;   
+        }
+    }
+
+    function qtyPressClaimblesCovered(e,compId){
+        var technicianTimeVal= document.getElementById(compId.id).value;
+        if(((e.which > 47 && e.which <=57) || e.which == 9 || e.which == 11 || e.which == 8 || e.which == 46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105)))
+        {
+
+        } 
+        else 
+        {
+            return false;
+        }     
+    }        
+
+    function quantityClaimbles(e,compId){
+        if((e.which > 47 && e.which <=57) || e.which == 9 || e.which == 11) // || e.which == 37 || e.which == 09 || e.which == 01 || e.which == 11 || e.which == 39 || (e.which > 95 && e.which <=105))
+        {
+        } 
+        else 
+        {
+            return false;
+        }        
+    }
+
+    function hoursTraveled(e,compId){
+        var technicianTimeVal= document.getElementById(compId.id).value;
+        if(((e.which > 47 && e.which <=57 || e.which == 9 || e.which == 11 || e.which == 8 || e.which == 46 || e.which == 9 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105)) || ((e.which == 190 || e.which == 110) && !(technicianTimeVal.includes('.')))))
+        {
+        } 
+        else 
+        {
+            return false;
+        }
+
+    }
+
+
+    function validateTTMLHoursTraveled(compId){
+        var TTMLHoursTraveled= document.getElementById(compId.id).value;
+        var TTMLHoursTraveledLength=document.getElementById(compId.id).value.length;
+        var TTMLHoursTraveledSplit = [];
+
+        if(TTMLHoursTraveled.includes('.')){
+            TTMLHoursTraveledSplit = TTMLHoursTraveled.split(".");
+            var declength = TTMLHoursTraveledSplit[1].length;
+            if(declength > 2){                
+                var newStr = TTMLHoursTraveled.substring(0, TTMLHoursTraveledLength-1);
+                console.log("TTMLHoursTraveledLength" + '' + TTMLHoursTraveledLength);
+                console.log("newStr" + '' + newStr);
+                document.getElementById(compId.id).value = newStr;
+                return false;    
+            }
+        }
+        else {
+            if(TTMLHoursTraveledLength == 7)
+            {
+                var newStr1 = TTMLHoursTraveled.substring(0, TTMLHoursTraveled.length-1); 
+                var newStr2 = newStr1/10;
+                document.getElementById(compId.id).value = newStr2;
+            }
+        }
+        if(TTMLHoursTraveledLength == 6 && !TTMLHoursTraveled.includes('.')){
+            var result = Number(document.getElementById(compId.id).value)/10;
+            document.getElementById(compId.id).value=result;
+        }
+    }
+
+
+
+    function validateTTMLExpenseTotal(compId) {
+        var TTMLExpenseTotal= document.getElementById(compId.id).value;
+        var TTMLExpenseTotalLength=document.getElementById(compId.id).value.length;
+        var TTMLExpenseTotalSplit = [];
+
+        if(TTMLExpenseTotal.includes('.')){
+            TTMLExpenseTotalSplit = TTMLExpenseTotal.split(".")
+            var declength = TTMLExpenseTotalSplit[1].length;
+            console.log("declength" + '' + declength);
+            if(declength > 2) {                    
+                var newStr = TTMLExpenseTotal.substring(0, TTMLExpenseTotalLength-1);
+                console.log("TTMLExpenseTotalLength" + '' + TTMLExpenseTotalLength);
+                console.log("newStr" + '' + newStr);
+                document.getElementById(compId.id).value = newStr;
+                return false;
+            }
+        }           
+        else 
+            if( TTMLExpenseTotalLength ==7 ){
+                var newStr1 = TTMLExpenseTotal.substring(0, TTMLExpenseTotalLength-1);
+                console.log('newStr1' + ' ' + newStr1);
+                var newStr2 = newStr1/100;
+                console.log('newStr2' + ' ' + newStr2);
+                document.getElementById(compId.id).value = newStr2;
+            }
+
+        if(TTMLExpenseTotalLength == 6 && !TTMLExpenseTotal.includes('.')){
+            var result = Number(document.getElementById(compId.id).value)/100;
+            document.getElementById(compId.id).value=result;
+        }
+    }        
+
+    //use this function when we implement the fucntionality 
+    function displaypop(e){
+        if(e == 'true'){
+            return false;  
+        }
+        else{
+            $('#customPartsPopUp').modal('hide');
+            return false;
+        }
+    }
+
+    function displaypop1(e){
+        if(e == 'true'){
+            return false;  
+        }
+        else{
+            $('#customPartsJobPopUp1').modal('hide');
+            return false;
+        }
+    }
+
+    function callfailcodemethod1(value,value1){
+        failcodelogic1(value,value1);
+    }
+
+    function callfailcodemethod2(value,value1){
+        //alert(value);
+        //alert(value1);
+        failcodeChange(value,value1);
+    }
+
+    function loadEstimateJavascript(){
+        $('.estimate').click(function() {
+            // alert('2');
+            if($(this).is(':checked')==true){
+                $(this).closest('td').prev().find('input[type=checkbox]').prop('checked',true);
+            }
+
+        });
+
+
+        $('.OCCheckbox').click(function() {
+
+            if($(this).is(':checked')==false && $(this).closest('td').next().find('input[type=checkbox]').is(':checked')==true){
+                //alert('inside if');   
+                $(this).prop('checked',true);
+            }
+
+        });
+
+        $('.TTMLCheckbox').click(function() {
+
+            if($(this).is(':checked')==false && $(this).closest('td').next().find('input[type=checkbox]').is(':checked')==true){
+                //alert('inside if');   
+                $(this).prop('checked',true);
+            }
+
+        });
+    }
+
+    function onEstimate(value,value1){
+        //alert(value);
+        // alert(value1);
+        //var Estbox = document.getElementById("{!$Component.Est}").value;
+        //alert(Estbox);
+
+        CheckSelectOnEstimate(value,value1);
+    }
+
+    function callAccountcodemethod(value,value1,value2){
+        Accountcodelogic(value,value1,value2);
+    }
+
+    function check(){
+        // alert('1');
+        $('.OCCheckbox').each(function() {
+            $(this).prop("checked", true);
+        });
+
+        return false;
+    }
+
+    function unCheck(){
+        $('.OCCheckbox').each(function() {
+            $(this).removeAttr('checked');
+        });
+        return false;
+    }      
+
+    function TTMLcheck(){
+        // alert('1');
+        $('.TTMLCheckbox').each(function() {
+            $(this).prop("checked", true);
+        });
+
+        return false;
+    }
+
+    function TTMLunCheck(){
+        $('.TTMLCheckbox').each(function() {
+            $(this).removeAttr('checked');
+        });
+        return false;
+    }    
+//Added Method for not allow to enter charecters in Milage and Hours Traveled Fields as per defect #172055 related story #168028 Despicable Me,-By RAJESH 20th Nov 2018
+    function preventCharecters(e,compId){
+           if((e.which > 47 && e.which <=57) || e.which == 9 || e.which == 11 || e.which == 8 || e.which == 46 ||  e.which == 0) // || e.which == 37 || e.which == 09 || e.which == 01 || e.which == 11 || e.which == 39 || (e.which > 95 && e.which <=105))
+            {
+            } 
+            else 
+            {
+                return false;
+            }        
+    }
+//End code for defect #172055 
+
+
+</script>
+<!--apex:outputPanel id = "compId"-->
+<div class="panel-group cmi_generic-accordion"> 
+    <div class="panel panel-default">
+        <div class="panel-heading " id="accordion1-heading-5">
+            <h4 class="panel-title" data-toggle="collapse" data-parent="#accordion1-heading-5" data-target="#campaign-accordian3" aria-expanded="true" onclick="PartsAction2(); return false;">
+                <a class="accordion-toggle" >
+                    <span class="glyphicon glyphicon-plus"></span>
+                    <div class="cmi_accordion-title"><b>Other Claimables</b></div>
+                </a>
+            </h4>
+        </div>
+    </div>
+    <apex:actionRegion > <apex:actionFunction name="PartsAction2" action="{!getOCData}" rerender="customPartsJobPopUp2,TTMLTable" status="callPartsStatus" onComplete="loadEstimateJavascript();" /></apex:actionRegion>
+    <div id="campaign-accordian3" class="panel-collapse collapse" aria-expanded="true" style="margin-top:10px">
+        <apex:actionStatus startText="requesting..." id="callPartsStatus">
+            <apex:facet name="start">Loading... <img src="/img/loading.gif" /></apex:facet>
+            <apex:facet name="stop"></apex:facet>
+        </apex:actionStatus>
+
+
+        <apex:outputPanel id="customPartsJobPopUp2"> <!--OtherClaimables -->
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-sm-12" style="padding-top:20px;"> 
+                        <div class="hidden-xs">
+                            <div class="row cmi_jobplan-table">
+                                <div class="col-md-12 col-xs-12" style="margin:25px 0px;">                                
+                                    <!--<div style="float:right;">
+                                        <i class="pencil-tealIcon"></i> 
+                                        <apex:actionRegion ><apex:commandLink value="{!$Label.css_Edit}" html-data-target="#customPartsJobPopUp1" html-data-toggle="modal" html-data-backdrop="static" html-data-keyboard="false"  onComplete="return false;" /></apex:actionRegion>
+                                    </div>-->
+                                    <!--story GSSC - 52 by Venkat
+                                    
+                                    <div style="display:{!IF(DealerTypeFlag == false, 'block','none')}">
+                                        <u><a href="#/" onclick="unCheck()">{!$Label.CSS_Uncheck_All}111</a></u>&nbsp;&nbsp;
+                                        <u><a href="#/" onclick="check()">{!$Label.CSS_Check_All}</a></u> <br/>
+                                    </div>-->
+                                    
+                                    
+                                    <!--<table>
+                                        <tr>
+                                            <apex:outputPanel rendered="{!IF(DealerTypeFlag == false,true,false)}">
+                                                <td>
+                                                    <u><a href="#/" onclick="unCheck()">{!$Label.CSS_Uncheck_All}111</a></u>&nbsp;&nbsp;
+                                                <u><a href="#/" onclick="check()">{!$Label.CSS_Check_All}</a></u> <br/>
+                                                </td>
+                                            </apex:outputPanel>
+                                        </tr>
+                                </table>-->
+                                    <table class="mytable table table-bordered table-striped" border="0" cellpadding="0" cellspacing="0">
+                                        <thead>
+                                            <tr height="54">
+                                              <!--story GSSC - 52 by Venkat
+                                                select checkbox {!DealerTypeFlag}
+                                                <apex:outputtext rendered="{!IF(DealerTypeFlag == false,true,false)}"> 
+                                                <th style="text-align:center;">{!$Label.CSS_Select}</th>
+                                                </apex:outputtext>-->
+                                                <!--   <th style="text-align:center;">{!$ObjectType.CSS_Parts_Options__c.fields.Css_Estimate__c.Label}</th> -->
+                                                <th style="text-align:center;">{!$Label.CSS_Items}</th>
+                                                <th style="text-align:center;">{!$Label.css_Description}</th>
+                                                <th style="text-align:center;">{!$Label.CSS_Qty}</th>
+                                                <th style="text-align:center;">{!$Label.CG_UnitPrice} ({!usercurreny.DefaultCurrencyIsoCode})</th> 
+                                                <th style="text-align:center;">{!$Label.CSS_Amount} ({!usercurreny.DefaultCurrencyIsoCode})</th> 
+                                                <th style="text-align:center;">{!$Label.CSS_Covered}</th> 
+                                                <th style="text-align:center;">{!$Label.CSS_Fail_Code}</th> 
+                                                <th style="text-align:center;">{!$Label.CSS_Account_Code}</th> 
+                                            </tr>
+                                        </thead>
+                                        <apex:repeat value="{!otherClaimPartList}" var="otherClaimComp" id="Oth">
+                                            <tr >
+                                                <!--<apex:outputtext rendered="{!IF(DealerTypeFlag == false,true,false)}">
+                                                <td style="text-align:center;"><apex:inputField value="{!otherClaimComp.selected_part__c}" styleClass="OCCheckbox"/></td> 
+                                                </apex:outputtext>--->
+                                                <!--   <td style="text-align:center;"><apex:inputField value="{!otherClaimComp.Css_Estimate__c}" id="Est" styleClass="estimate" onclick="onEstimate('{!otherClaimComp.Css_Estimate__c}','{!otherClaimComp.id}')"/></td> -->
+                                                <td ><span><apex:outputText value="{!otherClaimComp.Item__c}" /></span></td>
+                                                <!--  <apex:selectList value="{!otherClaimComp.Item__c}" size="1" disabled="true">
+<apex:selectOptions value="{!Items}"/>
+</apex:selectList></span></td>-->
+                                                <td ><span><apex:outputText value="{!otherClaimComp.Part_Description__c}" /></span></td>
+                                                <td>
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.PartOC__c == 'OC',true,false)}">   
+                                                        <span><apex:outputtext value="{!otherClaimComp.Quantity_Ordered__c}"/></span>
+                                                    </apex:outputPanel>  
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.PartOC__c <> 'OC',true,false)}"> 
+                                                        <span><apex:outputtext value="{!otherClaimComp.Quantity__c}"/></span>
+                                                    </apex:outputPanel> 
+                                                </td>
+                                                <td>
+                                                    <apex:outputText value="{!ROUND(otherClaimComp.Sell_Price__c, 2)}" styleClass="cmi-tar"/>
+                                                </td>
+                                                <td>
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.PartOC__c == 'OC',true,false)}">   
+                                                        <span>
+                                                            <!--<apex:outputtext value="{!otherClaimComp.Quantity__c * otherClaimComp.Sell_Price__c}"/>-->
+                                                            <apex:outputtext value="{!ROUND(otherClaimComp.Amount__c, 2)}" styleClass="cmi-tar"/>
+                                                        </span>
+                                                    </apex:outputPanel>   
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.PartOC__c <> 'OC',true,false)}">   
+                                                        <apex:outputtext value="{!ROUND(otherClaimComp.Amount__c, 2)}"/>
+                                                    </apex:outputPanel>   
+                                                </td>
+                                                <td>
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.PartOC__c == 'OC',true,false)}"> 
+                                                        <apex:outputtext value="{!otherClaimComp.Warranty_Allocation__c}"/>
+                                                    </apex:outputPanel> 
+                                                    <apex:outputPanel rendered="{!IF(otherClaimComp.PartOC__c <> 'OC',true,false)}"> 
+                                                        <apex:outputtext value="{!otherClaimComp.Covered__c}"/>
+                                                    </apex:outputPanel> 
+                                                </td>
+
+                                                <td ><apex:outputtext value="{!otherClaimComp.Fail_Code__c}"/></td>
+                                                <td ><apex:outputtext value="{!otherClaimComp.Account_Code__c}"/></td> 
+                                            </tr>
+                                        </apex:repeat>
+                                        <!--GSSC-442--><!--<apex:actionRegion >
+                                            <apex:actionFunction name="CheckSelectOnEstimate" action="{!onChangeofEstimate}"  rerender="Oth"> 
+                                                <apex:param name="EstimateVal"  value="" assignTo="{!selectedEstimate}"/>
+                                                <apex:param name="PartsID"  value="" assignTo="{!selectedPart}"/>
+
+                                            </apex:actionFunction></apex:actionRegion>-->
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                      <!--GSSC-442--> <!-- <div class="col-sm-offset-5 col-sm-2" style="margin-top:10px;">
+                            <apex:actionRegion ><apex:commandLink value="{!$Label.css_save_btn}"  action="{!saveOtherClaimables}" styleClass="saveButton"  /></apex:actionRegion>
+                        </div>-->
+                    </div>
+                </div>
+            </div>
+        </apex:outputPanel>
+
+        <!-- job plan parts ui end -->
+        <!------------------------Travel, Towing, Meals, or Lodging expenses Table for story 117219------------------------------>
+
+        <apex:outputPanel > <!-- TTML-->
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-sm-12" style="padding-top:20px;"> 
+                        <apex:outputPanel id="TTMLTable">
+                            <div class="hidden-xs">
+                                <div class="row cmi_jobplan-table">
+                                    <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+                                        <!--<div style="float:right;">
+<i class="pencil-tealIcon"></i> 
+<apex:actionRegion >
+<apex:commandLink value="{!$Label.css_Edit}" html-data-target="#TTMLPopUp" html-data-toggle="modal" html-data-backdrop="static" html-data-keyboard="false"  onComplete="return false;" style="text-decoration:underline;"/>
+</apex:actionRegion>
+</div>-->
+                                        <div>
+                                            <h4><b>{!$Label.CSS_Travel_Towing_Meals_and_Lodging}</b></h4></div>
+                                       <!-- <u><a href="#/" onclick="TTMLunCheck()">{!$Label.CSS_Uncheck_All}</a></u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                        <u><a href="#/" onclick="TTMLcheck()">{!$Label.CSS_Check_All}</a></u>--> <br/>
+                                        <div style="float:right;">
+                                            <!--apex:outputPanel rendered="{!if(checktravelratedlr==false,true,false)}"-->
+                                           <!-- <i class="pencil-tealIcon"></i> 
+                                            <!--/apex:outputPanel-->
+                                           <!-- <apex:actionRegion >
+                                                
+                                              <!--apex:outputPanel rendered="{!if(checktravelratedlr==false,true,false)}"-->
+                                             <!--   <apex:commandLink value="{!$Label.css_Edit}" html-data-target="#TTMLPopUp" html-data-toggle="modal" 
+                                                                  html-data-backdrop="static" html-data-keyboard="false"  
+                                                                  onComplete="return false;" style="text-decoration:underline;" />
+                                              <!--/apex:outputPanel-->
+                                             
+                                           <!-- </apex:actionRegion>-->
+                                        </div>
+
+                                        <table class="mytable table table-bordered table-striped TTMLTable" border="0" cellpadding="0" cellspacing="0" style="margin-top:5px;">
+                                            <thead>
+                                                <tr height="54">
+
+                                                    <!--Select should not come for Dealer Story 168027 For Dealers Rupesh--> 
+                                                    <!-- <apex:outputPanel rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,false,true)}">
+<th style="width:10px;">{!$Label.CSS_Select}</th>
+</apex:outputPanel>
+
+
+<!--No Dealer--                                                       
+<apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == false,true,false)}">
+<th>{!$Label.css_Technician}<span style="color: red">*</span></th>
+</apex:outputText>
+<!--Dealer--   
+<apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,true,false)}">
+<th>{!$Label.css_Technician}</th>
+</apex:outputText>
+
+
+<!--No Dealer--                                                       
+<apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == false,true,false)}">
+<th>{!$Label.CSS_Type}<span style="color: red">*</span></th>
+</apex:outputText>
+<!--Dealer--   
+<apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,true,false)}">
+<th>{!$Label.CSS_Type}</th>
+</apex:outputText>
+
+
+
+<!--No Dealer--  
+<apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == false,true,false)}">
+<th style="width:10px;">{!$Label.CSS_Qty}<span style="color: red">*</span></th>
+</apex:outputText>
+<!--Dealer--  
+<apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,true,false)}">
+<th style="width:10px;">{!$Label.CSS_Qty}</th>
+</apex:outputText>
+
+
+<!--No Dealer--  
+<apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == false,true,false)}">
+<th style="width:15px;">{!$Label.CG_UnitPrice}(USD)<span style="color: red">*</span></th> 
+</apex:outputText>
+<!--Dealer--  
+<apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,true,false)}">
+<th style="width:15px;">{!$Label.CG_UnitPrice}(USD)</th> 
+</apex:outputText>
+
+
+<apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,true,false)}">
+<th>{!$Label.CSS_TTMLMileage}</th>
+</apex:outputText>
+
+
+
+<apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,true,true)}">
+<th style="width:15px;">{!$Label.CSS_HoursTraveled}</th>
+</apex:outputText>-->
+                                                    <!--Start code for Dealer and Distributer available Header field on Page level as per story #Despicable Me #168027,-By RAJESH 13th Nov 2018-->
+                                                    <apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == false,true,false)}">
+                                                        <!--<th style="width:10px;">{!$Label.CSS_Select}</th>-->
+                                                        <th>{!$Label.css_Technician}<span style="color: red">*</span></th>
+                                                        <th>{!$Label.CSS_Type}<span style="color: red">*</span></th>
+                                                        <th style="width:10px;">{!$Label.CSS_Qty}<span style="color: red">*</span></th>
+                                                        <th style="width:15px;">{!$Label.CG_UnitPrice} ({!usercurreny.DefaultCurrencyIsoCode})<span style="color: red">*</span></th> 
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,true,false)}">
+                                                        <!--th style="width:10px;">{!$Label.CSS_Select}</th-->
+                                                        <th>{!$Label.css_Technician}</th>
+                                                        <th>{!$Label.CSS_Type}</th>
+                                                        <th style="width:10px;">{!$Label.CSS_Qty}</th>
+                                                        <th style="width:15px;">{!$Label.CG_UnitPrice} ({!usercurreny.DefaultCurrencyIsoCode})</th>
+                                                        <th>{!$Label.CSS_TTMLMileage}</th>
+                                                        <th style="width:15px;">{!$Label.CSS_HoursTraveled}</th>
+                                                    </apex:outputText>
+                                                    <!--End #Despicable Me #168027-->                                                        
+                                                   <!-- <th>{!$Label.CSS_TotalExpense}</th> -->
+                                                   <th style="width:15px;">Expense Total ({!usercurreny.DefaultCurrencyIsoCode})</th>
+                                                    <th>{!$Label.CSS_Fail_Code}</th>
+                                                    <th>{!$Label.CSS_Account_Code}</th>
+                                                    <th style="width:16%;">{!$Label.CSS_Coverage}</th>
+                                                    <apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,false,true)}">
+                                                        <th style="width:15%;">{!$Label.css_Notes}</th>
+                                                    </apex:outputText>    
+
+                                                </tr>
+                                            </thead>
+                                            <apex:repeat value="{!ttmlPartsList}" var="ttmlClaimComp">
+                                                <tr>
+                                                    <apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == false,true,false)}">
+                                                       <!-- <td style="text-align:center;"><apex:inputField value="{!ttmlClaimComp.selected_part__c}" styleClass="TTMLCheckbox"/></td> --> <!--story GSSC - 52 by Venkat-->
+                                                        <!--     <td style="text-align:center;"><apex:inputField value="{!ttmlClaimComp.Css_Estimate__c}" styleClass="estimate"/></td> -->
+                                                    </apex:outputText>
+                                                    <td><span><apex:outputText value="{!ttmlClaimComp.Technician__c}" /></span></td>
+                                                    <td><span><apex:outputText value="{!ttmlClaimComp.Type__c}" /></span></td>
+                                               <apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == false,true,false)}">     
+                                                    <td >
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.PartOC__c == 'TOW',true,false)}">
+                                                            <span><apex:outputText value="{!ttmlClaimComp.Quantity_Ordered__c}" /></span>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.PartOC__c != 'TOW',true,false)}">
+                                                            <span><apex:outputText value="{!ttmlClaimComp.Quantity__c}" /></span>
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                   <td ><apex:outputtext value="{!ROUND(VALUE(ttmlClaimComp.Unit_Price__c), 2)}"/></td>
+                                               </apex:outputText> 
+                                                    <apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,true,false)}">
+                                                        <td><span><apex:outputText value="{!ttmlClaimComp.Quantity__c}" /></span></td> 
+                                                        <td ><span><apex:outputtext value="{!ROUND(VALUE(ttmlClaimComp.Unit_Price__c), 2)}"/></span></td>
+                                                        <td><span><apex:outputtext value="{!ttmlClaimComp.Mileage__c}"/></span></td>
+                                                        <td><span><apex:outputtext value="{!ttmlClaimComp.HoursTravelled__c}"/></span></td>
+                                                    </apex:outputText>
+                                                    <!--<td ><apex:outputtext value="{!ttmlClaimComp.Unit_Price__c}"/></td>-->
+                                                    <!--apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,true,false)}">
+                                                        <td><span><apex:outputtext value="{!ttmlClaimComp.Mileage__c}"/></span></td>
+                                                        <td><span><apex:outputtext value="{!ttmlClaimComp.HoursTravelled__c}"/></span></td>
+                                                    </apex:outputText-->
+                                                    <td >
+                                                        <apex:outputPanel rendered="{!IF(ttmlClaimComp.Type__c != 'MILE WARR FSE' && ttmlClaimComp.Type__c != 'MILE WARR FSPG',true,false)}">
+                                                            <apex:outputtext value="{!ROUND(ttmlClaimComp.ExpenseTotal__c, 2)}"/>
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                    <td ><apex:outputtext value="{!ttmlClaimComp.Fail_Code__c}"/></td>
+                                                    <td ><apex:outputtext value="{!ttmlClaimComp.Account_Code__c}"/></td>
+                                                    <td>
+                                                        <!--apex:outputPanel rendered="{!IF((ttmlClaimComp.FailurepartId__r.CoveredOCAmount__c != '0' || ttmlClaimComp.FailurepartId__r.CoveredOCAmount__c != ''),true,false)}"-->
+                                                        <apex:outputPanel rendered="{!IF((ttmlClaimComp.Account_Code__c != null && ttmlClaimComp.Account_Code__c != '' && ttmlClaimComp.Account_Code__c != 'Select One'),true,false)}">
+                                                            <div class="col-sm-9">
+                                                                <apex:actionRegion >
+                                                                    <apex:commandLink value="{!$Label.CSS_CoverageFound}" style="text-decoration:underline;" action="{!redirectToWarranty}"></apex:commandLink>
+                                                                </apex:actionRegion>                                                                   
+                                                            </div>
+                                                            <div class="col-sm-3">
+                                                                <i class="cmi_solidcorrect-icon" style="margin:0px;"></i>
+                                                            </div>
+                                                        </apex:outputPanel>
+                                                        <!--apex:outputPanel rendered="{!IF((ttmlClaimComp.FailurepartId__r.CoveredOCAmount__c == '0' || ttmlClaimComp.FailurepartId__r.CoveredOCAmount__c == ''),true,false)}"/-->
+                                                        <apex:outputPanel rendered="{!IF((ttmlClaimComp.Account_Code__c == null || ttmlClaimComp.Account_Code__c == ''),true,false)}"/>
+                                                    </td>
+                                                    <apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,false,true)}">
+                                                        <td ><apex:outputtext value="{!ttmlClaimComp.Notes__c}"/></td>
+                                                    </apex:outputText>
+                                                </tr>
+                                            </apex:repeat>
+
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </apex:outputPanel>
+                        <!--<div class="col-sm-offset-5 col-sm-2" style="margin-top:10px;">-->
+                     <!--GSSC-442-->  <!-- <div class="col-sm-offset-5 col-sm-4" style="margin-top:10px;">
+                            <apex:actionRegion ><apex:commandLink value="{!$Label.css_save_btn}"  action="{!saveTTMLParts}" styleClass="saveButton"/>&nbsp;&nbsp;&nbsp;&nbsp;
+
+                                <!--   <apex:commandLink value="Send Other Claimables to ERP"  action="{!SendOtherClaimablestoERP}" styleClass="saveButton" status="ActstatusidR"/> --><!-- 98036 kalpana-->
+                              <!--  <apex:actionStatus startText="requesting..." id="ActstatusidR">
+                                    <apex:facet name="start">Loading... <img src="/img/loading.gif" /></apex:facet>
+                                    <apex:facet name="stop"></apex:facet>
+                                </apex:actionStatus>&nbsp;&nbsp;
+
+                            </apex:actionRegion> 
+                        </div> -->
+                    <br/><br/><br/>
+
+                        <apex:outputText value="{!BMSChargesErrMsg}" rendered="{!IF((BMSChargesErrMsg != null && BMSChargesErrMsg != ''), true,false)}"/><!-- 98036 kalpana-->
+                        <!-- Added Attachment code as per Wild Kingdom #117223--> 
+                        <div class="row">
+                            <div class="col-sm-8">
+
+                                <c:CG_AttachmentComp JoId="{!workjob.Id}" DeleteFlag="false" pgName="ReadOnly" />
+
+                            </div> 
+                            <div class="col-sm-offset-1 col-sm-3" style="margin-top:50px;">                    
+                                <fieldset>
+                                   <!--<div class="col-sm-8 cmi-tar TTMLbold">{!$Label.CSS_Commercial_Travel}</div>
+                                    <div class="col-sm-4 cmi-tar">{!comt}</div> --Story GSSC 146 Venkat-->
+                                    <div class="col-sm-8 cmi-tar TTMLbold">{!$Label.CSS_Non_Commercial_Travel}</div> 
+                                    <div class="col-sm-4 cmi-tar">{!ROUND(ncomt, 2)}</div>
+                                    <!--<div class="col-sm-8 cmi-tar TTMLbold">{!$Label.CSS_Towing}</div> 
+                                    <div class="col-sm-4 cmi-tar">{!towt}</div>--Story GSSC 146 Venkat-->
+                                    <div class="col-sm-8 cmi-tar TTMLbold">{!$Label.CSS_Meals}</div> 
+                                    <div class="col-sm-4 cmi-tar">{!ROUND(meals, 2)}</div>
+                                    <div class="col-sm-8 cmi-tar TTMLbold">{!$Label.CSS_Lodging}</div>
+                                    <div class="col-sm-4 cmi-tar">{!ROUND(lodg, 2)}</div>
+                                    <div class="col-sm-12"><br/></div>
+                                    <div class="col-sm-8 cmi-tar TTMLbold">Total ({!usercurreny.DefaultCurrencyIsoCode})</div> 
+                                    <div class="col-sm-4 cmi-tar">{!ROUND(totalexp, 2)}</div>
+                                </fieldset>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>             
+        </apex:outputPanel> 
+
+
+        <!------------------------Travel, Towing, Meals, or Lodging expenses Table for story ClaimablePopUpId 117219 $Component.reppages.jobplanfrm.testingid.temporary.myRepeater.rowToRerender1 ------------------------------>
+
+
+        <!-----Custom Parts pop up Start----->
+
+     <!--GSSC-442--> <!--   <apex:actionRegion >
+            <apex:actionFunction name="closePopup" action="{!closePopup}" reRender="claimablemodCont,TTMLModCont"/>
+
+            <apex:actionFunction name="failcodelogic1" action="{!onChangeofFailCode}"  rerender="ClaimablePopUpId"> 
+
+                <apex:param name="FailCodeval"  value="" assignTo="{!SelectedFailCode}"/>
+                <apex:param name="PartsID"  value="" assignTo="{!SelectedPartID}"/>
+                <apex:param name="ItemID"  value="" assignTo="{!SelectedItem}"/>
+
+            </apex:actionFunction>
+
+           
+            <apex:actionFunction name="Accountcodelogic" action="{!onChangeofAccountCode}"  rerender="ClaimablePopUpId,amounterrorid"> 
+                <apex:param name="AccountCodeval"  value="" assignTo="{!SelectedAccountCode}"/>
+                <apex:param name="PartsID"  value="" assignTo="{!SelectedPartID}"/>
+                <apex:param name="FailCodeval"  value="" assignTo="{!SelectedFailCode}"/>
+            </apex:actionFunction>
+            <apex:actionFunction name="OnItemChange" action="{!onChangeofItem}"  rerender="ClaimablePopUpId"> 
+                <apex:param name="ItemID"  value="" assignTo="{!SelectedItem}"/>
+                <apex:param name="PartsID"  value="" assignTo="{!SelectedPartID}"/>
+
+            </apex:actionFunction>
+             </apex:actionRegion>-->
+
+            
+    </div>
+    </div>
+
+        
+
+
+
+
+        <!-- TTML Popup Code -->
+        
+</apex:component>

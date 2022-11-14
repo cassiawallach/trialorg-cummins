@@ -1,0 +1,219 @@
+<apex:component controller="CSS_FaultcodeController_V1" >
+    <c:CSS_edsRepairOrMaintenanceStatus />   
+    <apex:attribute name="jobSFDCId" type="ID" required="false" assignTo="{!JobID}" description="Job ID"/>
+    <script>
+    $(document).ready(function() {
+        
+        function toggleChevron(e) {
+            $(e.target)
+            .prev('.panel-heading')
+            .find("i.indicator")
+            .toggleClass('fa-caret-right fa-caret-down');
+        }
+        $('#accordion').on('hidden.bs.collapse', toggleChevron);
+        $('#accordion').on('shown.bs.collapse', toggleChevron);
+    });
+    
+    
+    </script>
+    <style>
+        .tbody {
+            display:table-footer-group; !important;
+        }
+    </style>
+    <div class="row intakerow">                                
+        <div class="panel-group" id="accordion">
+            <div class="panel panel-default">
+                
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        
+                        <a data-toggle="collapse" data-parent="#accordion" href="#ResultSummary" style = " text-decoration: none">
+                            <i class="fa fa-caret-down fa-lg  pull-left"></i>Result Summary</a>
+                        
+                    </h4>
+                </div>
+                <div id="ResultSummary" class="panel-collapse collapse in">
+                    <div class="panel-body">
+                        <legend class="fs_legend">{!IF(isPrioritized, 'Prioritized ', '')}  Fault Code</legend>
+                        <apex:outputPanel rendered="{!IF(InsiteTimeStamp== null, false, true)}" >
+                            <b> Pulled from INSITE: {!InsiteTimeStr}</b>
+                        </apex:outputPanel>
+                    <table id="faultcodeac" class="table table-striped" >
+                        <thead style="width:100%;">
+                            <tr width="100%">
+                                <th width="45%">Fault Code</th>
+                                <th width="55%">Related Fault Code</th>
+                            </tr>
+                        </thead> 
+                        <tbody style="display:table-footer-group;">
+                            <!-- <apex:variable var="fcCnt" value="{!1}" /> -->
+                            <apex:repeat value="{!faultCodes}" var="fc" id="theRepeatac" >
+                                <tr>
+                                    <td width="45%">
+                                        {!fc.FaultCode__c} 
+                                    </td>
+                                    <td width="55%">
+                                        {!fc.Related_Fault_Code__c}
+                                    </td>
+                                </tr>
+                            </apex:repeat> 
+                        </tbody>
+                    </table>
+                          <!--
+                        <apex:dataTable value="{!faultCodes}" var="faultCode" rowClasses="odd,even"  styleClass="table">
+                            
+                            <apex:column >
+                                <apex:facet name="header">Fault Codes</apex:facet>
+                                <apex:outputText value="{!faultCode.FaultCode__c}"/>
+                            </apex:column>
+                            
+                            <apex:column >
+                                <apex:facet name="header">Related Codes</apex:facet>
+                                <apex:outputText value="{!faultCode.Related_Fault_Code__c}"/>
+                            </apex:column>
+                            
+                        </apex:dataTable>
+                        -->
+                    </div>
+                    <div class="panel-body">
+                        <legend class="fs_legend">Repairs Made</legend>
+                        <apex:outputPanel rendered="{!IF(DSIDTimeStamp == null, false, true)}" >
+                            <b> Pulled from EDS: {!DSIDStamp}</b>
+                        </apex:outputPanel>
+           <div class="col-md-12 col-xs-12"> </div>
+               <div class="row">
+             
+                <div class="col-md-6 col-xs-6">
+                 Solutions
+                 </div>    
+                <div class="col-md-6 col-xs-6">
+                    Repairs
+                   </div> </div>
+                   <hr/>
+                   
+                   <apex:repeat value="{!solutions}" var="CSSol" id="theRepeat"> 
+                   
+                     <div class="row">
+                         <div class="col-md-6 col-xs-12">    
+                              {!CSSol.Case_Name__c}  <br />
+                             {!CSSol.Solution_Title__c}<br/> 
+                         </div>
+                         <div class="col-md-6 col-xs-12">  
+                            <apex:outputPanel rendered="{!CSSol.Name == 'Repair Successful - Problem Solved'}">
+                             <a><span class="css_repairSuccessfulProblemSolved" ></span></a>{!CSSol.Name}
+                            </apex:outputPanel>
+            
+          
+               
+                            <apex:outputPanel rendered="{!CSSol.Name == 'Repair Successful - Solved with additional parts/procedure'}">
+                                    <a><span class="css_repairSuccessfulWithAddtionalParts" ></span></a>{!CSSol.Name}
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!CSSol.Name == 'Repair Performed - Did not resolve root cause'}">
+                                    <a><span class="css_repairPerformedDidNotResolveRootCause" ></span></a>{!CSSol.Name}
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!CSSol.Name == 'Repair not performed'}">
+                                    <a> <span class="css_repairNotPerformed" ></span></a>{!CSSol.Name}
+                                </apex:outputPanel>
+                         </div></div><hr/>
+                                   <!-- <td>{!CSSol.Name} <br /> 
+                                        &nbsp;</td>-->
+                                    
+                                
+                                                                                     
+                          </apex:repeat> 
+                        <!--
+                        <apex:dataTable value="{!solutions}" var="solution" rowClasses="odd,even" styleClass="table">
+                            
+                            <apex:column >
+                                <apex:facet name="header">Solutions</apex:facet>
+                                <apex:outputText value="{!solution.Case_Name__c}"/><br/>
+                                <apex:outputText value="{!solution.Solution_Title__c}"/>                                                        
+                            </apex:column>
+                            
+                            <apex:column headerValue=" Repairs " >
+                                <apex:outputPanel rendered="{!solution.Name == 'Repair Successful - Problem Solved'}">
+                                    <a><span class="css_repairSuccessfulProblemSolved" ></span></a>{!solution.Name}
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!solution.Name == 'Repair Successful - Solved with additional parts/procedure'}">
+                                    <a><span class="css_repairSuccessfulWithAddtionalParts" ></span></a>{!solution.Name}
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!solution.Name == 'Repair Performed - Did not resolve root cause'}">
+                                    <a><span class="css_repairPerformedDidNotResolveRootCause" ></span></a>{!solution.Name}
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!solution.Name == 'Repair not performed'}">
+                                    <a> <span class="css_repairNotPerformed" ></span></a>{!solution.Name}
+                                </apex:outputPanel>
+                            </apex:column>
+                            
+                        </apex:dataTable>
+                        -->
+                        
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel panel-default">
+                <div class="panel-heading" style="background-color:lightgray">
+                    <h4 class="panel-title">
+                        
+                        <a data-toggle="collapse" data-parent="#accordion" style = " text-decoration: none">
+                            <i class="fa fa-caret-down fa-lg   pull-left"></i>Available Campaigns</a>
+                    </h4>
+                </div>
+                <!--          <div id="AvailableCampaigns" class="panel-collapse collapse">
+                                    <div class="panel-body">
+                                            AvailableCampaigns
+                                    </div>
+                                </div>  -->
+            </div>
+            
+            <div class="panel panel-default">
+                <div class="panel-heading" style="background-color:lightgray">
+                    <h4 class="panel-title">
+                        
+                        <a data-toggle="collapse" data-parent="#accordion" style = " text-decoration: none">
+                            <i class="fa fa-caret-down fa-lg   pull-left"></i>Available TRPs</a>
+                    </h4>
+                </div>
+                <!--        <div id="AvailableTRPs" class="panel-collapse collapse">
+                                <div class="panel-body">
+                                    AvailableTRPs
+                                </div>  -->
+            </div>
+            
+            
+            <div class="panel panel-default">
+                <div class="panel-heading" style="background-color:lightgray">
+                    <h4 class="panel-title">
+                        
+                        <a data-toggle="collapse" data-parent="#accordion" style = " text-decoration: none"> 
+                            <i class="fa fa-caret-down fa-lg   pull-left"></i>Calibration Updates</a>
+                    </h4>
+                </div>
+                <!--          <div id="CalibrationUpdates" class="panel-collapse collapse">
+                                <div class="panel-body">
+                                    CalibrationUpdates
+                                </div>
+                              </div> -->    
+            </div>
+            
+            <div class="panel panel-default">
+                <div class="panel-heading" style="background-color:lightgray">
+                    <h4 class="panel-title">
+                        
+                        <a data-toggle="collapse" data-parent="#accordion" style = " text-decoration: none">
+                            <i class="fa fa-caret-down fa-lg   pull-left"></i>SRTs</a>
+                    </h4>
+                </div>
+                <!--     <div id="SRTs" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                    SRTs
+                            </div> 
+                        </div>  -->
+            </div>
+            
+        </div>
+    </div>
+    
+</apex:component>

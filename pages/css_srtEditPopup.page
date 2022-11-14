@@ -1,0 +1,510 @@
+<!--**********************************************************************
+Name:CG_ClaimsSRTEditPopUp
+Copyright Â© 2018  Cummins
+======================================================
+======================================================
+Purpose:                                                            
+-------  
+This class is used for SRT Edit Popup functionalities
+======================================================
+======================================================
+History                                                            
+-------                                                            
+VERSION  AUTHOR                    DATE                DETAIL                                 
+1.0     Surender M/Arpita        08/06/2018     INITIAL DEVELOPMENT & Implementation of SRT Edit Popup functionalities                
+***********************************************************************-->
+
+<apex:page id="pageid1" showHeader="false" controller="css_srtEditPopupController" standardStylesheets="false" action="{!getErrorDetails}">
+    <c:CSS_Standard_IntakeStyles />
+    <c:css_ExtraStyles />
+    <c:CSS_Standard_UI />
+    
+    <script>
+    $(window).load(function(){
+        addSRTScrollbar();
+    });
+    </script>
+    
+    <script>
+    //Verify duplicateSRTs
+    
+    function enableSave2Button() {
+        //alert('Button disable1 check');
+        //alert(save2Button);
+        document.getElementById("pageid1:srtEditPopupForm:SaveButtonId").disabled=false;
+    }
+    function disableSave2Button(save2Button) {
+        //alert('Button disable1 check');
+        //alert(save2Button);
+        save2Button.disabled=true;
+        
+        
+    }
+    function disableSaveCloseButton() {
+        document.getElementById("pageid1:srtEditPopupForm:SaveandCloseButtonLinkId").className = 'cmi_lighttealbutton';
+        document.getElementById("pageid1:srtEditPopupForm:SaveandCloseButtonLinkId").disabled=true;
+    }
+    function checkDup(){
+        checkSRTDup();
+    }
+    //verifyCloseSRTPopup
+    function verifyCloseSRTPopup(chkReqFieldBoolean, srtNotAllowedErrVar, GSQErrorExists) {
+        //alert('entered into verifyCloseSRTPopup function...chkReqFieldBoolean>>>:'+srtNotAllowedErrVar);
+        addSRTScrollbar();
+        var statusStr;
+        try {
+            if((chkReqFieldBoolean !=null && chkReqFieldBoolean == 'false') && (srtNotAllowedErrVar !=null && srtNotAllowedErrVar == 'false') && (GSQErrorExists !=null && GSQErrorExists == 'false')){
+                window.opener.top.location.reload();
+                window.close();
+            }
+            
+            //OR
+            /*var statusEle = document.getElementById('{!$Component.srtEditPopupForm.saveCloseId}');
+                statusStr = statusEle.value;
+                if(statusStr !=null && statusStr == false){
+                    window.close();
+                }*/
+            } catch(err) {
+                //alert(err.message);
+                //console.log('Error message>>>:'+err.message);
+            }
+        }
+    
+    function callfailcodemethod(value,value1,value2){
+        // alert('Failcode Labor Rate is:'+value2);
+        
+        if(!value2)
+        {
+            // alert('false method is calling');
+            failcodelogic(value,value1);
+        }
+        else
+        {
+            
+            //alert('true method is calling');
+            return false;
+        }
+        
+    }
+    
+    function refreshMainPage(chkReqFieldBoolean) {
+        try {
+            if(chkReqFieldBoolean !=null && chkReqFieldBoolean == 'false'){
+                window.opener.top.location.reload();
+            }
+        } catch(err) {
+            alert(err.message);
+            console.log('Error message>>>:'+err.message);
+        }
+    }
+    
+    function filteredSRTScrollbar(){
+        var trLength1= $(".SRTTable tbody tr").length; 
+        var totalHeight1 = 0; 
+        
+        for(i=0;i<trLength1;i++){
+            totalHeight1 =$('.SRTTable tbody tr').eq(i).height()+totalHeight1;
+            if(i == 9){
+                $(".SRTTable tbody").height(totalHeight1).css('overflow-y','scroll');
+                console.log("trLength1" + ' ' + trLength1);
+                console.log("totalHeight1" + ' ' + totalHeight1);
+            }
+            
+            if(trLength1<=10){
+                $(".SRTTable tbody, .SRTTable thead").css('display','table-row-group');
+                $(".SRTTable tbody td").css('width','10%');
+            }
+            
+        }
+    }
+    
+    function addSRTScrollbar(){
+        //alert('calling from save method');
+        var trLengthaddSRT= $(".addSRTTable tbody tr").length; 
+        var totalHeightaddSRT = 0; 
+        for(i=0;i<trLengthaddSRT;i++){
+            totalHeightaddSRT =$('.addSRTTable tbody tr').eq(i).height()+totalHeightaddSRT;
+            if(i == 9){
+                $(".addSRTTable tbody").height(totalHeightaddSRT).css('overflow-y','scroll');
+                console.log("trLengthaddSRT" + ' ' + trLengthaddSRT);
+                console.log("totalHeightaddSRT" + ' ' + totalHeightaddSRT);
+            }
+            
+            if(trLengthaddSRT<10){
+                $(".addSRTTable tbody, .addSRTTable thead").css('display','table-row-group');
+                $(".addSRTTable tbody td").css('width','10%');
+            }
+            
+        }
+    }
+    
+    function CallTwoScrollbarFunctions(){
+        // alert('calling CallTwoScrollbarFunctions');
+        filteredSRTScrollbar();
+        addSRTScrollbar();
+    }        
+    
+    </script>
+    
+    <script>
+    function calDiagLen(){
+        srchDiagCode();                
+        console.log('true');
+        return true;
+    }
+    
+    function qtyVal(e,compId){
+        if((e.which > 47 && e.which <=57) || e.which == 8)
+        {
+            var max_chars = 3;
+            if(compId.value.length > max_chars) {
+                return false;
+            }
+        }
+        else
+        {                
+            return false;
+        }
+    }
+    
+    </script>
+    <script>
+    var waitTime = 1;
+    var countDown = waitTime+1;
+    var clickAllowed = true;
+    function stopDoubleClick(){ 
+        countDown=waitTime+1;
+        if(clickAllowed==true){
+            clickAllowed=false;
+            runCountDown(); 
+            return true;
+        }
+        else{ return false; } 
+    }
+    function runCountDown(){ 
+        countDown--;
+        if(countDown<=0){ 
+            clickAllowed=true; 
+        }
+        else{
+            window.setTimeout(runCountDown,1000);
+        } 
+    }  
+    </script>
+    <style>
+        
+        @media (max-width: 1600px) and (min-width: 1241px) {
+        .SRTTable thead th {
+        width:7% !important;
+        }
+        
+        .SRTTable thead th:nth-last-child {
+        max-width: 100px;
+        padding: 3px ;
+        }
+        }
+        
+        .SRTTable thead, .SRTTable tbody, .addSRTTable thead, .addSRTTable tbody {
+        display: block;
+        }
+        
+        .SRTTable thead th {
+        text-align:center;
+        padding: 8px 5px !important;
+        }
+        
+        .addSRTTable thead th, .addSRTTable tbody td {
+        width:20.6%;
+        } 
+        
+        /*.addSRTTable thead th:last-child {
+        width:18%;
+        }*/
+        
+        .addSRTTable thead th {
+        text-align:center;
+        padding: 8px 5px !important; 
+        }
+        
+        .showRedLine{
+        border: 2px solid red !important;
+        }
+    </style>
+    
+    <apex:form id="srtEditPopupForm">
+        <div>
+            <header>
+                <apex:outputPanel id="Header">
+                    <div style="height:40px;background-color:#000;color:#fff;text-align:center;font-size:30px;">
+                        {!$Label.CSS_SRTs_Cummins_Guidanz}
+                    </div>
+                </apex:outputPanel>
+            </header>
+            <br/>
+        </div>
+        <div class="content" style="margin:0px 10px;">
+            <apex:outputpanel id="newEditPage">
+                <br/>
+                <div>
+                    <apex:outputPanel id="chkbox">
+                        <div class="col-sm-3">
+                            <apex:inputCheckbox id="access" selected="true" label="{!$Label.css_SRT_Access}" value="{!selectedAccess}"/>
+                            <apex:outputLabel value="{!$Label.css_SRT_Access}" for="access"/>
+                        </div>
+                        <div class="col-sm-3">
+                            <apex:inputCheckbox id="admin" selected="true" Label="{!$Label.css_SRT_Diag_Admin}" value="{!selectedAdmin}"></apex:inputCheckbox>
+                            <apex:outputLabel value="{!$Label.css_SRT_Diag_Admin}" for="admin"/>
+                        </div>
+                        <div class="col-sm-3">
+                            <apex:inputCheckbox id="diag" selected="true" Label="{!$Label.css_SRT_Diag_Diagnostic}" value="{!selectedDiag}"></apex:inputCheckbox>
+                            <apex:outputLabel value="{!$Label.css_SRT_Diag_Diagnostic}" for="diag"/>
+                        </div>
+                        <div class="col-sm-3">
+                            <apex:inputCheckbox id="repair" selected="true" Label="{!$Label.css_SRT_Rep_Repair}" value="{!selectedRepair}"></apex:inputCheckbox>
+                            <apex:outputLabel value="{!$Label.css_SRT_Rep_Repair}" for="repair"/>
+                        </div>
+                    </apex:outputPanel>
+                </div>
+                <div class="clearfix"></div>
+                <br/>
+                
+                <div>
+                    <apex:outputpanel id="SearchnSave">                        
+                        <div class="col-sm-2"></div>
+                        <div class="col-sm-3 col-xs-12 cmi-tar">
+                            <apex:outputLabel value="{!$Label.CSS_SearchCode_Or_Description}" for="srchDiagText"/>&nbsp;&nbsp;&nbsp;&nbsp;
+                        </div>
+                        <div class="col-sm-5 col-xs-12">
+                            <apex:inputText id="srchDiagText" value="{!searchDiagValue}" style="width:200px;margin-bottom:10px;margin-right:-12px;padding-top:0px;" />&nbsp; &nbsp;
+                        </div>
+                        <div class="clearfix"></div>
+                        <div class="col-sm-2"></div>
+                        <div class="col-sm-3 col-xs-12 cmi-tar">
+                            <apex:outputLabel value="{!$Label.CSS_Group}" for="grouplistId"/>
+                        </div>
+                        <div class="col-sm-7 col-xs-12">
+                            <apex:selectList id="grouplistId" size="1" value="{!selectedPickVal}" style="width:200px">
+                                <apex:selectOptions value="{!GroupList}"></apex:selectOptions>
+                            </apex:selectList> 
+                            &nbsp;&nbsp;
+                            <apex:commandButton id="bt13" onclick="calDiagLen();return false;" value="GO" styleClass="saveButton" />&nbsp;                     
+                            <apex:actionFunction name="srchDiagCode" action="{!searchDiagSRTCodeAndDescription}" reRender="searchedSRTData" status="srchDiagStatus" oncomplete="CallTwoScrollbarFunctions()"></apex:actionFunction>
+                            <apex:actionStatus startText="(Filtering SRT's....)" id="srchDiagStatus" />  
+                        </div>
+                        <div class="clearfix"></div>
+                    </apex:outputpanel>
+                </div>
+                <!--Added as part of story GSSC-82-->
+                <apex:outputText rendered="{!serviceFailed}">
+                    <h5 style="color:red">
+                        <b>{!$Label.CSS_SRTServiceFailedError} </b>
+                    </h5>
+                </apex:outputText>
+                 <!--Added as part of story GSSC-82-->
+                <div class="clearfix"></div>
+                <br/>
+                <apex:outputPanel id="dupSRTErr">
+                    <apex:outputPanel rendered="{!IF(dupSRTFound==true,true,false)}">
+                        <div class="col-sm-12">
+                            <i class="cmi-catastrophicWarning-icon" style="height:30px;"></i>
+                            <span>
+                                <b style="color:red;margin:0px 0px 20px;height:30px">{!$Label.CG_DuplicateSRTError} </b>
+                            </span>
+                        </div>
+                        <div class="clearfix"/>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+                <div class="clearfix"></div>
+                <br/>
+                <apex:actionFunction name="checkSRTDup" action="{!checkDuplicateSRTs}"  reRender="selSRTData,dupSRTErr,dispSearchedResJob" oncomplete="CallTwoScrollbarFunctions()"></apex:actionFunction>
+                <div style="margin:10px 0px;">
+                    <apex:outputPanel id="searchedSRTData">                        
+                        <div style="margin:10px 0px;">
+                            <div class="col-sm-2">
+                                <apex:outputLabel value="{!$Label.CSS_Search_Results}"/>
+                            </div>
+                            <apex:outputPanel rendered="{!noSearchResultDiagFlag}">
+                                <div class="col-sm-offset-1 col-sm-8">
+                                    <h5 style="color:red;margin:0px 0px 20px">
+                                        <b>{!$Label.CSS_Global_Search} </b>
+                                    </h5>
+                                </div>
+                                <div class="clearfix"/>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!excessRecFlag}">
+                                <div class="col-sm-offset-1 col-sm-8">
+                                    <h5 style="color:red;margin:0px 0px 20px">
+                                        <b>{!$Label.CSS_Too_Many_Records_Found} </b>
+                                    </h5>
+                                </div>
+                                <div class="clearfix"/>
+                            </apex:outputPanel>
+                        </div>
+                        <div style="margin:0px 20px;">
+                            <!-- <apex:outputPanel rendered="{!IF(lstFilteredSRT.size > 10 || lstFilteredSRT.size != null ,true,false)}"> -->
+                            <table class="mytable table table-bordered table-striped SRTTable" cellpadding="0" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>{!$Label.CSS_Select}</th>
+                                        <th>{!$Label.css_SRT_Code}</th>
+                                        <th>{!$Label.css_SRT_Description}</th>                               
+                                    </tr> 
+                                </thead>
+                                <tbody>
+                                    <apex:repeat value="{!lstFilteredSRT}" var="rec"> 
+                                        <tr>
+                                            <td style="font-size:12px;text-align:center;width:34%">
+                                                <apex:outputPanel id="dispSearchedResJob"> 
+                                                    <apex:inputCheckbox value="{!rec.SRT_Select__c}" onclick="checkDup();" disabled="{!rec.Admi_Check__c}"/>
+                                                    <apex:outputPanel rendered="{!IF(rec.IsDuplicateSRT__c==true,true,false)}">
+                                                        <i class="cmi-catastrophicWarning-icon" style="height:30px;float:none;vertical-align: middle;"></i>
+                                                    </apex:outputPanel>
+                                                </apex:outputPanel>
+                                            </td>
+                                            <td style="font-size:12px;text-align:center;width:34%">
+                                                <apex:outputText value="{!rec.SRT_ID__c}"/>
+                                            </td>
+                                            <td style="font-size:12px;">
+                                                <apex:outputText value="{!rec.SRT_Title__c}"/>
+                                            </td>
+                                        </tr>
+                                    </apex:repeat>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                    </apex:outputPanel>    
+                </div>
+                <div class="clearfix"></div>
+                <br/>
+                <div class="col-sm-offset-5 col-sm-5">
+                    <apex:commandButton id="addButton" value="ADD" action="{!addSelectedSRTs}" styleClass="saveButton" reRender="selSRTData,acCodePnl,dispSearchedResJob" status="addSRTsStatus" oncomplete="CallTwoScrollbarFunctions();"/> &nbsp; 
+                    <!--  <apex:commandButton onclick="addSRTs();return false;" value="ADD" styleClass="saveButton" />&nbsp;&nbsp; 
+<apex:actionFunction name="addSRTsCode" action="{!addSelectedSRTs}" reRender="searchedSRTData,selSRTData" status="addSRTsStatus" oncomplete="CallTwoScrollbarFunctions()"></apex:actionFunction>  -->
+                    <apex:actionStatus startText="(Adding SRT's....)" id="addSRTsStatus" />
+                </div>
+                <div class="clearfix"></div>
+                <div class="col-sm-offset-5 col-sm-5">
+                    <apex:outputPanel id="srtNotAllowed">
+                        <apex:outputText rendered="{!IF(srtNotAllowedErr==true,true,false)}"><span style="color:red;"> <b>{!$Label.CSS_SRT_Not_Allowed}</b></span></apex:outputText>
+                    </apex:outputPanel>
+                </div>
+                <br/>
+                <div>
+                    <div style="margin:25px 0px;">
+                        
+                        <apex:actionFunction name="failcodelogic" action="{!onChangeofFailCode}"  rerender="selSRTData,acCodePnl" oncomplete="addSRTScrollbar();">
+                            <apex:param name="FailCodeval"  value="" assignTo="{!selectedFailCode}"/>
+                            <apex:param name="SRTID"  value="" assignTo="{!selectedSRTId}"/>
+                        </apex:actionFunction>
+                        
+                        <apex:outputPanel id="selSRTData">
+                            <div class="col-sm-3">
+                                <apex:outputLabel value="{!$Label.CSS_Selected_SRTs}"/>
+                            </div>
+                            <apex:outputPanel rendered="{!IF(GSQErrorExists==true,true,false)}" id="gsqErrorId">
+                                <div class="col-sm-10 cmi-tar" style="color:red;text-align:center">
+                                    <span> <b>{!$Label.CG_SRT_is_not_available_for_failures_from_guided_troubleshooting}</b></span>
+                                </div>
+                            </apex:outputPanel>
+                            
+                            <apex:outputPanel rendered="{!IF(chkReqField==true,true,false)}" id="noReqFields">
+                                <div class="col-sm-10 cmi-tar" style="color:red;text-align:center">
+                                    <span> <b>{!$Label.CSS_Please_Select}</b></span>
+                                </div>
+                            </apex:outputPanel>
+                            <div class="clearfix"></div>
+                            <div style="margin:0px 20px;">
+                                <table id="mySRTtable" class="mytable table table-bordered table-striped addSRTTable" cellpadding="0" cellspacing="0">
+                                    <thead>
+                                        <tr>
+                                            <th>{!$Label.css_SRT_Code}</th>
+                                            <th>{!$Label.css_SRT_Description}</th> 
+                                            <th>{!$Label.css_Quantity}</th>
+                                            <th>{!$Label.CSS_Fail_Code}<!--span class="cmi_asterisk" style="float:none;font-size:18px;top:2px;left:4px;">*</span--></th>
+                                            <th>{!$Label.CSS_Account_Code}</th>
+                                            <th>{!$Label.CSS_Remove}</th>
+                                        </tr> 
+                                    </thead>
+                                    <tbody>
+                                        <apex:repeat value="{!lstSelectedSRTWrapper}" var="rec" id="dispSelectedRes" > 
+                                            <tr>
+                                                <td style="text-align:center;"><apex:outputText value="{!rec.srtCode}"/></td>
+                                                <td><apex:outputText value="{!rec.srtDesc}"/></td>
+                                                <td style="text-align:center;">
+                                                    <apex:outputPanel rendered="{!if(NOT(CONTAINS(rec.srtCode,'00-901') || rec.srtCode = '00-10S-00' || CONTAINS(rec.srtCode,'00-724')|| CONTAINS(rec.srtCode,'00-902')|| CONTAINS(rec.srtCode,'00-904')|| CONTAINS(rec.srtCode,'00-400')|| CONTAINS(rec.srtCode,'00-401')|| CONTAINS(rec.srtCode,'00-404') || rec.FlexFlag == true),true,false)}">
+                                                        <apex:inputText value="{!rec.quantity }"  html-placeholder="1" onkeypress="return qtyVal(event,this)" style="width:50px;"/>
+                                                    </apex:outputPanel>
+                                                    
+                                                    <apex:outputText value="{!rec.quantity }" style="width:50px;" rendered="{!if((CONTAINS(rec.srtCode,'00-901') || rec.srtCode = '00-10S-00' || CONTAINS(rec.srtCode,'00-724')|| CONTAINS(rec.srtCode,'00-902')|| CONTAINS(rec.srtCode,'00-904')|| CONTAINS(rec.srtCode,'00-400')|| CONTAINS(rec.srtCode,'00-401')|| CONTAINS(rec.srtCode,'00-404') || rec.FlexFlag == true),true,false)}"></apex:outputText>
+                                                </td>
+                                                
+                                                <td style="text-align:center;">
+                                                    
+                                                    <apex:selectList value="{!rec.selectedFailCode}" size="1" style="max-width:75px;" styleClass="{!IF(rec.mandateFailCode == true,'showRedLine','')}" onchange="callfailcodemethod(this.value,'{!rec.counting}',{!LaborRateCheck});">
+                                                        <apex:selectOptions value="{!failCodes}"></apex:selectOptions> 
+                                                    </apex:selectList>
+                                                </td>
+                                                <td style="text-align:center;">
+                                                    <!-- {!rec.selectedFailCode} -- {!rec.lstAccountCodes} -->
+                                                    <apex:outputPanel id="acCodePnl" rendered="{!IF(rec.selectedFailCode != 'Select One',true,false)}">
+                                                        
+                                                        <apex:selectList value="{!rec.selectedAccountCode}" size="1" style="max-width:75px;" styleClass="{!IF(rec.mandateAccCode == true,'showRedLine','')}" disabled="{!LaborRateCheck}">
+                                                            <apex:selectOptions value="{!rec.lstAccountCodes}"></apex:selectOptions>
+                                                        </apex:selectList>
+                                                        
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel id="acCodePnl1" rendered="{!IF(rec.selectedFailCode == 'Select One',true,false)}">                                               
+                                                        <apex:selectList value="{!rec.selectedAccountCode}" size="1" style="max-width:75px;" styleClass="{!IF(rec.mandateAccCode == true,'showRedLine','')}" disabled="true"><!-- disabled="{!LaborRateCheck}"-->
+                                                            <apex:selectOption itemValue="Select One" itemLabel="Select One"></apex:selectOption>
+                                                        </apex:selectList>
+                                                    </apex:outputPanel>
+                                                </td>
+                                                <td style="text-align:center;">
+                                                    <apex:outputPanel rendered="{!if(NOT(CONTAINS(rec.srtCode,'00-901') || rec.srtCode = '00-10S-00' || CONTAINS(rec.srtCode,'00-724')|| CONTAINS(rec.srtCode,'00-902')|| CONTAINS(rec.srtCode,'00-904')|| CONTAINS(rec.srtCode,'00-400')|| CONTAINS(rec.srtCode,'00-401')|| CONTAINS(rec.srtCode,'00-404')) || rec.isPopupSRT== true,true,false)}">
+                                                        <apex:commandLink styleClass="cmi_delete-icon"  action="{!removingRow}" reRender="selSRTData" status="removeSRTsStatus" oncomplete="addSRTScrollbar()">
+                                                            <apex:param name="removedRowNo" value="{!rec.counting}" assignTo="{!removedRowNo}"/>  
+                                                        </apex:commandLink>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!if((CONTAINS(rec.srtCode,'00-901') || rec.srtCode = '00-10S-00' || CONTAINS(rec.srtCode,'00-724')|| CONTAINS(rec.srtCode,'00-902')|| CONTAINS(rec.srtCode,'00-904')|| CONTAINS(rec.srtCode,'00-400')|| CONTAINS(rec.srtCode,'00-401')|| CONTAINS(rec.srtCode,'00-404')) && rec.isPopupSRT == false,true,false)}">
+                                                        <i class="cmi_delete-disabled-icon" style="margin-right: 16px;"></i>
+                                                    </apex:outputPanel>
+                                                    <apex:actionStatus id="removeSRTsStatus">
+                                                        <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                                        <apex:facet name="stop"></apex:facet>
+                                                    </apex:actionStatus>
+                                                    <!-- <apex:actionStatus startText="(Removing SRT's....)" id="removeSRTsStatus" /> -->
+                                                </td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </apex:outputPanel> 
+                    </div>
+                    <div class="clearfix"></div>
+                    <br/>
+                    <div align="center">
+                        <div class="col-sm-offset-3 col-sm-3 col-xs-5" style="margin-bottom: 10px;">
+                            <apex:commandButton value="{!$Label.css_save_btn}"  styleClass="saveButton" id="SaveButtonId"  onClick="SaveFunction();disableSave2Button(this); return false;"/> <!-- <!-- oncomplete="refreshMainPage('{!chkReqField}')"/> No refresh needed here as of now--><!--onClick="disableSave2Button(this); return false;"-->
+                            <apex:actionStatus startText="requesting..." id="statusId">
+                                <apex:facet name="start">Saving...<img src="/img/loading.gif"/></apex:facet>
+                                <apex:facet name="stop"></apex:facet>
+                            </apex:actionStatus>&nbsp;&nbsp;
+                            <apex:actionfunction action="{!saveSelectedSRTs}" status="statusId" reRender="selSRTData,srtNotAllowed,gsqErrorId" oncomplete="addSRTScrollbar();enableSave2Button();" name="SaveFunction"/>
+                        </div>
+                        <div class="col-sm-3 col-xs-5" style="margin-bottom: 10px;">
+                            <!--<apex:commandButton value="{!$Label.CSS_Save_And_Close}" action="{!saveAndCloseSelectedSRTs}" id="SaveandCloseButtonId" oncomplete="window.close();" styleClass="saveButton" ></apex:commandButton>&nbsp;-->
+                            <apex:inputHidden id="saveCloseId" value="{!chkReqField}"/>
+                            <apex:commandLink value="{!$Label.CSS_Save_And_Close}" id="SaveandCloseButtonLinkId" onClick="disableSaveCloseButton();closeSRTPopup();return false;" styleClass="saveButton" />
+                            <apex:actionfunction action="{!saveAndCloseSelectedSRTs}" oncomplete="verifyCloseSRTPopup('{!chkReqField}','{!srtNotAllowedErr}','{!GSQErrorExists}');enableSave2Button();" name="closeSRTPopup" reRender="SaveandCloseButtonLinkId,saveCloseId,selSRTData,srtNotAllowed,gsqErrorId"/>
+                            <!--<apex:commandButton value="{!$Label.CSS_Save_And_Close}" action="{!saveAndCloseSelectedSRTs}" styleClass="saveButton" id="SaveandCloseButtonLinkId" reRender="saveCloseId,selSRTData,srtNotAllowed,gsqErrorId" oncomplete="verifyCloseSRTPopup('{!chkReqField}','{!srtNotAllowedErr}','{!GSQErrorExists}');window.close();" onClick="disableSavencloseButton(this); return false;"/> <!-- <!-- oncomplete="refreshMainPage('{!chkReqField}')"/> No refresh needed here as of now--><!--onClick="disableSave2Button(this); return false;"-->
+                        </div>
+                    </div>
+                </div>
+            </apex:outputpanel>
+            
+        </div>
+        
+    </apex:form>
+</apex:page>

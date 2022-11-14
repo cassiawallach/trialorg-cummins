@@ -1,0 +1,932 @@
+<!--/**********************************************************************
+Name:CG_ClaimsCampaignsTRPandATCComp
+Copyright © 2018  Cummins
+=======================================================================
+=======================================================================
+Purpose:  
+Campaigns, TRPs, and ATCs Component                                                 
+=======================================================================
+History                                                            
+-------                                                            
+VERSION   AUTHOR          DATE                 DETAIL                                 
+1.0 -   RAJESH P       19/03/2018        INITIAL DEVELOPMENT  
+1.0 -   Rupesh         13/08/2018        QUANTITY SAVE/ON CHANGE QUANTITY
+=======================================================================-->
+
+<apex:component controller="CG_CL_ClaimsCampaignsTRPandATCComp" allowDML="true">
+
+    <apex:attribute name="mainController" description="Main Controller Type" type="CG_CL_ClaimsPartsandOtherClaimbles"/>
+    <apex:attribute name="MPSNCheckbox" description="Getting psn check box value" type="Boolean"/>
+    <apex:attribute name="JobId" description="Getting Job value" type="String"/>
+    <!--On change of quantity value we have to call action function defined.-->
+    <script>
+        function OnchanageQuantityTRP(servicepart)
+        {
+            //alert('HI'+servicepart); Just checked if onchange working
+            calExpTotTRP(servicepart);
+        }
+        function OnchanageQuantityCAM(servicepart)
+        {
+            //alert('HI'+servicepart); Just checked if onchange working
+            calExpTotCAM(servicepart);
+        }    
+        function OnchanageQuantityATC(servicepart)
+        {
+            //alert('HI'+servicepart); Just checked if onchange working
+            calExpTotATC(servicepart);
+        }    
+    </script>
+    <script>
+        function callTNEnableJSCAMPAIGN(checkbox,partNum){
+            //alert('in callActionEnableJS accountCode>>:'+checkbox.checked);
+            if(checkbox.checked){
+                callTNEnableCAMPAIGN(partNum,true);
+            }
+            else{
+                callTNEnableCAMPAIGN(partNum,false);
+            }
+
+        }
+        function callTNEnableJSTRP(checkbox,partNum){
+            //alert('in callActionEnableJS accountCode>>:'+checkbox.checked);
+            if(checkbox.checked){
+                callTNEnableTRP(partNum,true);
+            }
+            else{
+                callTNEnableTRP(partNum,false);
+            }
+
+        }
+        function callTNEnableJSATC(checkbox,partNum){
+            //alert('in callActionEnableJS accountCode>>:'+checkbox.checked);
+            if(checkbox.checked){
+                callTNEnableATC(partNum,true);
+            }
+            else{
+                callTNEnableATC(partNum,false);
+            }
+
+        }
+
+        //Added function as part of GSSC-302 Great Pyramid Of Giza//
+        function ReturnWaiverhoverFunc(returnToFac){ 
+
+            if(returnToFac==='Y' ){
+                $('#ReturnWaiverhoverpopup').modal('show');
+            }else{
+                $('#ReturnWaiverhoverpopup').modal('hide'); 
+            }
+        }
+    </script>
+
+
+    <apex:actionFunction name="callTNEnableCAMPAIGN" action="{!enableTNDropDownCAMPAIGN}" rerender="trackNumberCAMPAIGN,ErrMsg">
+        <apex:param name="trackingNum" value="" assignTo="{!tnumber}"/>
+        <apex:param name="retWaiver" value="" assignTo="{!rWaiver}"/>
+    </apex:actionFunction>
+    <apex:actionFunction name="callTNEnableTRP" action="{!enableTNDropDownTRP}" rerender="trackNumberTRP,ErrMsgTRP">
+        <apex:param name="trackingNum" value="" assignTo="{!tnumber}"/>
+        <apex:param name="retWaiver" value="" assignTo="{!rWaiver}"/>
+    </apex:actionFunction>
+    <apex:actionFunction name="callTNEnableATC" action="{!enableTNDropDownATC}" rerender="trackNumberATC,ErrMsgATC">
+        <apex:param name="trackingNum" value="" assignTo="{!tnumber}"/>
+        <apex:param name="retWaiver" value="" assignTo="{!rWaiver}"/>
+    </apex:actionFunction>
+    <div class="panel-group cmi_generic-accordion" >                                  
+        <div class="panel panel-default">
+            <div class="panel-heading " id="accordion1-heading-3">
+                <h4 class="panel-title" data-toggle="collapse" data-parent="#accordion1-heading-3" data-target="#campaign-accordian" aria-expanded="true" onclick="getCampDetails1(); return false;" > <!--  onclick="krishna()" -->
+                    <a class="accordion-toggle">
+                        <span class="glyphicon glyphicon-plus"></span>
+                        <div class="cmi_accordion-title"><b>{!$Label.css_Camp_TRP_ATC}</b></div>
+                    </a>
+                </h4>
+            </div>
+        </div>
+
+
+        <apex:actionRegion >
+
+            <apex:actionFunction name="getCampDetails1" action="{!campPartsDetails}" status="callCampStatus" rerender="CampData,TRPData,ATCData"/>
+        </apex:actionRegion>
+
+        <div id="campaign-accordian" class="panel-collapse collapse" aria-expanded="true" style="margin-top:10px">
+            <apex:actionStatus startText="requesting..." id="callCampStatus">
+                <apex:facet name="start">Loading... <img src="/img/loading.gif" /></apex:facet>
+                <apex:facet name="stop"></apex:facet>
+            </apex:actionStatus> 
+            <apex:actionRegion >
+                <!--Added below code for showing error message as per 24 #161414,By RAJESH 6th Sec 2018-->     
+                <apex:outPutPanel id="ErrMsg">
+                    <apex:outPutPanel rendered="{!IF(errorMsg1 == true, true,false)}">
+                        <b><apex:outputText value="{!$Label.CG_Tracking_Number_Required}"  style="text-align:center; color: red ; display: block;"  /></b>
+                        <!-- <apex:outputLabel style="text-align:center; color: red ; display: block;" value="{!$Label.CG_Please_enter_value}"  rendered="{!IF(ErrorMessage== true, true, false)}" />-->
+                    </apex:outPutPanel>
+                </apex:outPutPanel>
+                <apex:outPutPanel id="ErrMsgTRP">
+                    <apex:outPutPanel rendered="{!IF(errorMsgTRP == true, true,false)}">
+                        <b><apex:outputText value="{!$Label.CG_Tracking_Number_Required}"  style="text-align:center; color: red ; display: block;"  /></b>
+                        <!-- <apex:outputLabel style="text-align:center; color: red ; display: block;" value="{!$Label.CG_Please_enter_value}"  rendered="{!IF(ErrorMessage== true, true, false)}" />-->
+                    </apex:outPutPanel>
+                </apex:outPutPanel>
+                <apex:outPutPanel id="ErrMsgATC">
+                    <apex:outPutPanel rendered="{!IF(errorMsgATC == true, true,false)}">
+                        <b><apex:outputText value="{!$Label.CG_Tracking_Number_Required}"  style="text-align:center; color: red ; display: block;"  /></b>
+                        <!-- <apex:outputLabel style="text-align:center; color: red ; display: block;" value="{!$Label.CG_Please_enter_value}"  rendered="{!IF(ErrorMessage== true, true, false)}" />-->
+                    </apex:outPutPanel>
+                </apex:outPutPanel>
+                <!--END-->
+                <apex:outputPanel id="campPanelValues">
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-sm-12" style="padding-top:20px;"> 
+                                <div class="hidden-xs">
+                                    <div class="row cmi_jobplan-table">
+                                        <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+                                            <u><div class="cmi_accordion-title" style="font-weight:bold;text-decoration:underline;"><b>{!$Label.CSS_Campaignss}</b></div></u><br/> <br/>    
+                                            <!--Added as part of GSSC-295 start -->
+                                            <div style="float:right">
+                                                <u><a id ="uncheck_id" href="#/" onclick="unCheckCam()" Class="text-decoration: none;">{!$Label.CSS_Uncheck_All}</a></u>&nbsp;&nbsp;
+                                                <u><a id ="check_id" href="#/" onclick="checkCam()" Class="text-decoration: none;">{!$Label.CSS_Check_All}</a></u>&nbsp;&nbsp;
+                                            </div>
+                                            <!--Added as part of GSSC-295 end -->
+                                            <!--***********************************CAMPAIGN ACCORDIAN START***********************************-->
+                                            <apex:OutputPanel id="CampData">
+                                                <apex:actionFunction name="camSelectALLChecked" rerender="returnToFactoryCAM" />
+                                                <apex:actionFunction name="camCheckboxChecked" rerender="returnToFactoryCAM" />
+                                                <table class="mytable table table-bordered table-striped cmi_jobplan-table"  width="100%" cellpadding="0" cellspacing="0">
+                                                    <thead>
+                                                        <tr height="54">
+                                                            <th>{!$Label.CSS_Field_Action_Number}</th>
+                                                            <th>{!$Label.CSS_Select}</th>
+                                                            <th>{!$Label.CSS_Qty}</th>
+                                                            <th>{!$Label.CSS_Part_Number}</th>
+                                                            <th>OEM ({!$Label.CSS_Product_Code})</th>
+                                                            <th>{!$Label.CSS_Part_Name}</th> 
+                                                            <th >{!$Label.css_Percent_Requested}</th>
+                                                            <th >{!$Label.CSS_Fail_Code}</th> 
+                                                            <th >{!$Label.CSS_Account_Code}</th>
+                                                            <th >{!$Label.CSS_Return_to_Factory}</th>
+                                                            <!--Added below value for Return Waiver as per 24 sprint,-By RAJESH 04th Sec 2018-->
+                                                            <th >{!$Label.css_Return_Waiver}</th>
+                                                            <!--End-->
+                                                            <th >{!$Label.css_Tracking_Number}</th>
+                                                            <th>{!$Label.CSS_RID}</th>
+
+                                                            <!-- Added additional condition to hide Unit Price & Total USD Column for Dealer User -- Rajasekhar H for 158524 Silicon Valley  
+{!IF(claimsRec.CSS_Job__c!=null,false,true) && IF($Setup.css_header_nav__c.RSWButtonEnable__c == false,true,false)}-->
+                                                            <apex:outputtext id="Unitprice" rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==false,true,false)}">
+                                                                <!-- <th> {!$Label.CG_UnitPrice}(USD)</th> -->
+                                                                <th> {!$Label.CG_UnitPrice}({!mainController.userRec.DefaultCurrencyIsoCode})</th>
+                                                            </apex:outputtext>
+                                                            <apex:outputtext id="totalusd" rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==false,true,false)}">
+                                                                <!-- <th> {!$Label.CSS_Total_USD}</th>  --> 
+                                                                <th> {!$Label.CSS_Total} ({!mainController.userRec.DefaultCurrencyIsoCode})</th>
+                                                            </apex:outputtext>
+
+                                                        </tr>
+                                                    </thead>
+
+                                                    <!--populateTotalAmountCAM() to be called from action function to calulate Total USD.-->   
+                                                    <apex:actionFunction name="calExpTotCAM" action="{!populateTotalAmountCAM}" reRender="CampData">
+                                                        <apex:param name="CAMPQValue" value="" assignTo="{!selectedRecordRowID}"/>                       
+                                                    </apex:actionFunction>
+
+
+                                                    <apex:variable var="solcnt" value="{!0}" />
+                                                    <apex:repeat value="{!listcompWrapper}" var="c" id="camp1">
+                                                        <apex:variable var="partcount" value="{!0}" />
+                                                        <apex:repeat value="{!c.partWrapper}" var="parts" id="camppartsrpt" >
+                                                            <apex:variable var="solcnt" value="{!solcnt+1}" />
+                                                            <apex:variable var="partcount" value="{!partcount + 1}" /> 
+                                                            <tr>
+                                                                <apex:outputText rendered="{!IF(partcount == 1,true,false)}">  
+                                                                    <td  rowspan="{!c.partcount}" style="width:20%">
+                                                                        <apex:outputText value="{!c.fieldactnum}"/>
+                                                                    </td>
+                                                                </apex:outputText>
+                                                                <!--Added isClaimReadOnly__C && isServiceJobReadOnly__c condition as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->                
+                                                                <td style="text-align:center;">
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                        <apex:inputCheckbox disabled="true" value="{!parts.selectedComponent}" styleClass="URCheckbox" />
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c==NULL,true,false) || IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false) && IF(mainController.claimsRec.IsDealerCreatedClaim__c == true,true,false) }">
+                                                                            &nbsp;&nbsp;&nbsp;&nbsp;<apex:inputCheckbox value="{!parts.selectedComponent}" styleClass="URCheckbox" onchange="camCheckboxChecked();" />
+                                                                        </apex:outputPanel>
+
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false) && IF(mainController.claimsRec.IsDealerCreatedClaim__c == false,true,false) }">
+                                                                            <apex:inputCheckbox disabled="true" value="{!parts.selectedComponent}" styleClass="URCheckbox" />
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>        
+                                                                    <!--<apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c ==NULL,true,false)}">
+<apex:inputCheckbox value="{!parts.selectedComponent}" styleClass="URCheckbox" />
+</apex:outputPanel>-->
+                                                                </td>
+                                                                <td>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                        <apex:outputText value="{!parts.quantity}" style="width:80px"/>
+                                                                    </apex:outputPanel>    
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false) || IF(mainController.claimsRec.Dealer_Service_Job__c != Null,true,false)}">
+                                                                            <apex:inputText value="{!parts.quantity}" style="width:80px"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c==NULL,true,false) && IF(mainController.claimsRec.Dealer_Service_Job__c == Null,true,false)}">
+                                                                            <!--If the quantity is to be changed then the exp total will be calcualted.-->
+                                                                            <apex:inputtext value="{!parts.quantity}" style="width:80px" maxlength="4" 
+                                                                                            onkeypress="return campquantitylen(event,this)"
+                                                                                            onchange="OnchanageQuantityCAM('{!parts.servicepart}');"/> 
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>        
+                                                                </td>
+                                                                <td><apex:outputText value="{!parts.servicepart}"/></td>
+                                                                <td><apex:outputText value="{!parts.oem}"/></td>
+                                                                <td><apex:outputText value="{!parts.partname}"/></td>
+                                                                <td>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                        <apex:outputText value="{!parts.covered}"/>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c==NULL,true,false) && IF(mainController.claimsRec.Dealer_Service_Job__c == Null,true,false)}">
+                                                                            <apex:outputText value="{!parts.covered}"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false) || IF(mainController.claimsRec.Dealer_Service_Job__c != Null,true,false)}">
+                                                                            <apex:inputText value="{!parts.covered}"/>
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>
+                                                                </td>
+                                                                <td><apex:outputText value="{!parts.failcode}"/></td>
+                                                                <td><apex:outputText value="{!parts.accountcode}"/></td>
+                                                                <!-- <td><apex:outputText value="{!parts.returnToFactory}"/></td> -->
+                                                                <td>
+                                                                    <apex:outputPanel id="returnToFactoryCAM">
+                                                                        <apex:outputPanel rendered="{!IF(parts.selectedComponent == false || parts.returnToFactory != 'Y',true,false)}">
+                                                                            <apex:outputText value="{!parts.returnToFactory}"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(parts.selectedComponent == true && parts.returnToFactory == 'Y',true,false)}">
+                                                                            <div>
+                                                                                <span class="underline"><a href="/apex/CG_PartsReturnEPRPDF?id={!cId}" style="border-bottom:1px solid #007c7c !important" target="_blank" id="camvalId" >{!$label.CSS_Parts_Return_Label}</a></span>
+                                                                            </div>
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>
+                                                                </td>
+
+                                                                <!-- GSSC-302 -->
+                                                                <td  class="ReturnWaiverCamCell" >
+                                                                    <apex:outputPanel rendered="{!IF(parts.servicepart!=Null && parts.returnToFactory == 'Y',true,false)}">
+                                                                        <span class="ReturnWaiverCam"> {!$Label.CG_ReturnWaiver_Msg}  </span>
+                                                                    </apex:outputPanel>
+
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                        <apex:inputCheckbox style="width:50px;" disabled="true" value="{!parts.returnWaiver}"/>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                        <apex:outputText rendered="{!IF(parts.returnToFactory=='N',true,false)}">
+                                                                            <apex:inputCheckbox style="width:50px;" disabled="true"/>
+                                                                        </apex:outputText> 
+                                                                        <apex:outputText rendered="{!IF(parts.returnToFactory=='Y',true,false)}">
+                                                                            <apex:inputCheckbox value="{!parts.returnWaiver}" onclick="callTNEnableJSCAMPAIGN(this,'{!parts.servicepart}')" style="width:50px;" id="returnWaiverCAMPAIGN"/><!--onclick="callActionEnableJS(this)"-->
+                                                                        </apex:outputText>
+                                                                    </apex:outputPanel>    
+                                                                </td>
+                                                                <td>
+                                                                    <!-- <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false)}">
+<apex:inputTextarea value="{!parts.trackingNumber}" style="resize:none;border:1px solid #d3d3d3;width:100px" disabled="true" rendered="{!IF(parts.returnToFactory=='Y', true,false)}"/>
+</apex:outputPanel>
+<apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c ==NULL,true,false)}">
+<apex:inputTextarea value="{!parts.trackingNumber}" style="resize:none;border:1px solid #d3d3d3;width:100px" html-maxlength="35" rendered="{!IF(parts.returnToFactory=='Y', true,false)}"/>
+</apex:outputPanel>-->                             <apex:outputPanel id="trackNumberCAMPAIGN">
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                        <apex:outputText value="{!parts.trackingNumber}"/>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false)}">
+                                                                            <apex:outputText rendered="{!IF((parts.returnToFactory == 'Y' && parts.returnWaiver=='false'),true,false)}">
+                                                                                <apex:inputTextarea value="{!parts.trackingNumber}" style="resize:none;border:1px solid #d3d3d3;width:100px" styleClass="{!if(((parts.trackingNumber=='Select One' || parts.trackingNumber=='' || parts.trackingNumber==null) && parts.trackingNumberReq==true),'showRedBorder','')}"/>
+                                                                            </apex:outputText>
+                                                                            <apex:outputText rendered="{!IF((parts.returnToFactory == 'Y' && parts.returnWaiver=='true'),true,false)}">
+                                                                                <apex:selectList value="{!parts.trackingNumber}" size="1" styleClass="{!if((parts.trackingNumber=='Select One' && parts.trackingNumberReq==true),'showRedBorder','')}">
+                                                                                    <apex:selectOptions value="{!TrackNumberNew}" />
+                                                                                </apex:selectList>
+                                                                            </apex:outputText>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c==NULL,true,false)}">
+                                                                            <apex:outputText rendered="{!IF((parts.returnToFactory == 'Y' && parts.returnWaiver=='false'),true,false)}">
+                                                                                <apex:inputTextarea value="{!parts.trackingNumber}" style="resize:none;border:1px solid #d3d3d3;width:100px" styleClass="{!if(((parts.trackingNumber=='Select One' || parts.trackingNumber=='' || parts.trackingNumber==null) && parts.trackingNumberReq==true),'showRedBorder','')}"/>
+                                                                            </apex:outputText>
+                                                                            <apex:outputText rendered="{!IF((parts.returnToFactory == 'Y' && parts.returnWaiver=='true'),true,false)}">
+                                                                                <apex:selectList value="{!parts.trackingNumber}" size="1" styleClass="{!if((parts.trackingNumber=='Select One' && parts.trackingNumberReq==true) ,'showRedBorder','')}">
+                                                                                    <apex:selectOptions value="{!TrackNumberNew}" />
+                                                                                </apex:selectList>
+                                                                            </apex:outputText>
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>            
+                                                                    </apex:outputPanel>                    
+                                                                </td>
+                                                                <!--td>
+<apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false)}">
+<apex:inputTextarea value="{!parts.trackingNumber}" style="resize:none;border:1px solid #d3d3d3;width:100px" disabled="true" rendered="{!IF(parts.returnToFactory=='Y', true,false)}"/>
+</apex:outputPanel>
+<apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c ==NULL,true,false)}">
+<apex:inputTextarea value="{!parts.trackingNumber}" style="resize:none;border:1px solid #d3d3d3;width:100px" html-maxlength="35" rendered="{!IF(parts.returnToFactory=='Y', true,false)}"/>
+</apex:outputPanel>
+</td-->
+                                                                <td>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                        <apex:outputText value="{!parts.RID}"/>
+                                                                    </apex:outputPanel>    
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false)}">
+                                                                            <apex:inputTextarea value="{!parts.RID}" style="resize:none;border:1px solid #d3d3d3;width:100px" disabled="true" rendered="{!IF(parts.returnToFactory=='Y', true,false)}"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c == NULL,true,false)}">
+                                                                            <apex:inputTextarea value="{!parts.RID}" style="resize:none;border:1px solid #d3d3d3;width:100px" html-maxlength="35" rendered="{!IF(parts.returnToFactory=='Y', true,false)}"/>
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>    
+                                                                </td>
+                                                                <!--END-- as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->
+                                                                <!--<apex:outputtext id="UPRCAMM" rendered="{!IF(claimsRec.CSS_Job__c==null,true,false)}">-->
+                                                                <!--<apex:outputtext id="UPRCAMM" rendered="{!IF((claimsRec.Account__r.Type =='Dealer Account'&& $UserRole.Name == 'Factory'), true, false)}"> Old code only for Factory-->
+                                                                <apex:outputtext id="UPRCAMM" rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==false,true,false)}">
+                                                                    <td>
+                                                                        <apex:outputText value="{!ROUND(VALUE(parts.UnitPrice), 2)}"/>  
+                                                                    </td>
+                                                                </apex:outputtext>
+                                                                <!--<apex:outputtext id="TUSDCAM" rendered="{!IF(claimsRec.CSS_Job__c==null,true,false)}">-->
+                                                                <!--<apex:outputtext id="TUSDCAM" rendered="{!IF((claimsRec.Account__r.Type =='Dealer Account'&& $UserRole.Name == 'Factory'), true, false)}"> Old code only for Factory-->
+                                                                <apex:outputtext id="TUSDCAM" rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==false,true,false)}">
+                                                                    <td>
+                                                                        <apex:outputText value="{!ROUND(VALUE(parts.Totprice), 2)}"/>   
+                                                                    </td>
+                                                                </apex:outputtext>
+
+                                                            </tr> 
+                                                        </apex:repeat>
+                                                    </apex:repeat>      
+                                                </table>
+                                            </apex:OutputPanel> <br/>
+
+                                            <!--***********************************CAMPAIGN ACCORDIAN END***********************************-->
+
+
+                                            <!--***********************************TRP ACCORDIAN START***********************************-->
+                                            <apex:OutputPanel rendered="{!If((MPSNCheckbox ==true && JobId==null),false,true)}">
+                                                <u><div class="cmi_accordion-title" style="font-weight:bold;text-decoration:underline;"><b>{!$Label.css_TRPs}</b></div></u><br/> <br/>    
+                                                <!--Added as part of GSSC-295 start -->
+                                                <div style="float:right">
+                                                    <u><a id ="uncheck_id1" href="#/" onclick="unCheckCam1()" Class="text-decoration: none;">{!$Label.CSS_Uncheck_All}</a></u>&nbsp;&nbsp;
+                                                    <u><a id ="check_id1" href="#/" onclick="checkCam1()" Class="text-decoration: none;">{!$Label.CSS_Check_All}</a></u>&nbsp;&nbsp;
+                                                </div>
+                                                <!--Added as part of GSSC-295 end -->
+                                                <apex:OutputPanel id="TRPData">
+                                                    <apex:actionFunction name="trpSelectALLChecked" rerender="returnToFactoryTRP" />
+                                                    <apex:actionFunction name="trpCheckboxChecked" rerender="returnToFactoryTRP" />
+                                                    <table class="mytable table table-bordered table-striped cmi_jobplan-table"  width="100%" cellpadding="0" cellspacing="0">
+                                                        <thead>
+                                                            <tr height="54">
+                                                                <th>{!$Label.CSS_Field_Action_Number}</th>
+                                                                <th>{!$Label.CSS_Select}</th>
+                                                                <th>{!$Label.CSS_Qty}</th>
+                                                                <th>{!$Label.CSS_Part_Number}</th>
+                                                                <th>OEM ({!$Label.CSS_Product_Code})</th>
+                                                                <th>{!$Label.CSS_Part_Name}</th> 
+                                                                <th >{!$Label.css_Percent_Requested}</th>
+                                                                <th >{!$Label.CSS_Fail_Code}</th> 
+                                                                <th >{!$Label.CSS_Account_Code}</th>
+                                                                <th >{!$Label.CSS_Return_to_Factory}</th>
+                                                                <!--Added below value for Return Waiver as per 24 sprint,-By RAJESH 04th Sec 2018-->
+                                                                <th >{!$Label.css_Return_Waiver}</th>
+                                                                <!--End-->
+                                                                <th >{!$Label.css_Tracking_Number}</th>
+                                                                <th>{!$Label.CSS_RID}</th>
+
+                                                                <!-- Added additional condition to hide Unit Price & Total USD Column for Dealer User -- Rajasekhar H for 158524 Silicon Valley-->
+                                                                <apex:outputtext id="Unitprice1" rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==false,true,false)}">
+                                                                    <!-- <th>{!$Label.CG_UnitPrice}(USD)</th>-->
+                                                                    <th> {!$Label.CG_UnitPrice}({!mainController.userRec.DefaultCurrencyIsoCode})</th>
+                                                                </apex:outputtext>
+                                                                <apex:outputtext id="totalusd1" rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==false,true,false)}">
+                                                                    <!-- <th> {!$Label.CSS_Total_USD}</th> --> 
+                                                                    <th> {!$Label.CSS_Total} ({!mainController.userRec.DefaultCurrencyIsoCode})</th>
+                                                                </apex:outputtext>
+                                                            </tr>
+                                                        </thead>
+
+                                                        <!--populateTotalAmountTRP() to be called from action function to calulate Total USD.-->  
+                                                        <apex:actionFunction name="calExpTotTRP" action="{!populateTotalAmountTRP}" reRender="TRPData">
+                                                            <apex:param name="TRPQValue" value="" assignTo="{!selectedRecordRowID}"/>                       
+                                                        </apex:actionFunction>
+
+
+                                                        <apex:variable var="solcnt" value="{!0}" />
+                                                        <apex:repeat value="{!listTRPcompWrapper}" var="Trp">
+                                                            <apex:variable var="trppartcount" value="{!0}" />
+                                                            <apex:repeat value="{!Trp.partWrapper}" var="parts1">
+                                                                <apex:variable var="solcnt" value="{!solcnt+1}" />
+                                                                <apex:variable var="trppartcount" value="{!trppartcount + 1}" /> 
+                                                                <tr>
+                                                                    <apex:outputText rendered="{!IF(trppartcount == 1,true,false)}"> 
+                                                                        <td rowspan="{!Trp.partcount}" style="width:20%">
+                                                                            <apex:outputText value="{!Trp.fieldactnum}"/>
+                                                                        </td>
+                                                                    </apex:outputText>
+                                                                    <td style="text-align:center;">
+                                                                        <!--Added isClaimReadOnly__C && isServiceJobReadOnly__c condition as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->
+                                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                            <apex:inputCheckbox disabled="true" value="{!parts1.selectedComponent}"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                            <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c==NULL,true,false) || IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false) && IF(mainController.claimsRec.IsDealerCreatedClaim__c == true,true,false) }">
+                                                                                &nbsp;&nbsp;&nbsp;&nbsp;<apex:inputCheckbox value="{!parts1.selectedComponent}" styleClass="URCheckbox1" onchange="trpCheckboxChecked();" />
+                                                                            </apex:outputPanel>
+                                                                            <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false) && IF(mainController.claimsRec.IsDealerCreatedClaim__c == false,true,false) }">
+                                                                                <apex:inputCheckbox disabled="true" value="{!parts1.selectedComponent}" styleClass="URCheckbox1" />
+                                                                            </apex:outputPanel>
+                                                                        </apex:outputPanel>
+                                                                        <!--<apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false) && IF(mainController.claimsRec.IsDealerCreatedClaim__c == true,true,false) }">
+<apex:inputCheckbox value="{!parts1.selectedComponent}" styleClass="URCheckbox1" />
+</apex:outputPanel>-->
+
+                                                                    </td>
+
+                                                                    <td>
+                                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                            <apex:outputText value="{!parts1.quantity}" style="width:80px"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                            <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false) || IF(mainController.claimsRec.Dealer_Service_Job__c != Null,true,false)}">
+                                                                                <apex:inputText value="{!parts1.quantity}" style="width:80px"/>
+                                                                            </apex:outputPanel>
+                                                                            <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c==NULL,true,false) && IF(mainController.claimsRec.Dealer_Service_Job__c == Null,true,false)}">
+                                                                                <!--If the quantity is to be changed then the exp total will be calcualted.-->
+                                                                                <apex:inputtext value="{!parts1.quantity}" style="width:80px" maxlength="4" 
+                                                                                                onkeypress="return campquantitylen(event,this)"
+                                                                                                onchange="OnchanageQuantityCAM('{!parts1.servicepart}');"/> 
+                                                                            </apex:outputPanel>
+                                                                        </apex:outputPanel>
+                                                                    </td>
+                                                                    <!--END--as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->
+                                                                    <td><apex:outputText value="{!parts1.servicepart}"/></td>
+                                                                    <td><apex:outputText value="{!parts1.oem}"/></td>
+                                                                    <td><apex:outputText value="{!parts1.partname}"/></td>
+                                                                    <td>
+                                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                            <apex:outputText value="{!parts1.covered}"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                            <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c==NULL,true,false) && IF(mainController.claimsRec.Dealer_Service_Job__c == Null,true,false)}">
+                                                                                <apex:outputText value="{!parts1.covered}"/>
+                                                                            </apex:outputPanel>
+                                                                            <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false) || IF(mainController.claimsRec.Dealer_Service_Job__c != Null,true,false)}">
+                                                                                <apex:inputText value="{!parts1.covered}"/>
+                                                                            </apex:outputPanel>
+                                                                        </apex:outputPanel>    
+                                                                    </td>
+                                                                    <td><apex:outputText value="{!parts1.failcode}"/></td>
+                                                                    <td><apex:outputText value="{!parts1.accountcode}"/></td>   <!-- Debugging: {!parts1.returnToFactory} -->
+                                                                    <td>
+                                                                        <apex:outputPanel id="returnToFactoryTRP">
+                                                                            <apex:outputPanel rendered="{!IF(parts1.selectedComponent == false || parts1.returnToFactory != 'Y',true,false)}">
+                                                                                <apex:outputText value="{!parts1.returnToFactory}"/>
+                                                                            </apex:outputPanel>
+                                                                            <apex:outputPanel rendered="{!IF(parts1.selectedComponent == true && parts1.returnToFactory == 'Y',true,false)}">
+                                                                                <div>
+                                                                                    <span class="underline"><a href="/apex/CG_PartsReturnEPRPDF?id={!cId}" style="border-bottom:1px solid #007c7c !important" target="_blank" id="trpvalId" >{!$label.CSS_Parts_Return_Label}</a></span>
+                                                                                </div>
+                                                                            </apex:outputPanel>
+                                                                        </apex:outputPanel>
+                                                                    </td>
+
+                                                                    <!--GSSC-302 -->
+                                                                    <td class="ReturnWaiverCamCell" >
+                                                                        <apex:outputPanel rendered="{!IF(parts1.servicepart!=Null && parts1.returnToFactory == 'Y',true,false)}">
+                                                                            <span class="ReturnWaiverCam"> {!$Label.CG_ReturnWaiver_Msg}  </span>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                            <apex:inputCheckbox value="{!parts1.returnWaiver}" style="width:50px;" disabled="true"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                            <apex:outputText rendered="{!IF(parts1.returnToFactory=='N',true,false)}">
+                                                                                <apex:inputCheckbox style="width:50px;" disabled="true"/>
+                                                                            </apex:outputText> 
+                                                                            <apex:outputText rendered="{!IF(parts1.returnToFactory=='Y',true,false)}">
+                                                                                <apex:inputCheckbox value="{!parts1.returnWaiver}" onclick="callTNEnableJSTRP(this,'{!parts1.servicepart}')" style="width:50px;" id="returnWaiverTRP"/><!--onclick="callActionEnableJS(this)"-->
+                                                                            </apex:outputText>
+                                                                        </apex:outputPanel>    
+                                                                    </td>
+                                                                    <td>
+                                                                        <!--apex:outputPanel id="TrackingNumberShow"-->
+                                                                        <!--   <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false)}">
+<apex:inputTextarea value="{!parts1.trackingNumber}" style="resize:none;border:1px solid #d3d3d3;width:100px" disabled="true" rendered="{!IF(parts1.returnToFactory=='Y', true,false)}"/>
+</apex:outputPanel>
+<apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c == NULL,true,false)}">
+<apex:inputTextarea value="{!parts1.trackingNumber}" style="resize:none;border:1px solid #d3d3d3;width:100px" html-maxlength="35" rendered="{!IF(parts1.returnToFactory=='Y', true,false)}"/>
+</apex:outputPanel>-->
+                                                                        <apex:outputPanel id="trackNumberTRP">
+                                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                                <apex:outputText value="{!parts1.trackingNumber}"/>
+                                                                            </apex:outputPanel>
+                                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                                <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false)}">
+                                                                                    <apex:outputText rendered="{!IF((parts1.returnToFactory == 'Y' && parts1.returnWaiver=='false'),true,false)}">
+                                                                                        <apex:inputTextarea value="{!parts1.trackingNumber}" style="resize:none;border:1px solid #d3d3d3;width:100px" styleClass="{!if(((parts1.trackingNumber=='Select One' || parts1.trackingNumber=='' || parts1.trackingNumber==null) && parts1.trackingNumberReq==true),'showRedBorder','')}"/>
+                                                                                    </apex:outputText>
+                                                                                    <apex:outputText rendered="{!IF((parts1.returnToFactory == 'Y' && parts1.returnWaiver=='true'),true,false)}">
+                                                                                        <apex:selectList value="{!parts1.trackingNumber}" size="1" styleClass="{!if((parts1.trackingNumber=='Select One' && parts1.trackingNumberReq==true),'showRedBorder','')}">
+                                                                                            <apex:selectOptions value="{!TrackNumberNew}" />
+                                                                                        </apex:selectList>
+                                                                                    </apex:outputText>
+                                                                                </apex:outputPanel>
+                                                                                <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c==NULL,true,'false')}">
+                                                                                    <apex:outputText rendered="{!IF((parts1.returnToFactory == 'Y' && parts1.returnWaiver=='false'),true,false)}">
+                                                                                        <apex:inputTextarea value="{!parts1.trackingNumber}" style="resize:none;border:1px solid #d3d3d3;width:100px" styleClass="{!if(((parts1.trackingNumber=='Select One' || parts1.trackingNumber=='' || parts1.trackingNumber==null) && parts1.trackingNumberReq==true),'showRedBorder','')}"/>
+                                                                                    </apex:outputText>
+                                                                                    <apex:outputText rendered="{!IF((parts1.returnToFactory == 'Y' && parts1.returnWaiver=='true'),true,false)}">
+                                                                                        <apex:selectList value="{!parts1.trackingNumber}" size="1" styleClass="{!if((parts1.trackingNumber=='Select One' && parts1.trackingNumberReq==true) ,'showRedBorder','')}">
+                                                                                            <apex:selectOptions value="{!TrackNumberNew}" />
+                                                                                        </apex:selectList>
+                                                                                    </apex:outputText>
+                                                                                </apex:outputPanel> 
+                                                                            </apex:outputPanel>
+                                                                        </apex:outputPanel>
+                                                                    </td>
+
+                                                                    <td>
+                                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                            <apex:outputText value="{!parts1.RID}"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                            <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false)}">
+                                                                                <apex:inputTextarea value="{!parts1.RID}" style="resize:none;border:1px solid #d3d3d3;width:100px" disabled="true" rendered="{!IF(parts1.returnToFactory=='Y', true,false)}"/>
+                                                                            </apex:outputPanel>
+                                                                            <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c == NULL,true,false)}">
+                                                                                <apex:inputTextarea value="{!parts1.RID}" style="resize:none;border:1px solid #d3d3d3;width:100px" html-maxlength="35" rendered="{!IF(parts1.returnToFactory=='Y', true,false)}"/>
+                                                                            </apex:outputPanel>
+                                                                        </apex:outputPanel>        
+                                                                    </td>
+                                                                    <!--END--as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->
+
+                                                                    <!--Display Unit Price as per 154213: Rupesh-->
+                                                                    <!--<apex:outputtext id="UPRTRPM" rendered="{!IF(claimsRec.CSS_Job__c==null,true,false)}">-->
+                                                                    <apex:outputtext id="UPRTRPM" rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==false,true,false)}">
+                                                                        <td>
+                                                                            <apex:outputText value="{!ROUND(VALUE(parts1.UnitPrice), 2)}"/>  
+                                                                        </td>
+                                                                    </apex:outputtext>
+                                                                    <!--<apex:outputtext id="TUSDTRP" rendered="{!IF(claimsRec.CSS_Job__c==null,true,false)}">-->
+                                                                    <apex:outputtext id="TUSDTRP" rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==false,true,false)}">
+                                                                        <td>
+                                                                            <apex:outputText value="{!ROUND(VALUE(parts1.Totprice), 2)}"/>   
+                                                                        </td>
+                                                                    </apex:outputtext>
+
+                                                                </tr> 
+                                                            </apex:repeat>
+                                                        </apex:repeat> 
+
+                                                    </table>
+                                                </apex:OutputPanel>  </apex:OutputPanel><br/>
+
+                                            <!--***********************************TRP ACCORDIAN END***********************************-->
+
+                                            <u><div class="cmi_accordion-title" style="font-weight:bold;text-decoration:underline;"><b>{!$Label.css_ATCs}</b></div></u><br/> <br/>   
+                                            <!--Added as part of GSSC-295 start -->
+                                            <div style="float:right">
+                                                <u><a id ="uncheck_id2" href="#/" onclick="unCheckCam2()" Class="text-decoration: none;">{!$Label.CSS_Uncheck_All}</a></u>&nbsp;&nbsp;
+                                                <u><a id ="check_id2" href="#/" onclick="checkCam2()" Class="text-decoration: none;">{!$Label.CSS_Check_All}</a></u>&nbsp;&nbsp;
+                                            </div>
+                                            <!--Added as part of GSSC-295 end -->
+                                            <!--***********************************ATC ACCORDIAN START***********************************-->
+
+                                            <apex:OutputPanel id="ATCData">
+
+                                                <apex:actionFunction name="atcSelectALLChecked" rerender="returnToFactoryATC" />
+                                                <apex:actionFunction name="atcCheckboxChecked" rerender="returnToFactoryATC" />
+
+                                                <table class="mytable table table-bordered table-striped cmi_jobplan-table"  width="100%" cellpadding="0" cellspacing="0">
+                                                    <thead>
+                                                        <tr height="54">
+                                                            <th>{!$Label.CSS_Field_Action_Number}</th>
+                                                            <th>{!$Label.CSS_Select}</th>
+                                                            <th>{!$Label.CSS_Qty}</th>
+                                                            <th>{!$Label.CSS_Part_Number}</th>
+                                                            <th>OEM ({!$Label.CSS_Product_Code})</th>
+                                                            <th>{!$Label.CSS_Part_Name}</th> 
+                                                            <th >{!$Label.css_Percent_Requested}</th>
+                                                            <th >{!$Label.CSS_Fail_Code}</th> 
+                                                            <th >{!$Label.CSS_Account_Code}</th>
+                                                            <th >{!$Label.CSS_Return_to_Factory}</th>
+                                                            <!--Added below value for Return Waiver as per 24 sprint,-By RAJESH 04th Sec 2018-->
+                                                            <th >{!$Label.css_Return_Waiver}</th>
+                                                            <!--End-->
+                                                            <th >{!$Label.css_Tracking_Number}</th>
+                                                            <th>{!$Label.CSS_RID}</th> 
+
+                                                            <!-- Added additional condition to hide Unit Price & Total USD Column for Dealer User -- Rajasekhar H for 158524 Silicon Valley-->
+                                                            <apex:outputtext id="Unitprice2" rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==false,true,false)}">
+                                                                <!-- <th>{!$Label.CG_UnitPrice}(USD)</th>  --> 
+                                                                <th> {!$Label.CG_UnitPrice}({!mainController.userRec.DefaultCurrencyIsoCode})</th>
+                                                            </apex:outputtext>
+                                                            <apex:outputtext id="totalusd2" rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==false,true,false)}">   
+                                                                <!-- <th> {!$Label.CSS_Total_USD}</th>-->
+                                                                <th> {!$Label.CSS_Total} ({!mainController.userRec.DefaultCurrencyIsoCode})</th>
+                                                            </apex:outputtext>
+
+                                                        </tr>
+                                                    </thead>
+
+                                                    <apex:actionFunction name="calExpTotATC" action="{!populateTotalAmountATC}" reRender="ATCData">
+                                                        <apex:param name="ATCQValue" value="" assignTo="{!selectedRecordRowID}"/>                       
+                                                    </apex:actionFunction>
+
+                                                    <apex:variable var="solcnt" value="{!0}" />
+
+                                                    <apex:repeat value="{!listATCcompWrapper}" var="Atc">
+                                                        <apex:variable var="Atcpartcount" value="{!0}" />
+                                                        <apex:repeat value="{!Atc.partWrapper}" var="parts1" id="atcrpt">
+                                                            <apex:variable var="solcnt" value="{!solcnt+1}" />
+                                                            <apex:variable var="Atcpartcount" value="{!Atcpartcount + 1}" /> 
+                                                            <tr>
+                                                                <apex:outputText rendered="{!IF(Atcpartcount == 1,true,false)}"> 
+                                                                    <td rowspan="{!Atc.partcount}" style="width:20%">
+                                                                        <apex:outputText value="{!Atc.fieldactnum}"/>
+                                                                    </td>
+                                                                </apex:outputText>
+                                                                <!--Added isClaimReadOnly__C && isServiceJobReadOnly__c condition as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->                    
+                                                                <td  style="text-align:center;">
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                        <apex:inputCheckbox disabled="true" value="{!parts1.selectedComponent}" styleClass="URCheckbox2" />
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c==NULL,true,false) || IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false) && IF(mainController.claimsRec.IsDealerCreatedClaim__c == true,true,false) }">
+                                                                            &nbsp;&nbsp;&nbsp;&nbsp;<apex:inputCheckbox value="{!parts1.selectedComponent}" styleClass="URCheckbox2" onchange="atcCheckboxChecked();"/>
+                                                                        </apex:outputPanel>
+
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false) && IF(mainController.claimsRec.IsDealerCreatedClaim__c == false,true,false) }">
+                                                                            <apex:inputCheckbox disabled="true" value="{!parts1.selectedComponent}" styleClass="URCheckbox2" />
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>
+
+                                                                </td>
+                                                                <td>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                        <apex:outputText value="{!parts1.quantity}" style="width:80px"/>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false) || IF(mainController.claimsRec.Dealer_Service_Job__c != Null,true,false)}">
+                                                                            <apex:inputText value="{!parts1.quantity}" style="width:80px"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c==NULL,true,false) && IF(mainController.claimsRec.Dealer_Service_Job__c == Null,true,false)}">
+                                                                            <!--If the quantity is to be changed then the exp total will be calcualted.-->
+                                                                            <apex:inputtext value="{!parts1.quantity}" style="width:80px" maxlength="4" 
+                                                                                            onkeypress="return campquantitylen(event,this)"
+                                                                                            onchange="OnchanageQuantityCAM('{!parts1.servicepart}');"/> 
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>   
+                                                                </td>
+
+                                                                <td><apex:outputText value="{!parts1.servicepart}"/></td>
+                                                                <td><apex:outputText value="{!parts1.oem}"/></td>
+                                                                <td><apex:outputText value="{!parts1.partname}"/></td>
+                                                                <td>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                        <apex:outputText value="{!parts1.covered}"/>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c==NULL,true,false) && IF(mainController.claimsRec.Dealer_Service_Job__c == Null,true,false)}">
+                                                                            <apex:outputText value="{!parts1.covered}"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false) || IF(mainController.claimsRec.Dealer_Service_Job__c != Null,true,false)}">
+                                                                            <apex:inputText value="{!parts1.covered}"/>
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>
+                                                                </td>
+                                                                <td><apex:outputText value="{!parts1.failcode}"/></td>
+                                                                <td><apex:outputText value="{!parts1.accountcode}"/></td>                            
+                                                                <!--<td><apex:outputText value="{!parts1.returnToFactory}"/></td> -->
+                                                                <td>
+                                                                    <apex:outputPanel id="returnToFactoryATC">
+                                                                        <apex:outputPanel rendered="{!IF(parts1.selectedComponent == false || parts1.returnToFactory != 'Y',true,false)}">
+                                                                            <apex:outputText value="{!parts1.returnToFactory}"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(parts1.selectedComponent == true && parts1.returnToFactory == 'Y',true,false)}">
+                                                                            <div>
+                                                                                <span class="underline"><a href="/apex/CG_PartsReturnEPRPDF?id={!cId}" style="border-bottom:1px solid #007c7c !important" target="_blank" id="trpvalId" >{!$label.CSS_Parts_Return_Label}</a></span>
+                                                                            </div>
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>
+                                                                </td>
+                                                                <!--GSSC-302 -->
+                                                                <td class="ReturnWaiverCamCell" >
+                                                                    <apex:outputPanel rendered="{!IF(parts1.servicepart!=Null && parts1.returnToFactory == 'Y',true,false)}">
+                                                                        <span class="ReturnWaiverCam"> {!$Label.CG_ReturnWaiver_Msg}  </span>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                        <apex:inputCheckbox value="{!parts1.returnWaiver}" style="width:50px;" disabled="true"/>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                        <apex:outputText rendered="{!IF(parts1.returnToFactory=='N',true,false)}">
+                                                                            <apex:inputCheckbox style="width:50px;" disabled="true"/>
+                                                                        </apex:outputText> 
+                                                                        <apex:outputText rendered="{!IF(parts1.returnToFactory=='Y',true,false)}">
+                                                                            <apex:inputCheckbox value="{!parts1.returnWaiver}" onclick="callTNEnableJSATC(this,'{!parts1.servicepart}')" style="width:50px;" id="returnWaiverATC"/><!--onclick="callActionEnableJS(this)"-->
+                                                                        </apex:outputText>
+                                                                    </apex:outputPanel>
+                                                                </td>
+                                                                <td>
+                                                                    <!--   <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false)}">
+<apex:inputTextarea disabled="true" value="{!parts1.trackingNumber}" style="resize:none;border:1px solid #d3d3d3;width:100px" html-maxlength="35" rendered="{!IF(parts1.returnToFactory=='Y', true,false)}"/>
+</apex:outputPanel>
+<apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c==NULL,true,false)}">
+<apex:inputTextarea value="{!parts1.trackingNumber}" style="resize:none;border:1px solid #d3d3d3;width:100px" html-maxlength="35" rendered="{!IF(parts1.returnToFactory=='Y' , true,false)}"/>
+</apex:outputPanel>  -->                                  <apex:outputPanel id="trackNumberATC">
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                        <apex:outputText value="{!parts1.trackingNumber}" />
+                                                                    </apex:outputPanel>       
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false)}">
+                                                                            <apex:outputText rendered="{!IF((parts1.returnToFactory == 'Y' && parts1.returnWaiver=='false'),true,false)}">
+                                                                                <apex:inputTextarea value="{!parts1.trackingNumber}" style="resize:none;border:1px solid #d3d3d3;width:100px" styleClass="{!if(((parts1.trackingNumber=='Select One' || parts1.trackingNumber=='' || parts1.trackingNumber==null) && parts1.trackingNumberReq==true),'showRedBorder','')}"/>
+                                                                            </apex:outputText>
+                                                                            <apex:outputText rendered="{!IF((parts1.returnToFactory == 'Y' && parts1.returnWaiver=='true'),true,false)}">
+                                                                                <apex:selectList value="{!parts1.trackingNumber}" size="1" styleClass="{!if((parts1.trackingNumber=='Select One' && parts1.trackingNumberReq==true),'showRedBorder','')}">
+                                                                                    <apex:selectOptions value="{!TrackNumberNew}" />
+                                                                                </apex:selectList>
+                                                                            </apex:outputText>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c==NULL,true,false)}">
+                                                                            <apex:outputText rendered="{!IF((parts1.returnToFactory == 'Y' && parts1.returnWaiver=='false'),true,false)}">
+                                                                                <apex:inputTextarea value="{!parts1.trackingNumber}" style="resize:none;border:1px solid #d3d3d3;width:100px" styleClass="{!if(((parts1.trackingNumber=='Select One' || parts1.trackingNumber=='' || parts1.trackingNumber==null) && parts1.trackingNumberReq==true),'showRedBorder','')}"/>
+                                                                            </apex:outputText>
+                                                                            <apex:outputText rendered="{!IF((parts1.returnToFactory == 'Y' && parts1.returnWaiver=='true'),true,false)}">
+                                                                                <apex:selectList value="{!parts1.trackingNumber}" size="1" styleClass="{!if((parts1.trackingNumber=='Select One' && parts1.trackingNumberReq==true),'showRedBorder','')}">
+                                                                                    <apex:selectOptions value="{!TrackNumberNew}" />
+                                                                                </apex:selectList>
+                                                                            </apex:outputText>
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>                    
+                                                                    </apex:outputPanel>
+                                                                </td>                                                            
+                                                                <td>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                        <apex:outputText value="{!parts1.RID}" />
+                                                                    </apex:outputPanel>    
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c!=NULL,true,false)}">
+                                                                            <apex:inputTextarea disabled="true" value="{!parts1.RID}" style="resize:none;border:1px solid #d3d3d3;width:100px" html-maxlength="35" rendered="{!IF(parts1.returnToFactory=='Y', true,false)}"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(mainController.claimsRec.CSS_Job__c == NULL,true,false)}">
+                                                                            <apex:inputTextarea value="{!parts1.RID}" style="resize:none;border:1px solid #d3d3d3;width:100px" html-maxlength="35" rendered="{!IF(parts1.returnToFactory=='Y', true,false)}"/>
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>            
+                                                                </td>
+                                                                <!--END-- as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->
+                                                                <!--Display Unit Price as per 154213: Rupesh-->
+                                                                <!-- <apex:outputtext id="UPRATCA" rendered="{!IF(claimsRec.CSS_Job__c!=null,true,false)}">
+<td></td>
+</apex:outputtext> --> <!-- commented this bcz extra empty column showing-->
+                                                                <!-- <apex:outputtext id="UPRATCM" rendered="{!IF(claimsRec.CSS_Job__c==null,true,false)}">-->
+                                                                <apex:outputtext id="UPRATCM" rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==false,true,false)}">
+                                                                    <td>
+                                                                        <apex:outputText value="{!ROUND(VALUE(parts1.UnitPrice), 2)}"/>  
+                                                                    </td>
+                                                                </apex:outputtext>
+                                                                <!--<apex:outputtext id="TUSDATC" rendered="{!IF(claimsRec.CSS_Job__c==null,true,false)}">-->
+                                                                <apex:outputtext id="TUSDATC" rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==false,true,false)}">
+                                                                    <td>
+                                                                        <apex:outputText value="{!ROUND(VALUE(parts1.Totprice), 2)}"/>     
+                                                                    </td>
+                                                                </apex:outputtext>
+                                                            </tr> 
+                                                        </apex:repeat>
+                                                    </apex:repeat>  
+                                                </table>
+                                            </apex:OutputPanel>
+
+                                            <!--***********************************ATC ACCORDIAN END***********************************-->
+
+                                            <div class="col-sm-offset-5 col-sm-4" style="margin-top:10px;">
+                                                <apex:commandButton value="{!$Label.css_save_btn}" action="{!saveCTAData}"  styleClass="saveButton" reRender="CampParts,TrpParts,AtcParts,savepanel,ErrMsg,ErrMsgTRP,ErrMsgATC,trackNumberTRP,trackNumberATC,trackNumberCAMPAIGN,returnToFactoryCAM,returnToFactoryTRP,returnToFactoryATC" 
+                                                                    status="Actstatusid" ></apex:commandButton><!--onClick="PageRefresh()"-->
+                                                <apex:actionStatus startText="requesting..." id="Actstatusid">
+                                                    <apex:facet name="start">Saving... <img src="/img/loading.gif" /></apex:facet>
+                                                    <apex:facet name="stop"></apex:facet>
+                                                </apex:actionStatus>&nbsp;&nbsp;
+                                                <!--  <apex:commandButton value="Reset" action="{!ResetCTAData}" styleClass="cancelButton" reRender="campPanelValues,CampParts,TrpParts,AtcParts,savepanel" status="ActstatusidR"/>-->
+                                                <apex:commandButton value="Reset" action="{!ResetCTAData}" styleClass="cancelButton" reRender="CampData,TRPData,ATCData" status="ActstatusidR"/>
+                                                <apex:actionStatus startText="requesting..." id="ActstatusidR">
+                                                    <apex:facet name="start">Reseting... <img src="/img/loading.gif" /></apex:facet>
+                                                    <apex:facet name="stop"></apex:facet>
+                                                </apex:actionStatus>&nbsp;&nbsp;
+                                            </div>
+                                        </div> 
+                                    </div>
+                                </div>
+                            </div>    
+                        </div>
+                    </div>
+                </apex:outputPanel>
+
+                <!--GSSC-302--->
+                <div class="container">  
+                    <div class="modal fade" id ="ReturnWaiverhoverpopup" role="dialog"  data-backdrop="static" data-keyboard="false" >
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <button type="button"  class="cross_butten" data-dismiss="modal"></button>
+                                    <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Cummins_Service_System} </h4>
+                                </div>
+                                <div class="clearfix"></div> 
+                                <div class="modal-body"> 
+                                    {!$label.CG_ReturnWaiver_Msg}
+                                </div>
+                                <div class="modal-footer">
+                                    <div class="col-sm-12" align="center" draggable="false" >
+                                        <button type="button"  class="cancelButton" data-dismiss="modal">{!$Label.css_Ok}</button>
+
+                                    </div> <br/>
+                                    <div class="clearfix"></div>
+                                    <div class="clearfix"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--End-->
+
+            </apex:actionRegion>
+        </div>
+    </div>
+
+    <script>
+        //FOR TAB OFF SHIFT KEY     
+        function campquantitylen(e,compId){
+            if((e.which > 47 && e.which <=57))
+            {
+            } 
+            else 
+            {
+                return false;
+            }        
+        }
+        //FOR PAGE REFRESH ON SAVE
+        function PageRefresh()
+        {
+
+            window.location.reload();
+        }
+        // Added as part of GSSC-295 start 
+        function checkCam(){
+            $('.URCheckbox').each(function() {
+                $(this).prop("checked", true);
+
+            });
+            camSelectALLChecked();
+            return false;
+        }
+
+        function unCheckCam(){
+            $('.URCheckbox').each(function() {
+                $(this).removeAttr('checked');
+            });
+            camSelectALLChecked();
+            return false;
+        } 
+
+        function checkCam1(){
+            $('.URCheckbox1').each(function() {
+                $(this).prop("checked", true);
+            });
+            trpSelectALLChecked();
+            return false;
+
+        }
+
+        function unCheckCam1(){
+            $('.URCheckbox1').each(function() {
+                $(this).removeAttr('checked');
+            });
+            trpSelectALLChecked();
+            return false;
+        }
+
+        function checkCam2(){
+            $('.URCheckbox2').each(function() {
+                $(this).prop("checked", true);
+            });
+            atcSelectALLChecked();
+            return false;
+
+        }
+
+        function unCheckCam2(){
+            $('.URCheckbox2').each(function() {
+                $(this).removeAttr('checked');
+            });
+            atcSelectALLChecked();
+            return false;
+        }
+        // Added as part of GSSC-295 end 
+    </script>
+
+</apex:component>

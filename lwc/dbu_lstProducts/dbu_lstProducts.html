@@ -1,0 +1,600 @@
+<template>
+    <template if:true={ScreenLoaded}>
+        <c-dbu_page-loader></c-dbu_page-loader>
+    </template>
+    <div class="searchPage">
+        <div class="slds-container_x-large slds-container_center">
+            <div class="slds-grid slds-wrap searchPageCont">
+                <div class="slds-col slds-size_1-of-1 slds-large-size_3-of-12 slds-col_padded searchFilter">
+                    <template if:true={isIdSearch}> 
+                    <h6 class="f-medium">{filterbytxt}</h6>
+                    <div class="esnSearchSec">
+                        <strong>{esnrefinetxt}</strong>
+                        <div class="fieldCheck">
+                            <div class="slds-checkbox">
+                                <input type="checkbox" onchange={handleesnchekbox} checked={check} id="esn">
+                                <label for="esn" class="slds-checkbox__label">
+                                    <span class="slds-checkbox_faux"></span>
+                                </label>
+                            </div>
+                            <div class="slds-form-element__control">
+                                <input type="search" value={sVal} onchange={handleinputchnage} disabled={enableinput}
+                                    class="slds-input">
+                            </div>
+                        </div>
+
+                        <template if:false={showfineesnresult}>
+                            <a onclick={handleclickesn} class="apply f-medium"> {applytxt}</a>
+                        </template>
+                        <template if:true={showfineesnresult}>
+                            <a onclick={handleclear} class="clear f-medium"> {cleartxt}</a>
+                        </template>
+                    </div>
+                    </template>
+
+                    <lightning-accordion allow-multiple-sections-open onsectiontoggle={handleSectionToggle}
+                        class="filter-accordion" active-section-name={activeSections}>
+                        <lightning-accordion-section name="category" label="Category">
+
+                            <template if:true={categories}>
+                                <template for:each={categories} for:item="category">
+                                    <div class="slds-checkbox" key={category.id}>
+                                        <input type="checkbox" name="options" id={category} value={category}
+                                            onclick={handlecategory} data-id={category} />
+                                        <label class="slds-checkbox__label" for={category}>
+                                            <span class="slds-checkbox_faux"></span>
+                                            <span class="slds-form-element__label"> {category}</span>
+                                        </label>
+                                    </div>
+                                </template>
+                            </template>
+                        </lightning-accordion-section>
+
+                        <lightning-accordion-section name="brand" label="Brand">
+
+                            <template if:true={brands}>
+                                <template for:each={brands} for:item="brand">
+                                    <div class="slds-checkbox" key={brand.id}>
+                                        <input type="checkbox" name="options" id={brand} value={brand}
+                                            onclick={handlebrand}  data-id={brand}/>
+                                        <label class="slds-checkbox__label" for={brand}>
+                                            <span class="slds-checkbox_faux"></span>
+                                            <span class="slds-form-element__label"> {brand}</span>
+                                        </label>
+                                    </div>
+                                </template>
+                            </template>
+                        </lightning-accordion-section>
+                    </lightning-accordion>
+                    <div class="filterButton mWindow">
+                        <button class="slds-button slds-button_brand" onclick={closeFilter}>{applyAndClose}</button>
+                    </div>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-large-size_9-of-12 slds-col_padded searchCont">
+                    <nav role="navigation" aria-label="Breadcrumbs" class="breadCrumbs">
+                        <ol class="slds-breadcrumb slds-list_horizontal slds-wrap">
+                            <li class="slds-breadcrumb__item">
+                                <a href={baseURL}>{hometxt}</a>
+                            </li>
+                            <li class="slds-breadcrumb__item">
+                                <span>{SearchResulttxt}</span>
+                            </li>
+                        </ol>
+                    </nav>
+
+                    <template if:true={noesndata}>
+                        <div class="noEsnData">
+                            {couldnotfindtxt} "<strong>{sVal}</strong>"
+                        </div>
+                    </template>
+                    <template if:false={noesndata}>
+                        <template if:false={nodata}>
+                            <div class="slds-grid slds-wrap titlePerpage" if:false={ScreenLoaded}>
+                                <div
+                                    class="slds-col slds-size_1-of-1 slds-large-size_9-of-12 slds-col_padded itemCountTitle">
+                                    {foundtxt} <strong>{searchResultCount} {resulttxt}</strong> for
+                                    <template if:true={isVINSearch}> VIN#</template>  <!--Lahari -->  “<strong>{searchedval}</strong>”
+                                </div>
+                                 <!--Ravi start-->
+                                 <div class="slds-col showPerpage paddingRight">
+                                    <label>{showperpagetx}</label>
+                                    <lightning-combobox name="showPerPage" class="noLabel h-33 qtyDropdown"
+                                        label="Show per page" placeholder="" onchange={handleChange1} value={showCount}
+                                        options={showPerPage}></lightning-combobox>
+                                </div>
+                                <!--Ravi End-->
+                                <!--Lahari start-->
+                                <div 
+                                    class="slds-col slds-size_1-of-1 slds-large-size_9-of-12 slds-col_padded itemCountTitle">
+                                    
+                                    <template if:true={isVINSearch}> 
+                                        <template if:true={VINProductInfo.ESNNumber}>
+                                            <div class="slds-p-bottom_x-small"><b>Product Information</b></div> 
+                                            <table>
+                                            <tr><td><b>ESN Number:</b></td>         <td> {VINProductInfo.ESNNumber}</td></tr>
+                                            <tr><td><b>Marketing Model Name:</b></td><td> {VINProductInfo.marketingModelName}</td></tr>
+                                            <tr><td><b>Service Model Name: </b></td> <td> {VINProductInfo.serviceModelName}</td></tr>
+                                            <tr><td><b>Build Date:  </b></td>     <td>    {VINProductInfo.buildDate}</td></tr>
+                                        </table>
+                                        </template>
+
+                                    </template> 
+                                </div>
+                                 <!--Lahari end-->
+                                    
+                                </div>
+                              <!--  <div class="slds-col slds-size_1-of-1 slds-large-size_3-of-12 slds-col_padded showPerpage">
+                                    <label>{showperpagetx}</label>
+                                    <lightning-combobox name="showPerPage" class="noLabel h-33 qtyDropdown"
+                                        label="Show per page" placeholder="" onchange={handleChange1} value={showCount}
+                                        options={showPerPage}></lightning-combobox>
+                               </div>-->
+                            <!--</div> -->
+    
+                            <div class="slds-grid slds-wrap sortListGrid">
+                                <div class="slds-col slds-size_5-of-12 slds-large-size_6-of-12 slds-col_padded filterLink">
+                                    <a onclick={openFilter} class="f-medium">{filterbytxt}</a>
+                                </div>
+                                <div class="slds-col slds-size_7-of-12 slds-large-size_6-of-12 slds-col_padded sortBy">
+                                    <label class="dWindow">{sortbytxt}</label>
+                                    <lightning-combobox name="progress" label="Sort By" class="noLabel h-33 dWindow"
+                                        value={sortName} placeholder="Select" options={sortOptions1}
+                                        onchange={handleSortChange}>
+                                    </lightning-combobox>
+                                    <lightning-combobox name="progress" label="Sort By" class="noLabel h-33 mWindow"
+                                        value={sortName} placeholder="Sort By" options={sortOptions1}
+                                        onchange={handleSortChange}>
+                                    </lightning-combobox>
+                                </div>
+                                <div class="slds-col slds-size_1-of-1 slds-large-size_6-of-12 slds-col_padded listGrid">
+                                    <a class="gridViewIcon selected" onclick={gridView}> <span></span><span></span></a>
+                                    <a class="listViewIcon " onclick={listView}> <span></span></a>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+                    
+
+                    <!--For display inline ESN -->
+                    <template if:false={sortESN}>
+                        <template if:true={showfineesnresult}>
+                            <div class={listGridClass}>
+                                <template for:each={findesnresult} for:item="product">
+                                    <div class="slds-grid slds-wrap resultBlock" key={product.id} data-sfid={product.id}
+                                        data-sfdcname={product.sfdcName} data-productstock={product.invstatus} 
+                                        data-pricing={product.price} data-category={product.ProductCategory} onclick={handleClick}>
+                                        <div
+                                            class="slds-col slds-size_1-of-1 slds-large-size_3-of-12 slds-col_padded pImg">
+                                            <!--<img src={product.URI}>-->
+                                            <c-dbu_image-Generator imageurl={product.URI}></c-dbu_image-Generator>
+                                        </div>
+                                        <div
+                                            class="slds-col slds-size_1-of-1 slds-large-size_6-of-12 slds-col_padded pTitCont">
+                                            <h6 class="f-medium prodname productName">
+                                                {product.sfdcName}</h6>
+                                                <template if:true={product.promotionTag}>
+                                                    <span class="clearancesale-tag"> 
+                                                        <img src={clearanceImg}>{product.promotionTag}</span>
+                                                </template>
+                                            <p>
+                                                <lightning-formatted-rich-text value={product.shortDesc}>
+                                                </lightning-formatted-rich-text>
+                                            </p>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-1 slds-large-size_3-of-12 slds-col_padded price cardFooterDetails">
+                                            <template if:true={product.isOriginalPrice}>
+                                                <div class="productPrice">
+                                                    <template if:true={product.promotionTag}>
+                                                        <div class="slds-col slds-size_1-of-1 slds-large-size_6-of-12 w-100 pb-4">
+                                                            <span class="sale-tag"> 
+                                                                <img src={clearanceImg}>{product.promotionTag}</span>
+                                                        </div>
+                                                    </template>
+                                                    <strong> <span class="originalPrice">{product.originalPrice}</span>
+                                                        {product.price}</strong>
+                                                        <template if:true={product.discPercent}>
+                                                            <span class="discountTag">({product.discPercent}{label.dbu_percentOff})</span>
+                                                        </template>
+                                                </div>
+                                                <div class="listProductPrice">
+                                                    <div class="originalPrice">{product.originalPrice}</div>
+                                                    <div class="pt-16">
+                                                        <strong> {product.price}</strong>
+                                                        <template if:true={product.discPercent}>
+                                                            <span class="discountTag">({product.discPercent}{label.dbu_percentOff})</span>
+                                                        </template>
+                                                    </div>
+                                                    <div class="in-stock">
+                                                        <span class="avbl outStockClravbl"
+                                                        data-val={product.invstatus}>{product.invstatus}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="grid-inStock">
+                                                    <span class="avb outStockClravbl"
+                                                    data-val={product.invstatus}>{product.invstatus}</span>
+                                                </div>
+                                            </template>
+                                            <template if:false={product.isOriginalPrice}>
+                                            <template if:true={product.promotionTag}>
+                                                <div class="w-100">
+                                                    <span class="sale-tag"> 
+                                                        <img src={clearanceImg}>{product.promotionTag}</span>
+                                                </div>
+                                            </template>
+                                                <div class="productPrice">
+                                                    {product.price}
+                                                </div>
+                                                <div class="listProductPrice">
+                                                    <div >{product.price}</div>
+                                                    <div class="in-stock">
+                                                        <span class="avbl outStockClravbl"
+                                                        data-val={product.invstatus}>{product.invstatus}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="grid-inStock">
+                                                    <span class="avb outStockClr"
+                                                    data-val={product.invstatus}>{product.invstatus}</span>
+                                                </div>
+                                            </template>
+                                        </div>
+                                        <!-- <div
+                                            class="slds-col slds-size_1-of-1 slds-large-size_6-of-12 slds-col_padded pTitCont">
+                                            <h6 class="f-medium">
+                                                {product.sfdcName} temp 1</h6>
+                                            <p>
+                                                <lightning-formatted-rich-text value={product.shortDesc}>
+                                                </lightning-formatted-rich-text>
+                                            </p>
+                                        </div>
+                                        <div
+                                            class="slds-col slds-size_1-of-1 slds-large-size_3-of-12 slds-col_padded price">
+                                            <div class="h1">
+                                                {product.price}
+                                            </div>
+                                            <span class="avb outStockClr"
+                                                data-val={product.invstatus}>{product.invstatus}</span>
+                                        </div> -->
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </template>
+                    <!--End inline ESN-->
+                    <template if:false={showfineesnresult}>
+                        <template if:false={sort}>
+                            <template if:true={productArray}>
+                                <div class={listGridClass}>
+                                    <template for:each={productArray} for:item="product">
+                                        <div class="slds-grid slds-wrap resultBlock" key={product.id}
+                                            data-sfid={product.id} data-sfdcname={product.sfdcName}
+                                            data-productstock={product.invstatus} data-pricing={product.price} data-category={product.ProductCategory}
+                                            onclick={handleClick}>
+                                            <div
+                                                class="slds-col slds-size_1-of-1 slds-large-size_3-of-12 slds-col_padded pImg">
+                                                <!--<img src={product.URI}>-->
+                                                <c-dbu_image-Generator imageurl={product.URI}></c-dbu_image-Generator>
+                                            </div>
+                                            <div
+                                                class="slds-col slds-size_1-of-1 slds-large-size_6-of-12 slds-col_padded pTitCont">
+                                                <h6 class="f-medium prodname productName">
+                                                    {product.sfdcName}</h6>
+                                                    <template if:true={product.promotionTag}>
+                                                        <span class="clearancesale-tag"> 
+                                                            <img src={clearanceImg}>{product.promotionTag}</span>
+                                                    </template>
+                                                <p>
+                                                    <lightning-formatted-rich-text value={product.shortDesc}>
+                                                    </lightning-formatted-rich-text>
+                                                </p>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-1 slds-large-size_3-of-12 slds-col_padded price cardFooterDetails">
+                                                <template if:true={product.isOriginalPrice}>
+                                                    <!-- Grid View Price and Discount Section Design Start -->
+                                                    <div class="productPrice">
+                                                        <template if:true={product.promotionTag}>
+                                                            <div class="slds-col slds-size_1-of-1 slds-large-size_6-of-12 w-100 pb-4">
+                                                                <span class="sale-tag"> 
+                                                                    <img src={clearanceImg}>{product.promotionTag}</span>
+                                                            </div>
+                                                        </template>
+                                                        <strong> <span class="originalPrice">{product.originalPrice}</span>
+                                                            {product.price}</strong>
+                                                            <template if:true={product.discPercent}>
+                                                                <span class="discountTag">({product.discPercent}{label.dbu_percentOff})</span>
+                                                            </template>
+                                                    </div>
+                                                    <!-- Grid View Price and Discount Section Design End -->
+                                                    <!-- List View Price and Discount Section Start -->
+                                                    <div class="listProductPrice">
+                                                        <div class="originalPrice">{product.originalPrice}</div>
+                                                        <div class="pt-16">
+                                                            <strong> {product.price}</strong>
+                                                            <template if:true={product.discPercent}>
+                                                                <span class="discountTag">({product.discPercent}{label.dbu_percentOff})</span>
+                                                            </template>
+                                                        </div>
+                                                        <div class="in-stock">
+                                                            <span class="avbl outStockClravbl"
+                                                            data-val={product.invstatus}>{product.invstatus}</span>
+                                                        </div>
+                                                    </div>
+                                                    <!-- List View Price and Discount Section End -->
+                                                    <div class="grid-inStock">
+                                                        <span class="avb outStockClravbl"
+                                                        data-val={product.invstatus}>{product.invstatus}</span>
+                                                    </div>
+                                                </template>
+                                                
+                                                <template if:false={product.isOriginalPrice}>
+                                                <template if:true={product.promotionTag}>
+                                                    <div class="w-100">
+                                                        <span class="sale-tag"> 
+                                                            <img src={clearanceImg}>{product.promotionTag}</span>
+                                                    </div>
+                                                </template>
+                                                    <!-- Grid View Price Section Start -->
+                                                    <div class="productPrice">
+                                                        {product.price}
+                                                    </div>
+                                                    <!-- Grid View Price Section End -->
+                                                    <!-- List View Price Section Start -->
+                                                    <div class="listProductPrice">
+                                                        <div >{product.price}</div>
+                                                        <div class="in-stock">
+                                                            <span class="avbl outStockClravbl"
+                                                            data-val={product.invstatus}>{product.invstatus}</span>
+                                                        </div>
+                                                    </div>
+                                                    <!-- List View Price Section End -->
+                                                    <div class="grid-inStock">
+                                                        <span class="avb outStockClr"
+                                                        data-val={product.invstatus}>{product.invstatus}</span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </template>
+                    </template>
+
+                    <template if:true={sort}>
+                        <div class={listGridClass}>
+                            <template if:true={sorteddata}>
+                                <template for:each={sorteddata} for:item="product">
+                                    <!--ramesh CHG0109514-->
+                                    <div class="slds-grid slds-wrap resultBlock" key={product.id}
+                                        data-sfid={product.id} data-sfdcname={product.sfdcName} 
+                                        data-productstock={product.invstatus} data-pricing={product.price} data-category={product.ProductCategory}
+                                        onclick={handleClick}>
+                                        <div
+                                            class="slds-col slds-size_1-of-1 slds-large-size_3-of-12 slds-col_padded pImg">
+                                            <!--<img src={product.URI}>-->
+                                            <c-dbu_image-Generator imageurl={product.URI}></c-dbu_image-Generator>
+                                        </div>
+                                        <div
+                                            class="slds-col slds-size_1-of-1 slds-large-size_6-of-12 slds-col_padded pTitCont">
+                                            <h6 class="f-medium prodname productName">
+                                                {product.sfdcName}</h6>
+                                                <template if:true={product.promotionTag}>
+                                                    <span class="clearancesale-tag"> 
+                                                        <img src={clearanceImg}>{product.promotionTag}</span>
+                                                </template>
+                                            <p>
+                                                <lightning-formatted-rich-text value={product.shortDesc}>
+                                                </lightning-formatted-rich-text>
+                                            </p>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-1 slds-large-size_3-of-12 slds-col_padded price cardFooterDetails">
+                                            <template if:true={product.isOriginalPrice}>
+                                                <!-- Grid View Price and Discount Section Start -->
+                                                <div class="productPrice">
+                                                    <template if:true={product.promotionTag}>
+                                                        <div class="slds-col slds-size_1-of-1 slds-large-size_6-of-12 w-100 pb-4">
+                                                            <span class="sale-tag"> 
+                                                                <img src={clearanceImg}>{product.promotionTag}</span>
+                                                        </div>
+                                                    </template>
+                                                    <strong> <span class="originalPrice">{product.originalPrice}</span>
+                                                        {product.price}</strong>
+                                                        <template if:true={product.discPercent}>
+                                                            <span class="discountTag">({product.discPercent}{label.dbu_percentOff})</span>
+                                                        </template>
+                                                </div>
+                                                <!-- Grid View Price Section End -->
+                                                <!-- List View Price and Discount Section Start -->
+                                                <div class="listProductPrice">
+                                                    <div class="originalPrice">{product.originalPrice}</div>
+                                                    <div class="pt-16">
+                                                        <strong> {product.price}</strong>
+                                                        <template if:true={product.discPercent}>
+                                                            <span class="discountTag">({product.discPercent}{label.dbu_percentOff})</span>
+                                                        </template>
+                                                    </div>
+                                                    <div class="in-stock">
+                                                        <span class="avbl outStockClravbl"
+                                                        data-val={product.invstatus}>{product.invstatus}</span>
+                                                    </div>
+                                                </div>
+                                                <!-- List View Price and Discount Section End -->
+                                                <div class="grid-inStock">
+                                                    <span class="avb outStockClravbl"
+                                                    data-val={product.invstatus}>{product.invstatus}</span>
+                                                </div>
+                                            </template>
+                                            <template if:false={product.isOriginalPrice}>
+                                            <template if:true={product.promotionTag}>
+                                                <div class="w-100">
+                                                    <span class="sale-tag"> 
+                                                        <img src={clearanceImg}>{product.promotionTag}</span>
+                                                </div>
+                                            </template>
+                                                <div class="productPrice">
+                                                    {product.price}
+                                                </div>
+                                                <!-- List View Price Section Start -->
+                                                <div class="listProductPrice">
+                                                    <div >{product.price}</div>
+                                                    <div class="in-stock">
+                                                        <span class="avbl outStockClravbl"
+                                                        data-val={product.invstatus}>{product.invstatus}</span>
+                                                    </div>
+                                                </div>
+                                                <!-- List View Price Section End -->
+                                                <div class="grid-inStock">
+                                                    <span class="avb outStockClr"
+                                                    data-val={product.invstatus}>{product.invstatus}</span>
+                                                </div>
+                                            </template>
+                                        </div>
+                                        <!-- <div
+                                            class="slds-col slds-size_1-of-1 slds-large-size_6-of-12 slds-col_padded pTitCont">
+                                            <h6 class="f-medium">
+                                                {product.sfdcName} temp 2</h6>
+
+                                            <p>
+                                                <lightning-formatted-rich-text value={product.shortDesc}>
+                                                </lightning-formatted-rich-text>
+                                            </p>
+                                        </div> -->
+                                        <!-- <div
+                                            class="slds-col slds-size_1-of-1 slds-large-size_3-of-12 slds-col_padded price">
+                                            <div class="h1">
+                                                {product.price}
+                                            </div>
+                                            <span class="avb outStockClr"
+                                                data-val={product.invstatus}>{product.invstatus}</span>
+                                        </div> -->
+                                    </div>
+                                </template>
+                            </template>
+
+                        </div>
+                    </template>
+                    <!--For esn sort -->
+
+                    <template if:false={sort}>
+                        <div class={listGridClass}>
+
+                            <template if:true={sortESN}>
+                                <template if:true={showESNRefine}>
+
+                                    <template for:each={sortedESNdata} for:item="product">
+                                        <!--ramesh CHG0109514-->
+                                        <div class="slds-grid slds-wrap resultBlock" key={product.id}
+                                            data-sfid={product.id} data-sfdcname={product.sfdcName}
+                                            data-productstock={product.invstatus} data-pricing={product.price} data-category={product.ProductCategory}
+                                            onclick={handleClick}>
+                                            <div
+                                                class="slds-col slds-size_1-of-1 slds-large-size_3-of-12 slds-col_padded pImg">
+                                                <!--<img src={product.URI}>-->
+                                                <c-dbu_image-Generator imageurl={media.ccrz__URI__c}>
+                                                </c-dbu_image-Generator>
+                                            </div>
+                                            <div
+                                                class="slds-col slds-size_1-of-1 slds-large-size_6-of-12 slds-col_padded pTitCont">
+                                                <h6 class="f-medium">
+                                                    {product.sfdcName}</h6>
+
+                                                <p>
+                                                    <lightning-formatted-rich-text value={product.shortDesc}>
+                                                    </lightning-formatted-rich-text>
+                                                </p>
+                                            </div>
+                                            <div
+                                                class="slds-col slds-size_1-of-1 slds-large-size_3-of-12 slds-col_padded price">
+                                                <div class="h1">
+                                                    <!-- <span class="originalPrice">CAD $2,613.95</span> -->
+                                                    {product.price}
+                                                </div>
+                                                <span class="avb outStockClr"
+                                                    data-val={product.invstatus}>{product.invstatus}</span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </template>
+
+                            </template>
+
+
+                        </div>
+                    </template>
+
+                    
+                    <!--Pagination Start-->
+                    <template if:false={nodata}>
+                        <template if:true={productArray}>
+                            <div class="slds-grid slds-wrap slds-m-bottom_large">
+                                <div class="slds-col slds-size_6-of-12 slds-large-size_6-of-12 pagination">
+                                <button class="prevLink" onclick={handlePrev} disabled={btnDisabledPrev}>
+                                    <span class="icon-left-arrow">
+                                    </span>
+                                </button>
+                                <span class="pgNums">
+                                    <template for:each={pageNumber} for:item="page">
+                                        <a key={page} data-id={page} onclick={handlePaginationClick} class="pgNum">{page} </a>
+                                    </template>
+                                </span>
+                                <button class="nextLink" disabled={btnDisabledNext} onclick={handleNext}>
+                                    <span class="icon-right-arrow">
+                                    </span>
+                                </button>
+                                </div>
+                                <div class="slds-col slds-size_6-of-12 slds-large-size_6-of-12 showing" >
+                                 Page {pageLabel}  of {maximumPageNumber}  
+                                    </div>
+                                    
+                            </div>
+                           
+                        </template>
+                    </template>
+                    
+
+                    
+                    <!--End-->
+
+
+
+
+                    <!--for esn sort end-->
+
+                    <template if:true={nodata}>
+                        <div class="slds-grid slds-wrap titlePerpage">
+                            <div
+                                class="slds-col slds-size_1-of-1 slds-large-size_12-of-12 slds-col_padded noSearchResults">
+                                <div class="h1"></div>
+                                <div class="h5">{sorrytxt} {searchcouldtxt}
+                                    "<strong>{searchedval}</strong>"</div>
+                                <p>{notfoundtxt}</p>
+
+                                <ul class="contact">
+                                    <li>
+
+                                        <button disabled={enableDisableButton} onclick={openRequestedPopup}>
+                                            <i class="icon-message"></i>
+                                            <h6>{chatustxt}</h6>
+                                            <span>{OnlineOfflineText}<br /> {OnlineOfflineRText}</span>
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <i class="icon-phone"></i>
+                                        <a href="tel:+18002866467"> {cumminstmtxt}<sup>TM</sup></a>
+                                        <span>{phonetxt}</span>
+                                    </li>
+                                    <!-- <li><a href=""><i class="icon-message"></i> Live Chat!</a> </li>
+                                    <li><a href=""><i class="icon-phone"></i> 1-800-CUMMINS<sup>TM</sup></a> </li> -->
+                                    <li><i class="icon-email"></i> <a href={contactUsURL}> {sendyourtxt}</a> </li>
+                                </ul>
+
+                                <p class="h6">{researchtxt} <a href="https://parts.cummins.com/"
+                                        target="_blank">{shopnowtxt}</a></p>
+
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>

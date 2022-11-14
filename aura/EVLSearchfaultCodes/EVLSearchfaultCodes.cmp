@@ -1,0 +1,226 @@
+<aura:component implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,lightning:availableForFlowScreens" access="global"
+                controller="EVLSearchfaultcodesController">
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="selectedTabId" type="String" />
+    <aura:attribute name="cumminsfaultcodes" type="string[]"/>
+    <aura:attribute name="searchString" type="string"/>
+    <aura:attribute name="sSymptomCategory" type="string"/>
+    <aura:attribute name="searchSymptom" type="string"/>
+    <aura:attribute name="searchResult" type="List"/>
+    <aura:attribute name="PcodesearchString" type="string"/>
+    <aura:attribute name="FSLPOCDEsearchResult" type="List"/>
+    <aura:attribute name="SPNsearchString" type="string"/>
+    <aura:attribute name="FSLSPNDEsearchResult" type="List"/>
+    <aura:attribute name="Message" type="boolean" default="false"/>
+    <aura:attribute name="Message2" type="boolean" default="false"/>
+    <aura:attribute name="Message3" type="boolean" default="false"/>
+    <aura:attribute name="columns" type="List" access="global"/>
+    <aura:attribute name="Pcodecolumns" type="List" access="global"/>
+    <aura:attribute name="SPNFMIsearchString" type="string"/>
+    <aura:attribute name="SPNFMIsearchResult" type="List"/>
+    <aura:attribute name="SPNFMIcodecolumns" type="List" access="global"/>
+    <aura:attribute name="picklistValues" type="String[]" access="global" />
+    <aura:attribute name="showTable" type="boolean" default="false"/>
+    <aura:attribute name="symtpomCats" type="list" access="global"/>
+    <aura:attribute name="symptomCatList" type="list" access="global"/>
+    <aura:attribute name="symptoms" type="list" access="global"/>
+    <aura:attribute name="objworkorder" type="WorkOrder" default="{ 'sobjectType': 'WorkOrder' }"/>
+    <aura:attribute name="selectedCumFaultCodeId" type="string"/>
+    <aura:attribute name="selectedSPNFMI" type="string"/>
+    <aura:attribute name="selectedPCCode" type="string"/>
+    
+    <aura:attribute name="selectedSymptom" type="string"/>
+    
+    <aura:attribute name="bolFaultTypeFC" type="boolean" default="false"/>
+    <aura:attribute name="bolFaultTypePCode" type="boolean" default="false"/>
+    <aura:attribute name="bolFaultTypeSPNFMI" type="boolean" default="false"/>
+    <aura:attribute name="usrcontrol" type="boolean" default="false"/>  
+    <aura:attribute name="isRecordTypeRepair" type="boolean" default="false" />
+    <aura:attribute name="showSearch" type="boolean" default="true"/><!-- Added by shirisha 08/03/2022 ROAD-527 -->
+    <lightning:workspaceAPI aura:id="workspace"/>
+    <aura:handler name="init" action="{!c.doInit}" value="{!this}" />
+    
+     <aura:if isTrue="{!v.showSearch}"> <!-- Added by shirisha 08/18/2022 ROAD-557 -->
+    <aura:renderIf isTrue="{!v.usrcontrol}">
+      <!--  <aura:if isTrue="{!v.isRecordTypeRepair}">  -->
+       
+        <lightning:card class="slds-text-heading_small slds-card_boundary" title="{!$Label.c.FSL_Search_Fault_Codes_or_Symptoms}">
+            
+            <table>
+            <tr>
+                <td style="padding-top: 3.6%;">
+                      <div class="slds-row">
+                          
+                    <lightning:recordEditForm aura:id="editForm" 
+                                              recordId="{!v.recordId}" 
+                                              objectApiName="WorkOrder" 
+                                              >
+                        <lightning:layout>
+                         
+                       <lightning:layoutItem flexibility="auto" padding="around-small"> 
+                         
+                        <aura:renderIf isTrue="{!v.bolFaultTypePCode}">  
+                            <lightning:inputField aura:id="CumminsPCode" 
+                                                  fieldName="FSL_PCode__c"  
+                                                  label="PCode" />  
+                            
+                        </aura:renderIf>
+                        </lightning:layoutItem>
+                          
+                        <lightning:layoutItem flexibility="auto" padding="around-small"> 
+                            
+                        <aura:renderIf isTrue="{!v.bolFaultTypeFC}">
+                         <lightning:inputField aura:id="CumminsFCode" 
+                                                  fieldName="FSL_Fault_Code__c"  
+                                                  label="Cummins Fault Code"
+                                                  />  
+                        </aura:renderIf>
+                        </lightning:layoutItem>
+                    <lightning:layoutItem flexibility="auto" padding="around-small"> 
+                        <aura:renderIf isTrue="{!v.bolFaultTypeSPNFMI}">
+                            <lightning:inputField aura:id="CumminsSPNCode" 
+                                                  fieldName="FSL_SPN_FMI__c"  
+                                                  label="SPN FMI" />  
+                        </aura:renderIf>
+                        </lightning:layoutItem>
+                        </lightning:layout>
+                    </lightning:recordEditForm>
+    
+                    </div>
+                    
+                <!-- <td style="padding-top: 3.6%;"> -->
+                 <!--   <lightning:layout>
+                        <lightning:layoutItem flexibility="auto" padding="around-small"> 
+                            <aura:renderIf isTrue="{!v.bolFaultTypePCode}">
+                                <force:inputField value="{!v.objworkorder.FSL_PCode__c}"/>
+                            </aura:renderIf>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem flexibility="auto" padding="around-small">
+                            <aura:renderIf isTrue="{!v.bolFaultTypeFC}">
+                                <force:inputField value="{!v.objworkorder.FSL_Fault_Code__c}"/>
+                            </aura:renderIf>
+                        </lightning:layoutItem>
+                        <lightning:layoutItem flexibility="auto" padding="around-small">
+                            <aura:renderIf isTrue="{!v.bolFaultTypeSPNFMI}">
+                                <force:inputField value="{!v.objworkorder.FSL_SPN_FMI__c}"/>
+                            </aura:renderIf>
+                        </lightning:layoutItem>
+                    </lightning:layout>-->
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <lightning:layout>
+                        <lightning:layoutItem flexibility="auto" padding="around-small">
+                            <lightning:select value="{!v.searchSymptom}" label="{!$Label.c.EVL_Symptom_Category}" onchange="{!c.loadSymptoms}">
+                                <!--<force:inputField value="{!v.objworkorder.searchSymptom}"/> -->
+                                <option value="">Choose one...</option>
+                                <aura:iteration items="{!v.symtpomCats}" var="item">
+                                    <option value="{!item}">
+                                        {!item}
+                                    </option>
+                                </aura:iteration>
+                            </lightning:select>                            
+                        </lightning:layoutItem>
+                        <lightning:layoutItem flexibility="auto" padding="around-small">                            
+                            <lightning:select value="{!v.selectedSymptom}" label="{!$Label.c.EVL_Symptom}">
+                                <!--<force:inputField value="{!v.objworkorder.selectedSymptom}"/>  --> 
+                                <option value="">Choose one...</option>
+                                <aura:iteration items="{!v.picklistValues}" var="item">
+                                    <option value="{!item}">
+                                        {!item}
+                                    </option>
+                                </aura:iteration>
+                            </lightning:select>
+                            
+                        </lightning:layoutItem>
+                    </lightning:layout>
+                </td>   
+            </tr>
+            <tr>
+                <td>
+                    <lightning:layout>
+                        <lightning:layoutItem flexibility="auto" padding="around-small">
+                            <div align="center" draggable="false" >
+                                <!--style="margin-top: 4%;">-->
+                                <lightning:button onclick="{!c.populateTable}"
+                                                  variant="destructive"
+                                                  label="{!$Label.c.CSS_Go}"
+                                                  iconName="utility:search"/> 
+                                <!--This is added for the Spinner -->
+                                <!--<aura:if isTrue="{!v.Spinner}"> 
+                                    <lightning:spinner aura:id="mySpinner" alternativeText="Processing.." title="Processing.." variant="brand"
+                                                       size="large" class="slds-show"/>                                
+                                </aura:if>-->
+                                <div class="exampleHolder ">
+                                    <!--<lightning:spinner aura:id="mySpinner" class="slds-hide"  variant="brand" 
+                                                       style="margin-top:25% !important;max-height:50px !important"/>-->
+                                    <div class="slds-spinner_container slds-hide " aura:id="mySpinner"
+                                         >
+                                        <div  role="status" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+                                            <span class="slds-assistive-text">Loading</span>
+                                            <div class="slds-spinner__dot-a"></div>
+                                            <div class="slds-spinner__dot-b"></div>
+                                        </div>
+                                    </div>
+                                    <!--<center><ui:spinner aura:id="mySpinner" class="slds-hide"/></center>-->
+                                </div>
+                            </div>
+                        </lightning:layoutItem>                        
+                    </lightning:layout>
+                </td></tr>
+        </table>
+        </lightning:card>
+             
+           <!--  </aura:if>  -->
+    </aura:renderIf>
+    
+  
+        <!--Added By Mallika-->
+          <!--  <aura:if isTrue="{!v.showTable}"> -->
+    
+        	<c:EVL_GETSOLUTIONSTABLE aura:id='childCmp' selectedTabId="{!v.selectedTabId}" recordId="{!v.recordId}" cumminsFaultCode="{!v.FSL_Fault_Code__c}" spn="{!v.objworkorder.FSL_SPN_FMI__c}" pcode="{!v.objworkorder.FSL_PCode__c}" highLevelSymptom="{!v.searchSymptom}" lowLevelSymptom="{!v.selectedSymptom}" />
+        <!--  </aura:if> -->
+        <!--End of  Mallika added code -->        
+  </aura:if>
+    
+    <lightning:layout>
+        <aura:if isTrue="{!!v.Message}">
+            <lightning:datatable data="{!v.searchResult}" 
+                                 columns="{! v.Pcodecolumns }" 
+                                 keyField="id"
+                                 aura:id="tableids"
+                                 maxRowSelection="50"
+                                 class="slds-table slds-table_striped slds-m-top_medium"/>
+        </aura:if>
+        <aura:if isTrue="{!v.Message2}"> 
+            <lightning:datatable data="{!v.FSLPOCDEsearchResult}" 
+                                 columns="{! v.columns }" 
+                                 keyField="id"
+                                 aura:id="tableid"
+                                 maxRowSelection="50"
+                                 class="slds-table slds-table_striped slds-m-top_medium"/>
+        </aura:if>
+        <aura:if isTrue="{!v.Message3}">
+            <lightning:datatable data="{!v.SPNFMIsearchResult}" 
+                                 columns="{! v.SPNFMIcodecolumns }" 
+                                 keyField="id"
+                                 aura:id="tableid"
+                                 maxRowSelection="50"
+                                 class="slds-table slds-table_striped slds-m-top_medium"/>
+        </aura:if>
+    </lightning:layout> 
+    <!--Starts added by vinod yelala 5/8-->
+    <!--loading spinner start... style=Brand Medium (blue dots)-->
+    <aura:if isTrue="{!v.Spinner}">
+        <div aura:id="spinnerId" class="slds-spinner_container">
+            <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+    </aura:if>
+    <!-- Loading spinner end-->    
+    <!--Ends added by vinod yelala 5/8-->
+</aura:component>

@@ -1,0 +1,599 @@
+<apex:page sidebar="false" showHeader="false" standardStylesheets="false" applyHtmlTag="false" controller="OSM_SW_ProductCatalogue_Ctrl">
+<style>
+    
+    .Font_Size_Css{
+     line-height:15px !important;
+     font-size:15px !important;
+    }
+    
+     sup{
+      vertical-align: super;
+      font-size: smaller;
+    }
+    .CMI-Product-Name {
+        font-size: 22px;
+        font-weight: 600;
+        color: teal;
+        width: 12em;
+        overflow: hidden;
+        }
+        
+        .img-thumbnail
+        {
+            border: 0px !important;
+        }
+        
+       
+    </style>
+
+<script type="text/javascript">
+     CCRZ.uiProperties.productListView.desktop.tmpl = 'CMI_SW_productListBrowser';
+     CCRZ.uiProperties.productListView.phone.tmpl = 'CMI_SW_productListBrowser';
+     CCRZ.uiProperties.productCatalogView.desktop.tmpl = 'CMI_SW_productCatalogDesktop';                 
+</script> 
+    
+ <script id="CMI_SW_Splash-desktop-HandlebarId" type="text/template">            
+                    
+                    <div class="CMI-Splash-item">                           
+                        {{displayImage this.prodImage 'featured img-responsive center-block' alt='Alt' }}
+                    </div>
+                   
+               
+            <br /> <!--**********************************************-->
+</script>
+    
+
+<script id="CMI_SW_Featured_Style_HandlebarId" type="text/template">
+    
+    <div class="panel panel-default CMI-Featured-Products-Panel">
+     </div>
+     <div class="panel-body CMI-Featured-Products-Body ">
+      <div class="row">
+       {{#each this}}
+        <div class="col-md-4">
+        
+         <h5>
+          <a href="#"  onclick="return goToDetailPage();" class="productName cc_product_name CMI_ProdLink" data-sku="{{this.sku}}" data-id="{{this.id}}">{{this.prodName}}
+          </a>
+         </h5>
+
+         <a href="#" onclick="return goToDetailPage();" class="productName cc_product_name_img CMI_ProdImage" data-sku="{{this.sku}}" data-id="{{this.id}}">
+          {{displayImage this.prodImage 'featured img-responsive center-block' alt='Alt'  dataId=this.id}}
+         </a>       
+         
+         <p class="description cc_description">
+          {{unescape this.shortDesc}}
+         </p>
+            {{#ifEquals this.isGuest false}}
+            
+             <div class="col-md-10 margin15" >
+                {{#ifEquals this.isDAmsg false}}
+                     <div>
+                         <div class="col-md-6 CMI-DA-current">{{pageLabelMap 'CurrentSubscription'}} </div> 
+                         <div class="col-md-4 CMI-DA-current-number">{{this.totalSubscriptionCount}} </div> 
+                         <div class="col-md-2"></div>
+                     </div> 
+                         <div class = "clearfix"></div> 
+                     <div>
+                            <div class="col-md-6 CMI-DA-active">{{pageLabelMap 'AvailableSubscription'}}</div>
+                            <div class="col-md-4 CMI-DA-active-number"> {{this.availableCount}}</div>
+                            <div class="col-md-2"></div>
+                     </div> 
+                {{/ifEquals}}
+                
+                {{#ifEquals this.isDAmsg true}}
+                 <div class="col-md-12 CMI-DA-current">{{this.daMsg}} </div> 
+                {{/ifEquals}}
+                
+            </div>
+            {{/ifEquals}}
+        </div>
+      
+       {{/each}}
+      </div>
+   
+    </div>
+   
+     
+     
+</script>
+
+<script id="CMI_SW_productCatalogDesktop" type="text/template">
+
+   {{#if this.noSearchResults}}
+    <div class="panel panel-default CMI-Product-Catalog-Panel">
+     <div class="panel-body CMI-Product-Catalog-body">
+      <h3 class="cc_noresults">{{pageLabelMap 'Search_NoResults' this.searchString}}</h3>
+      <p class="cc_noresults_body">{{pageLabelMap 'Search_NoResultsBody' this.searchString}}</p>
+     </div>
+    </div>
+   {{else}}
+    {{#if this.wasSearch}}
+     <div class="panel panel-default CMI-Product-Catalog-Panel">
+      <div class="panel-body CMI-Product-Catalog-body">
+       <h3 class="cc_search_results">{{pageLabelMap 'Search_Results' this.searchString}}</h3>
+       <p class="cc_results_body">{{pageLabelMap 'Search_ResultsBody' this.searchString}}</p>
+       <div class="filter_breadcrumb_container_main cc_filter_breadcrumbs"></div>
+      </div>
+     </div>
+    {{else}}
+     
+       {{#if this.mediaWrapper }}
+        <div class="cc_maincat_img">
+        <!-- {{displayImage this.mediaWrapper 'maincategory_img'}} -->
+        </div>
+       {{/if}}
+       
+       <div class="filter_breadcrumb_container_main CMI-Breadcrumbs"></div>
+       <p class="cc_short_desc">{{unescape this.mockCategory.ShortDesc}}</p> 
+    
+     {{#ifDisplay 'PL.DsplSubCat'}}
+      {{#if this.subcategories}}
+       <div class="panel panel-default cc_panel CMI-Sub-Categories">
+        <div class="panel-heading CMI-Sub-Categories-Heading ">
+         <h3 class="panel-title CMI-Sub-Categories-Title ">{{pageLabelMap 'SubCategories'}}</h3>
+        </div>
+        <div class="panel-body CMI-Sub-Categories-Body">
+         {{> subcats}}
+        </div>
+       </div>
+      {{/if}}
+     {{/ifDisplay}}
+    {{/if}}
+   {{/if}}
+
+   <div class="prodListSec"></div>
+  
+  </script>
+  
+  
+
+<script id="CMI_SW_productListBrowser" type="text/template">
+    <div class="panel panel-default cc_panel CMI-ProductList-Panel CMI-HideProductivity" style="margin-top:5px">
+       <div class="panel-heading CMI-ProductList-heading"> 
+     <h3 class="panel-title CMI-ProductList-title" style="font-size: 30px;" >{!Categorylist} Products</h3>
+    
+    </div>
+    <div class="panel-body CMI-ProductList-body">
+     <div class="products_1_row_medium_item CMI-ProductList-item">
+      <div class="row {{this.prodBean.id}}">
+      
+      
+      
+     {{#each this.prods}}
+     
+       <div class="messagingSection-{{this.prodBean.id}}-Error" style="display: none"></div>
+       <div class="messagingSection-{{this.prodBean.id}}-Info" style="display: none"></div>
+     
+       <div class="CMI-PP-Item">
+       <div class="col-md-3 CMI-Catalogue-hover">
+      <p><a href="javascript:void(0);" class="productName CMI-Product-Name Font_Size_Css" data-sku="{{this.prodBean.sku}}"> {{this.prodBean.name}} </a></p>
+         <a href="javascript:void(0);" class="productName CMI-Product-Name Font_Size_Css" data-sku="{{this.prodBean.sku}}">
+          {{displayImage this.mediaWrapper 'prodList img-responsive center-block img-thumbnail' alt=this.prodBean.name}}
+         </a>
+        
+         <p class="description cc_desc">
+          {{#ifDisplay 'PL.DsplShortDesc'}}
+           {{unescape this.prodBean.shortDesc}}
+          {{/ifDisplay}}
+         </p>
+         
+                    
+         {{#ifEquals this.prodBean.groupName 'DA'}}  
+        <div class="DA-Guest-User count_{{this.prodBean.sku}}" >
+            <div class="col-md-7 CMI-DA-current" style="text-align:right">             
+                {{pageLabelMap 'CurrentSubscription'}}             
+            </div>          
+            <div class="col-md-3 CMI-DA-current-number">
+                <span class="description cc_desc subs_{{this.prodBean.sku}}">0</span>
+            </div>                
+         </div>
+         <div class="clearfix: both"></div>  
+         <div class="DA-Guest-User count_{{this.prodBean.sku}}" >
+            <div class="col-md-7 CMI-DA-active" style="text-align:right">
+                {{pageLabelMap 'AvailableSubscription'}} 
+             </div>
+             <div class="col-md-3 CMI-DA-active-number">
+                <span class="description cc_desc eligible_{{this.prodBean.sku}}">0</span>
+             </div>
+         </div>
+         <div class="col-md-12 DA-Guest-User CMI-DA-current msg_{{this.prodBean.sku}}" style="display: none;">             
+         </div>
+         <I>
+         <div class="col-md-10  CMI-DA-current WarnMsgonAPIfail" style="display: none;">
+         </div></I>
+         
+            
+        <!-- <p class="description cc_desc {{this.prodBean.sku}}">
+            {{pageLabelMap 'DA_SubscribedEquip'}}   
+         </p>-->
+         
+          {{/ifEquals}}
+        </div>
+      </div>
+      
+     
+     {{/each}}
+      </div>
+     </div>
+    </div>
+   </div>
+     
+   
+   {{#ifDisplay 'PCP.Enabled'}}
+   {{#if this.compareProds}}
+    <div class="navbar-fixed-bottom container cc_container col-md-6 panel panel-info cc_navbar-fixed-bottom cc_panel cc_panel-info CMI-Compare-Tray">
+     <div class="row collapse in compareCollapse">
+     {{#each this.compareProds}}
+      <div class="compareTrayProd col-xs-3 {{this.prodBean.sfid}}">
+       <div class="CMI-Compare-ProductSku">
+       <button type="button" class="compareTrayRemButton removeFromCompare close cc_remove_from_compare" aria-label="Close" data-id="{{this.prodBean.id}}">&#215;</button>
+        <span class="cc_prodSku">{{this.prodBean.sku}}</span>
+       </div>
+       <div class="compareTrayProdImageSec CMI-Compare-ProductImage">
+        {{displayImage this.mediaWrapper 'compareTrayImage img-responsive' alt=this.prodBean.name}}
+       </div>
+       <div class="compareTrayProdName CMI-Compare-ProductName">
+        {{this.prodBean.name}}
+       </div>
+      </div>
+     {{/each}}
+     </div>
+     {{#ifGreater this.compareProds.length 1}}
+     <div class="row collapse in compareCollapse">
+      <div class="compareTrayControls col-md-12 well-sm cc_compare_tray_controls">
+       <row>
+        <div class="col-xs-3">
+         <button type="button" class="btn btn-default btn-sm slim gotoProductCompare cc_goto_prod_compare" data-id="{{this.prodBean.id}}">{{pageLabelMap 'ProductCompare_CompareProducts'}}</button>
+        </div>
+        <div class="col-xs-3 col-xs-offset-6">
+         <a class="compareTrayClear clearCompare cc_clear_compare" href="javascript:void(0);">{{pageLabelMap 'ProductCompare_ClearAll'}}</a>
+        </div>
+      </div>
+     </div>
+     {{/ifGreater}}
+    </div>
+   {{/if}}
+   {{/ifDisplay}}
+  </script>
+    
+    
+    
+     <script>
+    function goToDetailPage(){
+    
+        var host = window.location.protocol + "//" + window.location.host + "/";
+        var viewstate = 'DetailView';
+        var cartid = CCRZ.pagevars.currentCartID;
+        var sku = CCRZ.featuredProductModel.sku;
+        window.location.href = host + 'CMIStore/ccrz__ProductDetails?viewState='+viewstate +'&cartID='+cartid + '&sku='+sku +'&' + getCSRQueryString();
+        //window.location.href = host + '   DefaultStore/ccrz__ProductDetails?viewState='+viewstate +'&cartID='+CCRZ.pagevars.currentCartID + '&sku='+CCRZ.pagevars.queryParams.sku + '&isCSRFlow=true' +'&cclcl=en_US';
+        //window.location.replace('https://www.google.com');
+    }
+    
+     
+    //jQuery(function($){
+    $(function() {  
+    
+        //alert('Starting in Prod list');
+        //var operation = {!$CurrentPage.parameters.operation};
+        //alert('====Operation==='+operation);
+        //if(!operation || operation!='quickSearch')
+        //{
+           
+            //Vaibhav : Start-Commented on 7-Apr-2018
+        // CCRZ.uiProperties.productListView.desktop.tmpl = 'CMI_SW_productListBrowser';
+        //  CCRZ.uiProperties.productListView.phone.tmpl = 'CMI_SW_productListBrowser';
+        //  CCRZ.uiProperties.productCatalogView.desktop.tmpl = 'CMI_SW_productCatalogDesktop';
+            //Vaibhav: End-Commented on 7-Apr-2018
+        //}
+
+    
+    var categoryId = CCRZ.pagevars.portalUserId != '' ? CCRZ.pagevars.portalUserId +'/'+'{!sCategoryId}' : '{!$User.Id}'+'/'+'{!sCategoryId}';
+    var newCategoryId = '{!sCategoryId}';
+    CCRZ.pubSub.on('view:productCatalogView:refresh', function(theView) {
+        //alert('====Catalog refresh');
+        
+        
+          var remoteCall = _.extend(CCRZ.RemoteInvocation,{className:'OSM_SW_ProductCatalogue_Ctrl'});
+            /*remoteCall.invokeCtx('getFeaturedProductsForCategory', categoryId, function(resp){
+            console.log('getProductData');
+            console.log(resp.data);
+
+            
+        }, { buffer : false, escape : false , nmsp:false });
+        */
+        
+      });
+        
+        
+        
+        //CCRZ.CMIFeaturedProdOnCatalogue = new CCRZ.views.CMIFeaturedProdOnCatalogueView();
+        //Handlebars.registerPartial("featureProdTemplate", $("#CMI_FeaturedCSS").html());
+  
+                CCRZ.subsc = CCRZ.subsc||{};
+                
+                CCRZ.subsc.TopFeaturedProductsForCategoryView = CCRZ.CloudCrazeView.extend({
+                className : 'OSM_SW_ProductCatalogue_Ctrl',
+                viewName : "TopFeaturedProductsForCategoryView",
+                templateDesktop : CCRZ.util.template('CMI_SW_Featured_Style_HandlebarId'),
+                init: function() {
+                    this.render();
+                },
+                 events : {
+                 "click .CMI_ProdLink" : "goToProductDetail",
+                 "click .CMI_ProdImage" : "goToProductDetail",
+                },
+                 goToProductDetail: function(event) {
+                 var sku = $(event.currentTarget).data("sku");
+                 productDetails(sku);
+                },
+                fetchFeaturedProds : function(callback){
+                    var me = this;
+                    //alert('==Inside fetchFeaturedProds===');
+                    this.invokeContainerLoadingCtx(
+                        //$('.desktop_body'),
+                        $('body'),
+                        'getFeaturedProductsForCategory',
+                        categoryId,
+                        function(resp){
+                            if(resp && resp.success){//response was successful
+                                me.dataSet = resp.data[0];
+                                //me.hideProductivity = false;
+                                if('{!Categorylist}' == 'Productivity' && me.dataSet != undefined && me.dataSet.length >= 3){
+                                    //me.hideProductivity = true;
+                                    $(".CMI-HideProductivity").css("display", "none");
+                                    //CMI-HideProductivity
+                                }
+                                //alert('==got the products resp.data');
+                                console.log(me);
+                                console.log('{!Categorylist}');
+                                CCRZ.featuredProductModel = resp.data[0];
+                                CCRZ.DAProductsFromApi = resp.data[1];
+                                CCRZ.DADEFProductsFromAPI = resp.data[3];
+                                console.log(CCRZ.featuredProductModel);
+                                console.log(CCRZ.DAProductsFromApi);
+                                renderEquipment();
+                                if(CCRZ.featuredProductModel != undefined){
+                                for (i = 0; i < CCRZ.featuredProductModel.length; i++) { 
+                                        CCRZ.console.log('Data from backend---'+Object.values(CCRZ.featuredProductModel[i]));
+                                        console.log('Data from backend---'+Object.values(CCRZ.featuredProductModel[i]));
+                                    }
+                               }
+                                callback();
+                            }
+                            else{
+                               alert('==Response unsuccessful'+resp.message);
+                                
+                            }
+                        },
+                        {
+                            buffer:false, //this call will be executed by itself
+                            nmsp : false //defines that this is a call to a subscriber class
+                        }
+                    );//end invokeCtx call                         
+
+                },
+                renderDesktop : function() {
+                    var me = this;
+                    this.fetchFeaturedProds(function() {
+                        //$('.reviews').html('');
+                        me.setElement($('.CMI_FeaturedCSS'));
+                        me.$el.html(me.templateDesktop(me.dataSet));
+                    }); 
+
+                }
+            });
+    
+            
+             CCRZ.TopFeaturedProductsForCategoryView = new CCRZ.subsc.TopFeaturedProductsForCategoryView();
+             
+             
+             CCRZ.subsc.CMISplashView = CCRZ.CloudCrazeView.extend({
+                className : 'OSM_SW_ProductCatalogue_Ctrl',
+                viewName : "CMISplashView",
+                templateDesktop : CCRZ.util.template('CMI_SW_Splash-desktop-HandlebarId'),
+                init: function() {
+                    this.render();
+                },
+                
+                fetchImageURL : function(callback){
+                    var me = this;
+                    
+                    this.invokeContainerLoadingCtx(
+                        //$('.CMI_SplashCSS'),
+                        $('body'),
+                        'getImageForCategory',
+                        newCategoryId,
+                        function(resp){
+                            if(resp && resp.success){//response was successful
+                                me.dataSet = resp.data;
+                                //alert('==got the products resp.data 123');
+                                CCRZ.splashURL = resp.data;
+                                
+                                for (i = 0; i < resp.data.length; i++) { 
+                                    CCRZ.console.log('Data from backend---'+Object.values(resp.data[i]));
+                                    }
+                               
+                                callback();
+                            }
+                            else{
+                               alert('==Response unsuccessful'+resp.message);
+                                
+                            }
+                        },
+                        {
+                            buffer:false, //this call will be executed by itself
+                            nmsp : false //defines that this is a call to a subscriber class
+                        }
+                    );//end invokeCtx call
+                },
+                renderDesktop : function() {
+                    var me = this;
+                    this.fetchImageURL(function() {
+                        me.setElement($('.CMI_SplashCSS'));
+                        me.$el.html(me.templateDesktop(me.dataSet));
+                    });
+
+                }
+            });
+    
+            
+             CCRZ.CMISplashView = new CCRZ.subsc.CMISplashView();
+             
+             CCRZ.pubSub.on('view:productListView:refresh', function(productListView){
+                 console.log('refresh called');
+                 console.log(CCRZ.DAProductsFromApi);
+                 /*if(CCRZ.DAProductsFromApi !== undefined && CCRZ.DAProductsFromApi.productSubscriptionInfo !== undefined){
+                 console.log(CCRZ.DAProductsFromApi.productSubscriptionInfo);
+                 var productSubscriptionInfo = CCRZ.DAProductsFromApi.productSubscriptionInfo;
+                 for (i = 0; i < productSubscriptionInfo.length; i++) { 
+                                                            
+                        $( "p.subs_"+productSubscriptionInfo[i].productID).replaceWith( '<p class="description cc_desc subs_{{this.prodBean.sku}}">'+productSubscriptionInfo[i].totalSubscriptionCount+'</p>');
+                        
+                        $( "p.eligible_"+productSubscriptionInfo[i].productID).replaceWith( '<p class="description cc_desc eligible_{{this.prodBean.sku}}">'+productSubscriptionInfo[i].availableCount+'</p>');
+                        
+                                                
+                     //$( "p."+productSubscriptionInfo[i].productID).replaceWith( '<p class="description cc_desc {{this.prodBean.sku}}">'+productSubscriptionInfo[i].totalSubscriptionCount+' Subscription === '+ productSubscriptionInfo[i].availableCount+' Available </p>');
+                        
+                 }*/
+                 renderEquipment();                
+             
+             });        
+    
+  });
+   
+    function renderEquipment(){
+                    console.log('dataSet');
+        if(CCRZ.pagevars.remoteContext.queryParams.categoryId != undefined){
+                var toActive = ".Cate_"+CCRZ.pagevars.remoteContext.queryParams.categoryId;
+            console.log('toActive==>'+toActive);
+                $(toActive).css("background-color", "#840909");
+            }
+        //debugger;
+                    console.log(CCRZ.DADEFProductsFromAPI);
+                    if(!CCRZ.pagevars.isGuest && CCRZ.DAProductsFromApi != undefined){
+                            if(!CCRZ.DAProductsFromApi.exceptionFlag ){
+                                $('.DA-Guest-User').css('display','block');
+                                  for (var key in CCRZ.DADEFProductsFromAPI) {
+                                        if(CCRZ.DADEFProductsFromAPI[key].currentCnt != undefined && CCRZ.DADEFProductsFromAPI[key].availableCnt != undefined && CCRZ.DADEFProductsFromAPI[key].daMessage == ''){
+                                            var subs ='.subs_'+key; 
+                                            $(subs).text(CCRZ.DADEFProductsFromAPI[key].currentCnt);
+                                            var eligible ='.eligible_'+key; 
+                                             $(eligible).text(CCRZ.DADEFProductsFromAPI[key].availableCnt);
+                                            
+                                            var msgSec ='.msg_'+key;
+                                            $(msgSec).css('display','none');
+                                            var countSec1 ='.count_'+key;
+                                            $(countSec1).css('display','block');
+                                            
+                                          }
+                                        if(CCRZ.DADEFProductsFromAPI[key].daMessage != ''){
+                                                var subs ='.subs_'+key; 
+                                            $(subs).text(CCRZ.DADEFProductsFromAPI[key].currentCnt);
+                                            var eligible ='.eligible_'+key; 
+                                             $(eligible).text(CCRZ.DADEFProductsFromAPI[key].availableCnt);
+                                            
+                                            var msgSec ='.msg_'+key;
+                                            $(msgSec).css('display','block');
+                                            $(msgSec).text(CCRZ.DADEFProductsFromAPI[key].daMessage);
+                                            var countSec1 ='.count_'+key;
+                                            $(countSec1).css('display','none');
+                                            }
+                                 }
+                                  $(".WarnMsgonAPIfail").css('display','none');
+                            }
+                            else{
+                            console.log("in exp");
+                            
+                            $(".WarnMsgonAPIfail").css('display','block');
+                            $(".WarnMsgonAPIfail").text("{!($Label.OSM_SW_Cart_Subsc_validation)}");
+                            $('.DA-Guest-User').css('display','none');
+                        }
+                    }
+                    else
+                        $(".WarnMsgonAPIfail").css('display','none');
+                    
+                       if('{!Categorylist}' == 'Productivity' && CCRZ.featuredProductModel.length < 3){}
+                                
+                       if(CCRZ.pagevars.isGuest){
+                             $('.DA-Guest-User').css('display','none');
+                        }
+                    
+                       if(CCRZ.DAProductsFromApi !== undefined && CCRZ.DAProductsFromApi.productSubscriptionInfo !== undefined){
+                 console.log(CCRZ.DAProductsFromApi.productSubscriptionInfo);
+                         console.log('Inside CCRZ.DAProductsFromApi');
+                 var productSubscriptionInfo = CCRZ.DAProductsFromApi.productSubscriptionInfo;
+                          console.log('productSubscriptionInfo'+productSubscriptionInfo);
+                 var SKU_Suffix = "{!$Label.SKU_Suffix}".split(",");
+                         console.log('SKU_Suffix'+SKU_Suffix);
+                 for (i = 0; i < productSubscriptionInfo.length; i++) { 
+                         console.log('productSubscriptionInfo.length'+productSubscriptionInfo.length);
+                        /*                                    
+                        $( '"span.subs_'+productSubscriptionInfo[i].productID+'"').replaceWith( '<p class="description cc_desc subs_'+productSubscriptionInfo[i].productID+'">'+productSubscriptionInfo[i].totalSubscriptionCount+'</p>');*/
+                         console.log('productSubscriptionInfo[i].totalSubscriptionCount'+productSubscriptionInfo[i].totalSubscriptionCount);
+                        var subs ='.subs_'+productSubscriptionInfo[i].productID; 
+                        $(subs).text(productSubscriptionInfo[i].totalSubscriptionCount);
+                          console.log('subs'+subs);
+                       
+                        /*
+                        $('"span.eligible_'+productSubscriptionInfo[i].productID+'"').replaceWith( '<p class="description cc_desc eligible_'+productSubscriptionInfo[i].productID+'">'+productSubscriptionInfo[i].availableCount+'</p>');*/
+                        
+                         var eligible ='.eligible_'+productSubscriptionInfo[i].productID; 
+                        $(eligible).text(productSubscriptionInfo[i].availableCount);
+                        console.log('eligible'+eligible);
+                     console.log('productSubscriptionInfo[i].availableCount'+productSubscriptionInfo[i].availableCount);
+                        for(jj = 0; jj < SKU_Suffix.length; jj++){
+                            var suffix = SKU_Suffix[jj];
+                            console.log('eligible suffix'+suffix);
+                            var subsOHT ='.subs_'+productSubscriptionInfo[i].productID+'-'+suffix; 
+                            $(subsOHT).text(productSubscriptionInfo[i].totalSubscriptionCount);
+                            console.log('subsOHT'+subsOHT);
+                            console.log('productSubscriptionInfo[i].totalSubscriptionCount'+productSubscriptionInfo[i].totalSubscriptionCount);
+                            /*
+                            $('"span.eligible_'+productSubscriptionInfo[i].productID+'"').replaceWith( '<p class="description cc_desc eligible_'+productSubscriptionInfo[i].productID+'">'+productSubscriptionInfo[i].availableCount+'</p>');*/
+                            
+                             var eligibleOHT ='.eligible_'+productSubscriptionInfo[i].productID+'-'+suffix; 
+                            $(eligibleOHT).text(productSubscriptionInfo[i].availableCount);
+                            
+                            if((productSubscriptionInfo[i].totalSubscriptionCount == undefined && productSubscriptionInfo[i].availableCount == undefined) || (productSubscriptionInfo[i].totalSubscriptionCount == 0 && productSubscriptionInfo[i].availableCount == 0)){
+                                var countSec ='.count_'+productSubscriptionInfo[i].productID+'-'+suffix;
+                                $(countSec).css('display','none');
+                                
+                                var countSec1 ='.count_'+productSubscriptionInfo[i].productID;
+                                $(countSec1).css('display','none');
+                                
+                                var msgSec ='.msg_'+productSubscriptionInfo[i].productID+'-'+suffix;
+                                $(msgSec).css('display','block');
+                                $(msgSec).text(productSubscriptionInfo[i].message);
+                                
+                                var msgSec1 ='.msg_'+productSubscriptionInfo[i].productID;
+                                $(msgSec1).css('display','block');
+                                $(msgSec1).text(productSubscriptionInfo[i].message);
+                                
+                            }else{
+                                var countSec ='.count_'+productSubscriptionInfo[i].productID+'-'+suffix;
+                                $(countSec).css('display','block');
+                                
+                                var msgSec ='.msg_'+productSubscriptionInfo[i].productID+'-'+suffix;
+                                $(msgSec).css('display','none');
+                                
+                                var countSec1 ='.count_'+productSubscriptionInfo[i].productID;
+                                $(countSec1).css('display','block');
+                                
+                                var msgSec1 ='.msg_'+productSubscriptionInfo[i].productID;
+                                $(msgSec1).css('display','none');
+                            }
+                        }
+                        //$('".eligible_'+productSubscriptionInfo[i].productID+'"').text(productSubscriptionInfo[i].availableCount);
+                                                
+                     //$( "p."+productSubscriptionInfo[i].productID).replaceWith( '<p class="description cc_desc {{this.prodBean.sku}}">'+productSubscriptionInfo[i].totalSubscriptionCount+' Subscription === '+ productSubscriptionInfo[i].availableCount+' Available </p>');
+                        
+                 }
+                    }
+                    
+            }       
+    
+</script>
+ {!dummy}
+</apex:page>

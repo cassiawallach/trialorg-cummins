@@ -1,0 +1,138 @@
+<template>
+  <template if:true={ScreenLoaded}>
+    <c-dbu_page-loader></c-dbu_page-loader>
+  </template>
+  <div class="slds-container_x-large slds-container_center returnOrderItems">
+
+    <h1 class="slds-col_padded">
+      {label.dbu_Return_PageHeader}
+    </h1>
+
+    <p class="slds-col_padded"><strong>{label.dbu_Return_PageSubHeader}</strong></p>
+
+    <div class="slds-grid slds-wrap">
+      <div class="slds-col slds-size_1-of-1 slds-large-size_12-of-12 slds-col_padded">
+        <div class="slds-grid slds-wrap cartTitHeader">
+          <div class="slds-col slds-size_6-of-12 slds-col_padded item">
+            <lightning-input onchange={handleAllOrderItems} type="checkbox" class="toplevelCheckbox returnCheck">
+            </lightning-input>
+            {label.dbu_Return_Product}
+          </div>
+          <div class="slds-col slds-size_2-of-12 slds-col_padded qty">
+            {label.dbu_Return_Quantity}
+          </div>
+          <div class="slds-col slds-size_3-of-12 slds-col_padded reason">
+            {label.dbu_Return_Reason_for_Return}
+          </div>
+          <div class="slds-col slds-size_1-of-12 slds-col_padded amt">
+            {label.dbu_Return_Price}
+          </div>
+
+        </div>
+
+        <template for:each={orderItemList} for:item="order">
+          <div class="slds-grid slds-wrap cartItemRow" key={order.id}>
+
+            <div class="slds-col slds-size_6-of-12 slds-col_padded slds-grid slds-wrap itemInfo">
+              <lightning-input type="checkbox" id={order.id} data-price={order.price} data-quantity={order.quantity}
+                name={order.id} data-id={order.id} data-checked='checked' onchange={handleOrderItems}
+                data-parentcorecharge={order.parentCoreCharge} disabled={order.isProductReturnable}
+                class="returnCheck coreCheck"> </lightning-input>
+              <div class="slds-col slds-size_3-of-12 slds-col_padded">
+
+                <!--<img src={order.URI}>-->
+                <c-dbu_image-Generator imageurl={order.URI}></c-dbu_image-Generator>
+
+                
+              </div>
+              <div class="slds-col slds-size_9-of-12">
+                <template if:true={order.coreCharge}>
+                  {order.sfdcName}
+                </template>
+                <template if:false={order.coreCharge}>
+                  <template if:true={order.isReasonForReturnDisable}>
+                    {order.sfdcName}
+                  </template>
+                  <template if:false={order.isReasonForReturnDisable}>
+                    <a onclick={goToProductDetailPage} data-id={order.id}
+                      data-name={order.sfdcName}>{order.sfdcName}</a>
+                  </template>
+                </template>
+                <template if:true={order.coreCharge}>
+                  <p>{label.dbu_CoreCharge_Availability_Msg}</p>
+                </template>
+                <template if:true={order.isHandlingFeeOnCore}>
+                  <p>{label.dbu_Return_HandlingFee10}</p>
+                </template>
+                <template if:true={order.isProdNotReturnable}>
+                  <p> {label.dbu_Return_ProductNotReturnable}</p>
+                </template>
+                <template if:true={order.dispalyHandleFee}>
+                  <p>{label.dbu_Return_HandlingFee15}</p>
+                </template>
+                <template if:true={order.isQtyZero}>
+                  <p> {label.dbu_Return_NoRemainingQty}</p>
+                </template>
+                <template if:true={order.isCreateEngine}>
+                  <p> {label.dbu_Return_ContactCS}</p>
+                </template>
+              </div>
+            </div>
+            <div class="slds-col slds-size_2-of-12 slds-col_padded qty">
+
+              <lightning-combobox name={order.id} class="noLabel Quantity qtyDropdown"
+                placeholder={order.returnQuantity} options={order.quantityList} onchange={handleChangeQuantity}
+                data-id={order.id} disabled={order.isQtyDisable} data-parentcorecharge={order.parentCoreCharge}>
+              </lightning-combobox>
+            </div>
+            <div class="slds-col slds-size_3-of-12 slds-col_padded reason">
+              <template if:true={order.coreCharge}>
+                <p>{label.dbu_Return_Core_Refund}</p>
+              </template>
+              <template if:false={order.coreCharge}>
+                <lightning-combobox name="shippingMethod" data-id={order.id} data-price={order.price}
+                  data-quantity={order.returnQuantity} options={orderReaturnReason} class="myorderCombo"
+                  placeholder="Select Reason For Return" onchange={onReturnPartsReasonChange}
+                  disabled={order.isReasonForReturnDisable}>
+                </lightning-combobox>
+              </template>
+            </div>
+            <div class="slds-col slds-size_1-of-12 slds-col_padded amt ">
+              <template if:true={order.removeStrikeThrough}>
+              {order.price}
+            </template>
+              <!-- {order.price} -->
+              <template if:true={order.isStrikeThrough}>
+              <div class="class1" style="text-decoration: line-through;">{order.price}</div>
+              <div >{order.amtAfterHandlingFee}</div>
+            </template>
+
+            </div>
+          </div>
+        </template>
+        <div class="slds-grid slds-wrap">
+          <div class="slds-col slds-size_1-of-1 slds-large-size_12-of-12 slds-col_padded estimatedPrice">
+            <p>{label.dbu_Return_EstTax}&nbsp;&nbsp; {refundedTax}</p>
+            <strong>{label.dbu_Return_EstAmt}&nbsp;&nbsp; {totalOrderItemPrice}</strong>
+          </div>
+        </div>
+        <div class="slds-grid slds-wrap">
+          <div class="slds-col slds-size_1-of-1 slds-large-size_12-of-12 slds-col_padded additionalInfo">
+            <h6>{label.dbu_Return_AddInfo}</h6>
+            <textarea id="id" name="name" rows="4" cols="50" class="addInformation isRequired" 
+              placeholder="Share additional details about your return…">
+            {addInfoData}
+            </textarea>
+            <template if:true={displayError}>
+             <p style="color: red;"> Please provide the reason.</p>
+            </template>
+          </div>
+        </div>
+        <div class="buttonsBot slds-col_padded">
+          <a href={goToMyOrders} onclick={handlegotomyorders} class="slds-button slds-button_outline-brand">{label.dbu_Return_BtnLabel_Cancel}</a>
+          <button class="slds-button slds-button_brand" onclick={sendRequest} disabled={isDisable}>{btnLabel}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

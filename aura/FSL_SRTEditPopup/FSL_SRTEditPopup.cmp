@@ -1,0 +1,272 @@
+<aura:component controller="FSL_SRTEditPopupController" implements="force:appHostable,flexipage:availableForRecordHome,force:hasRecordId"
+                access="global" >
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="codeText" type="string" default=""/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>  
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="srtGroupValue" type="String" default=""/>
+    <aura:attribute name="srtGroups" type="List" access="private"/>
+    <aura:attribute name="AccessCheck" type="boolean" default="true"/>
+    <aura:attribute name="AdminCheck" type="boolean" default="true"/>
+    <aura:attribute name="DiagnosticCheck" type="boolean" default="true"/>
+    <aura:attribute name="RepairCheck" type="boolean" default="true"/>
+    <aura:attribute name="searchResults" type="List" default=""/>
+    <aura:attribute name="AddedResults" type="List" default=""/>
+    <aura:attribute name="SelectedResults" type="List" default=""/>
+    <aura:attribute name="pNoRecordsFound" type="boolean" default="false"/>
+    <aura:attribute name="pRecordSelected" type="boolean" default="false"/>
+    <aura:attribute name="pRecordAdded" type="boolean" default="false"/>
+    <aura:attribute name="pTooManyRecordsFound" type="boolean" default="false"/>
+    <aura:attribute name="srtType" type="String" default=""/>
+    <aura:attribute name="pDuplicate" type="boolean" default="false"/>
+    <aura:attribute name="pDuplicateMsg" type="String" default=""/>
+    <aura:attribute name="savedSRTs" type="List" default=""/>
+    <aura:attribute name="duplicateSRTs" type="List" default=""/>
+    
+    
+    <div class="slds-m-around_x-small">
+      <!--  <div  class="slds-float_right">
+            <a onclick="{!c.handleModalPopup}" style="color:#c23934 !important;" >+{!$Label.c.css_Add1}</a>  
+        </div>-->
+        
+        
+        <aura:if isTrue="{!v.isModalOpen}">
+            <div role="dialog" tabindex="-1" aria-labelledby="header99" class="slds-modal slds-fade-in-open ">
+                <div class="slds-modal__container">
+                    <div class="slds-modal__header slds-p-bottom_x-small" style="height:50px;background-color:#c23934;color:#fff;font-size:18px;">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModal }"
+                                              alternativeText="close"
+                                              variant="border-inverse"
+                                              class="slds-modal__close"/>
+                        
+                        {!$Label.c.CSS_SRTs_Cummins_Guidanz}
+                        
+                    </div>
+                    <div class="slds-modal__content slds-p-around--medium">
+                        <div class="slds-p-around_medium">
+                            <div class="content" style="margin:0px 10px;">
+                                <div>
+                                    <div class="slds-form-element">
+                                        <div class="slds-form-element__control">
+                                            <lightning:layout horizontalAlign="spread">
+                                                <lightning:layoutItem>
+                                                    <div class="slds-checkbox slds-checkbox_faux slds-form-element__label">
+                                                        <input type="checkbox" name="options" id="checkbox-47" value="{!v.AccessCheck}" onchange="{!c.accessChanged}" checked="{!v.AccessCheck}"/>
+                                                        <label class="slds-checkbox__label" for="checkbox-47">
+                                                            <span class="slds-checkbox_faux"></span>
+                                                            <span class="slds-form-element__label">{!$Label.c.css_SRT_Access}</span>
+                                                        </label>
+                                                    </div>
+                                                </lightning:layoutItem>
+                                                <lightning:layoutItem >
+                                                    <div class="slds-checkbox">
+                                                        <input type="checkbox" name="options" id="checkbox-48" value="{!v.AdminCheck}" onchange="{!c.accessChanged}" checked="{!v.AdminCheck}"/>
+                                                        <label class="slds-checkbox__label" for="checkbox-48">
+                                                            <span class="slds-checkbox_faux"></span>
+                                                            <span class="slds-form-element__label">{!$Label.c.css_SRT_Diag_Admin}</span>
+                                                        </label>
+                                                    </div>
+                                                </lightning:layoutItem>
+                                                <lightning:layoutItem>
+                                                    <div class="slds-checkbox">
+                                                        <input type="checkbox" name="options" id="checkbox-49" value="{!v.DiagnosticCheck}" onchange="{!c.accessChanged}" checked="{!v.DiagnosticCheck}"/>
+                                                        <label class="slds-checkbox__label" for="checkbox-49">
+                                                            <span class="slds-checkbox_faux"></span>
+                                                            <span class="slds-form-element__label">{!$Label.c.css_SRT_Diag_Diagnostic}</span>
+                                                        </label>
+                                                    </div>
+                                                </lightning:layoutItem>
+                                                <lightning:layoutItem >
+                                                    <div class="slds-checkbox">
+                                                        <input type="checkbox" name="options" id="checkbox-50" value="{!v.RepairCheck}" onchange="{!c.accessChanged}" checked="{!v.RepairCheck}"/>
+                                                        <label class="slds-checkbox__label" for="checkbox-50">
+                                                            <span class="slds-checkbox_faux"></span>
+                                                            <span class="slds-form-element__label">{!$Label.c.css_SRT_Rep_Repair}</span>
+                                                        </label>
+                                                    </div>
+                                                </lightning:layoutItem>
+                                            </lightning:layout>
+                                        </div>
+                                    </div>
+                                </div>
+                                <br/>
+                                <br/>
+                                <div class="slds-form">
+                                    <div class="slds-form-element slds-form-element_horizontal">
+                                        <label class="slds-form-element__label" style="padding-left: 100px;" for="horizontal-input-id-01">{!$Label.c.CSS_SearchCode_Or_Description}</label>
+                                        <div class="slds-form-element__control">
+                                            <ui:inputText aura:id="searchCode" label="" class="slds-input textwidht" value="{!v.codeText}" />
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="slds-form">
+                                    <div class="slds-form-element slds-form-element_horizontal ">
+                                        <label class="slds-form-element__label slds-float_right" for="horizontal-input-id-02" style="padding-left: 215px;">{!$Label.c.CSS_Group}</label>
+                                        <div class="slds-form-element__control">
+                                            <ui:inputSelect aura:id="groupSelect" value="{!v.srtGroupValue}" class="picklist">
+                                                <ui:inputSelectOption text="" label="All"/>
+                                                <aura:iteration items="{!v.srtGroups}" var="group" indexVar="key">
+                                                    <ui:inputSelectOption text="{!group.key}" label="{!group.value}"/>
+                                                </aura:iteration>
+                                            </ui:inputSelect>
+                                            &nbsp;&nbsp;
+                                            <lightning:button label="{!$Label.c.CSS_Go}" variant="destructive"
+                                                              onclick="{!c.searchSRT}"
+                                                              disabled="{!v.areSearchByFilterEmpty}"
+                                                              />
+                                        </div> 
+                                    	
+                                    </div>
+                                </div>
+                                <lightning:spinner aura:id="SRTSpinner" alternativeText="Processing.." title="Processing.." variant="brand" size="medium" class="slds-hide"/>
+                                <br/>
+                            </div>
+                            
+                            <div>
+                                <aura:if isTrue="{!v.pTooManyRecordsFound}">
+                                    <div class="slds-text-align_center slds-text-color_destructive">
+                                        <h2>{!$Label.c.CSS_Too_Many_Records_Found}</h2>
+                                    </div>
+                                </aura:if>
+                            </div>
+                            
+                            
+                            <div>
+                                <aura:if isTrue="{!v.pNoRecordsFound}">
+                                    <!--display error message if there is no records available -->
+                                    <div class="slds-text-align_center slds-text-color_destructive">
+                                        <h2>{!$Label.c.EVL_No_record_found}</h2>
+                                    </div>
+                                    <aura:set attribute="else">
+                                        <aura:if isTrue="{!v.pRecordSelected}">
+                                            <!-- lightning:button to get selected rows data -->
+                                            <h4 class="slds-text-heading_small">{!$Label.c.CSS_Search_Results}</h4>
+                                            <div class="slds-clearfix slds-table--header-fixed_container slds-m-around_small slds-scrollable--x" style="height:200px;">
+                                                <div class="slds-scrollable--y" style="height:100%;">
+                                                    <!-- TABLE CONTENT--> 
+                                                    <table class="slds-table slds-table_bordered slds-table_fixed-layout slds-border_left slds-border_right slds-table--header-fixed  slds-scrollable--x slds-scrollable--y slds-table_cell-buffer " role="grid">
+                                                        <thead>
+                                                            <tr class="slds-text-title_caps">                  
+                                                                <th scope="col" class="slds-size--1-of-7">
+                                                                    <div class="slds-cell-fixed"  title="Name">{!$Label.c.CSS_Select}</div>
+                                                                </th>
+                                                                <th scope="col" class="slds-size--1-of-7">
+                                                                    <div class="slds-cell-fixed" title="Status">{!$Label.c.css_SRT_Code}</div>
+                                                                </th> 
+                                                                <th scope="col" class="slds-size--1-of-7">
+                                                                    <div class="slds-cell-fixed" title="Approver">{!$Label.c.EVL_SRT_Type}</div>
+                                                                </th> 
+                                                                <th scope="col" class="slds-size--4-of-7">
+                                                                    <div class="slds-cell-fixed" title="Approver">{!$Label.c.css_SRT_Description}</div>
+                                                                </th> 
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody> 
+                                                            <!--### display all records of searchResults attribute by aura:iteration ###-->
+                                                            <aura:iteration items="{!v.searchResults}" var="result" indexVar="count" >
+                                                                <tr>
+                                                                    <td class="slds-size--1-of-7">
+                                                                        <label class="slds-checkbox">
+                                                                            <ui:inputCheckbox aura:id="checkSRT" text="{!result}" value="" change="{!c.AddSelectedSRT}"/>
+                                                                            <span class="slds-checkbox--faux" />
+                                                                            <span class="slds-form-element__label"></span>
+                                                                        </label>
+                                                                    </td>
+                                                                    <td class="slds-size--1-of-7">
+                                                                        <div>{!result.Name}</div>
+                                                                    </td>
+                                                                    <td class="slds-size--1-of-7">
+                                                                        <div >{!result.SRT_Type__c}</div>
+                                                                    </td >
+                                                                    <td class="slds-size--4-of-7">
+                                                                        <div class="slds-grow slds-cell-wrap">
+                                                                            {!result.SRT_DESCRIPTION__c}
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            </aura:iteration>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            <lightning:button variant="destructive" class="slds-align_absolute-center" onclick="{!c.addSelectedSRT}" label="{!$Label.c.css_Add}" />
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>
+                                
+                            </div>
+                            
+                            <br/>
+                            <br/>
+                            <aura:if isTrue="{!v.pDuplicate}">
+                                <div class="slds-text-align_center slds-text-color_destructive">
+                                    <h2>{!v.pDuplicateMsg}</h2>
+                                </div>
+                            </aura:if>
+                            <div>
+                                <aura:if isTrue="{!v.pRecordAdded}">
+                                    <!-- lightning:button to get selected rows data -->
+                                    <h4 class="slds-text-heading_small">{!$Label.c.CSS_Selected_SRTs}</h4>
+                                    <div class="slds-clearfix slds-table--header-fixed_container slds-m-around_small" style="height:200px;">
+                                        <div class="slds-scrollable--y">
+                                            <!-- TABLE CONTENT--> 
+                                            <table class="slds-table slds-table--header-fixed slds-table_bordered slds-border_left slds-scrollable--x slds-border_right slds-table_cell-buffer" role="grid">
+                                                <thead>
+                                                    <tr class="slds-text-title_caps"> 
+                                                        <th scope="col" class="slds-size--1-of-7">
+                                                            <div class="slds-truncate slds-cell-fixed" style="width: 25%;" title="Remove">{!$Label.c.CSS_Remove}</div>
+                                                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                                        </th> 
+                                                        <th scope="col" class="slds-size--1-of-7">
+                                                            <div class="slds-truncate slds-cell-fixed" title="Name">{!$Label.c.css_SRT_Code}</div>
+                                                        </th>
+                                                        <th scope="col" class="slds-size--1-of-7">
+                                                            <div class="slds-truncate slds-cell-fixed" title="Approver">{!$Label.c.EVL_SRT_Type}</div>
+                                                        </th> 
+                                                        <th scope="col" class="slds-size--4-of-7">
+                                                            <div class="slds-truncate slds-cell-fixed" title="Status">{!$Label.c.css_SRT_Description}</div>
+                                                        </th> 
+                                                    </tr>
+                                                </thead>
+                                                <tbody> 
+                                                    <!--### display all records of searchResults attribute by aura:iteration ###-->
+                                                    <aura:iteration items="{!v.AddedResults}" var="result" indexVar="index" >
+                                                        <tr>
+                                                            <td class="slds-size--1-of-7">
+                                                                <a onclick="{!c.removeRow}" data-row-index="{!index}">
+                                                                    <lightning:icon iconName="utility:delete" size="small" alternativeText="Delete"/>
+                                                                    <span class="slds-assistive-text"></span>
+                                                                </a>
+                                                            </td> 
+                                                            <td class="slds-size--1-of-7">
+                                                                <div class="slds-truncate">{!result.Name}</div>
+                                                            </td>
+                                                            <td class="slds-size--1-of-7">
+                                                                <div class="slds-truncate">{!result.SRT_Type__c}</div>
+                                                            </td>
+                                                            <td class="slds-size--4-of-7">
+                                                                <div class="slds-grow slds-cell-wrap">{!result.SRT_DESCRIPTION__c}</div>
+                                                            </td>
+                                                            </tr>
+                                                        </aura:iteration>
+                                                    </tbody>
+                                                </table>
+                                        </div>
+                                    </div>
+                                    <div  class="slds-align_absolute-center">
+                                        <lightning:button variant="destructive"  onclick="{!c.saveSRTs}" label="{!$Label.c.css_save_btn}" />
+                                        <lightning:button variant="neutral"  onclick="{!c.closeModal}" label="{!$Label.c.css_Cancel}" />
+                                    </div>
+                                    
+                                </aura:if>
+                            </div>
+                        </div>  
+                    </div>
+                </div>
+            </div>
+            <div class="slds-backdrop slds-backdrop--open"></div>
+        </aura:if>
+    </div>
+</aura:component>

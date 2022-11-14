@@ -1,0 +1,630 @@
+<apex:component Controller="CG_CL_AddFailure_GSQParts" id="gsqcomp" allowDML="true" layout="none" access="global">
+    <apex:attribute name="solrank" type="String" description="rank" assignTo="{!srank}"/>
+    <apex:attribute name="solId" type="Id" description="The id of solution" assignTo="{!JobsolutionId}"/>
+    <!--script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.9.0/jquery-ui.js"></script--> 
+    <!--script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.1.1.min.js"></script>
+    <apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/jquery.dataTables.min.js')}" />
+    <apex:stylesheet value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/css/component_specific/jquery.dataTables.css')}" /> 
+    <!--  <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.1.1.min.js"></script>-->
+    
+    <!--script src="https://code.jquery.com/ui/1.9.0/jquery-ui.js"></script
+    <apex:includeScript value="{!URLFOR($Resource.CSS_SessionTimeout, '/CSS_SessionTimeout/Cummins_UI_SessionTimeout/JS/jquery-ui.js')}"/> -->
+    <style>
+        .cmi_asterisk1{
+            color: #D02323 ;
+        }
+        
+         .ui-autocomplete-input { 
+            border: none; 
+            font-size: 14px;
+            width: 172px;
+            height: 24px;
+            margin-bottom: 5px;
+            padding-top: 2px;
+            border: 1px solid #DDD;
+            border-left:2px solid #999;
+            padding-top: 0px !important;
+            z-index: 1511;
+            position: relative;
+        }
+
+        .ui-autocomplete {
+            max-height: 200px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: fixed;
+            top: 100%;
+            left: 0;
+            z-index: 1051 !important;
+            float: left;
+            display: none;
+            min-width: 160px;
+            width: 160px;
+
+        }
+    </style>      
+
+    <script type="text/javascript">
+        function qtyPress(e){
+
+            if((e.which > 47 && e.which <=57) || e.which == 8)
+            {
+            } 
+            else {
+                return false;
+            }
+        }
+
+        function saveCustomPartsfunc(comp){
+            document.getElementById(comp.id).disabled=true;
+            return false;
+        }
+
+        function displaypop(e){
+            if(e == 'true'){
+                return false;  
+            }
+            else{
+                $('#customPartsPopUp1').modal('hide');
+                return false;
+            }
+        }
+        $(document).ready(function(){ 
+            $("#ErrMsg").hide();
+            //alert();
+
+            document.getElementById("{!$Component.ErrMsgVal}").visibility = "hidden"; 
+            document.getElementById("{!$Component.sysCode}").disabled = true;
+            document.getElementById("{!$Component.compCode}").disabled = true;
+            document.getElementById("{!$Component.CFname}").disabled = true;
+            
+        });
+    </script>
+    <apex:outputPanel id="javascript">
+
+        <script type="text/javascript" >
+            function hideerror(fname) {
+                if(fname!=null && fname!=''){
+                    var lowercase = fname.toLowerCase();
+                    var x = document.getElementById("ErrMsg");
+                    if(fname!=null && fname!='' && lowercase == 'unlisted'){
+                        $("#ErrMsg").show();
+                        document.getElementById("{!$Component.sysCode}").disabled = false;
+                        document.getElementById("{!$Component.compCode}").disabled = false;
+                        document.getElementById("{!$Component.CFname}").disabled = false;
+                    } else {
+                        $("#ErrMsg").hide();
+                        document.getElementById("{!$Component.ErrMsgVal}").visibility = "hidden"; 
+                    }
+                }
+                else{
+                    $("#ErrMsg").hide();
+                    document.getElementById("{!$Component.ErrMsgVal}").visibility = "hidden"; 
+                    document.getElementById("{!$Component.sysCode}").disabled = true;
+                    document.getElementById("{!$Component.compCode}").disabled = true;
+                    document.getElementById("{!$Component.CFname}").disabled = true;
+                }
+            }
+            function afterCustFailureCompleteFn(){
+                var Cfname= document.getElementById("{!$Component.CFname}").value;
+               if(Cfname==null || Cfname==''){
+                    document.getElementById("{!$Component.sysCode}").value = '';
+                    document.getElementById("{!$Component.sysCode}").disabled = false;
+                }
+                if(Cfname!=null && Cfname!=''){
+                    document.getElementById("{!$Component.sysCode}").disabled =true ;
+                    document.getElementById("{!$Component.compCode}").disabled =true ;
+
+                }
+                 var HCfname= document.getElementById("{!$Component.HCFname}").value;
+                 if(HCfname==null || HCfname==''){
+                      document.getElementById("{!$Component.sysCode}").value = '';
+                       document.getElementById("{!$Component.compCode}").value = '';
+                    document.getElementById("{!$Component.sysCode}").disabled =false ;
+
+                }
+                if(HCfname!=null && HCfname!='' && Cfname!=HCfname ){
+                      document.getElementById("{!$Component.sysCode}").value = '';
+                       document.getElementById("{!$Component.compCode}").value = '';
+                    document.getElementById("{!$Component.sysCode}").disabled =false ;
+                }
+                getFailures();
+            }
+            //function to set the system code and compcode field non-editable
+            function afterCompleteFunction(){
+                //alert('Insideaftcomplete');
+                var fname= document.getElementById("{!$Component.Fname}").value;
+                var lowercase = fname.toLowerCase();
+                if(fname!=null && fname!='' && lowercase != 'unlisted'){
+                    document.getElementById("{!$Component.sysCode}").disabled = true;
+                    document.getElementById("{!$Component.compCode}").disabled = true;
+                    document.getElementById("{!$Component.CFname}").disabled = true;
+
+                }
+                if(fname!=null && fname!='' && lowercase == 'unlisted'){
+                    hideerror(fname);
+                    var sysname = document.getElementById("{!$Component.sysCode}").value;
+                   // var CFNerror = document.getElementById("{!$Component.InvalidFNError}").value;
+                    //console.log('CFNError'+CFNerror);
+                    //console.log('Error>>'+'{!invalidCustFailure}');
+                    var SFError = '{!invalidCustFailure}';
+                    //console.log('SFError'+SFError);
+                    if(sysname==null || sysname==''){
+                        document.getElementById("{!$Component.compCode}").value='';
+                        document.getElementById("{!$Component.compCode}").disabled = true;
+                        document.getElementById("{!$Component.CFname}").disabled = false; 
+                    }
+                    else{
+                        if(SFError != null && SFError != '')
+                        document.getElementById("{!$Component.CFname}").disabled = false;
+                        else
+                        document.getElementById("{!$Component.CFname}").disabled = true;
+                    }
+                }
+                if(fname==null || fname==''){
+                    document.getElementById("{!$Component.sysCode}").value = '';
+                    document.getElementById("{!$Component.compCode}").value = '';
+                    document.getElementById("{!$Component.CFname}").value = '';
+                    document.getElementById("{!$Component.sysCode}").disabled = true;
+                    document.getElementById("{!$Component.compCode}").disabled = true; 
+                    document.getElementById("{!$Component.CFname}").disabled = true; 
+                     $("#ErrMsg").hide();
+                   document.getElementById("{!$Component.ErrMsgVal}").visibility = "hidden"; 
+                }
+                getFailures();
+               // loadJavscriptAgain();
+
+            }
+            //function to check the failure name value and based on that set the inputfield disabled
+            function checkFName(){
+                //alert('InsidecheckFName');
+                var fname= document.getElementById("{!$Component.Fname}").value;
+                var lowercase = fname.toLowerCase();
+                if(fname!=null && fname!='' && lowercase != 'unlisted'){
+                    document.getElementById("{!$Component.sysCode}").disabled = true;
+                    document.getElementById("{!$Component.compCode}").disabled = true;
+                    document.getElementById("{!$Component.CFname}").disabled = true;
+                }
+            }
+            
+            //function to load on Pageload
+            $(document).ready(function(){ 
+                console.log(hi);
+                getFailures();
+                //loadJavscriptAgain(); 
+            });
+
+        </script>
+    </apex:outputPanel>
+    
+     <apex:outputPanel id="javascript2">
+        <script>
+            function afterCustFailureCompleteFn(){
+              
+                var Cfname= document.getElementById("{!$Component.CFname}").value;
+               if(Cfname==null || Cfname==''){
+                    document.getElementById("{!$Component.sysCode}").value = '';
+                    document.getElementById("{!$Component.sysCode}").disabled = false;
+                }
+                if(Cfname!=null && Cfname!=''){
+                    document.getElementById("{!$Component.sysCode}").disabled =true ;
+                    document.getElementById("{!$Component.compCode}").disabled =true ;
+
+                }
+                 var HCfname= document.getElementById("{!$Component.HCFname}").value;
+                 if(HCfname==null || HCfname==''){
+                      document.getElementById("{!$Component.sysCode}").value = '';
+                       document.getElementById("{!$Component.compCode}").value = '';
+                    document.getElementById("{!$Component.sysCode}").disabled =false ;
+
+                }
+                if(HCfname!=null && HCfname!='' && Cfname!=HCfname ){
+                      document.getElementById("{!$Component.sysCode}").value = '';
+                       document.getElementById("{!$Component.compCode}").value = '';
+                    document.getElementById("{!$Component.sysCode}").disabled =false ;
+
+                }
+
+                
+
+            }
+            //function to set the system code and compcode field non-editable
+            function afterCompleteFunction(){
+               
+                var fname= document.getElementById("{!$Component.Fname}").value;
+                var lowercase = fname.toLowerCase();
+                if(fname!=null && fname!='' && lowercase != 'unlisted'){
+                    document.getElementById("{!$Component.sysCode}").disabled = true;
+                    document.getElementById("{!$Component.compCode}").disabled = true;
+                    document.getElementById("{!$Component.CFname}").disabled = true;
+
+                }
+                if(fname!=null && fname!='' && lowercase == 'unlisted'){
+                    hideerror(fname);
+                    var sysname = document.getElementById("{!$Component.sysCode}").value;
+                    if(sysname==null || sysname==''){
+                        document.getElementById("{!$Component.compCode}").value='';
+                        document.getElementById("{!$Component.compCode}").disabled = true;
+                        document.getElementById("{!$Component.CFname}").disabled = false; 
+                    }
+                    else{
+                        document.getElementById("{!$Component.CFname}").disabled = true;
+                        
+                    }
+
+                }
+                if(fname==null || fname==''){
+                    document.getElementById("{!$Component.sysCode}").value = '';
+                    document.getElementById("{!$Component.compCode}").value = '';
+                    document.getElementById("{!$Component.CFname}").value = '';
+                    document.getElementById("{!$Component.sysCode}").disabled = false;
+                    document.getElementById("{!$Component.compCode}").disabled = false; 
+                    document.getElementById("{!$Component.CFname}").disabled = false; 
+
+                }
+                getFailures();
+                loadJavscriptAgain();
+
+
+            }
+        </script>
+   
+        
+    </apex:outputPanel>
+    <apex:outputPanel id="javascript3">
+        <script>
+           //function to get the syscode and compcode based on failure Code Selected
+            function getValues(val){
+                document.getElementById("{!$Component.sysCode}").value = '';
+                document.getElementById("{!$Component.compCode}").value = '';
+                document.getElementById("{!$Component.CFname}").value = '';
+                var lowercase = val.toLowerCase();
+                if(val!=null && val!='' && (lowercase != 'unlisted')){
+
+                    document.getElementById("{!$Component.sysCode}").disabled = true;
+                    document.getElementById("{!$Component.compCode}").disabled = true;
+                    document.getElementById("{!$Component.CFname}").disabled = true;
+                    $("#ErrMsg").hide();
+
+                    getCodes(val); 
+                }
+
+                if(val!=null && val!='' && (lowercase == 'unlisted')){
+
+                    document.getElementById("{!$Component.compCode}").disabled = true;
+                    getCodes(val);
+
+
+                }
+                 
+
+            }
+
+            function getFM(val){
+               if(val!=null && val!=''){
+                    getFailmode(val);
+               } 
+            }
+            function getSC(val){
+               if(val!=null && val!=''){
+                    getSystemcode(val);
+               } 
+            }
+            function getCC(val){
+               if(val!=null && val!=''){
+                    getComponentCode(val);
+               } 
+            }
+            function getCustValues(val){
+                document.getElementById("{!$Component.sysCode}").value = '';
+                document.getElementById("{!$Component.compCode}").value = '';
+                if(val!=null && val!=''){
+                    document.getElementById("{!$Component.sysCode}").disabled = true;
+                    document.getElementById("{!$Component.compCode}").disabled = true;
+                    getCustCodes(val); 
+                }
+            } 
+            //SN - Function to enable Component Field once Syscode is selected
+            function enableComponentField(){
+                //alert('InsideEnableCompFiled');
+                document.getElementById("{!$Component.compCode}").disabled = false;
+                document.getElementById("{!$Component.CFname}").disabled =true ;
+               // loadJavscriptAgain();
+
+
+            }
+        </script>
+        
+    </apex:outputPanel>
+    <apex:outputPanel id="javascript4">
+        <script>
+            //function to load the javascript after rerender for Jquery Autocomplete functionality
+            function loadJavscriptAgain(){
+                //alert('loadJavscriptAgain');
+                //getFailures();
+                var apexFNList = [];
+
+                <apex:repeat value="{!Failurenames}" var="name">
+                    apexFNList.push('{!name}');
+            </apex:repeat> 
+
+
+            jQuery( ".apexFNautocomplete" ).autocomplete({
+                source: apexFNList,
+                select: function( event, ui ) {
+
+                    getValues(ui.item.value);
+
+                }
+
+            });
+
+                var apexSCList = [];
+                console.log('SystemCodes>>'+'{!SystemCodes}');
+              
+                
+                <apex:repeat value="{!SystemCodes}" var="name">
+                    apexSCList.push('{!name}');
+                </apex:repeat>        
+
+
+            jQuery( ".apexSCautocomplete" ).autocomplete({
+                source: apexSCList,
+
+                select: function( event, ui ) {
+                      getSC(ui.item.value);
+                    enableComponentField();
+
+                }
+
+            });
+
+                var apexCCList = [];
+                console.log('selectedSysCode***'+'{!selectedSysCode}');
+                console.log('ComponentCodes>'+'{!ComponentCodes}');
+             
+                <apex:repeat value="{!ComponentCodes}" var="name">
+                    apexCCList.push('{!name}');
+            </apex:repeat>        
+
+
+            jQuery( ".apexCCautocomplete" ).autocomplete({
+                source: apexCCList,
+                select: function( event, ui ) {
+                    
+                    getCC(ui.item.value);
+                   
+
+                }
+            });
+
+                var apexFMList = [];
+                <apex:repeat value="{!FailModes}" var="FMList">
+                    apexFMList.push('{!FMList}');
+            </apex:repeat>        
+
+            jQuery( ".xyz" ).autocomplete({
+                source: apexFMList,
+                select: function( event, ui ) {
+
+                    getFM(ui.item.value);
+
+                }
+            });
+
+                var apexCFList = [];
+                console.log('aaa'+'{!GsqcustFailurenameslist}');
+             
+                <apex:repeat value="{!GsqcustFailurenameslist}" var="CFList">
+                    apexCFList.push('{!CFList}');
+            </apex:repeat>        
+
+            jQuery( ".apexCFNautocomplete" ).autocomplete({
+                source: apexCFList,
+                select: function( event, ui ) {
+                    getCustValues(ui.item.value);
+
+                }
+            });
+
+
+
+                checkFName();
+
+            }
+        </script>
+    </apex:outputPanel>
+    <!--<c:CSS_JavaScript /> -->
+    <div style="float:right;">
+        <i class="pencil-tealIcon"></i>
+        <apex:commandLink value="Add Failure" style="font-weight:bold" html-data-target="#customPartsPopUp1" html-data-toggle="modal" html-data-backdrop="static" html-data-keyboard="false"  onComplete="hideerror(null);" />
+    </div>
+     <apex:outputPanel id="gsqPId">
+        <apex:actionFunction name="getFailures"  action="{!gsqFailurenames}"  rerender="javascript,javascript4,invFailNameId,invFailCustNameId,invsysCode" onComplete="loadJavscriptAgain();" > </apex:actionFunction>
+        <apex:actionFunction name="getCodes"  action="{!changeFailures}"  status="callPartNoStatus" rerender="javascript3,failureJob,CustomFailureName" onComplete="afterCompleteFunction();" > 
+            <apex:param name="failureName" value="" assignTo="{!selectedFName}" />
+        </apex:actionFunction> 
+        <apex:actionFunction name="getCustCodes"  action="{!changeCustFailures}"  status="callPartNoStatus1" rerender="javascript3,failureJob,CustomFailureName" onComplete="afterCustFailureCompleteFn();" > 
+            <apex:param name="failureName" value="" assignTo="{!selectedCustFName}" />
+        </apex:actionFunction> 
+            <apex:actionFunction name="getFailmode"  action="{!changefailmode}" rerender="javascript3"> 
+        <apex:param name="failmode" value="" assignTo="{!selectedFailMode}" />
+    </apex:actionFunction>
+    <apex:actionFunction name="getSystemcode"  action="{!changeSystemcode}" rerender="javascript3"> 
+        <apex:param name="Systemcode" value="" assignTo="{!selectedSysCode}" />
+    </apex:actionFunction>
+<apex:actionFunction name="getComponentCode"  action="{!changeComponentCode}" rerender="javascript3"> 
+        <apex:param name="ComponentCode" value="" assignTo="{!selectedCompCode}" />
+    </apex:actionFunction>
+        <div class="modal fade" id="customPartsPopUp1" role="dialog">
+            <div class="modal-dialog" style="width:800px;">
+                <div class="modal-content"> 
+                    <div class="modal-header">
+                        <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.CSS_Add_Failure_Popup}</h4>
+                    </div>
+                    <apex:outputPanel id="modCont">
+                        <div class="modal-body">
+                            <div style="text-align:left;">
+                            </div>
+                            <br/><br/>
+                        
+                            <apex:outputpanel id="FailureName">
+                                <div class="col-sm-12 col-xs-12">
+
+
+                                    <div class="col-sm-4 col-xs-12 cmi-tar" >
+                                        <b>{!$Label.CSS_Predefined_Failure_Name}</b><span class="cmi_asterisk1">*</span>
+
+                                    </div>
+                                    <div class="col-sm-4 col-xs-12">
+                                        <apex:inputText value="{!selectedFName}" styleclass="{!IF((selectedSysCode=='' || selectedSysCode==null),'apexFNautocomplete','apexFNautocomplete')}" id="Fname" onkeyup="afterCompleteFunction();" html-placeholder="Search" style="text-align:left;" onchange="disablefailmode()"/>
+                                        &nbsp;&nbsp;
+                                        <apex:actionStatus id="callPartNoStatus">
+                                            <apex:facet name="start">Loading...  <img src="/img/loading.gif" /></apex:facet>
+                                            <apex:facet name="stop"></apex:facet>
+                                        </apex:actionStatus>
+                                    </div>
+                                    <apex:outputPanel id="invFailNameId">
+                                        <apex:outputPanel rendered="{!IF(invalidFailure==true,true,false)}" >
+                                            <div>
+                                                <apex:outputText value="{!$Label.CG_InvalidPredefinedFailure}" style="text-align:right;color: red;" rendered="{!IF(invalidFailure==true,true,false)}"/>   
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+                                    <div style="text-align:right;color: red;" id="ErrMsg">
+                                    <apex:outputText id="ErrMsgVal" value="{!$Label.CSS_failure_Unlisted_error_message}"></apex:outputText>
+                                </div>
+                                 <div class="clearfix"></div>
+                                </div>
+                                
+                            </apex:outputpanel>
+                            <br/><br/>
+                            <apex:outputpanel id="CustomFailureName">
+                                <div class="col-sm-12 col-xs-12">
+
+
+                                    <div class="col-sm-4 col-xs-12 cmi-tar" >
+                                        <b>{!$Label.CSS_Custom_Failure_Name}</b><span class="cmi_asterisk1">*</span>
+
+                                    </div>
+                                    <div class="col-sm-4 col-xs-12">
+                                       <!-- <apex:inputText id="CFname"  value="{!selectedCustFName}" styleclass="{!IF((selectedCustFName=='' || selectedCustFName==null),'apexCFNautocomplete','apexCFNautocomplete')}" onkeyup="afterCustFailureCompleteFn()"  html-placeholder="Search" style="text-align:left;"></apex:inputText>-->
+                                         <apex:inputText id="CFname"  value="{!selectedCustFName}" styleclass="{!IF((selectedCustFName=='' || selectedCustFName==null),'apexCFNautocomplete','apexCFNautocomplete')}"   onkeyup="afterCustFailureCompleteFn()"  html-placeholder="Search" style="text-align:left;"></apex:inputText>
+                                        <apex:inputHidden id="HCFname" value="{!selectedCustFNameValue}"></apex:inputHidden>
+                                        &nbsp;&nbsp;
+                                        <apex:actionStatus id="callPartNoStatus1">
+                                            <apex:facet name="start">Loading...  <img src="/img/loading.gif" /></apex:facet>
+                                            <apex:facet name="stop"></apex:facet>
+                                        </apex:actionStatus>
+                                    </div>
+                                    <apex:outputPanel id="invFailCustNameId">
+                                        <apex:outputPanel rendered="{!IF(invalidCustFailure==true,true,false)}" >
+                                            <div>
+                                                <apex:outputText id="InvalidFNError" value="{!$Label.CG_InvalidCustomFailure}" style="text-align:right;color: red;" rendered="{!IF(invalidCustFailure==true,true,false)}"/>  
+                                               <!--<apex:outputText id="InvalidFNError" value="{!$Label.CG_InvalidCustomFailure}" style="text-align:right;color: red;" /> -->
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+                                       <div class="clearfix"></div>
+                                </div>
+                            </apex:outputpanel>
+                            <br/><br/>
+                            <apex:outputpanel id="OR">
+                                <div class="col-sm-6 col-xs-6">
+                                    <div class="col-sm-5 col-xs-6 cmi-tar" >
+                                        <b>{!$Label.CSS_Failure_Popup_OR}</b>
+                                    </div>
+                                </div>
+                            </apex:outputpanel>
+                            <div class="clearfix"></div>
+                            <br/>
+                            <apex:outputPanel id="failureJob" >
+                                <div class="clearfix"></div>
+                                <div class="col-sm-6 col-xs-12" style="margin:0px 8px">
+                                    <div class="col-sm-6 col-xs-6 cmi-tar">
+                                        <b>{!$Label.CG_Systemcode}</b><span class="cmi_asterisk1">*</span>
+                                    </div>
+                                    <div class="col-sm-6 col-xs-6">
+                                        <apex:inputtext value="{!selectedSysCode}"  styleclass="{!IF((selectedSysCode=='' || selectedSysCode==null),'apexSCautocomplete','apexSCautocomplete')}" id="sysCode"    onblur="afterCompleteFunction();" html-placeholder="Search" style="text-align:left;"/>
+                                    </div>
+                                    <div class="clearfix"></div>
+                                    <apex:outputPanel id="invsysCode">
+                                        <apex:outputPanel rendered="{!IF(invalidSysCode==true,true,false)}" >
+                                            <div class="col-sm-offset-6 col-sm-6 col-xs-12">
+                                                <apex:outputText value="{!$Label.CG_InvalidSysCode}" style="text-align:right;color: red;"/>   
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+                                </div>
+                                <div class="col-sm-5 col-xs-12">
+                                    <div class="col-sm-6 col-xs-6 cmi-tar">
+                                        <b>{!$Label.CG_Componentcode}</b><span class="cmi_asterisk1">*</span>
+                                    </div>
+                                    <div class="col-sm-6 col-xs-6" style="margin-left:0px;">
+                                        <apex:inputtext value="{!selectedCompCode}"  styleclass="{!IF((selectedCompCode=='' || selectedCompCode==null),'apexCCautocomplete','apexCCautocomplete')}" id="compCode" onchange="chkCompCode();" html-placeholder="Search" style="text-align:left;"/>
+
+                                    </div> 
+                                     <div class="clearfix"></div> 
+                                    <apex:outputPanel id="invcompCode">
+                                        <apex:outputPanel rendered="{!IF(invalidCompCode==true,true,false)}" >
+                                            <div class="col-sm-offset-6 col-sm-6 col-xs-12">
+                                                <apex:outputText value="{!$Label.CG_InvalidCompCode}" style="text-align:right;color: red;"/>   
+                                            </div>
+                                        </apex:outputPanel>
+                                    </apex:outputPanel>
+                                </div>
+                            </apex:outputPanel>
+                            <apex:actionFunction name="chkCompCode"  action="{!checkCompCode}" rerender="invcompCode" > </apex:actionFunction>
+                            <div class="clearfix"></div> 
+                            <br/>
+                             <div class="col-sm-12 col-xs-12">
+                                <!--<div class="col-sm-5 col-xs-6 cmi-tar" id="failuremodenameid"> -->
+                                <div class="col-sm-3 col-xs-12 cmi-tar">
+                                   <!-- <b id="failuremod">{!$Label.CG_Failmode}</b><span class="cmi_asterisk1" id="failmodspanid">*</span> -->
+                                    <b id="failuremod">{!$Label.CG_Failmode}</b>
+                                </div>
+                                <div class="col-sm-4 col-xs-12">
+                                    
+                                    <apex:inputText value="{!selectedFailMode}" styleclass="{!IF((selectedFailMode=='' || selectedFailMode==null),'xyz','xyz')}"   html-placeholder="Search" style="text-align:left;" onchange="chkFailMode();" /> 
+                                </div>
+                                <apex:outputPanel id="invFailMode">
+                                    <apex:outputPanel rendered="{!IF(invalidFailMode==true,true,false)}" >
+                                        <div>
+                                            <apex:outputText value="{!$Label.CG_InvalidFailMode}" style="text-align:right;color: red;"/>   
+                                        </div>
+                                    </apex:outputPanel>
+                                </apex:outputPanel>
+                                <div class="clearfix"></div> 
+                            </div>
+                            <apex:actionFunction name="chkFailMode"  action="{!checkFailMode}" rerender="invFailMode" > </apex:actionFunction>
+                            <br/> 
+                        </div>
+                        <apex:Outputpanel id="savePnl">
+                            <div class="modal-footer" style="margin-top:20px;border-top:0px;">
+                                <div class="col-sm-offset-1 col-sm-5">
+                                    <apex:commandButton value="{!$Label.css_save_btn}" styleClass="saveButton" status="saveAccountCode" action="{!popUpSave}" rerender="modCont"  oncomplete="afterCompleteFunction();">
+                                    </apex:commandButton>
+                                    <br/>
+                                    <apex:actionStatus startText="requesting..." id="saveAccountCode">
+                                        <apex:facet name="start">Saving...</apex:facet>
+                                        <apex:facet name="stop"></apex:facet>
+                                    </apex:actionStatus>
+                                </div>
+                                <div class="col-sm-2">
+                                    <apex:actionRegion >
+                                        <apex:commandButton value="{!$Label.css_Cancel}" styleClass="cancelButton"  action="{!cancelPopup}" reRender="modCont" html-data-dismiss="modal" >
+                                        </apex:commandButton>
+                                    </apex:actionRegion>
+                                </div>
+                            </div>
+                        </apex:Outputpanel>
+
+                    </apex:outputPanel>
+                </div>
+            </div>
+        </div>
+
+    </apex:outputPanel>
+
+</apex:component>

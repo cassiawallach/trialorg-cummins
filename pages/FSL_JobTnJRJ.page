@@ -1,0 +1,556 @@
+<apex:page id="tndpages" showHeader="false" standardStylesheets="false" >
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content=""/>
+    <meta name="author" content="Cummins Inc."/>
+    <meta name="copyright" content="(C)2016 Cummins Inc., Box 3005, Columbus, IN 47202-3005 U.S.A."/> 
+    <!--  <c:css_styles /> -->
+    <!--Commented for FSL 4C-->
+    <!--<c:CSS_Standard_IntakeStyles />-->
+    <c:css_ExtraStyles />
+    <style>
+        @media (max-width: 1200px) and (min-width: 700px){    
+        .srtPopupAttach {
+        width:600px !important;
+        }
+        }
+        .ui-state-default, .ui-widget-content .ui-state-default, .ui-widget-header .ui-state-default{
+        background-color:#007c7c;
+        color:white
+        }
+        /*    .customPopup1 {
+        background-color: white;
+        border-style: solid;
+        border-width: 2px;
+        left: 37%;
+        padding: 10px;
+        position: absolute;
+        z-index: 9999;
+        width: 325px;
+        top: 40%;
+        }  */
+        .holder{        
+        width:100%;
+        display:block;
+        }
+        
+        .popup{
+        width:800px;
+        border-radius: 7px;
+        position:absolute;
+        left: 50%;
+        top: 20%;
+        
+        }
+        
+        .showRedBorder{
+        border: 2px solid red !important;
+        }
+    </style>
+    <script>
+    
+    function qtyPressTnDrj(e,compId){
+        var technicianTimeVal= document.getElementById(compId.id).value;
+        if(((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105)) || ((e.which == 190 || e.which == 110) && !(technicianTimeVal.includes('.'))))
+        {
+        } 
+        else 
+        {
+            return false;
+        }     
+    }
+    
+    function validateActtt(compId){
+        var technicianTime= document.getElementById(compId.id).value;
+        var techTimelength=document.getElementById(compId.id).value.length;
+        var techTimesplit = [];
+        
+        if(technicianTime.includes('.')){
+            techTimesplit = technicianTime.split(".");
+            var declength = techTimesplit[1].length;
+            if(declength > 1){                
+                var newStr = technicianTime.substring(0, technicianTime.length-1);
+                document.getElementById(compId.id).value = newStr;
+                return false;    
+            }
+        }
+        else {
+            if(techTimelength == 5)
+            {
+                var newStr1 = technicianTime.substring(0, technicianTime.length-1);
+                var newStr2 = newStr1/10;
+                document.getElementById(compId.id).value = newStr2;
+            }
+        }
+        if(techTimelength == 4 && !technicianTime.includes('.')){
+            var result = Number(document.getElementById(compId.id).value)/10;
+            document.getElementById(compId.id).value=result;
+        }
+    }
+    </script>
+    
+    <script>
+    
+    /*function isAlphanumeric(evt) {
+
+        evt = (evt) ? evt : window.event;
+        var charCode = (evt.which) ? evt.which : evt.keyCode;
+        if (charCode == 45 || (charCode>47 && charCode<58 )|| (charCode >64 && charCode<91) ||(charCode >96 && charCode<123)) {
+        return true; 
+        } else {
+            return false;
+        }
+
+            }*/
+    
+    
+    function isAlphanumeric(e,compId){
+        if(e.which==45 || (e.which>47 && e.which<58) || (e.which>64 && e.which<91) || (e.which>96 && e.which<123))
+        {
+            
+        }
+        else
+        {                
+            return false; 
+        }
+    }    
+    </script>   
+    <script>
+    function DisableSavenSendAssignButton(){
+        document.getElementById("tndpages:TnDRjfrm:SavenAssignButton").disabled=true;
+        console.log('Disable assign button'); 
+        SaveAssignbtn();
+        console.log('Called Action Method Anirudh');
+        return false;
+    }
+    </script>
+   
+    <script>
+    function phoneNumberFormat(e){
+        var phoneNumber = document.getElementById("tndpages:TnDRjfrm:phoneNumber");
+        $(phoneNumber).keypress(function(e){
+            if (this.value.length === 0 && (e.which == 48 || e.which == 49)){
+                return false;
+            }
+            
+            if( e.which == 48 || e.which == 49 || e.which == 50 || e.which == 51 || e.which == 52 || e.which == 53 || e.which == 54 || e.which == 55 || e.which == 56 || e.which == 57 || e.which == 8)
+            {
+            } 
+            else {
+                return false;
+            }
+            
+        }) 
+    }
+    </script>
+    <script>
+    function customerPhoneNumberFormat(e){
+        var customerContactPhn = document.getElementById("tndpages:TnDRjfrm:custContactPhn");
+        $(customerContactPhn).keypress(function(e){
+            if (this.value.length === 0 && (e.which == 48 || e.which == 49)){
+                return false;
+            }
+            
+            if( e.which == 48 || e.which == 49 || e.which == 50 || e.which == 51 || e.which == 52 || e.which == 53 || e.which == 54 || e.which == 55 || e.which == 56 || e.which == 57 || e.which == 8)
+            {
+            } 
+            else {
+                return false;
+            }
+            
+        })       
+    }
+    function checkEmailAddressonLoad(){ 
+        
+        var EmailAddressElem = $(document.getElementById('{!$Component.TnDRjfrm.txtEmailAddress}'));
+        var emailaddr = EmailAddressElem.val();
+        if(emailaddr == 'declined'){
+            document.getElementById('{!$Component.TnDRjfrm.txtEmailAddress1}').disabled=true; 
+            document.getElementById('{!$Component.TnDRjfrm.txtEmailAddress}').disabled=true; 
+            document.getElementById('{!$Component.TnDRjfrm.txtEmailAddress}').value = 'declined';
+            document.getElementById('{!$Component.TnDRjfrm.txtEmailAddress1}').value = 'cummins.com'; 
+        }
+        else{
+            document.getElementById('{!$Component.TnDRjfrm.txtEmailAddress1}').disabled=false; 
+            document.getElementById('{!$Component.TnDRjfrm.txtEmailAddress}').disabled=false; 
+            //document.getElementById('{!$Component.Intakefrm.txtEmailAddress}').value = '';
+            //document.getElementById('{!$Component.Intakefrm.txtEmailAddress1}').value = ''; 
+        }
+    }
+    </script>
+    
+    <script>
+    $(window).load(function(){
+        //  spyGlassCustomerName();
+        //  spyGlassCustomerCode();
+        selectedSubStatus();
+        //To show substatus popup on load        
+        /*console.log('subStatusPop>>>>>>'+subStatusPop);
+        if(subStatusPop!=null && subStatusPop!='' ){
+            if(subStatusPop == 'true'){
+                //alert($('#subStatusPop'));
+                $('#subStatusPop').modal('show');
+                
+            }
+        }*/
+        console.log(subStatusPop);            
+        document.getElementById('counter_desc1').value= 100-document.getElementById('tndpages:TnDRjfrm:description_upl1').value.length;
+        document.getElementById('counter_desc2').value= 100-document.getElementById('tndpages:TnDRjfrm:description_upl2').value.length;
+        document.getElementById('counter_desc3').value= 100-document.getElementById('tndpages:TnDRjfrm:description_upl3').value.length;
+        //document.getElementById('edit_desc1').value= 100-document.getElementById('reviewHistory:Intakefrm:EditPopup:popInnerOutputPn5:edit_desc1_textarea').value.length;        
+    });
+    function closeSubStatusPopup(){
+        console.log('Here>>>>>>>>>>>>.');
+        closeSSPopup();
+    }
+    
+    //Defect 61124 start
+    function disableButton1()
+    {
+        // alert("tndpages:TnDRjfrm:attach123")
+        document.getElementById("tndpages:TnDRjfrm:attach123").disabled=true;
+        processup();
+        return false; 
+    }
+    //Defect 61124 end
+    
+    <!--Modified as ROD:86567-->
+        function disableDeleteButton(){
+            document.getElementById("tndpages:TnDRjfrm:theDeleteButton").disabled=true;
+        }      
+    
+    //InsiteImage file download
+    function downloadFile1(endPointStr, tokenStr, attachId) {
+        //alert('entered download into downloadFile function...tokenStr>>>:'+tokenStr+' endPointStr>>:'+endPointStr);
+        try {
+            var statusEle = document.getElementById('{!$Component.TnDRjfrm.statusCodeId}');
+            var statusStr = statusEle.value;
+            //alert('status code>>>>>:'+statusStr);
+            if(statusStr !=200){
+                window.open('/apex/CSS_InsiteImageError?errorCode='+statusStr, 'target');             
+            }else{
+                var tokenElement = document.getElementById('{!$Component.TnDRjfrm.attId}');
+                var attIdStr = tokenElement.value;
+                //alert('attIdStr>>>>>:'+attIdStr);
+                window.open('/servlet/servlet.FileDownload?file='+attIdStr, 'target');
+            }
+            
+        } catch(err) {
+            alert(err.message);
+            console.log('Error message>>>:'+err.message);
+        }
+    }
+    
+    
+    
+    </script>
+    <script type="text/javascript">
+    
+    /*    $(document).ready(function(){               
+                       $('.modal-content').draggable();
+
+                                $('#myModal').on('show.bs.modal', function () {
+                                    $(this).find('.modal-body').css({
+                                       // 'max-height':'100%'
+                                    });
+                                });
+
+                            });*/
+    /* $(document).ready(function(){
+            $('#divMileageId').keypress(function(e){
+                //alert('keycode:'+e.which);
+                if(e.which == 48 || e.which == 49 || e.which == 50 || e.which == 51 || e.which == 52 || e.which == 53 || e.which == 54 || e.which == 55 || e.which == 56 || e.which == 57 || e.which == 8){
+
+                } else {
+                    return false;
+                }
+            });
+        });*/
+    function mileagePress(e){
+        $('#divMileageId').keypress(function(e){
+            //alert('keycode:'+e.which);
+            if(e.which == 48 || e.which == 49 || e.which == 50 || e.which == 51 || e.which == 52 || e.which == 53 || e.which == 54 || e.which == 55 || e.which == 56 || e.which == 57 || e.which == 8){
+                
+            } else {
+                return false;
+            }
+        });
+    }
+    
+    function hoursPressBMS(e){
+        $('#divHoursId').keypress(function(e){
+            //alert('keycode:'+e.which);
+            if(e.which == 48 || e.which == 49 || e.which == 50 || e.which == 51 || e.which == 52 || e.which == 53 || e.which == 54 || e.which == 55 || e.which == 56 || e.which == 57 || e.which == 8 )
+            {
+                
+            } else {
+                return false;
+            }
+        });
+        
+    }
+    </script>
+    
+    <script type="text/javascript">
+    j$ = jQuery.noConflict();
+    j$(document).ready(function() {
+        j$('#open').click(function(){
+            j$('#grpopup').fadeIn();
+            return false;
+        });
+        j$('#close').click(function(){
+            j$('#grpopup').fadeOut();
+            return false;
+        });   
+        j$('#delcancel').click(function(){
+            j$('#grpopup').fadeOut();
+            return false;
+        });  
+        
+        
+    });
+    
+    <!-------------------attachmnets related code -------------------------------------------->
+        
+  
+    function switchMenu(obj,obj1,obj2,obj3) 
+    {
+        var el = document.getElementById(obj);                                       
+        if ( el.style.display != 'none' ) {
+            el.style.display = 'none';
+        }
+        else {
+            el.style.display = '';
+        }
+        var e2 = document.getElementById(obj1);                                       
+        if ( e2.style.display != 'none' ) {
+            e2.style.display = 'none';
+        }
+        else {
+            e2.style.display = '';
+        }
+        var e3 = document.getElementById(obj2);                                       
+        if ( e2.style.display != 'none' ) {
+            e3.style.display = 'none';
+        }
+        else {
+            e3.style.display = '';
+        }
+        var e4 = document.getElementById(obj3);                                       
+        if ( e4.style.display != 'none' ) {
+            e4.style.display = 'none';
+        }
+        else {
+            e4.style.display = '';
+        }
+    }
+    function textCounter(field,field2,maxlimit)
+    {
+        var countfield = document.getElementById(field2);
+        if ( field.value.length > maxlimit ) 
+        {
+            field.value = field.value.substring( 0, maxlimit );
+            return false;
+        } else 
+        {
+            countfield.value = maxlimit - field.value.length;
+        }
+    }
+    
+    var newWin=null; 
+    function openLookupPopup(name,id)
+    {                    
+        var url="/apex/css_attach?namefield=" + name + "&idfield=" + id;
+        newWin=window.open(url, 'Popup','height=600,width=700,left=100,top=100,resizable=no,scrollbars=yes,toolbar=no,status=no,location=no');
+        if (window.focus)                                        
+            newWin.focus();                                                               
+        return false;
+    }                             
+    function closeLookupPopup()
+    {
+        if (null!=newWin)                                      
+            newWin.close();                                        
+    }
+    function firstSearch(ev){
+        if (window.event && window.event.keyCode == 13 || ev.which == 13) {
+            callFirstSearch();
+        }
+    }
+    function secondSearch(ev){
+        if (window.event && window.event.keyCode == 13 || ev.which == 13) {
+            callsecondSearch();
+        }
+    }
+    function thirdSearch(ev){
+        if (window.event && window.event.keyCode == 13 || ev.which == 13) {
+            callthirdSearch();
+        }
+    }
+    
+    $(document).ready(function() {
+        
+        function toggleChevron(e) {
+            $(e.target)
+            .prev('.panel-heading')
+            .find("i.indicator")
+            console.log("tndshowhode");
+            .toggleClass('fa-caret-right fa-caret-down');
+        }
+        $('#accordion').on('hidden.bs.collapse', toggleChevron);
+        $('#accordion').on('shown.bs.collapse', toggleChevron);
+    });
+    function textCounter(field,field2,maxlimit)
+    {
+        var countfield = document.getElementById(field2);
+        if ( field.value.length > maxlimit ) 
+        {
+            field.value = field.value.substring( 0, maxlimit );
+            return false;
+        } else 
+        {
+            countfield.value = maxlimit - field.value.length;
+        }
+    }
+    
+    var newWin=null; 
+    });
+    </script> 
+    <script type="text/javascript">    
+    jq = jQuery.noConflict(true);
+    /* jq.fn.dataTable.ext.order['dom-text'] = function  ( settings, col )
+            {
+                return this.api().column( col, {order:'index'} ).nodes().map( function ( td, i ) {
+                    return $('input', td).val();
+                } );
+            }     
+            /* jq.fn.dataTableExt.afnSortData['dom-checkbox'] = function  ( oSettings, iColumn )
+            {
+                var aData = [];
+                jq( 'td:eq('+iColumn+') input', oSettings.oApi._fnGetTrNodes(oSettings) ).each( function () {
+                    aData.push( this.checked==true ? "1" : "0" );
+                } );
+                return aData;
+            } */   
+    /* Initialise the table with the required column sorting data types */    
+    
+    jq('#contentsContainer').DataTable({
+        "aoColumns": [
+            {"sType": "html","bSortable": false, "orderable": false, "visible": true},
+            { "sSortDataType": "dom-text", type: 'string'  },
+            { "sSortDataType": "dom-text", type: 'string'  },
+            { "sSortDataType": "dom-text", type: 'string' },
+            { "sSortDataType": "dom-text", type: 'string' },
+            { "sSortDataType": "dom-text", type: 'string' },
+            { "sSortDataType": "dom-text", type: 'string' }
+        ],
+        "bFilter": false,
+        "bPaginate": false,
+        "bInfo": false,
+        "columnDefs": [
+            { targets: 'no-sort', orderable: false }
+        ]            
+    });         
+    function activateSort() {        
+        console.log('Sort invoked 1');                   
+        console.log('Sort invoked 2');
+        jq('#contentsContainer').dataTable({
+            "aoColumns": [
+                {"sType": "html","bSortable": false, "orderable": false, "visible": true},
+                { "sSortDataType": "dom-text", type: 'string'  },
+                { "sSortDataType": "dom-text", type: 'string'  },
+                { "sSortDataType": "dom-text", type: 'string' },
+                { "sSortDataType": "dom-text", type: 'string' },
+                { "sSortDataType": "dom-text", type: 'string' },
+                { "sSortDataType": "dom-text", type: 'string' }
+            ],
+            "bFilter": false,
+            "bPaginate": false,
+            "bInfo": false,
+            "columnDefs": [
+                { targets: 'no-sort', orderable: false }
+            ]            
+        });        
+        console.log('Sort invoked 3');
+    }
+    jq = jQuery.noConflict(true);
+    /* jq.fn.dataTable.ext.order['dom-text'] = function  ( settings, col )
+            {
+                return this.api().column( col, {order:'index'} ).nodes().map( function ( td, i ) {
+                    return $('input', td).val();
+                } );
+            }     
+            /* jq.fn.dataTableExt.afnSortData['dom-checkbox'] = function  ( oSettings, iColumn )
+            {
+                var aData = [];
+                jq( 'td:eq('+iColumn+') input', oSettings.oApi._fnGetTrNodes(oSettings) ).each( function () {
+                    aData.push( this.checked==true ? "1" : "0" );
+                } );
+                return aData;
+            } */   
+    /* Initialise the table with the required column sorting data types */    
+    
+    jq('#contentsContainerContact').DataTable({
+        "aoColumns": [
+            {"sType": "html","bSortable": false, "orderable": false, "visible": true},
+            { "sSortDataType": "dom-text", type: 'string'  },
+            { "sSortDataType": "dom-text", type: 'string'  },
+            { "sSortDataType": "dom-text", type: 'string' },
+        ],
+            "bFilter": false,
+            "bPaginate": false,
+            "bInfo": false,
+            "columnDefs": [
+            { targets: 'no-sort', orderable: false }
+        ]            
+    });         
+    function activateSortCon() {        
+        console.log('Sort invoked 1');                   
+        console.log('Sort invoked 2');
+        jq('#contentsContainerContact').dataTable({
+            "aoColumns": [
+                {"sType": "html","bSortable": false, "orderable": false, "visible": true},
+                { "sSortDataType": "dom-text", type: 'string'  },
+                { "sSortDataType": "dom-text", type: 'string'  },
+                { "sSortDataType": "dom-text", type: 'string' },
+            ],
+                "bFilter": false,
+                "bPaginate": false,
+                "bInfo": false,
+                "columnDefs": [
+                { targets: 'no-sort', orderable: false }
+            ]            
+        });        
+        console.log('Sort invoked 3');
+    }    
+    </script>
+    <div class="container-fluid1">
+        <apex:composition template="FSL_STDTemplate" />
+        <apex:define name="body">
+            <apex:form id="TnDRjfrm" html-novalidate="True">
+                <apex:actionFunction name="processup" action="{!processUpload}" /> <!--61124 attchments Defect fix -->
+                <div class="">
+                    <apex:outputpanel id="DisplayChevs5">
+                        <div class="">
+                            <!-- 4C story Start here -->
+                            <div class="panel panel-default">
+                                <div class="panel-heading" id="accordion1-heading-7">
+                                    <h4 class="panel-title"  data-toggle="collapse" data-parent="#accordion1-heading-4" data-target="#tndrjcollapseseven">
+                                        <a class="accordion-toggle">
+                                            <div class="accordion-title"> <span class="glyphicon glyphicon-plus"></span>4C's</div>
+                                        </a>                                      
+                                    </h4>
+                                </div>
+                                <div id="tndrjcollapseseven" class="panel-collapse collapse out">
+                                    <div class="panel-body" id="accordion1-body-1">
+                                        <c:FSL_4C_Comp woId="{!$CurrentPage.parameters.Id}"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 4C Story End here -->                                
+                        </div>
+                    </apex:outputpanel>
+                </div>
+            </apex:form>
+        </apex:define>
+    </div>
+</apex:page>

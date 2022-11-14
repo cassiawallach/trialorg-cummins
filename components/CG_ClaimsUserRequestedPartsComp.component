@@ -1,0 +1,897 @@
+<apex:component controller="CG_CL_ClaimsUserRequestedParts" allowDML="true">
+
+    <apex:attribute name="claimsId" type="Id" description="The id of the Claim"  assignTo="{!Wid}"/>
+    <apex:attribute name="ClaimNum" type="String" description="Cliam number" assignTo="{!CLaimNumberErrlog}"/>
+    <apex:attribute name="mainController" description="Main Controller Type" type="CG_CL_ClaimsPartsandOtherClaimbles"/>
+
+   <!-- <c:CG_MyClaims_TableScript />-->
+
+    <style type="text/css">
+
+        .showRedBorder{
+            border: 2px solid red !important;
+        }
+
+        @media screen and (min-width: 992px) {
+            .modal-lg {
+                width: 1250px; 
+            }
+
+        }
+        .mytable1>tbody>tr>td, .mytable1>tbody>tr>th, .mytable1>tfoot>tr>td, .mytable1>tfoot>tr>th, .mytable1>thead>tr>td, .mytable1>thead>tr>th {
+            padding: 1px;
+        }
+        .fademargin {
+            margin-top: 50px !important;
+        }
+        #fademarginid {
+            margin-top: 50px !important;
+        }
+        .cmi_lighttealbuttonURP {
+            border-radius: 5px;
+            display: inline-block;
+            padding: 5px 20px;
+            color: #000000;
+            text-align: center;
+            margin-left: 0 auto;
+            background-color: #a8d4d1;
+            pointer-events: none;
+            cursor: default;
+            border:0px;
+        
+        }
+        
+        
+
+    </style>
+    <script type="text/javascript">
+
+        function NewPartReturnERP(ClaimSubID){
+            window.open('/apex/CG_PartsReturnEPRPDF?id='+ClaimSubID);
+        }
+
+        function DisableSaveButton(compId){
+            compId.disabled=true;
+            return false;
+        }
+    </script>
+
+    <script type="text/javascript">
+
+        //FOR TAB OFF SHIFT KEY     
+        function partnumtaboff(e,compId)
+        {
+            if((e.which > 47 && e.which <=57) || e.which == 9)
+            {
+            } 
+            else 
+            {
+
+                return false;
+            }        
+        }
+        //Calling Action Function.  
+        function OnchanagePartNumber(value1)
+        {
+            partdataserv(value1);
+        }
+
+        function qtyPress(e){
+
+            if((e.which > 47 && e.which <=57) || e.which == 9)
+            {
+            } 
+            else {
+                return false;
+            }
+
+        }
+        function DisableWASaveButton(claimblescompId){
+            claimblescompId.disabled=true;
+        } 
+
+        function displaypop1(e){
+            //document.getElementById("saveButtonId").disabled=false;
+            //alert('oncomplete  eee'+e);
+            if(e == 'true'){
+                //alert('if'+e);
+                return false;  
+            }
+            else{
+                //alert('else'+e);
+                $('#customPartsJobPopUp').modal('hide');
+                return false;
+            }
+        }
+        function validateMaxVal(compId,coveragetyp,coveredpar){
+
+            var CoveredVal= parseInt(compId.value);
+            var coveredparInt = parseInt(coveredpar);
+            if(CoveredVal > 100) {
+                compId.value=100;   
+            }
+            if(coveredparInt!=''){
+
+
+                if(coveragetyp == 'POL' && CoveredVal >  coveredparInt ){
+                    compId.value = coveredparInt;
+                }
+            }
+            else if(coveragetyp == 'POL'){
+                compId.value=100;  
+            }
+
+        }
+        function callfailcodemethod(value,value1){
+
+            failcodelogic(value,value1);
+
+        }
+        //script for getting %coverd when we are chaning Account codes as per #105557 (RAJESH)
+        function callAccountcodemethod1(value,value1,value2){
+            Accountcodelogic1(value,value1,value2);
+        }
+
+        function qtyPressURP(e,compId){
+
+            //var technicianTimeVal= document.getElementById(compId.id).value;
+            if((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105))  
+                // if(((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105)))
+            {
+
+            } 
+            else 
+            {
+                return false;
+            }   
+        }
+
+        function trackingNumber(e,compId){
+            //alert(e.which);
+            if((e.which>47 && e.which<58) || (e.which>64 && e.which<91) || (e.which>96 && e.which<123))
+            {
+                var max_chars = 34;
+                if(compId.value.length > max_chars) {
+                    return false;
+                }
+            }
+            else
+            {                
+                return false;
+            }
+        }
+
+        function rIDVal(e,compId){
+            //if((e.which > 47 && e.which <=57) || e.which == 8)
+            if((e.which>47 && e.which<58) || (e.which>64 && e.which<91) || (e.which>96 && e.which<123))
+            {
+                var max_chars = 34;
+                if(compId.value.length > max_chars) {
+                    return false;
+                }
+            } 
+            else {
+                return false;
+            }
+
+        }
+
+        //Added function as part of GSSC-302 Great Pyramid Of Giza//
+        function ReturnWaiverhoverFunc(servicePartNum,returnToFac){ 
+            if(!servicePartNum && returnToFac==='Y' ){
+                $('#ReturnWaiverhoverpopup').modal('show');
+            }else{
+                $('#ReturnWaiverhoverpopup').modal('hide'); 
+            }
+        }
+        
+        function resetServFlag(comp){
+            var pn = comp.value;
+            if(pn.length > 0){
+                //alert('Inside IF');
+                // document.getElementById('{!$Component.saveButtonId}').disabled = true;
+                document.getElementById('{!$Component.saveButtonId}').classList.remove("saveButton");
+                document.getElementById('{!$Component.saveButtonId}').classList.add("cmi_lighttealbuttonURP");
+                //resetServiceStatus();
+            }
+            else{
+                //alert('Inside ELSE');
+                document.getElementById('{!$Component.saveButtonId}').disabled = false;
+                //resetServiceStatus();
+            }
+            //resetServiceStatus(); 
+        }
+
+
+    </script>
+    <apex:actionFunction name="resetServiceStatus"  reRender="buttonsPnl"/> <!--action="{!resetServiceCallFlag}"-->
+    <apex:actionFunction name="closePopup1" action="{!closePopup1}" reRender="modCont" immediate="true"/>
+    <apex:actionFunction name="failcodelogic" action="{!onChangeofFailCode}" status="callPartsStatus1" rerender="gsqPopUpId"> 
+        <apex:param name="FailCodeval"  value="" assignTo="{!SelectedFailCode}"/>
+        <apex:param name="PartsID"  value="" assignTo="{!SelectedPartID}"/>
+    </apex:actionFunction>
+    <apex:actionFunction name="Accountcodelogic1" action="{!onChangeofAccountCode}"  rerender="gsqPopUpId"> 
+        <apex:param name="AccountCodeval"  value="" assignTo="{!SelectedAccountCode}"/>
+        <apex:param name="PartsID"  value="" assignTo="{!SelectedPartID}"/>
+        <apex:param name="FailCodeval"  value="" assignTo="{!SelectedFailCode}"/>
+    </apex:actionFunction>
+
+    <div class="panel-group cmi_generic-accordion" > 
+        <div class="panel panel-default">
+            <div class="panel-heading " id="accordion1-heading-4">
+                <h4 class="panel-title" data-toggle="collapse" data-parent="#accordion1-heading-4" data-target="#campaign-accordian1" aria-expanded="true" onclick="PartsAction(); return false;">
+                    <a class="accordion-toggle" >
+                        <span class="glyphicon glyphicon-plus"></span>
+                        <div class="cmi_accordion-title"><b>{!$Label.CSS_User_Requested_Parts}</b></div>
+                    </a>
+                </h4>
+            </div>
+        </div>
+        <apex:actionFunction name="PartsAction" action="{!getUserAddedParts}" rerender="srtparts,gsqPId" status="callPartsStatus" /> 
+        <div id="campaign-accordian1" class="panel-collapse collapse" aria-expanded="true" style="margin-top:10px">
+            <apex:actionStatus startText="requesting..." id="callPartsStatus">
+                <apex:facet name="start">Loading... <img src="/img/loading.gif" /></apex:facet>
+                <apex:facet name="stop"></apex:facet>
+            </apex:actionStatus>
+            <apex:outputPanel id="srtparts">        
+                <div class="panel-body">
+                    <!--Added below code for showing error message as per 24 #161414,By RAJESH 6th Sec 2018-->            
+                    <apex:outPutText id="ErrMsg">
+                        <b><apex:outputText value="{!$Label.CG_Tracking_Number_Required}" rendered="{!IF(errorMsg !=null, true,false)}" style="text-align:center; color: red ; display: block;"  /></b>
+                        <!-- <apex:outputLabel style="text-align:center; color: red ; display: block;" value="{!$Label.CG_Please_enter_value}"  rendered="{!IF(ErrorMessage== true, true, false)}" />-->
+                    </apex:outPutText>
+                    <!--END-->           
+                    <div class="row">
+                        <div class="col-sm-12" style="padding-top:20px;"> 
+                            <div class="hidden-xs">
+                                <div class="row cmi_jobplan-table">
+                                    <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+                                        <!--Added isClaimReadOnly__C && isServiceJobReadOnly__c condition as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->            
+                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                            <apex:outputPanel rendered="{!if(isURPCovered == true, true, false)}">
+                                                <div style="float:right;">
+                                                    <i class="pencil-tealIcon"></i>
+                                                    <apex:commandLink value="{!$Label.css_Edit}" html-data-target="#customPartsJobPopUp" html-data-toggle="modal" html-data-backdrop="static" html-data-keyboard="false"  onComplete="return false;" />
+                                                </div>
+                                            </apex:outputPanel>
+                                            <apex:outputPanel rendered="{!if(isURPCovered == false, true, false)}">
+                                                <div style="float: right;margin-top: -10px;margin-right:5px;">
+                                                    <i class="pencil-tealIcon"></i>         
+                                                    <font color="#007c7c">{!$Label.css_Edit}</font>
+                                                </div><br/>
+                                            </apex:outputPanel>
+                                        </apex:outputPanel>
+                                        <!--END--as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->                 
+                                        <table class="mytable table table-bordered table-striped cmi_userreqParts"  width="100%" border="0" cellpadding="0" cellspacing="0">
+                                            <thead>
+                                                <!--<apex:outputPanel rendered="{!If(isDealer == true,true,false)}">
+<tr height="54">
+<th>{!$Label.CSS_Qty}</th>
+<th>{!$Label.CSS_Part_Number}</th>
+<th>OEM ({!$Label.CSS_Product_Code})</th>
+<th>{!$Label.CSS_Part_Name}</th> 
+<th >{!$Label.css_Percent_Requested}</th>
+<th >{!$Label.CSS_Fail_Code}</th> 
+<th >{!$Label.CSS_Account_Code}</th> 
+<th >{!$Label.CSS_Return_to_Factory}</th>
+<th >{!$Label.css_Tracking_Number}</th>
+<th >RID</th>
+<th >{!$Label.CSS_Replacement_Repair_Reason}</th>
+</tr>
+</apex:outputPanel>-->
+
+                                                <tr height="54">
+                                                    <th>{!$Label.CSS_Qty}</th>
+                                                    <th>{!$Label.CSS_Part_Number}</th>
+                                                    <apex:outputText rendered="{!IF(($Setup.css_header_nav__c.RSWButtonEnable__c == false && (!CONTAINS($UserRole.Name,'Factory'))),true,false)}">
+                                                        <th>OEM ({!$Label.CSS_Product_Code})</th>
+                                                    </apex:outputText>
+                                                    <!-- <th>{!$Label.CSS_Part_Name}</th> -->
+                                                    <th>{!$Label.css_Part_Description}</th> 
+                                                    <th >{!$Label.css_Percent_Requested}</th>
+                                                    <th >{!$Label.CSS_Fail_Code}</th> 
+                                                    <th >{!$Label.CSS_Account_Code}</th> 
+                                                    <th >{!$Label.CSS_Return_to_Factory}</th>
+                                                    <!--Added below value for Return Waiver as per 24 sprint #161414,-By RAJESH 04th Sec 2018-->
+                                                    <th >{!$Label.css_Return_Waiver}</th>
+                                                    <!--End-->                    
+                                                    <th >{!$Label.css_Tracking_Number}</th>
+                                                    <th >RID</th>
+                                                    <th >{!$Label.CSS_Replacement_Repair_Reason}</th>
+
+                                                    <apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,false,true)}">
+                                                        <!-- <th>{!$Label.css_Unit_Price_USD}</th>
+<th>{!$Label.CSS_Total_USD}</th>-->
+                                                        <th> {!$Label.CG_UnitPrice}({!mainController.userRec.DefaultCurrencyIsoCode})</th>
+                                                        <th> {!$Label.CSS_Total} ({!mainController.userRec.DefaultCurrencyIsoCode})</th>
+                                                    </apex:outputText>
+                                                </tr>
+
+                                            </thead>
+                                            <apex:repeat value="{!partotionWrapperList}" var="partscompWrap">
+                                                <tr > 
+
+                                                    <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->  
+                                                    <td >
+                                                        <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == false,true,false)}">
+                                                            <span><apex:outputtext value="{!partscompWrap.partoption.Quantity__c}"/></span>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == true,true,false)}">
+                                                            <b><span><apex:outputtext value="{!partscompWrap.partoption.Quantity__c}"/></span></b>             
+                                                        </apex:outputPanel>
+                                                    </td>
+
+                                                    <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->  
+                                                    <td >
+                                                        <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == false,true,false)}">
+                                                            <span><apex:outputText value="{!partscompWrap.partoption.Service_partnumber__c}" html-max-length="15"/></span>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == true,true,false)}">
+                                                            <b><span><apex:outputtext value="{!partscompWrap.partoption.Service_partnumber__c}"/></span></b>             
+                                                        </apex:outputPanel>    
+                                                    </td>
+
+                                                    <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->  
+
+                                                    <!--apex:outputtext rendered="{(!IF(partscompWrap.partoption.isManual__c == false && $Setup.css_header_nav__c.RSWButtonEnable__c == false,true,false)}"-->
+                                                    <apex:outputText rendered="{!IF(($Setup.css_header_nav__c.RSWButtonEnable__c == false && (!CONTAINS($UserRole.Name,'Factory'))),true,false)}">
+                                                        <td >
+                                                            <!--<apex:outputtext rendered="{(!IF(partscompWrap.partoption.isManual__c == false && $Setup.css_header_nav__c.RSWButtonEnable__c == false && !CONTAINS($UserRole.Name,'Factory'),true,false)}">-->
+                                                            <apex:outputtext rendered="{(!IF(partscompWrap.partoption.isManual__c == false,true,false)}">    
+                                                                <span><apex:outputtext value="{!partscompWrap.partoption.OEM__c}"/></span>
+                                                            </apex:outputtext>
+                                                            <!--apex:outputtext rendered="{!IF(partscompWrap.partoption.isManual__c == true && $Setup.css_header_nav__c.RSWButtonEnable__c == false,true,false)}"-->
+                                                            <!--<apex:outputtext rendered="{!IF(partscompWrap.partoption.isManual__c == true && $Setup.css_header_nav__c.RSWButtonEnable__c == false && !CONTAINS($UserRole.Name,'Factory'),true,false)}">-->
+                                                            <apex:outputtext rendered="{!IF(partscompWrap.partoption.isManual__c == true,true,false)}">    
+                                                                <b><span><span><apex:outputtext value="{!partscompWrap.partoption.OEM__c}"/></span></span></b>
+                                                            </apex:outputtext>
+                                                        </td>
+                                                        </apex:outputtext>
+                                                    <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->   
+                                                    <td>
+                                                        <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == false,true,false)}">
+                                                            <apex:outputtext value="{!partscompWrap.partoption.Part_Name__c}"/>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == true,true,false)}">
+                                                            <b><apex:outputtext value="{!partscompWrap.partoption.Part_Name__c}"/></b>
+                                                        </apex:outputPanel>
+                                                    </td>
+
+                                                    <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->  
+                                                    <td >
+                                                        <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == false,true,false)}">
+                                                            <apex:outputtext value="{!partscompWrap.partoption.Covered__c}"/>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == true,true,false)}">
+                                                            <b><apex:outputtext value="{!partscompWrap.partoption.Covered__c}"/></b>
+                                                        </apex:outputPanel>
+                                                    </td>  
+
+                                                    <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->  
+                                                    <td > 
+                                                        <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == false,true,false)}">
+                                                            <apex:outputtext value="{!partscompWrap.partoption.Fail_Code__c}"/>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == true,true,false)}">
+                                                            <b><apex:outputtext value="{!partscompWrap.partoption.Fail_Code__c}"/></b>
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                    <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->  
+                                                    <td >
+                                                        <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == false,true,false)}">
+                                                            <apex:outputtext value="{!partscompWrap.partoption.Account_Code__c}"/>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == true,true,false)}">
+                                                            <b><apex:outputtext value="{!partscompWrap.partoption.Account_Code__c}"/></b>
+                                                        </apex:outputPanel>
+                                                    </td>
+
+
+                                                    <!--<td ><apex:outputtext value="{!partscomp.ReturnToFactory__c}"/></td>-->
+                                                    <!--If the data is added i.e. is not populated from service job then isManual__c must be true-->  
+                                                    <td >
+                                                        <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == false,true,false)}">
+                                                            <apex:outputPanel rendered="{!IF(partscompWrap.partoption.ReturnToFactory__c != 'Y',true,false)}">
+                                                                <apex:outputtext value="{!partscompWrap.partoption.ReturnToFactory__c}"/>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(partscompWrap.partoption.ReturnToFactory__c == 'Y',true,false)}">
+                                                                <div>
+                                                                    <span class="underline"><a href="/apex/CG_PartsReturnEPRPDF?id={!Wid}" style="border-bottom:1px solid #007c7c !important" target="_blank" id="claimvalId" >{!$label.CSS_Parts_Return_Label}</a></span>
+                                                                </div>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == true,true,false)}">
+                                                            <apex:outputPanel rendered="{!IF(partscompWrap.partoption.ReturnToFactory__c != 'Y',true,false)}">
+                                                                <b><apex:outputtext value="{!partscompWrap.partoption.ReturnToFactory__c}"/></b>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(partscompWrap.partoption.ReturnToFactory__c == 'Y',true,false)}">
+                                                                <div>
+                                                                    <span class="underline"><a href="/apex/CG_PartsReturnEPRPDF?id={!Wid}" style="border-bottom:1px solid #007c7c !important" target="_blank" id="claimvalId" >{!$label.CSS_Parts_Return_Label}</a></span>
+                                                                </div>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                    <!--Added below value for Return Waiver as per 24 sprint #161414,-By RAJESH 04th Sec 2018-->                        
+                                                    <td  class="ReturnWaiverCamCell" >
+                                                                    <apex:outputPanel rendered="{!IF(partscompWrap.partoption.Service_partnumber__c!=Null && partscompWrap.partoption.ReturnToFactory__c == 'Y',true,false)}">
+                                                                        <span class="ReturnWaiverCam"> {!$Label.CG_ReturnWaiver_Msg}  </span>
+                                                                    </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                            <apex:inputCheckbox style="width:50px;" disabled="true" value="{!partscompWrap.partoption.ReturnWaiver__c}"/>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                            <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == false,true,false)}">
+                                                                <apex:outputText rendered="{!IF(partscompWrap.partoption.ReturnToFactory__c=='N',true,false)}">
+                                                                    <apex:inputCheckbox style="width:50px;" disabled="true" value="{!partscompWrap.partoption.ReturnWaiver__c}"/>
+                                                                </apex:outputText> 
+                                                                <apex:outputPanel rendered="{!IF(partscompWrap.partoption.ReturnToFactory__c=='Y',true,false)}">
+                                                                    <apex:inputCheckbox style="width:50px;" value="{!partscompWrap.partoption.ReturnWaiver__c}" onclick="callReturnWaiverAction(this.checked,'{!partscompWrap.partcout}');"  >
+                                                                        <!--<apex:actionSupport event="onclick" reRender="TNPanel"/>-->
+                                                                    </apex:inputCheckbox>
+                                                                    <!--apex:actionFunction name="onChangeRW" action="{!changeRW}" /-->
+                                                                </apex:outputPanel>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == true,true,false)}">
+                                                                <apex:outputText rendered="{!IF(partscompWrap.partoption.ReturnToFactory__c=='N',true,false)}">
+                                                                    <apex:inputCheckbox style="width:50px;" disabled="true" value="{!partscompWrap.partoption.ReturnWaiver__c}"/>
+                                                                </apex:outputText> 
+                                                                <apex:outputText rendered="{!IF(partscompWrap.partoption.ReturnToFactory__c=='Y',true,false)}">
+                                                                    <apex:inputCheckbox style="width:50px;" value="{!partscompWrap.partoption.ReturnWaiver__c}" onclick="callReturnWaiverAction(this.checked,'{!partscompWrap.partcout}');" id="returnWaiver"/>
+                                                                </apex:outputText>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel> 
+
+                                                    </td>                                               
+                                                    <!--End-->                       
+                                                    <td>
+                                                        <!--<apex:outputPanel rendered="{!IF(partscomp.ReturnToFactory__c == 'Y',true,false)}">
+<apex:inputtextarea value="{!partscomp.Tracking_Number__c}" style="overflow-y:scroll;height:50px;width:100px;resize:none" onkeypress="return trackingNumber(event,this)"/>
+</apex:outputPanel>-->
+
+                                                        <!--   <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == false,true,false)}">
+<apex:outputPanel rendered="{!IF(partscompWrap.partoption.ReturnToFactory__c == 'Y',true,false)}">
+<apex:inputtextarea value="{!partscompWrap.partoption.Tracking_Number__c}" style="overflow-y:scroll;height:50px;width:100px;resize:none" 
+onkeypress="return trackingNumber(event,this)"/>
+</apex:outputPanel>
+</apex:outputPanel>
+
+<apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == true,true,false)}">
+
+<apex:outputPanel rendered="{!IF(partscompWrap.partoption.ReturnToFactory__c == 'Y',true,false)}">
+<b><apex:inputtextarea value="{!partscompWrap.partoption.Tracking_Number__c}" style="overflow-y:scroll;height:50px;width:100px;resize:none" 
+onkeypress="return trackingNumber(event,this)"/></b>
+
+</apex:outputPanel>    
+</apex:outputPanel> -->
+                                                        <apex:outputpanel id="TrackingNumberShow">
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                <apex:outputtext value="{!partscompWrap.partoption.Tracking_Number__c}"/>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                <apex:outputPanel rendered="{!IF((partscompWrap.partoption.ReturnToFactory__c == 'Y' && partscompWrap.partoption.ReturnWaiver__c==false),true,false)}">
+                                                                    <b><apex:inputtextarea value="{!partscompWrap.partoption.Tracking_Number__c}" styleClass="{!if(((partscompWrap.partoption.Tracking_Number__c=='Select One' || partscompWrap.partoption.Tracking_Number__c=='') && numberTracking==true) ,'showRedBorder','')}" style="overflow-y:scroll;height:50px;width:100px;resize:none" 
+                                                                                           onkeypress="return trackingNumber(event,this)"/></b> <!--Commented it as per defect GSSC-593, if returnwaiver is true and track num is null, then only to hightlight, which is accomplished by the down outputpanel, hence removed style class here.-->
+                                                                <!--<b><apex:inputtextarea value="{!partscompWrap.partoption.Tracking_Number__c}"  style="overflow-y:scroll;height:50px;width:100px;resize:none" 
+                                                                                           onkeypress="return trackingNumber(event,this)"/></b>-->
+                                                                </apex:outputPanel>     
+
+                                                                <apex:outputPanel rendered="{!IF(partscompWrap.partoption.ReturnToFactory__c != 'Y',true,false)}">
+                                                                    <apex:outputtext value=""/>
+                                                                </apex:outputPanel> 
+                                                                <!--Added below value for Return Waiver as per 24 sprint #161414,-By RAJESH 04th Sec 2018-->                            
+                                                                <apex:outputPanel id="TNPanel" rendered="{!IF((partscompWrap.partoption.ReturnToFactory__c == 'Y' && partscompWrap.partoption.ReturnWaiver__c==true),true,false)}">
+                                                                    <apex:selectList value="{!partscompWrap.partoption.Tracking_Number__c}" size="1" styleClass="{!if(((partscompWrap.partoption.Tracking_Number__c=='Select One' || partscompWrap.partoption.Tracking_Number__c=='') && numberTracking==true) ,'showRedBorder','')}">
+                                                                        <apex:selectOptions value="{!TrackingNumber}" />
+                                                                    </apex:selectList>
+                                                                </apex:outputPanel> 
+                                                            </apex:outputPanel>
+                                                            <!--END-->      </apex:outputpanel>                 
+                                                    </td>
+
+                                                    <td>
+                                                        <!--<apex:outputPanel rendered="{!IF(partscomp.ReturnToFactory__c == 'Y',true,false)}">
+<apex:inputtextarea value="{!partscomp.RID__c}" style="overflow-y:scroll;height:50px;width:100px;resize:none" 
+onkeypress="return rIDVal(event,this)"/>
+</apex:outputPanel>-->                                 <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                        <apex:outputtext value="{!partscompWrap.partoption.RID__c}"/>
+                                                        </apex:outputPanel>    
+                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                            <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == false,true,false)}">
+                                                                <apex:outputPanel rendered="{!IF(partscompWrap.partoption.ReturnToFactory__c == 'Y',true,false)}">
+                                                                    <apex:inputtextarea value="{!partscompWrap.partoption.RID__c}" style="overflow-y:scroll;height:50px;width:100px;resize:none" 
+                                                                                        onkeypress="return rIDVal(event,this)"/>
+                                                                </apex:outputPanel>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == true,true,false)}">
+                                                                <apex:outputPanel rendered="{!IF(partscompWrap.partoption.ReturnToFactory__c == 'Y',true,false)}">
+                                                                    <b><apex:inputtextarea value="{!partscompWrap.partoption.RID__c}" style="overflow-y:scroll;height:50px;width:100px;resize:none" 
+                                                                                           onkeypress="return rIDVal(event,this)"/></b>
+                                                                </apex:outputPanel>
+                                                            </apex:outputPanel>    
+
+                                                            <apex:outputPanel rendered="{!IF(partscompWrap.partoption.ReturnToFactory__c != 'Y',true,false)}">
+                                                                <apex:outputtext value=""/>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>    
+                                                    </td>
+                                                    <!--END--as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->
+                                                    <apex:outputPanel rendered="{!IF(partscompWrap.partoption.ReturnToFactory__c != 'Y',true,false)}">
+                                                        <td></td>
+                                                        <td></td>
+                                                    </apex:outputPanel>                                        
+
+                                                    <td >
+                                                        <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == false,true,false)}">
+                                                            <apex:outputtext value="{!partscompWrap.partoption.Replacement_Reason__c}"/>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == true,true,false)}">
+                                                            <b><apex:outputtext value="{!partscompWrap.partoption.Replacement_Reason__c}"/></b>
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                    <apex:outputtext rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,false,true)}">
+
+                                                        <td> 
+
+                                                            <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == false,true,false)}">
+                                                                <apex:outputtext value="{!ROUND(VALUE(partscompWrap.partoption.Unit_Price__c), 2)}"/>
+                                                                <!--    <apex:outputtext value="0.00"/>-->
+
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == true,true,false)}">
+                                                                <apex:outputtext value="{!ROUND(VALUE(partscompWrap.partoption.Unit_Price__c), 2)}"/>
+                                                                <!--        <b><apex:outputtext value="0.00"/></b>-->
+                                                                <!-- <b><apex:outputtext value="{!totalurp}"/></b>-->
+                                                            </apex:outputPanel>    
+                                                        </td>
+
+
+                                                        <td> 
+                                                            <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == false,true,false)}">
+                                                                <!-- <apex:outputtext value="0.00"/>-->
+                                                                <b><apex:outputtext value="{!ROUND(partscompWrap.totalUrp, 2)}"/></b>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(partscompWrap.partoption.isManual__c == true,true,false)}">
+
+                                                                <b><apex:outputtext value="{!ROUND(partscompWrap.totalUrp, 2)}"/></b>
+                                                            </apex:outputPanel> 
+                                                        </td> 
+                                                    </apex:outputtext>
+
+                                                </tr>
+                                            </apex:repeat>
+
+                                        </table>
+                                        <apex:actionFunction name="callReturnWaiverAction" action="{!enableTrackingNumber}" reRender="TrackingNumberShow,ErrMsg,srtparts">
+                                            <apex:param name="rwCheck" value="" assignTo="{!isReturnwaiver}"/> 
+                                            <apex:param name="selectedPart" value="" assignTo="{!selectedPart}"/>
+                                        </apex:actionFunction>
+                                        <br/>
+                                        <div class="col-sm-9"> </div>
+
+                                        <apex:outputText rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,false,true)}">
+                                            <div style="margin-top:20px;" class="col-sm-3">
+                                                <fieldset style="border:2px solid #aaa">
+                                                    <!--  <b>   {!$Label.CSS_User_Parts_USD} </b> &nbsp;-->
+                                                    <b>   {!$Label.CSS_User_Requested_Parts} ({!mainController.userRec.DefaultCurrencyIsoCode}) </b> &nbsp;
+                                                    {!ROUND(ConsolidateTemptotal, 2)}
+                                                </fieldset>
+
+                                            </div>
+                                        </apex:outputText>
+
+                                        <div class="clearfix"></div>
+                                        <div class="row" align="center">
+                                            <div class="col-sm-offset-3 col-sm-3 col-xs-12" style="margin-bottom: 10px;">
+                                                <apex:commandLink action="{!saveUserAddedParts}" value="{!$Label.css_save_btn}" styleClass="saveButton" reRender="ErrMsg,srtparts,TrackingNumberShow" status="statusId"/>                                                                            
+                                                <apex:actionStatus startText="requesting..." id="statusId">
+                                                    <apex:facet name="start">Saving... <img src="/img/loading.gif" /></apex:facet>
+                                                    <apex:facet name="stop"></apex:facet>
+                                                </apex:actionStatus>
+                                            </div>
+                                            <div class="col-sm-3 col-xs-12" style="margin-bottom: 10px;">
+                                                <apex:commandLink action="{!resetUserAddedParts}" value="{!$Label.css_Reset}" styleClass="cancelButton" reRender="srtparts,ErrMsg" status="resetId"/>                                        
+                                                <apex:actionStatus startText="requesting..." id="resetId">
+                                                    <apex:facet name="start">Reseting... <img src="/img/loading.gif" /></apex:facet>
+                                                    <apex:facet name="stop"></apex:facet>
+                                                </apex:actionStatus>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </apex:outputPanel>    
+
+
+            <!-----START Custom Parts pop up STORY - 115031----->   
+
+            <apex:outputPanel id="gsqPId" >
+                <div class="modal" id="customPartsJobPopUp" >
+                    <div class="modal-dialog modal-lg fademargin" id="fademarginid" style="margin-top: 50px !important;">
+                        <div class="modal-content"> 
+                            <apex:outputPanel id="modCont" >  
+                                <div class="modal-header">  
+                                    <!--   <apex:commandButton title="Close the popup" action="{!closePopup2}"  styleClass="cross_butten" /> -->
+                                    <h4 class="modal-title" style="color: #FFFFFF;">User Requested Parts - Cummins Guidanz</h4>
+                                </div>
+
+                                <div class="modal-body" style="padding:0px;overflow:auto;height:424px;">
+                                    <apex:outputPanel rendered="{!IF(chkReqField==true,true,false)}" id="noReqFields">
+                                        <apex:outputLabel ><span style="color:red">{!$Label.CSS_CustPartReqFields}</span></apex:outputLabel> 
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!IF(failAccCodeErrorMessage== true, true, false)}" id="failAccErrMess">
+                                        <apex:outputLabel style="text-align:left; color: red ; display: block;" value="{!$Label.CG_Please_enter_value}"   />
+                                    </apex:outputPanel>
+                                    <apex:outputPanel id="gsqPopUpId">
+                                        <div class="cmi_modal-body-desktop">
+
+                                            <apex:outputLabel style="text-align:center; color: red ; display: block;" value="{!$Label.CSS_Please_add_Part_Name}"  rendered="{!IF(ErrorMessage== true, true, false)}" />
+                                            <apex:outputLabel style="text-align:left; color: red ; display: block;" value="Duplicated Parts are not allowed."  rendered="{!IF(ErrorMessage2 == true, true, false)}"/>
+                                            <apex:outputLabel style="text-align:left; color: red ; display: block;" value="{!$Label.CSS_Part_Information_is_currently_not_available_Please_retry_or_contact_Guidanz}"  rendered="{!IF(PartNoValidationError== true, true, false)}" />
+
+                                            <apex:outputLabel style="text-align:left; color: red ; display: block;" value="{!$Label.CSS_Part_not_Found}"  rendered="{!IF(PartNotFoundError== true, true, false)}" />
+                                            <apex:outputPanel id="covExceedValidationError" rendered="{!IF(errMsgLstNew != null && errMsgLstNew.size > 0, true, false)}">
+                                                <apex:repeat value="{!errMsgLstNew}" var="errMsgs">
+                                                    <apex:outputLabel style="text-align:left; color: red ; display: block;" value="{!errMsgs}" />
+                                                </apex:repeat>
+                                            </apex:outputPanel>
+
+                                            <table class="mytable1 table table-striped table-bordered repairParts" border="0" cellpadding="0" cellspacing="0" id="tbCustSRT">
+                                                <thead>
+                                                    <tr bgcolor="#d3d3d3">
+                                                        <th style="text-align:center;width:15%;">{!$Label.css_Qty} </th>
+                                                        <th style="text-align:center;">{!$Label.CSS_Part_Number}
+                                                            <span class="cmi_asterisk" style="float:none;font-size:18px;top:2px;left:4px;">*</span>
+                                                        </th>
+                                                        <apex:outputtext rendered="{!IF(($Setup.css_header_nav__c.RSWButtonEnable__c == false  && (!CONTAINS($UserRole.Name,'Factory'))),true,false)}">
+                                                            <th>OEM ({!$Label.CSS_Product_Code})</th>
+                                                        </apex:outputtext>
+
+                                                        <!-- <th style="text-align:center;">{!$Label.CSS_Part_Name}-->
+                                                        <th style="text-align:center;">{!$Label.css_Part_Description}
+                                                            <!--       <span class="cmi_asterisk" style="float:none;font-size:18px;top:2px;left:4px;">*</span>-->
+                                                        </th>
+                                                        <th style="text-align:center;">{!$Label.CSS_Return_to_Factory}</th> 
+                                                        <th style="text-align:center;">{!$Label.css_Percent_Requested}</th>
+                                                        <!--Added below dealerlocation code for showing filcode and account code like required as per story #176379 Kung Fu Panda sprint,-By RAJESH 11th Mar 2019----->                                        
+                                                        <apex:outputtext rendered="{!IF(dealerLocation == true,true,false)}">
+                                                            <th style="text-align:center;width:15%;">{!$Label.CSS_Fail_Code}
+                                                                <span style="color: red">*</span>
+                                                            </th>
+                                                            <th>{!$Label.CSS_Account_Code}
+                                                                <span class="cmi_asterisk" style="float:none;font-size:13px;top:2px;left:4px;">*</span>
+                                                            </th>
+                                                        </apex:outputtext>
+                                                        <apex:outputtext rendered="{!IF(dealerLocation == false,true,false)}">
+                                                            <th style="text-align:center;">{!$Label.CSS_Fail_Code}</th>
+                                                            <th style="text-align:center;">{!$Label.CSS_Account_Code}</th>
+                                                        </apex:outputtext>
+                                                        <!--End below dealerlocation code for showing filcode and account code like required as per story #176379 Kung Fu Panda sprint,-By RAJESH 11th Mar 2019----->                                            
+                                                        <th style="text-align:center;width:15%;">{!$Label.CSS_Replacement_Repair_Reason}</th> 
+                                                        <!-- <th style="text-align:center;">{!$Label.css_Notes}</th>  -->
+                                                        <th style="text-align:center;">{!$Label.CSS_Remove}</th>
+                                                    </tr>
+                                                </thead> 
+
+
+                                                <apex:actionFunction name="AccountcodeRefresh" reRender="AccountCodePart" >
+                                                </apex:actionFunction>  
+
+                                                <apex:actionFunction name="partdataserv" status="callPartsStatus1" action="{!partvalidate}"  rerender="gsqPopUpId,failAccErrMess,buttonsPnl" immediate="true">
+                                                    <apex:param name="Prtcount" value="" assignTo="{!selPartnum}" />
+                                                </apex:actionFunction>
+                                                <apex:variable var="rowCnt" value="{!0}" />                   
+                                                <apex:repeat value="{!listpartWrapper}" var="custParts" id="newpopCustomSRT">
+
+                                                    <apex:variable var="trId" value="{!rowCnt+1}" />
+                                                    <tr class="hideDisp" id="trId{!custParts.ids}">
+                                                        <td style="text-align:center;"> 
+                                                            <div id="qtyId">
+                                                                <apex:inputText value="{!custParts.quantity}" maxlength="5" onkeypress="return qtyPress(event)" id="quantity" style="width:50px;"/>
+
+                                                            </div>
+                                                        </td>
+                                                        <!--<td style="text-align:center;"><apex:Inputtext value="{!custParts.servPartNumber}" maxlength="15"/></td>-->
+                                                        <td style="text-align:center;">
+                                                            <div>
+                                                                <div class="col-sm-10">
+                                                                    <!--  <apex:Inputtext value="{!custParts.servPartNumber}" onkeyup="return qtyPress(event)" onchange="OnchanagePartNumber('{!custParts.counting}')" maxlength="15"  />-->
+                                                                    <apex:Inputtext onKeyUp="resetServFlag(this)" id="servepartno" value="{!custParts.servPartNumber}" styleClass="{!if(custParts.servPartNumber!=null && custParts.servPartNumber!='' && custParts.partName == null,'showRedBorder','')}" maxlength="15">
+                                                                        <apex:actionSupport event="onchange" action="{!partvalidate}" status="callPartsStatus1" rerender="gsqPopUpId" immediate="false">
+                                                                            <apex:param id="selpart1" name="PartsName" value="{!custParts.counting}" assignTo="{!selPartnum}">
+                                                                            </apex:param>
+                                                                        </apex:actionSupport>
+                                                                        </apex:inputtext>
+                                                                    <!--       <apex:outputPanel rendered="{!IF(PartNotFoundError == false || PartNoValidationError == false,true,false)}">
+<apex:inputText value="{!custParts.servPartNumber}"  maxlength="15">
+<apex:actionSupport event="onchange" action="{!partvalidate}" status="callPartsStatus1" rerender="gsqPopUpId" immediate="false">
+<apex:param id="selpart1" name="PartsName" value="{!custParts.counting}" assignTo="{!selPartnum}">
+</apex:param>
+</apex:actionSupport>
+</apex:inputText>
+</apex:outputPanel>
+<apex:outputPanel rendered="{!IF(PartNotFoundError == true || PartNoValidationError == true,true,false)}">
+
+<apex:inputText value="{!custParts.servPartNumber}" styleClass="showRedBorder" maxlength="15">
+<apex:actionSupport event="onchange" action="{!partvalidate}" status="callPartsStatus1" rerender="gsqPopUpId" immediate="false">
+<apex:param id="selpart12" name="PartsName" value="{!custParts.counting}" assignTo="{!selPartnum}">
+</apex:param>
+</apex:actionSupport>
+</apex:inputText>
+</apex:outputPanel>-->
+                                                                </div>
+                                                                <div class="col-sm-2">
+                                                                    <apex:actionStatus startText="requesting..." id="callPartsStatus1">
+                                                                        <apex:facet name="start"> <img src="/img/loading.gif" /></apex:facet>
+                                                                        <apex:facet name="stop"></apex:facet>
+                                                                    </apex:actionStatus>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+
+
+                                                        <apex:outputtext rendered="{!IF(($Setup.css_header_nav__c.RSWButtonEnable__c == false && (!CONTAINS($UserRole.Name,'Factory'))),true,false)}">
+                                                            <td style="text-align:center;">
+                                                                <apex:Inputtext value="{!custParts.oem}"/>
+                                                            </td>
+                                                        </apex:outputtext>
+
+                                                        <td style="text-align:center;"><apex:Inputtext value="{!custParts.partName}" disabled="true"/></td>
+                                                        <td style="text-align:center;"><apex:outputtext value="{!custParts.returnToFactory}"/></td>
+
+                                                        <td style="text-align:center;"><apex:Inputtext value="{!custParts.coveredPercent}" style="width:100px;"  id="ValCovered" maxlength="3" onkeyup="validateMaxVal(this,'{!custParts.coveragetypeval}','{!custParts.coveredpartsper}');" onkeydown="return qtyPressURP(event,this)"/></td>
+                                                        <!--Added below dealerlocation code for showing filcode and account code like required as per story #176379 Kung Fu Panda sprint,-By RAJESH 11th Mar 2019----->                                        
+                                                        <apex:outputText rendered="{!IF(dealerLocation == true,true,false)}">
+                                                            <td style="text-align:center;">                                                        
+                                                                <apex:selectList value="{!custParts.failCode}" id="failcodesvalueDealer" size="1" style="width:100px;" onchange="callfailcodemethod(this.value,'{!custParts.counting}');" styleClass="{!IF(custParts.failcodeMessage ==true || custParts.isPartsCovLimitExceedPW == true,'showRedBorder','')}" >                                                         
+                                                                    <apex:selectOptions value="{!failcodeDropDown}" ></apex:selectOptions>
+                                                                </apex:selectList>
+                                                            </td> 
+
+                                                            <td style="text-align:center;" id="AccountCodePartDealer" >
+                                                                <apex:outputPanel rendered="{!IF(custParts.failCode != 'Select One' && custParts.failCode != '' && custParts.accountCode != 'Select One',true,false)}" >
+                                                                    <apex:selectList value="{!custParts.accountCode}" size="1" style="width:100px;"  disabled="false" onchange="callAccountcodemethod1(this.value,'{!custParts.counting}','{!custParts.failCode}');" styleClass="{!IF(custParts.accountcodeMessage ==true || custParts.isPartsCovLimitExceed == true || custParts.isPartsCovLimitExceedPW == true,'showRedBorder','')}">                                                              
+                                                                        <apex:selectOptions value="{!custParts.lstAccountCodes}"></apex:selectOptions> 
+                                                                    </apex:selectList>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF(custParts.failCode == 'Select One' || custParts.failCode == '',true,false)}">
+                                                                    <apex:selectList value="{!custParts.accountCode}" size="1" style="width:100px;"  disabled="true" readonly="false" styleClass="{!IF(custParts.accountcodeMessage ==true,'showRedBorder','')}">
+                                                                        <apex:selectOption itemValue="Select One" itemLabel="Select One"/>
+                                                                    </apex:selectList>
+                                                                </apex:outputPanel>
+
+                                                                <apex:outputpanel rendered="{!IF((custParts.failcode!= 'Select One' && custParts.failCode != '')  && custParts.accountCode == 'Select One' ,true,false)}">
+                                                                    <p>  
+                                                                        <apex:selectList value="{!custParts.accountCode}" size="1" style="width:100px;" disabled="false"  onchange="callAccountcodemethod1(this.value,'{!custParts.counting}','{!custParts.failCode}');" styleClass="{!IF(custParts.accountcodeMessage ==true || custParts.isPartsCovLimitExceed == true || custParts.isPartsCovLimitExceedPW == true,'showRedBorder','')}">
+                                                                            <apex:selectOptions value="{!custParts.lstAccountCodes}"></apex:selectOptions>
+                                                                        </apex:selectList> 
+                                                                    </p>
+                                                                </apex:outputpanel>
+
+                                                            </td>
+                                                        </apex:outputText>
+                                                        <apex:outputText rendered="{!IF(dealerLocation == false,true,false)}">
+                                                            <td style="text-align:center;">                                                        
+                                                                <apex:selectList value="{!custParts.failCode}" id="failcodesvalue" size="1" style="width:100px;" onchange="callfailcodemethod(this.value,'{!custParts.counting}');" styleClass="{!IF(custParts.isPartsCovLimitExceedPW == true,'showRedBorder','')}">                                                         
+                                                                    <apex:selectOptions value="{!failcodeDropDown}" ></apex:selectOptions>
+                                                                </apex:selectList>
+                                                            </td>
+
+                                                            <td style="text-align:center;" id="AccountCodePart" >
+                                                                <apex:outputPanel rendered="{!IF(custParts.failCode != 'Select One' && custParts.failCode != '' && custParts.accountCode != 'Select One',true,false)}" >
+                                                                    <apex:selectList value="{!custParts.accountCode}" size="1" style="width:100px;"  disabled="false" onchange="callAccountcodemethod1(this.value,'{!custParts.counting}','{!custParts.failCode}');" styleClass="{!IF(custParts.isPartsCovLimitExceed == true,'showRedBorder','')}">                                                              
+                                                                        <apex:selectOptions value="{!custParts.lstAccountCodes}"></apex:selectOptions> 
+                                                                    </apex:selectList>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF(custParts.failCode == 'Select One' || custParts.failCode == '',true,false)}">
+                                                                    <apex:selectList value="{!custParts.accountCode}" size="1" style="width:100px;"  disabled="true" readonly="false">
+                                                                        <apex:selectOption itemValue="Select One" itemLabel="Select One"/>
+                                                                    </apex:selectList>
+                                                                </apex:outputPanel>
+
+                                                                <apex:outputpanel rendered="{!IF(custParts.failcode!= 'Select One' && custParts.failCode != ''  && custParts.accountCode == 'Select One' ,true,false)}">
+                                                                    <p>  
+                                                                        <apex:selectList value="{!custParts.accountCode}" size="1" style="width:100px;" disabled="false"  onchange="callAccountcodemethod1(this.value,'{!custParts.counting}','{!custParts.failCode}');" styleClass="{!IF(custParts.isPartsCovLimitExceed == true,'showRedBorder','')}">
+                                                                            <apex:selectOptions value="{!custParts.lstAccountCodes}"></apex:selectOptions>
+                                                                        </apex:selectList> 
+                                                                    </p>
+                                                                </apex:outputpanel>
+
+                                                            </td>
+                                                        </apex:outputText>
+                                                        <!--End Above dealerlocation code for showing filcode and account code like required as per story #176379 Kung Fu Panda sprint,-By RAJESH 11th Mar 2019----->                                                                
+                                                        <!-- <td style="text-align:center;"><apex:Inputtext value="{!custParts.accountCode}"/></td> -->
+                                                        <td style="text-align:center;"><apex:selectList value="{!custParts.replacementReasson}" size="1" >
+                                                            <apex:selectOptions value="{!replacementReasonOptions}"/>
+                                                            </apex:selectList> </td>
+                                                        <!--
+<td style="text-align:center;"><apex:inputTextarea value="{!custParts.notes}" style="resize:none;border:1px solid #d3d3d3;width:100px" onkeyup="textCounter(this,'counter',140);"/></td>
+-->
+                                                        <td style="text-align:center;">
+                                                            <apex:commandLink value="{!$Label.CSS_Remove}"  action="{!removingRow}" style="text-decoration:underline;" reRender="modCont">
+                                                                <apex:param name="assignedParts" value="{!custParts.counting}" assignTo="{!assignedParts}"/>  
+                                                            </apex:commandLink>
+                                                        </td>
+                                                    </tr>
+                                                </apex:repeat> 
+                                                <!--/apex:actionRegion-->
+                                                <div class="clearfix"></div>
+                                            </table>
+
+                                            <div class="clearfix"></div>
+                                        </div>
+                                        <apex:outputPanel rendered="{!IF(Wid!=null,true,false)}"  >
+
+                                            <div style="float:left;text-decoration:underline;margin-right:-320px;">
+                                                <i class="cmi_add-icon"></i>
+                                                <apex:commandLink value="{!$Label.CSS_Add_10}" action="{!AddRow}" reRender="modCont"/> 
+                                            </div>
+                                        </apex:outputPanel>
+                                        <div class="modal-footer" style="margin-top:20px;border-top:0px;">
+                                            <apex:outputPanel id="buttonsPnl" rendered="{!IF(Wid!=null,true,false)}"  >
+                                                <div class="col-sm-5"> 
+                                                    <apex:commandButton value="{!$Label.css_save_btn}"  action="{!saveCustomParts}" onclick="DisableWASaveButton(this);" styleClass="saveButton" id="saveButtonId" reRender="modCont,failAccErrMess" >
+                                                        <!----commented the code "  onComplete="return displaypop1('{!displayPopup2}'); return false;" " from above line because after click the save button popup should not disapper  as per story Requirment -By RAJESH 11th Mar 2019---->                                
+                                                    </apex:commandButton>
+                                                    <!--<button type="button" class="saveButton" onclick="DisableSaveButton(this);" id="saveButtonId" onClick="saveCustomPartsfun();" ondblclick="saveCustomPartsfun();"  >{!$Label.css_save_btn}</button>  -->
+
+                                                </div>
+                                            </apex:outputPanel>
+                                            <apex:outputPanel rendered="{!IF(Wid==null,true,false)}"  >
+                                                <div class="col-sm-5"> 
+                                                    <button type="button" class="saveButton"  >{!$Label.css_save_btn}</button>
+
+                                                </div>
+                                            </apex:outputPanel>
+                                            <div class="col-sm-2">
+
+                                                <button type="button" class="cancelButton" data-dismiss="modal" onClick="closePopup1();"  >{!$Label.css_Cancel}</button>
+
+                                            </div>
+
+                                        </div>
+                                    </apex:outputPanel>
+                                </div>
+
+                            </apex:outputPanel>   
+
+                        </div>
+                    </div>
+                </div>
+            </apex:outputPanel> 
+
+            <!-----END Custom Parts pop up----->   
+
+            <div class="container">  
+                <div class="modal fade" id ="ReturnWaiverhoverpopup" role="dialog"  data-backdrop="static" data-keyboard="false" >
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button"  class="cross_butten" data-dismiss="modal"></button>
+                                <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Cummins_Service_System} </h4>
+                            </div>
+                            <div class="clearfix"></div> 
+                            <div class="modal-body"> 
+                                {!$label.CG_ReturnWaiver_Msg}
+                            </div>
+                            <div class="modal-footer">
+                                <div class="col-sm-12" align="center" draggable="false" >
+                                    <button type="button"  class="cancelButton" data-dismiss="modal">{!$Label.css_Ok}</button>
+
+                                </div> <br/>
+                                <div class="clearfix"></div>
+                                <div class="clearfix"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>  
+
+
+        </div>
+    </div>
+
+</apex:component>

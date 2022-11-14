@@ -1,0 +1,119 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,lightning:availableForFlowScreens" 
+                access="global" 
+                controller="EVL_CL_ServiceOrder_LightningPath">
+    
+    <aura:attribute name="workOrder" type="WorkOrder"/> 
+    <aura:attribute name="fieldName" Description="API Name of Picklist Value" type="String" />
+    <aura:attribute name="recordId" type="Id" description="Id of record on which this component is hosted." />
+    <aura:attribute name="records" type="object[]" description="Records for Chevron calculated by Apex class" access="private" />  
+    <aura:attribute name="profileName" type="String" />
+    <aura:attribute name="chevronClick" type="String" />
+    <aura:attribute name="statusBoolean" type="Boolean" default="false"/>
+    <aura:attribute name="Spinner" type="boolean" default="false"/>
+    <aura:attribute name="isExtendable" type="boolean" default="false"/>
+    <aura:attribute name="profileStageList" type ="String[]"/>
+    <!--added by vinod yelala for status flow-->
+    <aura:attribute name="processStep" type="String"/>
+    <aura:attribute name="jobStatus" type="String"/>
+    <aura:attribute name="statusValue" type="String"/>
+    <aura:attribute name="subStatusValue" type="String[]"/>
+    <aura:attribute name="isMostLikelySelected" type="String"/>
+    <aura:attribute name="isRepairSelected" type="Boolean"/>
+    <!--added by vinod 8/23-->
+    <aura:attribute name="showTnDwithMS" type="Boolean" default="false"/>
+    <!--<aura:attribute name="showTnDwithMSContinue" type="Boolean" default="false"/>-->
+    <aura:attribute name="showTnDwithoutMS" type="Boolean" default="false"/>
+    <aura:attribute name="showIntake" type="Boolean" default="false"/>
+    <aura:attribute name="showIntakeComple" type="Boolean" default="false"/>
+    <aura:attribute name="RepairClose" type="Boolean" default="false"/>
+    <!--Added by Devon to handle path changing  -->
+	
+   <!-- <aura:attribute name="WorkrecId" type="String"/> -->
+    <aura:attribute name="workOrderRecord" type="Object"/>
+    <aura:attribute name="recordLoadError" type="String"/>
+    <aura:attribute name="logguserprof" type="String"/>
+    
+    <aura:handler event="c:EVL_PathChange" action="{!c.changePathEvent}"/>
+
+
+    <!-- INIT Method --> 
+    <aura:handler name="init" value="{!this}" action="{!c.loadChevron}"/>   
+    <lightning:overlayLibrary aura:id="overlayLib"/>
+    
+    
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.recordId}"
+                      fields="Status"
+                      targetFields="{!v.workOrderRecord}"
+                      targetError="{!v.recordLoadError}"
+                      targetRecord="{!v.workOrder}"
+                      recordUpdated="{!c.recordUpdated}"
+                      />
+    
+    <div style="width:100%;border:1px solid #fff;border-radius:8px;padding:5px 0px;background-color:#fff;" class="slds-align_absolute-center">
+        <div class="chevron noaction">
+            <aura:iteration items="{!v.records}" var="item" indexVar="i"> 
+                <a 
+                   onclick="{!c.navigateToRecord}" 
+                   name="{#item.cssClass}" 
+                   data-index = "{#item.val}" 
+                   class="{#item.cssClass}" 
+                   style="{!'width:'+item.width+';pointer-events:'+item.disablePointer}">
+                    <!--+and(v.processStep=='close',item.val != 'close')+'none'-->
+                    <aura:if isTrue="{!and(item.cssClass== 'Inactive',item.isActive==true )}">
+                        
+                    </aura:if>
+                    <aura:if isTrue="{!and(item.cssClass == 'visited',item.isActive==true )}">
+                        {#item.val}
+                        <aura:set attribute="else"> 
+                            {#item.val}
+                        </aura:set> 
+                    </aura:if>                            
+                </a>
+            </aura:iteration>
+        </div>
+    </div> 
+    <!--aura:if isTrue = "{!v.isExtendable}"--> 
+    <!--lightning:button label="SubStatus ▼" onclick="{!c.ShowStatus}"/-->
+    <div aura:id="substatus">
+        <div style="width:100%;border:1px solid #fff;border-radius:5px;padding:5px 0px;background-color:#fff;" class="slds-align_absolute-center">
+            <lightning:recordEditForm aura:id="recordViewForm"
+                                      recordId="{!v.recordId}"
+                                      objectApiName="WorkOrder"
+                                      onload="{!c.handleOnLoad}"
+                                      onsuccess="{!c.handleSuccess}">
+                <lightning:messages/>
+                <div class="slds-grid slds-grid--vertical-align-center slds-grid--align-spread" style = "background-color:#fff;">
+                    <div class="slds-col slds-size_1-of-2">
+                        <lightning:inputField disabled="true" fieldName="Status" value="{!v.statusValue}" /> 
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <aura:if isTrue="{!or(v.workOrderRecord.Status =='Closed',v.workOrderRecord.Status =='Canceled')}">
+                             <lightning:inputField disabled="true" fieldName="Sub_Status__c"/> 
+                            <aura:set attribute="else">
+                                 <lightning:inputField fieldName="Sub_Status__c"/> 
+                            </aura:set>
+                        </aura:if> 
+                       
+                    </div>
+                    <div class="slds-col ">
+                        <aura:if isTrue="{!or(v.workOrderRecord.Status =='Closed',v.workOrderRecord.Status =='Canceled')}">
+                            <aura:set attribute="else">
+                                 <lightning:button aura:id="submit" variant="destructive" type="submit" label="{!$Label.c.FSL_CSSP_Save}" class="slds-m-top_medium  slds-align_absolute-center" onclick="{!c.OnSave}" />
+                            </aura:set>
+                        </aura:if>
+                       
+                    </div>
+                </div>
+                
+            </lightning:recordEditForm>
+        </div>
+    </div>
+    <!--/aura:if-->
+    
+    <!--<c:FSL_StatusIntakeConfirmToClose recordId="{!v.recordId}" processStatus="{!v.processStep}" isModalOpen="{!v.showIntake}"/>
+    <c:FSL_StatusTnDJobPlnConfirmToCloseforMS recordId="{!v.recordId}" processStatus="{!v.processStep}" isModalOpen="{!v.showTnDwithMS}"/>
+    <c:FSL_StatusTnDJobPlnConfirmToClose recordId="{!v.recordId}" processStatus="{!v.processStep}" isModalOpen="{!v.showTnDwithoutMS}"/>
+    <c:FSL_StatusTnDJobPlnConfirmToClose recordId="{!v.recordId}" processStatus="{!v.processStep}" isModalOpen="{!showTnDwithoutMS}"/>
+    -->
+</aura:component>

@@ -1,0 +1,159 @@
+<template>
+    <template if:true={screenLoaded}>
+        <c-dbu_page-loader></c-dbu_page-loader>
+    </template>
+    <!-- <p>Category</p> -->
+    <div class="searchPage">
+        <div class="slds-container_x-large slds-container_center">
+            <nav role="navigation" aria-label="Breadcrumbs" class="breadCrumbs">
+                <ol class="slds-breadcrumb slds-list_horizontal slds-wrap">
+                    <li class="slds-breadcrumb__item">
+                        <a href={baseURL}>{label.dbu_breadCrumbData_Home}</a> 
+                    </li> &nbsp;
+                    <li class="slds-breadcrumb__item">
+                        <span>{categoryName}</span>
+                    </li>
+                </ol>
+            </nav> 
+            <div class="slds-grid slds-wrap searchPageCont">
+                <div class="slds-col slds-size_1-of-1 slds-large-size_3-of-12 slds-col_padded searchFilter">
+                    <h6 class="f-medium">{filterbytxt}</h6>
+                    <lightning-accordion allow-multiple-sections-open onsectiontoggle={handleSectionToggle}
+                        class="filter-accordion" active-section-name={activeSections}>
+                        <lightning-accordion-section name="category" label="Category">
+                            <template for:each={subCategoryArray} for:item="subCategoryObj">
+                                <div class="slds-checkbox" key={subCategoryObj.Id}>
+                                    <input type="checkbox" name="options" data-id={subCategoryObj.Id}
+                                        onchange={handleSelectedSubCategory} data-catname={subCategoryObj.Name} id={subCategoryObj.Name} />
+                                    <label class="slds-checkbox__label" for={subCategoryObj.Name}>
+                                        <span class="slds-checkbox_faux"></span>
+                                        <span class="slds-form-element__label"> {subCategoryObj.Name}
+                                            <!-- <small>({subCategoryObj.prodCount})</small> -->
+                                        </span>
+                                    </label>
+                                </div>
+                            </template>
+                        </lightning-accordion-section>
+                    </lightning-accordion>
+                    <div class="filterButton mWindow">
+                        <button class="slds-button slds-button_brand" onclick={closeFilter}>{applyAndClose}</button>
+                    </div>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-large-size_9-of-12 slds-col_padded searchCont">
+
+                    <div class="slds-grid slds-wrap titlePerpage">
+                        <div class="slds-col slds-size_1-of-1 slds-large-size_12-of-12 slds-col_padded itemCountTitle">
+                            <lightning-formatted-rich-text value={categoryDescription}>
+                            </lightning-formatted-rich-text>
+                        </div>
+                    </div>
+                    <div class="slds-grid slds-wrap sortListGrid">
+                            <div class="slds-col slds-size_5-of-12 slds-large-size_6-of-12 slds-col_padded filterLink">
+                                <a onclick={openFilter} class="f-medium">{filterbytxt}</a>
+                            </div>
+                            <div class="slds-col slds-size_7-of-12 slds-large-size_6-of-12 slds-col_padded sortBy">
+                                <label class="dWindow">{sortbytxt}</label>
+                            <lightning-combobox name="progress" label="Sort By" placeholder="Select"
+                                options={sortOptions} class="noLabel h-33 dWindow" onchange={handleSortChange}>
+                            </lightning-combobox>
+							<lightning-combobox name="progress" label="Sort By" placeholder="Sort By"
+                                options={sortOptions} class="noLabel h-33 mWindow" onchange={handleSortChange}>
+                            </lightning-combobox>
+                        </div>
+                        <div
+                            class="slds-col slds-size_1-of-1 slds-large-size_6-of-12 slds-col_padded listGrid slds-grid slds-wrap">
+                            <div class="slds-col slds-size_1-of-1 slds-large-size_9-of-12 slds-col_padded showPerpage">
+                                <label>{label.dbu_Show_per_page}</label>
+                                <lightning-combobox name="progress" label="Show per page" value={value}
+                                    placeholder="Pages" options={options} onchange={handleChange}
+                                    class="noLabel h-33 qtyDropdown">
+                                </lightning-combobox>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1 slds-large-size_3-of-12 slds-col_padded d-flex">
+                                <a class="gridViewIcon selected" onclick={gridView}> <span></span><span></span></a>
+                                <a class="listViewIcon" onclick={listView}> <span></span></a>
+
+                            </div>
+                        </div>
+                    </div>
+                    <div class={listGridClass}>
+                        <template for:each={shopByBrandProdList} for:item="prod">
+                            <c-Dbu_homesubcategoryproduct 
+                                gtmlistname={gtmlistname}
+                                srcpage={pagename}
+                                productarray={productArray} 
+                                currencycode={currencyCode}
+                                categoryname={categoryName}
+                                prod={prod} 
+                                key={prod.Id}>
+                            </c-Dbu_homesubcategoryproduct>
+                        </template>
+                        <!-- <template for:each={productArray} for:item="product">
+                            <div class="slds-grid slds-wrap resultBlock" key={product.id} data-id={product.id} 
+                                data-name={product.Name} data-productprice={product.price} onclick={goToProductDetailPage}>
+                                <div class="slds-col slds-size_1-of-1 slds-large-size_3-of-12 slds-col_padded pImg">
+                                    <c-dbu_image-Generator imageurl={product.imageUrl}></c-dbu_image-Generator>
+                                </div>
+                                <div class="slds-col slds-size_1-of-1 slds-large-size_6-of-12 slds-col_padded">
+                                    <h6 class="f-medium">
+                                        {product.Name} </h6>
+
+                                </div>
+                                <div class="slds-col slds-size_1-of-1 slds-large-size_3-of-12 slds-col_padded price">
+                                    <template if:true={product.price}>
+                                        <div class="h1">{product.price}</div>
+                                    </template>
+                                    <template if:false={product.price}>
+                                        <span class="h1 h5">{label.dbu_PriceNotAvailable}</span>
+                                    </template>
+                                    <template if:false={product.stockstatus}>
+                                        <span class="avb outStockClr" data-val="Out of Stock">{label.dbu_myAccount_outOfStock}</span>
+                                    </template>
+                                    <template if:true={product.stockstatus}>
+                                        <span class="avb outStockClr">{label.dbu_myAccount_inStock}</span>
+                                    </template>
+                                </div>
+                            </div>
+                        </template> -->
+                    </div>
+
+                    <!--Pagination Start-->
+                    <!-- <lightning-button variant="base" icon-name="utility:chevronleft" onclick={handlePrev}
+                        disabled={btnDisabledPrev}>
+                    </lightning-button>
+                    <template for:each={pageNumber} for:item="page">
+                        <a key={page} data-id={page} onclick={handlePaginationClick} class="selectPage">{page} </a>
+                    </template>
+                    <lightning-button variant="base" icon-name="utility:chevronright" onclick={handleNext}
+                        disabled={btnDisabledNext}>
+                    </lightning-button> -->
+
+                    <div class="slds-grid slds-wrap slds-m-bottom_large ">
+
+                        <div class="slds-col slds-size_6-of-12 slds-large-size_6-of-12 pagination">
+                            <button class="prevLink" onclick={handlePrev} disabled={btnDisabledPrev}>
+                                <span class="icon-left-arrow">
+                                </span>
+                            </button>
+                            <span class="pgNums">
+                            <template for:each={pageNumber} for:item="page">
+                                <a key={page} data-id={page} onclick={handlePaginationClick} class="pgNum">{page}
+                                </a>
+                            </template>
+                         </span>
+                            <button class="nextLink" disabled={btnDisabledNext} onclick={handleNext}>
+                                <span class="icon-right-arrow">
+                                </span>
+                            </button>
+                        </div>
+                        <div class="slds-col slds-size_6-of-12 slds-large-size_6-of-12 showing" >
+                            Page {selectedPageNumber} of {maximumPageNumber}
+                       </div>
+                    </div>
+                   
+                    <!--End-->
+                </div>
+            </div>
+        </div>
+    </div>
+</template>

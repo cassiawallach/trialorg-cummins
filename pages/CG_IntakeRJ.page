@@ -1,0 +1,959 @@
+<apex:page id="IntakeRJ" Controller="CG_CL_IntakeRJ" docType="html-5.0" showHeader="false" standardStylesheets="false" action="{!pageAction}" >
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content=""/>
+    <meta name="author" content="Cummins Inc."/>
+    <meta name="copyright" content="(C)2016 Cummins Inc., Box 3005, Columbus, IN 47202-3005 U.S.A."/>
+    <title>{!$Label.css_Cummins_Service_System} | {!$Label.css_Repair} </title>
+    <c:CSS_Standard_IntakeStyles /> 
+    <c:css_ExtraStyles />
+    <!-- START 97758Defect Krishna -->
+    <script type="text/javascript">
+        //$(window).load(function(){
+        window.onload = function() {
+            //alert('Hello');
+            console.log('MyMethod called');
+           
+            DisableStopButton();
+            DisableStopButton2();
+            selectedSubStatus();
+           var subStatusPop = {!ShowSubStatuspopup};
+           // alert(subStatusPop);
+            if(subStatusPop == true){
+                //alert($('#subStatusPop'));
+                $('#subStatusPop').modal('show');
+
+            }
+            myMethodCttpageComp(); // These method is called in CSS_Cttpage component fixed as part of defect 191060
+            //console.log(subStatusPop);
+        };    
+    </script>
+     <script>
+        $(document).ready(function(){  
+
+            $('.collapse').on('shown.bs.collapse', function(){
+                $(this).parent().find(".glyphicon-plus").removeClass("glyphicon-plus").addClass("glyphicon-minus");
+                console.log("shown testing");
+            }).on('hidden.bs.collapse', function(){
+                $(this).parent().find(".glyphicon-minus").removeClass("glyphicon-minus").addClass("glyphicon-plus");
+            });
+
+            $('.cmi_generic-accordion')
+                .on('show.bs.collapse', function(e) {
+                $(e.target).prev('.panel-heading').addClass('active');
+            })
+                .on('hide.bs.collapse', function(e) {
+                $(e.target).prev('.panel-heading').removeClass('active');
+            });
+
+            $('#expandAll').on('click', function(){
+                var span = $(this).find('span'), div = $(this).find('div'), acc = $('#expandAllAccordion');
+
+                if(span.hasClass('glyphicon-plus')){
+                    span.removeClass('glyphicon-plus').addClass('glyphicon-minus');
+                    div.text('Expand All');
+                    acc.find('.panel-heading').removeClass('active');
+                    acc.find('span.glyphicon').removeClass('glyphicon-minus').addClass('glyphicon-plus');
+                    acc.find('div.panel-collapse').removeClass('in').attr('area-expanded', 'false').css('height','0');
+                    acc.find('.collapseAll').toggle();
+
+                } 
+                else {                           
+                    span.removeClass('glyphicon-minus').addClass('glyphicon-plus');
+                    div.text('Collapse All');
+                    acc.find('.panel-heading').addClass('active');
+                    acc.find('span.glyphicon').removeClass('glyphicon-plus').addClass('glyphicon-minus');
+                    acc.find('div.panel-collapse').addClass('in').attr('area-expanded', 'true').removeAttr('style');
+                    acc.find('.collapseAll').toggle();   
+                }
+            });   
+
+            $('.collapseAll').on('click',function(e){
+                e.preventDefault();
+                $('#expandAllAccordion').css("display", "none");
+                $('.titleOne').text('Expand All');
+                collapseAllShow();
+
+                function collapseAllShow(){
+                    $('#expandAll').on('click',function(){
+                        $('#expandAllAccordion').css("display", "block");
+                    })
+                }
+            })
+        });
+
+    </script>
+    <script type="text/javascript">
+        function selectedSubStatus(){
+           var selectedVal = '{!selectedSubStatusVal}';   
+            console.log('>>>>'+selectedVal);
+            var selsubStatusRadios = document.getElementsByName('rdoResult'); 
+            console.log('<<<<<'+selsubStatusRadios);
+            if( selectedVal != '' && selectedVal != 'None' && selectedVal != 'none' && selectedVal != null){
+                for(var x=0; x<selsubStatusRadios.length;x++){
+                    console.log('<><><>'+selsubStatusRadios[x].value);
+                    if(selsubStatusRadios[x].value == selectedVal){
+                        selsubStatusRadios[x].checked = true;
+                    }
+                    else{
+                        selsubStatusRadios[x].checked = false;
+                    }
+                }
+            }else if(selectedVal == 'None' || selectedVal == 'none' || selectedVal == '' || selectedVal == null){
+                for(var x=0; x<selsubStatusRadios.length;x++){
+                    console.log('<><><>'+selsubStatusRadios[x].value);
+                    if(selsubStatusRadios[x].value == 'none'){
+                        selsubStatusRadios[x].checked = true;
+                    }
+                    else{
+                        selsubStatusRadios[x].checked = false;
+                    }
+                }
+            }
+            console.log('completed');
+        }
+        function DisableSavenSendAssignButton(){
+            document.getElementById("IntakeRJ:Intakefrm:SavenAssignButton").disabled=true;
+            // console.log('Disable assign button'); 
+            SaveAssignbtn();
+            console.log('Called Action Method Anirudh');
+            //alert("saveassign");
+            return false;
+        }
+    </script>
+    <script type="text/javascript">
+        function DisableStopButton(){
+            var esnIAValue = '{!workJob.ESN_IA__c}';
+            //alert('esnId>>:'+document.getElementById("reviewHistory:Intakefrm:esnId"));
+            var esdIdEle = document.getElementById("reviewHistory:Intakefrm:{!workJob.ESN__c}");
+            if(esdIdEle !=null && esdIdEle !='undefined'){
+                var givenESN = document.getElementById("reviewHistory:Intakefrm:{!workJob.ESN__c}").value;
+              
+            }
+        }
+        function DisableStopButton2(){
+            var esnIAValue = '{!workJob.ESN_IA__c}';
+            var esdIdEle = document.getElementById("reviewHistory:Intakefrm:{!workJob.ESN__c}");
+            if(esdIdEle !=null && esdIdEle !='undefined'){
+                var givenESN = document.getElementById("reviewHistory:Intakefrm:{!workJob.ESN__c}").value;
+           
+            }
+        }
+    </script>
+
+
+    <div class="container-fluid1">
+        <apex:composition template="CSS_STDTemplate" />
+
+        <apex:define name="body">
+            <apex:form id="Intakefrm">
+                <apex:message />
+                <div class="">
+                    <ul class="nav nav-tabs desk-tabs" id="JobDetailTab" style="background-color: #eee;">
+                        <li class="active"><a href="#intake" data-toggle="tab">{!$Label.css_Intake}</a></li>
+                        <li><a href="" style="color:#888;" class="not-active">{!$Label.css_Triage} &amp; {!$Label.css_Diagnosis}</a></li>
+                        <li><a href="" style="color:#888;" class="not-active">{!$Label.css_Job_Plan}</a></li>
+                        <li><a href="" style="color:#888;" class="not-active">{!$Label.css_Repairs}</a></li>
+                        <li><a href="" style="color:#888;" class="not-active">{!$Label.css_Warramnty_Claim}</a></li>
+                        <li><a href="" style="color:#888;" class="not-active">{!$Label.css_Invoice}</a></li>
+                    </ul>
+                    <ul class="nav nav-tabs mob-tabs" id="JobDetailTab" style="background-color: #eee;">
+                        <li class="active"><a href="#intake" data-toggle="tab">{!$Label.css_Intake}</a></li>
+                    </ul>
+                </div>
+                <div class="tab-content">
+                    <div class="tab-pane active" id="intake">
+                        <div>
+                            <div class="intakechevs" style="padding-top:1px;text-align:center;">
+                                <div class="col-sm-12 col-md-12 col-xs-12" style="padding-top:1px;text-align:center;">
+                                    <ul class="intakechevs">
+                                        <apex:actionFunction name="RefreshJobPanel" rerender="inlinetablesecA0" />
+                                        <li>
+                                            <apex:actionRegion >
+                                                <apex:commandLink styleclass="sopen-first" id="cusave" action="{!nvIntakeCustomer}" onclick="return stopDoubleClick();">
+                                                    <span class="chev_cu_img_open"/>
+                                                    <apex:outputtext styleClass="chev_text_open" id="in_cu_chev" value="{!$Label.css_cust_chev}" escape="false" />
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">1</div>
+                                                    </div>
+                                                </apex:commandLink>
+                                            </apex:actionRegion>
+                                        </li>
+                                        <li>
+                                            <apex:actionRegion >
+                                                <apex:commandLink styleclass="sopen" id="uesave" action="{!nvIntakeUE}" onclick="return stopDoubleClick();">
+                                                    <span class="chev_ue_img_open"/>
+                                                    <apex:outputtext styleClass="chev_text_open" id="in_ue_chev" value="{!$Label.css_uneg_chev}" escape="false" />
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">2</div>
+                                                    </div>
+                                                </apex:commandLink>
+                                            </apex:actionRegion>
+                                        </li>
+
+                                        <li>
+                                            <apex:actionRegion >
+                                                <apex:commandLink styleclass="sopen" id="ccsave" action="{!nvIntakeCC}" onclick="return stopDoubleClick();">
+                                                    <span class="chev_cc_img_open"/>
+                                                    <apex:outputtext styleClass="chev_text_open" id="in_cc_chev" value="{!$Label.css_cuco_chev}" escape="false" />
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">3</div>
+                                                    </div>
+                                                </apex:commandLink>
+                                            </apex:actionRegion>
+                                        </li>
+
+                                        <li>
+                                            <apex:actionRegion >
+                                                <apex:commandLink styleclass="sdisable" id="visave" onclick="return stopDoubleClick(); RefreshJobPanel();">
+                                                    <span class="chev_vi_img_disable"/>
+                                                    <apex:outputtext styleClass="chev_text_disable" id="in_vi_chev" value="{!$Label.css_viin_chev}" escape="false"/>
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">4</div>
+                                                    </div>
+                                                </apex:commandLink>
+                                            </apex:actionRegion>
+                                        </li>
+
+                                        <li>
+                                            <apex:actionRegion >
+                                                <apex:commandLink styleclass="sopen" id="vhsave" action="{!nvIntakeVH}" onclick="return stopDoubleClick();">
+                                                    <span class="chev_vh_img_open"/>
+                                                    <apex:outputtext styleClass="chev_text_open" id="in_vh_chev" value="{!$Label.css_vhist_chev}" escape="false"/>
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">5</div>
+                                                    </div>
+                                                </apex:commandLink>
+                                            </apex:actionRegion>
+                                        </li>
+
+
+                                        <li>
+                                            <apex:actionRegion >
+                                                <apex:commandLink styleclass="sopen" id="uesave1" action="{!nvIntakeWarranty}" onclick="return stopDoubleClick(); ">
+                                                    <span class="chev_wr_img_open"/>
+                                                    <apex:outputtext styleClass="chev_text_open" id="in_wr_chev" value="{!$Label.css_warr_chev}" escape="false" />
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">6</div>
+                                                    </div>
+                                                </apex:commandLink>
+                                            </apex:actionRegion>
+                                        </li>
+
+                                        <li>
+                                            <apex:actionRegion >
+                                                <apex:commandLink styleclass="sactive-last" id="rwsave"  onClick="return stopDoubleClick();">
+                                                    <span class="chev_rj_img_active"/>
+                                                    <apex:outputtext styleClass="chev_text_active" id="in_rj_chev" value="{!$Label.css_revjo_chev}" escape="false"/>
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">7</div>
+                                                    </div>
+                                                </apex:commandLink>
+                                            </apex:actionRegion>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="container-fluid">
+
+                                <div class="col-md-12">
+                                    <div class="row">
+                                        <c:CSS_JobOverviewPanel CustName="{!workJob.Customer_Name__c}" JobStatus="{!workJob.Status__c}"   DateCreated="{!workJob.CreatedDate}" DateIn="{!workJob.Date_In__c}" jobOrdNumb="{!workJob.Name}" ShopWO="{!workJob.Shop_Work_Order__c}" LastSaved="{!workJob.LastModifiedDate}" JobESN="{!workJob.ESN__c}" ServModel="{!workJob.Service_Model__c}" RepRecent="{!workJob.Repeat_Or_Recent_Calc__c}" JobLoc="{!workJob.JobLocation__c}" JobOrdId="{!workJob.Id}" pgName="INTAKE" paccarAuthReq="{!workJob.PACCAR_Auth_Required__c}"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <apex:outputpanel id="SPDataWarMsg"  rendered="{!IF(CONTAINS(workJob.SPDataWebserviceResult__c,'Error'),true,false)}">
+                                        <apex:outputLabel value="{!$Label.CSS_GetSPDataWarningMsg}" style="color:red"/>
+                                    </apex:outputpanel>
+                                </div>
+                                <!----------------------Required information missing message------------------->
+
+                                <div class="col-md-12">
+                                    <apex:outputPanel style="color:red;font-size:16px;">
+                                        <b><apex:outputText value="{!$Label.CSS_Required_information_missing}" rendered="{!allFieldsValidate}"/></b>
+                                    </apex:outputPanel>
+                                </div>
+                                <!----------------------Required information missing message------------------->
+                                <!----------------------Getenginedataservice error message------------------->
+
+                                <div class="col-md-12">
+                                    <apex:outputPanel style="color:red;">
+                                        <b><apex:outputText value="{!$Label.CG_FA_FLAG}" rendered="{!workJob.FieldActionWebServiceResult__c == 'Error'}"/></b>
+                                    </apex:outputPanel>
+                                </div>
+                                
+                                <div class="col-md-12">
+                                    <apex:outputPanel style="color:red;">
+                                        <b><apex:outputText value="{!$Label.CG_PSN_FLAG}" rendered="{!workJob.Get_Engine_data_flag__c}"/></b>
+                                    </apex:outputPanel>
+                                </div>
+                                <!----------------------Getenginedataservice error message------------------->
+                                 <div> <!--GSSC-86 display error, when the WO service is failed-->
+                                <apex:outputpanel id="ShopWOErrMsg"  rendered="{!IF(workJob.isWOServiceFailure__c==true,true,false)}">
+                                        <apex:outputLabel value="{!$Label.CSS_ShoWOErrorMsg}" style="color:red"/>
+                                    </apex:outputpanel>
+                                    </div>
+                                <!--Begin Review page Components-->
+
+                                <div class="col-md-6">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <c:CG_IntakeCustROLegacyBMS Country="{!workJob.Country__c}" State="{!workJob.CSS_State__c}" CustomerName="{!workJob.Customer_Name__c}" Name="{!workJob.Name}" ShopWorkOrder="{!workJob.Shop_Work_Order__c}" DateIn="{!workJob.Date_in_Shop__c}" createdDate="{!workJob.createdDate}" JobLocation="{!workJob.JobLocation__c}" JobLocationCode="{!workJob.CSS_Job_Location_Code__c}" CustomerCode="{!workJob.Customer_Code__c}" PhoneNumber="{!workJob.Phone_Number__c}" FirstName="{!workJob.First_Name__c}" BMSLastName="{!workJob.BMS_Last_Name__c}" CstmrContactsPhone="{!workJob.Cstmr_Contacts_Phone__c}" EmailAddress="{!workJob.Email_Address__c}" Address="{!workJob.Address__c}" pgName="IntakeRJ" City="{!workJob.City__c}" ZipCode="{!workJob.ZipCode__c}" AdditionalFields="true" ChargeAccountStatus="{!workJob.CSS_Charge_Account_Status__c}" Amountdue="{!workJob.Amount_Due__c}" Availablecredit="{!workJob.Available_Credit__c}" Creditlimit="{!workJob.Credit_Limit__c}" mainController3="{!controllerRef}" rendered="{!If((userERPSystem =='BMS Legacy' || userERPSystem =='One BMS') ,true,false)}"/>
+                                            <!-- <c:CG_IntakeCustROLegacyBMS />-->
+                                        </div>
+                                        <div class="col-md-12">
+                                            <c:CG_IntakeCustRONoERP CustomerName="{!workJob.Customer_Name__c}" Name="{!workJob.Name}" ShopWorkOrder="{!workJob.Shop_Work_Order__c}" createdDate="{!workJob.createdDate}" DateInShop="{!workJob.Date_in_Shop__c}" mainController3="{!controllerRef}" rendered="{!(userERPSystem =='No ERP System')}"  DateIn="{!workJob.Date_in_Shop__c}" pgName="IntakeRJ"/>
+                                        </div>
+                                        <div class="col-md-12">
+                                           <!--Prida- Added "ProductMiles" to query (19/03)-->
+                                            <c:CG_IntakeUEROLegacyBMS mainController2="{!controllerRef}" ProductSerialNumber="{!workJob.ESN__c}" UnitNumber="{!workJob.Unit_Number__c}" Application="{!workJob.Application_Desc__c}" LicensePlate="{!workJob.License_Plate__c}" ServiceModel="{!workJob.Service_Model__c}" Make="{!workJob.Make__c}" Model="{!workJob.Model__c}"  VINAssetSerial="{!workJob.VIN__c}" WarrantyStart="{!workJob.Warranty_Start_Date__c}" ProductMiles="{!workJob.Mileage__c}" ProductMileageKM="{!workJob.Mileage_Measure__c}" ProductHours="{!workJob.CSS_Hours__c}" FailureDate="{!workJob.Failure_Date__c}" EquipmentConfiguration="{!workJob.Unit_Type__c}" WarrantyAuthorizationFlag="{!workJob.Warranty_Authorization_Flag__c}" LocationCertification="{!workJob.Location_Certification__c}" RepairLocation="{!workJob.Repair_Location__c}" SubType="{!workJob.Sub_Type__c}" rendered="{!If((userERPSystem =='BMS Legacy' || userERPSystem =='One BMS') ,true,false)}" pgName="IntakeRJ"/>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <!-- Prida-Added "ProductMiles" to query(19/03)-->
+                                            <c:CG_IntakeUERONoERP mainController2="{!controllerRef}" ProductSerialNumber="{!workJob.ESN__c}" UnitNumber="{!workJob.Unit_Number__c}" Application="{!workJob.Application_Desc__c}" LicensePlate="{!workJob.License_Plate__c}" ServiceModel="{!workJob.Service_Model__c}" Make="{!workJob.Make__c}" Model="{!workJob.Model__c}"  VINAssetSerial="{!workJob.VIN__c}" WarrantyStart="{!workJob.Warranty_Start_Date__c}" ProductMiles="{!workJob.Mileage__c}" ProductMileageKM="{!workJob.Mileage_Measure__c}" ProductHours="{!workJob.CSS_Hours__c}" WarrantyAuthorizationFlag="{!workJob.Warranty_Authorization_Flag__c}" LocationCertification="{!workJob.Location_Certification__c}" FailureDate="{!workJob.Failure_Date__c}" rendered="{!(userERPSystem =='No ERP System')}" pgName="IntakeRJ"/>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <c:CG_IntakeCCROComp mainController2="{!controllerRef}" GeneralSymptoms="{!workJob.General_Symptoms__c}" Category="{!workJob.Category_Desc__c}" ComplaintType="{!workJob.Complaint_Type_Desc__c}" Category2="{!workJob.Category2_Desc__c}" ComplaintType2="{!workJob.Complaint_Type2_Desc__c}" Category3="{!workJob.Category3_Desc__c}" ComplaintType3="{!workJob.Complaint_Type3_Desc__c}" Category4="{!workJob.Category4_Desc__c}" ComplaintType4="{!workJob.Complaint_Type4_Desc__c}" Category5="{!workJob.Category5_Desc__c}" ComplaintType5="{!workJob.Complaint_Type5_Desc__c}" PreventiveMaintenance="{!workJob.Preventive_Maintenance__c}" ExpeditedService="{!workJob.Expedited_Service__c}" pgName="IntakeRJ"/>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <c:CG_AttachmentComp JoId="{!workjob.Id}" DeleteFlag="false" pgName="IntakeRJ"/>                     
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <apex:actionRegion >
+                                                 <fieldset class="cmi_field_set">
+                                                                    <legend class="fs_legend">{!$Label.CSS_Job_Notes}</legend>
+                                            <apex:outputpanel id="jobnotesNewpnl4" rendered="{!IF(workjob.id != null,true,false)}">
+                                                <!--<c:CSS_NotesDisplay sJobId="{!workjob.Id}" RedirectPage="/apex/CG_IntakeRJ?id={!workJob.Id}&pgflag=rj#accordion1-heading-4"/>-->
+                                                <c:CSS_NotesCapture compLocation="mainPage" sJobID="{!workjob.Id}" RedirectPage="/apex/CG_IntakeRJ?id={!workJob.Id}&pgflag=rj#accordion1-heading-4"/> 
+                                            </apex:outputpanel>
+                                            <apex:outputpanel id="JobNotesRJ" rendered="{!IF(workjob.id == null,true,false)}">
+                                                <!--<c:CSS_NotesDisplay sJobId="{!workjob.Id}" RedirectPage="/apex/CG_IntakeRJ?pgflag=rj#accordion1-heading-4"/>-->
+                                                <c:CSS_NotesCapture compLocation="mainPage" sJobID="{!workjob.Id}" RedirectPage="/apex/CG_IntakeRJ?pgflag=rj#accordion1-heading-4"/> 
+                                            </apex:outputpanel>
+                                                </fieldset>
+                                            </apex:actionRegion>
+                                        </div>
+                                        <apex:outputPanel rendered="{!workjob.id!=null}">
+                                            <div class="col-md-12">
+                                                <c:css_vmore_audit jobordID="{!workjob.Id}"/>
+                                            </div>
+                                        </apex:outputPanel>
+                                        <apex:outputpanel id="formidRj" rendered="{!workjob.id!=null}">
+                                        <div class="col-md-12">
+                                            <c:CSS_Forms jobordID="{!workjob.Id}" />
+                                            </div>
+                                        </apex:outputpanel>
+
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                </div>
+
+                                <fieldset class="cmi_field_set">
+                                    <div class="form-horizontal" role="form">
+                                        <div class="panel-group CMI-generic-accordion" id="">
+                                            <div>
+                                                <a class="accordion-toggle" id="expandAll">
+                                                    <span class="glyphicon glyphicon-minus"></span>
+                                                    <span class="accordion-title" style="margin-bottom: 5px;">{!$Label.CSS_Expand_All}</span>
+                                                </a>
+                                            </div>
+                                            <!--Customer Approved/Completed Campaigns,TRPS start
+                                            <apex:actionRegion >-->
+                                            <!-- testing-->
+                                            <div class="panel-group cmi_generic-accordion" id="expandAllAccordion">  
+                                            
+                                                <c:CG_ApprovedCamp mainController="{!controllerRef}"/>
+                                    
+                                            <!--</apex:actionRegion>
+                                            Customer Approved/Completed Campaigns,TRPS End---->
+
+                                            <!-----------Available Campaigns Start----------->
+                                            <div class="panel panel-default">
+                                                <div class="panel-heading" id="accordion1-heading-1">
+                                                    <h4 class="panel-title">
+                                                        <a  data-toggle="collapse" data-parent="#accordion1-heading-1" data-target="#collapseOne" >
+                                                            <div class="accordion-title"><span class="glyphicon glyphicon-plus"></span>{!$Label.css_Available_Campaigns}<span class="campaigns-icon-redcircle">{!Camps}</span></div> 
+                                                        </a>
+                                                    </h4>
+                                                </div>
+                                                <div id="collapseOne" class="panel-collapse collapse out">
+                                                    <div class="panel-body" id="accordion1-body-1">
+                                                        <apex:outputpanel id="CTT101" rendered="{!IF(workjob.ESN__c ==null , false , true)}">
+                                                            <div class='row'>
+                                                                <c:CSS_Cttpage jobSFDCID="{!workJob.ID}" jobSFDCESN="{!workjob.ESN__c}" pgName="Camp" mainController="{!controllerRef}" jobServiceModel="{!workJob.Service_Model__c}" jobFailureDate="{!workJob.Failure_Date__c}"/>
+                                                            </div> 
+                                                        </apex:outputpanel>   
+                                                        <apex:outputPanel id="CTT102" rendered="{!IF(workjob.ESN__c =='', true, false)}">
+                                                            <div class="col-sm-12" height="100%">   
+                                                                <apex:outputpanel id="Camppanel" rendered="{!IF(workjob.ESN__c ==null && workJob.id != null, true, false)}">         
+                                                                    <fieldset style="border: 1px solid grey;">
+                                                                        <legend class="fs_legend">{!$Label.css_Campaigns}</legend>
+                                                                        <div class="row intakerow">
+                                                                            <div class="col-md-12 col-xs-12">
+                                                                                {!$Label.css_You_will_abletoview_Campaigns_once_you_have_entered_ESN} <a href="/apex/CG_IntakeUE?id={!workJob.Id}" style="text-decoration:underline"><b>{!$Label.css_Unit_and_Engine_section}</b></a>.
+                                                                            </div>
+                                                                        </div>   
+                                                                    </fieldset>
+                                                                </apex:outputpanel>
+                                                                <!--74114 -->
+                                                                <apex:outputPanel rendered="{!IF(workjob.id == null, true, false)}">
+                                                                    {!$Label.css_You_will_abletoview_Campaigns_once_you_have_entered_ESN} <a href="/apex/CG_IntakeUE" style="text-decoration:underline"><b>{!$Label.css_Unit_and_Engine_section}</b></a>.
+                                                                </apex:outputPanel>
+                                                            </div>                                            
+                                                        </apex:outputPanel>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!----------------Available Campaigns End----------->
+                                            <!-------------------Accordian For Warranty component start---------------------->
+                                            <div class="panel panel-default">
+                                                <div class="panel-heading" id="accordion1-heading-5">
+                                                    <h4 class="panel-title"  data-toggle="collapse" data-parent="#accordion1-heading-5" data-target="#collapseFive">
+                                                        <a class="accordion-toggle">
+                                                            <div class="accordion-title"> <span class="glyphicon glyphicon-plus"></span>{!$Label.CSS_warranty_Only}</div> 
+                                                        </a>
+                                                    </h4>
+                                                </div>
+                                                <div id="collapseFive" class="panel-collapse collapse out">
+                                                    <div class="panel-body" id="accordion1-body-1">
+                                                        <apex:outputpanel id="CTT70" >
+                                                            <div class="panel-body"> 
+                                                                 <apex:actionRegion >
+                                                                 <c:CG_IntakeWarrantyComp pgName="TND"/>
+                                                                 <!--<c:css_warrantycomp pgName="TND"/>-->
+                                                                </apex:actionRegion>
+                                                            </div>
+                                                        </apex:outputpanel>
+
+                                                    </div>                 
+                                                </div>
+                                            </div>
+                                            <!-------------------Accordian For Warranty component END---------------------->
+
+                                            <!-- Accordian for TSB's Begin -->
+
+                                            <div class="panel panel-default">
+                                                <div class="panel-heading" id="accordion1-heading-3">
+                                                    <h4 class="panel-title"  data-toggle="collapse" data-parent="#accordion1-heading-3" data-target="#collapseThree">
+                                                        <a class="accordion-toggle">
+                                                            <div class="accordion-title"> <span class="glyphicon glyphicon-plus"></span>{!$Label.CSS_Available_TSBs} <span class="campaigns-icon-redcircle">{!Tsbs}</span></div> 
+                                                        </a>    
+                                                    </h4>
+                                                </div>
+                                                <div id="collapseThree" class="panel-collapse collapse out">
+                                                    <div class="panel-body" id="accordion1-body-1">
+                                                        <apex:outputpanel id="CTT301" rendered="{!IF(workjob.ESN__c ==null , false , true)}">
+                                                            <!--Prida Modified Class from panel-body1 to panel-body(19/3)-->
+                                                            <div class="panel-body">
+                                                                <!--  <c:CSS_Cttpage jobSFDCID="{!workJob.ID}" jobSFDCESN="{!workjob.ESN__c}" pgName="TSBs"/> -->
+                                                                <apex:repeat value="{!lstTSB}" var="fc1" id="TSBList1" >
+                                                                    <div>
+                                                                        <apex:outputPanel id="url" rendered="{!IF(fc1.URL__c != '' || fc1.URL__c != null, true, false)}">
+                                                                            <apex:outputLink value="{!fc1.URL__c}" target="_blank">"{!(fc1.Doc_Num__c + ' - ' + fc1.Doc_Title__c)}"</apex:outputLink>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(fc1.URL__c==null || fc1.URL__c=='',true,false)}">
+                                                                            <apex:outputText value="{!LEFT(fc1.Doc_Num__c + ' - ' + fc1.Doc_Title__c,20)}"></apex:outputText>
+                                                                        </apex:outputPanel>
+                                                                    </div>
+                                                                </apex:repeat>  
+                                                            </div>
+                                                        </apex:outputpanel>
+                                                        <apex:outputPanel id="CTT302" rendered="{!IF(workjob.ESN__c =='', true, false)}">
+                                                            <div class="col-sm-12" height="100%">   
+                                                                <apex:outputpanel id="TSBpanel" rendered="{!IF(workjob.ESN__c ==null && workjob.id != null, true, false)}">         
+                                                                    <fieldset style="border: 1px solid grey;">
+                                                                        <legend class="fs_legend">TSBs</legend>
+                                                                        <div class="row intakerow">
+                                                                            <div class="col-md-12 col-xs-12">
+
+                                                                                {!$Label.css_You_will_be_able_to_view_TSBs_once_you_have_entered_an_ESN_in_the} <a href="/apex/CG_IntakeUE?id={!workJob.Id}" style="text-decoration:underline"><b>{!$Label.css_Unit_and_Engine_section}</b></a>.
+
+                                                                            </div>
+                                                                        </div>   
+                                                                    </fieldset>
+                                                                </apex:outputpanel>
+                                                                <!--74114 -->
+
+                                                                <apex:outputPanel rendered="{!IF(workjob.id == null, true, false)}">
+                                                                    {!$Label.css_You_will_be_able_to_view_TSBs_once_you_have_entered_an_ESN_in_the} <a href="/apex/CG_IntakeUE" style="text-decoration:underline"><b>{!$Label.css_Unit_and_Engine_section}</b></a>.
+                                                                </apex:outputPanel>
+                                                            </div>                                            
+                                                        </apex:outputPanel>
+                                                    </div>                 
+                                                </div>
+                                            </div>
+                                            <!--Prida Added below Code (19/03)-->
+<apex:outputPanel rendered="{!IF(workJob.TSR_EscalateNumber__c != null && workJob.TSR_EscalateNumber__c != '' && workJob.TSR_EscalateNumber__c !=  'Error',true,false)}">
+                                                    <c:CG_Escalate sJobID="{!workjob.Id}" SRNumber="{!workJob.TSR_EscalateNumber__c}"/> 
+                                                        </apex:outputPanel>
+                                            <!-- Accordian for TSB's End -->
+                                            <!-------------------Accordian for Job Notes start----------------------------->
+                                            <div class="panel panel-default">
+                                                <div class="panel-heading" id="accordion1-heading-4">
+                                                    <h4 class="panel-title"  data-toggle="collapse" data-parent="#accordion1-heading-4" data-target="#collapseFour">
+                                                        <a class="accordion-toggle">
+                                                            <div class="accordion-title"> <span class="glyphicon glyphicon-plus"></span>{!$Label.css_JobNotes}</div> 
+                                                        </a>
+                                                    </h4>
+                                                </div>
+                                                <div id="collapseFour" class="panel-collapse collapse out">
+                                                    <div class="panel-body1" id="accordion1-body-1">
+                                                        <apex:actionRegion >
+                                                        <apex:outputpanel id="CTT701">
+                                                            <div class="panel-body1"> 
+                                                               <!--apex:actionRegion-->
+                                                                <c:CSS_NotesCapture compLocation="accordion" sJobID="{!workjob.Id}"/>
+                                                               <!--/apex:actionRegion-->
+                                                            </div>
+                                                            </apex:outputpanel>
+                                                           </apex:actionRegion>
+
+                                                    </div>                 
+                                                </div>
+                                                </div>
+                                            </div>
+                                            <!-------------------Accordian for Job Notes end------------------------------->
+                                        </div>
+                                    </div>
+                                </fieldset>
+                                <!----campTspTrp code end------------->
+                                <div class="col-md-12 ">
+                                    <div class="pull-left btncrumbslft">
+                                        <ul class="desk-ulist">
+                                            <li>
+                                                &nbsp;
+                                            </li>
+                                            <li>
+                                                <apex:actionRegion >
+                                                    <apex:commandLink styleclass="sopen" id="ccsavebottom1" action="{!nvIntakeWarranty}" onclick="return stopDoubleClick();">
+                                                        <span class="chev_wr_img_open"/>
+                                                        <span class="chev_text_open">{!$Label.CSS_Warranty} </span>
+                                                    </apex:commandLink>
+                                                </apex:actionRegion>
+                                            </li>
+                                            <li>
+                                                &nbsp;
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div> 
+
+                                <!--buttons-->
+                                <div class="panel-body ">
+                                    <div class="pull-right desk-ulist" style="margin-right: 25px;">
+                                        <div class="col-md-2 col-sm-2 col-xs-10" >
+                                            <apex:actionRegion ><!--Modified and added(workJob.Get_Engine_data_flag__c) rendered condition for the story#183077-->
+                                                <apex:commandButton id="SavenAssignButton" value="{!$Label.CSS_Save_Send_for_Assignment}"  styleClass="saveButton" rendered="{!if(disableAssignmentBtn=false && workJob.Get_Engine_data_flag__c=false,true,false)}" onclick="DisableSavenSendAssignButton(); return false;"/>  <!--rendered="{!!disableAssignmentBtn}" onclick="DisableSavenSendAssignButton(); return false;"-->
+                                                <apex:commandButton id="SavenAssignButton1" value="{!$Label.CSS_Save_Send_for_Assignment}"  rendered="{!if(disableAssignmentBtn=true || workJob.Get_Engine_data_flag__c=true,true,false)}" styleClass="cmi_lighttealbutton" /><!-- rendered="{!disableAssignmentBtn}"-->
+                                            </apex:actionRegion> 
+                                           <apex:actionRegion >  <apex:actionFunction name="SaveAssignbtn" action="{!validateBeforeSave}"/>  </apex:actionRegion> 
+                                            <span class="mob-only"> &nbsp; </span> 
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- BEGIN - Generic Buttons at the end of the Page -->
+                                <div class="panel-body ">
+                                    <div class="pull-right desk-ulist" style="margin-right: 25px;">
+                                        <div class="col-md-2 col-sm-2 col-xs-12" >
+                                            <span class="mob-only"> &nbsp; </span>
+                                            <!--<apex:commandLink action="{!pgSave}" value="{!$Label.css_save_btn}" onclick="disableSaveLink();" styleclass="btn-intake btn-intake-footer m-btn-width" rerender="" id="thesavelinkgeneric"/> -->
+                                            <apex:actionRegion >
+                                                <apex:commandLink action="{!pgSave}" value="{!$Label.css_save_btn}" onclick="disableSaveLink();" styleclass="btn-intake btn-intake-footer m-btn-width" id="thesavelinkgeneric"/>
+                                            </apex:actionRegion>
+                                            <span class="mob-only"> &nbsp; </span>
+                                        </div> 
+                                        <div class="col-md-2 col-sm-2 col-xs-12 exit-btn-desk-padding" >
+                                            <apex:actionRegion >
+                                                <!--<apex:commandButton id="clsJob"  rerender="popup" value="{!$Label.css_exit_btn}" styleclass="btn-intake btn-intake-footer m-btn-width"/>-->
+                                                <a data-target="#ExitModelPopup" data-toggle="modal" rerender="popup" class="btn-intake btn-intake-footer m-btn-width">{!$Label.css_exit_btn}</a>
+                                            </apex:actionRegion>
+                                            <span class="mob-only"> &nbsp; </span>
+                                        </div>
+                                        <div class="col-md-5 col-sm-5 col-xs-12 close-btn-desk-padding" style="margin-right: 25px">
+                                            <apex:actionRegion >    
+                                                <apex:commandlink value="{!$Label.css_save_close_btn}" action="{!closeSession}" onclick="disableJobFinished();" rendered="{!$Setup.css_header_nav__c.btnJobFinishedCanceled__c}" styleclass="btn-intake btn-intake-footer m-btn-width" id="jobFinished" />
+                                            </apex:actionRegion>
+                                        </div> 
+
+                                        <div class="col-md-2 col-sm-2 col-xs-12 cancel-btn-desk-padding">
+                                            <!--<apex:commandLink action="{!showcancelpopup}" value="{!$Label.css_cancel_btn}" styleclass="btn-intake btn-intake-footer m-btn-width" rendered="{!$Setup.css_header_nav__c.btnJobFinishedCanceled__c}"  rerender="canModelPopup"/>  -->
+                                            <!--  <apex:commandLink html-data-target="#cancelModelPopup" html-data-toggle="modal" value="{!$Label.css_cancel_btn}" styleclass="btn-intake btn-intake-footer m-btn-width" rendered="{!$Setup.css_header_nav__c.btnJobFinishedCanceled__c}"/> -->
+                                            <apex:outputPanel rendered="{!$Setup.css_header_nav__c.btnJobFinishedCanceled__c}">
+                                                <a data-target="#cancelModelPopup" data-toggle="modal" class="btn-intake btn-intake-footer m-btn-width">{!$Label.css_cancel_btn}</a>
+                                                <span class="mob-only"> &nbsp; </span>
+                                            </apex:outputPanel>
+                                        </div>
+                                        <!-- 82020- Story87378 Reminder when canceling a job - Krishna on 19-06-2017.-->
+                                    </div>
+                                </div> 
+                                <!--ENd - Generic Buttons-->
+                                <br/>
+                                
+                                 <!-- Mobile View Generic Buttons Begin-->
+                    
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-xs-12 mob-ulist">
+                                <apex:commandLink styleclass="btn-intake btn-intake-footer m-btn-width" value="Back to Warranty" action="{!nvIntakeWarranty}" onclick="return stopDoubleClick();">
+                                 </apex:commandLink>
+                                <span class="mob-only"> &nbsp; </span>
+                            </div>
+                            
+                            <div class="col-xs-12 mob-ulist">
+                                <apex:commandButton value="{!$Label.CSS_Save_Send_for_Assignment}"  styleClass="btn-intake btn-intake-footer m-btn-width" rendered="{!!disableAssignmentBtn}" onclick="DisableSavenSendAssignButton(); return false;"/>
+                                <apex:commandButton value="{!$Label.CSS_Save_Send_for_Assignment}"  rendered="{!disableAssignmentBtn}" styleClass="cmi_lighttealbutton" />
+                                <span class="mob-only"> &nbsp; </span>
+                            </div>                            
+                            
+                            <div class="col-md-2 col-xs-12 mob-ulist">
+                                <apex:commandLink action="{!pgSave}" value="{!$Label.css_save_btn}" onclick="disableSaveLink();" styleclass="btn-intake btn-intake-footer m-btn-width" rerender=""/>
+                                <span class="mob-only"> &nbsp; </span>
+                            </div> 
+
+                            <div class="col-md-2 col-xs-12 mob-ulist">
+                                <a data-target="#ExitModelPopup" data-toggle="modal" rerender="popup" class="btn-intake btn-intake-footer m-btn-width">{!$Label.css_exit_btn}</a>
+                                <span class="mob-only"> &nbsp; </span>
+                            </div> 
+                            <div class="col-md-3 col-xs-12 mob-ulist">
+                                <apex:commandlink action="{!closeSession}" value="{!$Label.css_save_close_btn}" onclick="disableJobFinished();" rendered="{!$Setup.css_header_nav__c.btnJobFinishedCanceled__c}" styleclass="btn-intake btn-intake-footer m-btn-width" id="jobFinished11" />
+                                <span class="mob-only"> &nbsp; </span>
+                            </div>
+                             <div class="col-md-1 col-xs-12 mob-ulist">
+                                 <apex:outputPanel rendered="{!$Setup.css_header_nav__c.btnJobFinishedCanceled__c}">
+                                    <a data-target="#cancelModelPopup" data-toggle="modal" class="btn-intake btn-intake-footer m-btn-width">{!$Label.css_cancel_btn}</a>
+                                    <span class="mob-only"> &nbsp; </span>
+                                </apex:outputPanel>   
+                            </div>
+                            </div>
+                    </div>
+                    
+                    <!-- Mobile View Generic Buttons End-->
+
+                                <!-- Exit popup code Begin-->
+                                <div class="modal fade" id="ExitModelPopup" role="dialog" data-backdrop="static" data-keyboard="false">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content"> 
+                                            <div class="modal-header">  
+                                                <Button class="cross_butten" data-dismiss="modal" /> 
+                                                <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_cummins_service_system}</h4>
+                                            </div>
+                                            <div class="modal-body"> 
+                                                <div class="col-sm-12 col-xs-12">
+                                                    <b>{!$Label.css_Do_you_want_to_Exit}</b>
+                                                </div>
+                                            </div> <br/>
+                                            <div class="modal-footer"> 
+                                                <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                                                    <apex:actionRegion > <apex:commandButton value="{!$Label.CSS_No}" html-data-dismiss="modal" styleClass="cancelButton"/></apex:actionRegion>
+                                                </div>
+                                                <div class="col-sm-5 col-xs-4 cmi-tar">     
+                                                    <apex:actionRegion > <apex:commandButton value="{!$Label.CSS_FAQs_Working_A7}" action="{!redirectPopup}" styleClass="saveButton"/></apex:actionRegion>
+                                                </div> 
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Exit popup code end -->
+
+                                <!-- Cancel Job Popup code Begin --> 
+                                <div class="modal fade" id="cancelModelPopup"  role="dialog" data-backdrop="static" data-keyboard="false">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">  
+                                                <apex:actionRegion >  <apex:commandButton title="Close the popup" html-data-dismiss="modal" styleClass="cross_butten" onclick="ClearErrorMessage();"/></apex:actionRegion>
+                                                <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_cummins_service_system} </h4>
+                                            </div>
+                                            <div class="modal-body">
+                                                <b>{!$Label.CSS_Cancel_Popup_Message}</b>
+                                            </div>
+                                            <apex:outputPanel id="msgbody">
+                                                <apex:outputPanel rendered="{!cancelSJWrapperObj1.errorFlag}">
+                                                    <div class="modal-body">
+                                                       <span id="CancelErrorId"><b><apex:outputText value="{!cancelSJWrapperObj1.errorMessage}" style="color:red;"/></b></span>
+                                                    </div>
+                                                </apex:outputPanel>
+                                            </apex:outputPanel>
+                                            <div class="modal-footer">
+                                                <div class="col-sm-8 col-xs-4 cmi-tar"> 
+                                                    <apex:actionRegion > <apex:commandButton value="{!$Label.CSS_FAQs_Working_A7}" styleClass="saveButton" action="{!cancel}" status="cancelJobImg" rerender="msgbody,exeReload" oncomplete="redirectPage();"/></apex:actionRegion>
+                                                    <apex:actionStatus id="cancelJobImg">
+                                                        <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                                        <apex:facet name="stop"></apex:facet>
+                                                    </apex:actionStatus>
+                                                    &nbsp; &nbsp;
+                                                    <apex:actionRegion >  <apex:commandButton value="{!$Label.CSS_No}" html-data-dismiss="modal" styleClass="cancelButton" onclick="ClearErrorMessage();"/></apex:actionRegion>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Cancel Job Popup code End -->
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--   substatus popup  -->
+                <apex:actionRegion > 
+                    <apex:outputPanel id="substatuspopup">
+                        <div class="modal fade" id="subStatusPop" role="dialog" data-keyboard="false" data-backdrop="static" tabindex="-1"> 
+                            <apex:outputPanel id="subStatusShow" styleClass="popupAttachBg" layout="block">                  
+                                <apex:outputPanel styleClass="custPopupAttach" style="width:700px;left:45%;">
+
+                                    <div class="modal-header">  
+                               
+                                        <h4 class="modal-title" style="color: #FFFFFF;">Guidanz </h4>
+                                    </div>
+                                    <br/>
+
+                                    <div class="modal-body">
+                                         <div class="col-sm-12 col-xs-12">
+                                        <apex:outputPanel id="errormessage1">
+                                        <apex:outputPanel rendered="{!IF(substatuscheck == true,true,false)}">
+                                            <b><apex:outputText value="{!$Label.CG_Please_select_a_value}" style="color:red;font-size:16px;"/></b>
+                                        </apex:outputPanel> 
+                                        </apex:outputPanel>
+                                        </div>
+                                        <div class="col-sm-12 col-xs-12"><b>
+                                            {!$Label.CSS_Please_select_a_Sub_Status_for_CSS_Job} {!workJob.Name}</b>
+                                            <br/><br/>
+                                            <div class="col-sm-6 col-xs-6">
+                                                <!--   <apex:actionRegion >  -->
+                                               <!-- <div class="radio">
+                                                    <label>
+                                                        
+                                                        <input type="radio" value="none" name="rdoResult" onclick="callSubStatus('none');"/>
+                                                        {!$Label.CSS_None}
+                                                        
+
+                                                    </label>
+                                                </div>-->
+                                                <div class="radio">
+                                                    <label>
+                                                        <!--    <apex:actionRegion >  -->
+                                                        <input  type="radio" value="Escalated" name="rdoResult" onclick="callSubStatus('Escalated');" />
+                                                        {!$Label.CSS_Escalated}
+                                                        <!--    </apex:actionRegion>   -->
+                                                    </label>
+                                                </div>
+                                                <div class="radio">
+                                                    <label>
+                                                        <input type="radio" value="Estimate Needs Update" name="rdoResult" onclick="callSubStatus('Estimate Needs Update');"/>
+                                                        {!$Label.CSS_Estimate_Needs_Update}
+                                                    </label>
+                                                </div>
+                                               <!-- <apex:outputPanel rendered="{!IF($Cache.Session.local.CSSPartition.oneBMSSystem == 'One BMS' && ($Profile.Name='CSS_Service_Advanced' || $Profile.Name == 'System Admin' || $Profile.Name == 'System Administrator') && (workJob.Status__c != 'Intake'),true,false)}">
+                                               <div class="radio">
+                                                    <label>
+                                                        <input type="radio" value="Ready for Claim Creation" name="rdoResult" onclick="callSubStatus('Ready for Claim Creation');"/>
+                                                        {!$Label.CSS_Ready_for_Claim_Creation}
+                                                     </label>
+                                                </div>
+                                                    </apex:outputPanel>-->
+                                                <!--<apex:outputPanel rendered="{!IF(isClaimEnabled == true,true,false)}"> <!--Sneha commented outputpanel rendered ="{!isclaimenable}" for #GSSC-242-->
+                                                    <apex:outputPanel rendered="{!IF(Contains($Profile.Name,'Advanced') || Contains($UserRole.Name,'Factory'),true,false)}"> <!--Sneha added outputPanel for GSSC-242 -->
+                                                    
+                                                    <div class="radio">
+                                                        <label>
+                                                            <input type="radio" value="Ready for Claim Creation" name="rdoResult" onclick="callSubStatus('Ready for Claim Creation');"/>
+                                                            {!$Label.CSS_Ready_for_Claim_Creation}
+                                                        </label>
+                                                    </div>
+                                                </apex:outputPanel>
+                                                <!--</apex:outputPanel>-->
+                                                <div class="radio">
+                                                    <label>
+                                                        <!-- <apex:actionRegion >  -->
+                                                        <input type="radio" value="Repair Complete" name="rdoResult" onclick="callSubStatus('Repair Complete');"/>
+                                                        {!$Label.CSS_Repair_Complete}
+                                                        <!-- </apex:actionRegion>   -->
+                                                    </label>
+                                                </div>
+                                                <div class="radio">
+                                                    <label>
+                                                        <!-- <apex:actionRegion >  -->
+                                                        <input type="radio" value="Repair Scheduled" name="rdoResult" onclick="callSubStatus('Repair Scheduled');"/>
+                                                        {!$Label.CSS_Repair_Scheduled}
+                                                        <!-- </apex:actionRegion>   -->
+                                                    </label>
+                                                </div>
+                                                <div class="radio">
+                                                    <label>
+                                                        <!-- <apex:actionRegion >  -->
+                                                        <input type="radio" value="Troubleshooting Complete" name="rdoResult" onclick="callSubStatus('Troubleshooting Complete');"/>
+                                                        {!$Label.CSS_Troubleshooting_Complete}
+                                                        <!-- </apex:actionRegion>  -->
+                                                    </label>
+                                                </div>
+                                                <div class="radio">
+                                                    <label>
+                                                        <!-- <apex:actionRegion >  -->
+                                                        <input type="radio" value="Unit/Vehicle on Lot" name="rdoResult" onclick="callSubStatus(' Unit/Vehicle on Lot');"/>
+                                                        {!$Label.CSS_Unit_Vehicle_on_Lot}
+                                                        <!-- </apex:actionRegion>  -->
+                                                    </label>
+                                                </div>
+                                                <div class="radio">
+                                                    <label>
+                                                        <!--  < <apex:actionRegion >  -->
+                                                        <input type="radio" value="Waiting on Customer" name="rdoResult" onclick="callSubStatus('Waiting on Customer');"/>
+                                                        {!$Label.CSS_Waiting_on_Customer}
+                                                        <!--     </apex:actionRegion>   -->
+                                                    </label>
+                                                </div>
+                                                <!-- </apex:actionRegion>  -->
+                                            </div>
+
+                                            <div class="col-sm-6 col-xs-6">
+                                                <!-- <apex:actionRegion >  -->
+                                                <div class="radio">
+                                                    <label>
+                                                        <!--   <apex:actionRegion >  -->
+                                                        <input type="radio" value="Waiting on Factory" name="rdoResult" onclick="callSubStatus('Waiting on Factory');"/>
+                                                        {!$Label.CSS_Waiting_on_Factory}
+                                                        <!--  </apex:actionRegion>  -->
+                                                    </label>
+                                                </div>
+                                                <div class="radio">
+                                                    <label>
+                                                        <!-- <apex:actionRegion >  -->
+                                                        <input type="radio" value="Waiting on Estimate/Approval" name="rdoResult" onclick="callSubStatus('Waiting on Estimate/Approval');"/>
+                                                        {!$Label.CSS_Waiting_on_Estimate_Approval}
+                                                        <!--  </apex:actionRegion>  -->
+                                                    </label>
+                                                </div>
+                                                <div class="radio">
+                                                    <label>
+                                                        <!-- <apex:actionRegion >  -->
+                                                        <input type="radio" value="Waiting on Parts " name="rdoResult" onclick="callSubStatus('Waiting on Parts');"/>
+                                                        {!$Label.CSS_Waiting_on_Parts}
+                                                        <!-- </apex:actionRegion>  -->
+                                                    </label>
+                                                </div>
+                                                <div class="radio">
+                                                    <label>
+                                                        <!-- <apex:actionRegion >  -->
+                                                        <input type="radio" value="Waiting on Tech Availability" name="rdoResult" onclick="callSubStatus(' Waiting on Tech Availability');"/>
+                                                        {!$Label.CSS_Waiting_on_Tech_Availability}
+                                                        <!-- </apex:actionRegion>  -->
+                                                    </label>
+                                                </div>
+                                                <div class="radio">
+                                                    <label>
+                                                        <!-- <apex:actionRegion >  -->
+                                                        <input type="radio" value="Waiting on Unit/Vehicle" name="rdoResult" onclick="callSubStatus('Waiting on Unit/Vehicle');"/>
+                                                        {!$Label.CSS_Waiting_on_Unit_Vehicle}
+                                                        <!-- </apex:actionRegion>  -->
+                                                    </label>
+                                                </div>
+                                                <div class="radio">
+                                                    <label>
+                                                        <!-- <apex:actionRegion >  -->
+                                                        <input type="radio" value="Work in Progress" name="rdoResult" onclick="callSubStatus('Work in Progress');"/>
+                                                        {!$Label.CSS_Work_in_Progress}
+                                                        <!-- </apex:actionRegion>  -->
+                                                    </label>
+                                                </div>
+                                                <!-- </apex:actionRegion>  -->
+                                            </div>
+                                        </div>
+                                        <div class="clearfix"></div>
+                                    </div>
+
+
+                                    <!-- <apex:actionRegion >  -->
+                                    <apex:actionFunction name="callSubStatus" reRender="none" status="callSubstatusReq">
+                                        <!--  <apex:actionRegion >  -->
+                                        <apex:param name="subStatus" value="subStatus" assignTo="{!selectedSubStatusVal}"></apex:param>
+                                        <!--  </apex:actionRegion>  -->
+                                    </apex:actionFunction>
+                                    <!-- </apex:actionRegion>  -->
+
+
+                                    <div class="modal-footer" style="margin-top:20px;">
+                                        <div class="col-sm-12" align="center" draggable="false" >
+                                            <!--<apex:commandButton value="Ok" action="{!pgSaveAssign}" styleClass="saveButton" /> -->
+
+                                            <apex:actionStatus startText="requesting..." id="callSubstatusReq">
+                                                <apex:facet name="start">Requesting... <img src="/img/loading.gif" /></apex:facet>
+
+                                                <apex:facet name="stop">
+                                                    <!--  <apex:actionRegion >  -->
+                                                    <apex:commandLink value="Ok" action="{!pgSaveAssign}" styleClass="saveButton" rerender="errormessage1"/>
+                                                    <!--  </apex:actionRegion>  -->
+                                                </apex:facet> 
+
+                                            </apex:actionStatus> 
+                                        </div> 
+                                    </div>
+
+                                </apex:outputPanel>
+                            </apex:outputPanel> 
+                        </div>
+                    </apex:outputPanel>  
+                </apex:actionRegion>
+             <!--    Substatus popup  --->
+
+            </apex:form>
+        </apex:define>
+    </div>   
+
+
+    <script>
+        var waitTime = 1;
+        var countDown = waitTime+1;
+        var clickAllowed = true;
+        function stopDoubleClick(){ 
+            countDown=waitTime+1;
+            if(clickAllowed==true){
+                clickAllowed=false;
+                runCountDown(); 
+                return true;
+            }
+            else{ return false; } 
+        }
+        function runCountDown(){ 
+            countDown--;
+            if(countDown<=0){ 
+                clickAllowed=true; 
+            }
+            else{
+                window.setTimeout(runCountDown,1000);
+            } 
+        }
+
+        function disableJobFinished()
+        {
+            document.getElementById("IntakeRJ:Intakefrm:jobFinished").className ='cmi_lighttealbutton';
+
+        }
+
+        function disableSaveLink()
+        {
+            document.getElementById("IntakeRJ:Intakefrm:thesavelinkgeneric").className ='cmi_lighttealbutton';
+
+        }
+    </script>
+    <apex:outputPanel id="exeReload" >
+        <script>
+            function redirectPage(){
+                //alert('hello');
+                var bool = '{!cancelSJWrapperObj1.errorFlag}';
+                //alert(bool);
+                if(bool=='false'){
+                    //alert('hi');
+                    document.location.href = '/apex/CSS_Job_Detail?nto=HOME';
+                }
+            }
+            
+            function ClearErrorMessage(){
+                document.getElementById('CancelErrorId').innerHTML = '';
+            }
+        </script>
+    </apex:outputPanel>
+</apex:page>

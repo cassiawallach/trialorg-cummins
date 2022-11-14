@@ -1,0 +1,410 @@
+<apex:page controller="disco.Ctl_FormTemplateStats" showHeader="true" sidebar="false" 
+		standardStylesheets="false" action="{!ensureFormTemplate}" showQuickActionVfHeader="false">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" lang="en">
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+		<apex:includeScript value="{!$Resource.disco__customModalJS}"/>
+		<apex:includeScript value="{!URLFOR($Resource.disco__ChartJS)}"/>
+		<apex:includeScript value="{!URLFOR($Resource.disco__jquery_3_6_0, 'jquery.min.js')}"/>
+		<script type="text/javascript">
+			var sfEnv = {};
+		    sfEnv.templateID = '{!JSENCODE(template.id)}';
+		    sfEnv.loadAllAnswersVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateStats.loadAllAnswers)}';
+		    sfEnv.exportDataVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateStats.exportData)}';
+		    sfEnv.loadQuestionValuesVFR = '{!JSENCODE($RemoteAction.Ctl_FormTemplateStats.loadQuestionValues)}';
+		    sfEnv.structuredFields = '{!JSENCODE(structuredQuestionsJSON)}';
+		    sfEnv.allAnswers = '{!JSENCODE(allAnswersJSON)}';
+		    sfEnv.sectionHeaders = '{!JSENCODE(sectionHeadersJSON)}';
+		    sfEnv.columnHeaders = '{!JSENCODE(columnHeadersJSON)}';
+			sfEnv.isLightningExp = typeof sforce !== 'undefined';
+			sfEnv.onlyFullsavedQuestions = false;
+			sfEnv.formCount = '{!JSENCODE(TEXT(formCount))}';
+			sfEnv.templateStatusCount = {
+				total: '{!JSENCODE(TEXT(formsTotal))}',
+				formsNew: '{!JSENCODE(TEXT(formsNew))}',
+				inProgress: '{!JSENCODE(TEXT(formsInProgress))}',
+				submitted: '{!JSENCODE(TEXT(formsSubmitted))}',
+				locked: '{!JSENCODE(TEXT(formsLocked))}',
+				archived: '{!JSENCODE(TEXT(formsArchived))}'
+			}
+		</script>
+		<apex:slds />
+		<style type="text/css">
+			body {
+				margin: 0;
+			}
+
+		    /* override position from SLDS style */
+		    .slds-notify_container.slds-notify_container-OR {
+		        position:static;
+		        display:none;
+		    }
+		    .charts-tab-container {
+		    	display: flex;
+		    }
+		    .charts-tab-container form {
+		    	min-width: 200px;
+		    	max-width: 200px;
+		    	height: 100%;
+		    	margin-right: 10px;
+		    }
+
+		    .charts-tab-container form .slds-form-element {
+		    	order: 1;
+		    }
+
+		    .charts-tab-container .form-container {
+		    	display: flex;
+		    	max-width: 400px;
+		    	margin-right: 10px;
+		    }
+
+		    .chart-container {
+		    	width: 100%;
+		    	min-height: 400px;
+		    	position: relative;
+		    	display: flex;
+		    	flex-direction: column;
+		    	align-items: center;
+		    	border-left: 1px solid #d3d3d3;
+    			padding: 0 10px 10px 10px;
+		    }
+		    .chart-container .chart-label,
+		    .chart-container .chart-type {
+		    	margin-bottom: 15px;
+		    }
+		    .chart-container .canvas-container {
+		    	position: relative;
+		    	height:40vh;
+		    	width:50vw;
+		    	padding-bottom: 30%;
+		    }
+		    .slds-scope .slds-select_container .slds-select {
+		    	border-radius: 0 0 4px 4px;
+		    	padding-right: .5rem; 
+		    }
+		    #search-input {
+		    	border-radius: 4px 4px 0 0;
+		    }
+		    .export-data-container {
+		    	text-align: center;
+		    }
+			#export-btn {
+				margin-top: 20px;
+				margin-bottom: 20px;
+			}
+			.table-container {
+				overflow: auto;
+				max-height: 350px;
+			}
+			.slds-scope .table-header {
+				text-align: left;
+				margin-bottom: 10px;
+			}
+			.help-full-save {
+				padding-right: 40px;
+			}
+			.slds-scope .spinner-export-button {
+				margin-top: 36px;
+				margin-right: 20px;
+				position: inherit;
+			}
+			.info-limits-charts,
+			.info-limits-export {
+				display: flex;
+				align-items: center;
+			}
+			.slds-scope .question-list {
+				max-height: 500px;
+			}
+			.slds-scope .question-list option {
+				max-width: 100%;
+			    overflow: hidden;
+			    text-overflow: ellipsis;
+			    white-space: nowrap;
+			}
+			.slds-scope .slds-select_container::before,
+			.slds-scope .slds-select_container::after {
+				border: none;
+			}
+			#chart-legends ul {
+				margin-bottom: 10px;
+			}
+			.legend-color {
+				width: 15px;
+			    height: 10px;
+			    display: inline-block;
+			    margin-right: 5px;
+			}
+			.export-success {
+				margin-bottom: 20px;
+			}
+			.slds-scope .custom-legend li {
+				padding-right: 10px;
+			}
+			.ts-space {
+				margin: 0 8px;
+			}
+			.slds-scope .slds-tabs_scoped__nav {
+				position: relative;
+			}
+			.slds-scope .slds-tabs_scoped__nav .template-stats{
+				position: absolute;
+			    right: 10px;
+			    top: 8px;
+			}
+			.flex-vert-center {
+				display: flex;
+				align-items: center;
+			}
+			.stats-first-itme_height {
+				/* Handles strange case where first elementin horizontal list
+				   is 21px height, but rest are 25px */
+				height: 25px;
+			}
+			@media only screen and (min-width: 1150px) and (max-width: 1250px) {
+				.slds-scope .slds-tabs_scoped__content.chart-resize_min-height {
+					min-height: 550px;
+				}
+			}
+			@media only screen and (min-width: 1251px) and (max-width: 1425px) {
+				.slds-scope .slds-tabs_scoped__content.chart-resize_min-height {
+					min-height: 600px;
+				}
+			}
+			@media only screen and (min-width: 1426px) and (max-width: 1700px) {
+				.slds-scope .slds-tabs_scoped__content.chart-resize_min-height {
+					min-height: 650px;
+				}
+			}
+			@media only screen and (min-width: 1701px) {
+				.slds-scope .slds-tabs_scoped__content.chart-resize_min-height {
+					min-height: 750px;
+				}
+			}
+		</style>
+	</head>
+	<apex:form prependId="false" id="form">
+		<body>
+		<div class="slds-scope">
+			<div id="custom-modal-container"/>
+			<div class="slds-page-header">
+				<div class="slds-grid">
+					<div class="slds-col slds-has-flexi-truncate">
+						<div class="slds-media slds-no-space slds-grow">
+							<div class="slds-media__figure">
+								<span class="slds-icon_container slds-icon-standard-opportunity" title="Description of icon when needed">
+									<svg class="slds-icon" aria-hidden="true">
+										<use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Asset.SLDS, '/assets/icons/standard-sprite/svg/symbols.svg#dashboard')}" />
+									</svg>
+								</span>
+							</div>
+							<div class="slds-media__body">
+								<nav>
+									<ol class="slds-breadcrumb slds-line-height_reset">
+										<li class="slds-breadcrumb__item">
+											<span>Template Stats</span>
+										</li>
+									</ol>
+								</nav>
+								<h1 class="slds-page-header__title slds-m-right_small slds-align-middle slds-truncate" title="{!template.Name}">{!template.Name}</h1>
+							</div>
+						</div>
+					</div>
+					<div class="slds-col slds-no-flex slds-grid slds-align-top">
+						<div class="slds-button-group slds-m-right_xx-large" role="group">
+							<button class="slds-button slds-button_neutral js-show-saved" type="button">Show Submitted  Locked Forms</button>
+							<button class="slds-button slds-button_brand js-show-all" type="button">Show All Forms</button>
+						</div>
+						<div class="slds-button-group" role="group">
+							<button class="slds-button slds-button_neutral js-back-btn" type="button">
+								<svg class="slds-button__icon slds-button__icon_left" aria-hidden="true">
+									<use xlink:href="{!URLFOR($Asset.SLDS, '/assets/icons/utility-sprite/svg/symbols.svg#chevronleft')}"></use>
+								</svg>Back to Template</button>
+						</div>
+					</div>
+				</div>
+				<!-- display handled errors -->
+		        <div class="slds-page-header__detail-row slds-notify_container slds-notify_container-OR">
+		            <div class="slds-notify slds-notify_alert slds-theme_error slds-theme_alert-texture" role="alert">
+		                <span class="slds-assistive-text">Info</span>
+		                <h2 id="allErrors" class="slds-text-heading_medium"> <!-- errors go here --></h2>
+		            </div>
+		        </div>
+				<ul class="slds-grid slds-page-header__detail-row">
+		        	<div class="slds-tabs_scoped">
+			        	<ul class="slds-tabs_scoped__nav" role="tablist">
+			        		<li class="slds-tabs_scoped__item slds-is-active" title="Charts" role="presentation">
+			        			<a class="slds-tabs_scoped__link js-charts-tab" role="tab" tabindex="0" aria-selected="true" aria-controls="tab-scoped-1" id="tab-scoped-1__item">Charts</a>
+			        		</li>
+			        		<li class="slds-tabs_scoped__item" title="Export Data" role="presentation">
+			        			<a class="slds-tabs_scoped__link js-export-tab" role="tab" tabindex="-1" aria-selected="false" aria-controls="tab-scoped-2" id="tab-scoped-2__item">Export Data</a>
+			        		</li>
+			        		<ul class="template-stats slds-list_horizontal">
+								<li>
+									<div class="flex-vert-center stats-first-itme_height">
+										<p class="slds-m-right_xx-small">Total Forms:</p>
+										<span class="js-ts-total slds-badge slds-badge_inverse"></span>
+										<span class="ts-space">|</span>
+									</div>
+								</li>
+								<li>
+									<div class="flex-vert-center">
+										<p class="slds-m-right_xx-small">New:</p>
+										<span class="js-ts-new slds-badge slds-badge_lightest"></span>
+										<span class="ts-space">|</span>
+									</div>
+								</li>
+								<li>
+									<div class="flex-vert-center">
+										<p class="slds-m-right_xx-small">In Progress:</p>
+										<span class="js-ts-in_progress slds-badge slds-badge_lightest"></span>
+										<span class="ts-space">|</span>
+									</div>
+								</li>
+								<li>
+									<div class="flex-vert-center">
+										<p class="slds-m-right_xx-small">Submitted:</p>
+										<span class="js-ts-submitted slds-badge slds-badge_lightest"></span>
+										<span class="ts-space">|</span>
+									</div>
+								</li>
+								<li>
+									<div class="flex-vert-center">
+										<p class="slds-m-right_xx-small">Locked:</p>
+										<span class="js-ts-locked slds-badge slds-badge_lightest"></span>
+										<span class="ts-space">|</span>
+									</div>
+								</li>
+								<li>
+									<div class="flex-vert-center">
+										<p class="slds-m-right_xx-small">Archived:</p>
+										<span class="js-ts-archived slds-badge slds-badge_lightest"></span>
+									</div>
+								</li>
+							</ul>
+			        	</ul>
+			        	<div id="tab-scoped-1" class="slds-tabs_scoped__content chart-resize_min-height slds-show" role="tabpanel" aria-labelledby="tab-scoped-1__item">
+			        		<div class="slds-box  slds-box_small slds-theme_shade slds-m-bottom_medium info-limits-charts">
+		        				<span class="slds-icon_container slds-m-right_small slds-m-left_medium" title="Info">
+									<svg class="slds-icon slds-icon_small slds-icon-text-default" aria-hidden="true">
+										<use xlink:href="{!URLFOR($Asset.SLDS, '/assets/icons/utility-sprite/svg/symbols.svg#info')}"></use>
+									</svg>
+									<span class="slds-assistive-text">Info</span>
+								</span>
+								<p>Charts can be created for questions that are of the type Picklist, Multi-select Picklist, Radio Button, or Checkbox. Questions in Linked Sections and Archived Forms are not included in the data. Additionally, values that have not been selected will not appear on the the chart (or legend). </p>
+							</div>
+			        		<div class="charts-tab-container">
+								<div class="form-container">
+									<div class="slds-form-element">
+										<label class="slds-form-element__label" for="select-q">Select Question for Graph</label>
+
+
+										<div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_left">
+											<svg class="slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default" aria-hidden="true">
+												<use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Asset.SLDS, '/assets/icons/utility-sprite/svg/symbols.svg#filterList')}" />
+											</svg>
+											<input type="text" id="search-input" class="slds-input" placeholder="Filter Questions" />
+										</div>
+										<div class="slds-form-element__control" >
+											<div class="slds-select_container">
+												<apex:selectList multiselect="false" styleClass="slds-select js-question-list question-list" onclick="changeGraph();">
+									 	            <apex:selectOptions value="{!structuredFields}"/>
+												</apex:selectList>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="chart-container">
+									<h2 class="chart-label js-chart-label slds-text-heading_medium">Start By Selecting A Question</h2>
+									<fieldset class="slds-form-element chart-type">
+										<legend class="slds-form-element__legend slds-form-element__label">Chart Type</legend>
+										<div class="slds-form-element__control">
+											<div class="slds-radio_button-group js-chart-type">
+												<span class="slds-button slds-radio_button">
+													<input type="radio" name="radio-chart-type" id="Pie" value="pie" checked="checked"/>
+													<label class="slds-radio_button__label" for="Pie">
+														<span class="slds-radio_faux">Pie</span>
+													</label>
+												</span>
+												<span class="slds-button slds-radio_button">
+													<input type="radio" name="radio-chart-type" id="HorizontalBar" value="horizontalBar" />
+													<label class="slds-radio_button__label" for="HorizontalBar">
+														<span class="slds-radio_faux">Horizontal Bar</span>
+													</label>
+												</span>
+												<span class="slds-button slds-radio_button">
+													<input type="radio" name="radio-chart-type" id="VerticalBar" value="bar" />
+													<label class="slds-radio_button__label" for="VerticalBar">
+														<span class="slds-radio_faux">Vertical Bar</span>
+													</label>
+												</span>
+											</div>
+										</div>
+									</fieldset>
+									<div id="chart-legends"></div>
+									<div id="loading-spinner" role="status" class="slds-spinner slds-spinner_medium">
+										<span class="slds-assistive-text">Loading</span>
+										<div class="slds-spinner__dot-a"></div>
+										<div class="slds-spinner__dot-b"></div>
+									</div>
+									<div class="no-chart-data slds-hide">
+										No answers are available for the selected question.
+									</div>
+									<div class="canvas-container">
+										<canvas id="chartCanvas"></canvas>
+									</div>
+								</div>
+							</div>
+			        	</div>
+			        	<div id="tab-scoped-2" class="slds-tabs_scoped__content data-export-tab slds-hide" role="tabpanel" aria-labelledby="tab-scoped-2__item">
+			        		<div class="slds-box  slds-box_small slds-theme_shade slds-m-bottom_medium info-limits-export">
+								<span class="slds-icon_container slds-m-right_small slds-m-left_medium" title="Info">
+									<svg class="slds-icon slds-icon_small  slds-icon-text-default" aria-hidden="true">
+										<use xlink:href="{!URLFOR($Asset.SLDS, '/assets/icons/utility-sprite/svg/symbols.svg#info')}"></use>
+									</svg>
+									<span class="slds-assistive-text">Info</span>
+								</span>
+								<p>Data Exports do not include data for Linked Sections or Archived Forms. Data is modified for certain questions: E-signature questions show as signed/unsigned, Photo/Attachment questions show the number of files uploaded, and Long Text questions are truncated at 255 characters.
+								</p>
+							</div>
+			        		<div class="export-data-container">
+					        	<button id="export-btn" class="slds-button slds-button_neutral" type="button">Export To CSV</button>
+								<div class="slds-notify_container slds-is-relative slds-hide export-success js-export-msg">
+									<div class="slds-notify slds-notify_toast slds-theme_success" role="alert">
+										<div class="slds-notify__content">
+											<h2 class="slds-text-heading_small"></h2>
+										</div>
+										<button class="slds-button slds-button_icon slds-notify__close slds-button_icon-inverse js-export-msg-close" title="Close" type="button">
+											<svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+												<use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Asset.SLDS, '/assets/icons/utility-sprite/svg/symbols.svg#close')}" />
+											</svg>
+											<span class="slds-assistive-text">Close</span>
+										</button>
+									</div>
+								</div>
+				        		<div id="datatable">
+					        		<h2 class="slds-text-heading_medium table-header js-preview-counts">Data Preview</h2>
+					        		<div class="table-container">
+						        		<table  class="slds-table slds-table_bordered slds-table_cell-buffer" id="answerTable">
+											<thead>
+												<tr class="slds-text-title_caps js-section-headers"></tr>
+												<tr class="slds-text-title_caps js-column-headers"></tr>
+											</thead>
+											<tbody>
+											</tbody>
+										</table>
+									</div>
+								</div>
+							</div>
+			        	</div>
+		        	</div>
+		        </ul>
+			</div>
+		</div>
+		<script type='text/javascript' src='{!$Resource.formTemplateStats_js}'></script>
+		<!-- <script src="https://localhost:9007/formTemplateStats/dist/bundle.js"></script> -->
+		</body>
+	</apex:form>
+</html>
+</apex:page>

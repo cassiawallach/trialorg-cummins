@@ -1,0 +1,361 @@
+<aura:component controller="IAM_AccountsController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global">
+	<aura:attribute name="contactProvisioningId" type="String" access="global"/>
+    <aura:attribute name="showEditRole" type="boolean" default="false"/>
+    <aura:attribute name="applicationName" type="String" access="global"/>
+    <aura:attribute name="IsFromVFPage" type="String" default="false"/>
+	<aura:attribute name="showOnVFPage"  type="String" default="false" />
+	<aura:attribute name="displaySuccessOnVF" type="boolean" default="false" />
+	<aura:attribute name="displayErrorOnVF" type="boolean" default="false" />
+	<aura:attribute name="errorMessage" type="String" />
+	<aura:attribute name="successMessage" type="String" />
+	
+	<!--Attributes to display Error messages-->
+	<aura:attribute name="custError" type="String" /><!--Attribute to display error for RLS and PC customer List-->
+	<aura:attribute name="subAppError" type="String" /><!--Attribute to display why subscription apps did not get displayed-->
+	<aura:attribute name="freeAppError" type="String" /><!--Attribute to display why free app did not get stored-->
+	<aura:attribute name="subAppSuccess" type="String" /><!--Attribute to display why subscription apps on Success displayed-->
+	<aura:attribute name="freeAppSuccess" type="String" /><!--Attribute to display why free app onSuccess get stored-->
+	<aura:attribute name="appName" type="String" />
+	<aura:attribute name="myMap" type="Map" />
+	<aura:attribute name="value" type="List"/>
+	<aura:attribute name="valueRoles" type="List"/>
+	<aura:attribute name="SelectedRole" type="List"/>
+	<aura:attribute name="PCRole" type="String"/>
+	<aura:attribute name="ObjectName" type="String" />
+	<aura:attribute name="ShowSaveButton" type="Integer" default="0"/>
+    <aura:attribute name="selectedRolecm" type="List"/>
+    <aura:attribute name="usertype" type="String"/>
+    <aura:attribute name="customerlist" type="String" default="None"/>
+    
+    
+    <aura:attribute name="optionstest" type="List" />
+    <aura:attribute name="valuetest" type="List"/>
+	
+	<!--For Modularity -->
+	<aura:attribute name="optionsModularity" type="List" />
+    <aura:attribute name="valueModularity" type="List"/>
+	
+	
+	
+	<!--Attributes needed to diaply the error message-->
+			<aura:attribute name="errorContact" type="string"/>
+			<aura:attribute name="errorContactFlag" type="Boolean" default="false"/>
+	<!--end of attributes section-->
+	<aura:registerEvent name="showErrorMessage" type="c:IAM_ShowErrorMessages"/>
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" /> 
+	<aura:handler name="change" value="{!v.showOnVFPage}" action="{!c.diplaySelected}"/>
+	<aura:handler event="c:IAM_ShowErrorMessages" action="{!c.showErrorToast}" />
+	<!--
+	<aura:If isTrue="{!(v.IsFromVF == 'true')}">
+		<aura:handler name="init" value="{!this}" action="{!c.diplaySelected}" /> 	
+		<aura:handler name="init" value="{!this}" action="{!c.diplaySelected}" /> 
+	</aura:If>
+	-->
+	<aura:handler name="change" value="{!v.showEditRole}" action="{!c.diplaySelected}"/>
+    <!--
+	<aura:handler event="c:IAM_ShowErrorMessages" action="{!c.showErrorToast}" />
+	-->
+	<aura:attribute name="isCUMPAS" type="boolean" default="false"/>
+	<aura:attribute name="isConnected" type="boolean" default="false"/>
+	<aura:handler event="c:IAM_ShowSuccess_Toast" action="{!c.showSuccessToast}" />
+	
+	<aura:attribute name="roleForConnectedSolution" type="String" />
+	
+	<!-- <aura:attribute name="options" type="List" default="[{'label': 'Account Manager', 'value': 'Account Manager'},{'label': 'Service Technician', 'value': 'Service Technician'},{'label': 'Operator', 'value': 'Operator'},{'label': 'User', 'value': 'User'}]"/> -->
+	
+	<aura:attribute name="options" type="List" />
+	<!--
+	
+	<option value="Primary Contact">Primary Contact</option>
+						<option value="Account Manager">Account Manager</option>
+						<option value="Service Technician">Service Technician</option>
+						<option value="Account Manager">Operator</option>
+						<option value="Service Technician">User</option>
+	
+	-->
+	<!--End of Error Attributes section-->
+	<!--<aura:handler event="c:IAM_PageReload" action="{!c.doInt}" />
+    <aura:handler name="init01" value="{!this}" action="{!c.doInit}"/>
+	 -->
+	<aura:attribute name="typeofApplication" type="string" default="None"/>
+    <!-- Amarnath Mishra added for the edit role ***start from here**-->
+	<!--Attributes to display new Modal for multi select of roles-->
+	<aura:attribute name="keyList" type="List"/>
+	<aura:attribute name="companyMap" type="map"/>    
+	<!--End of Attributes-->
+	
+	<aura:if isTrue="{!v.displaySuccessOnVF}">
+				<div class="slds-modal slds-modal--Medium slds-fade-in-open"  aria-hidden="false" id="Warning" role="dialog" style="height:160px">
+		  <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+			<div class="slds-modal__container">
+			  <header class="slds-modal__header">
+				<button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" onclick="{!c.hideApp}">X</button>
+				<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate" style="font-weight:bolder">Success</h2>
+			  </header>
+			  <div class="slds-modal__content slds-p-around_medium slds-text-color_error" id="modal-content-id-1">
+				<p style="color:Green">{!v.successMessage}</p>
+				   
+			  </div>
+			  <footer class="slds-modal__footer">
+				<button class="slds-button slds-button_neutral" onclick="{!c.hideApp}">Close</button>
+			  </footer>
+			</div>
+		  </section>
+		  <div class="slds-backdrop slds-backdrop_open"></div>
+		</div>
+	</aura:if>
+	
+	
+	<aura:if isTrue="{!v.displayErrorOnVF}">
+				<div class="slds-modal slds-modal--Medium slds-fade-in-open"  aria-hidden="false" id="Warning" role="dialog" style="height:160px">
+		  <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+			<div class="slds-modal__container">
+			  <header class="slds-modal__header">
+				
+				<h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate" style="font-weight:bolder">Warning</h2>
+			  </header>
+			  <div class="slds-modal__content slds-p-around_medium slds-text-color_error" id="modal-content-id-1">
+				<p>{!v.errorMessage}</p>
+				 
+			  </div>
+			  <footer class="slds-modal__footer">
+				<button class="slds-button slds-button_neutral" onclick="{!c.hideApp}">Close</button>
+			  </footer>
+			</div>
+		  </section>
+		  <div class="slds-backdrop slds-backdrop_open"></div>
+		</div>
+			</aura:if>
+	<!--	
+	<aura:renderIf isTrue="{!true}">		
+	</aura:renderIf> 
+	-->	
+	<aura:renderIf isTrue="{!v.showEditRole}">
+	
+	
+        
+		<!--code to display Application Assaignment section -->
+		<div class="slds-modal slds-modal_small slds-fade-in-open"  aria-hidden="false" id="EditRole" role="dialog" style="height:200px">
+			<section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+				<div class="slds-modal__container">
+					<header class="slds-modal__header">
+						<button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" onclick="{!c.hideApp}">X</button>
+						<h2 id="modal-heading-02" class="slds-text-heading_medium slds-hyphenate" style="font-weight: bolder">Edit Role</h2>
+					</header>
+				
+				
+					<!-- part to seperate the to show wether free applicaiton or Subscribed application-->
+			  
+					<div class="slds-modal__content slds-p-around_medium" id="modal-content-id-2">
+						<!--
+						<lightning:select aura:id="Roles" name="Type of Application" label="{!$Label.c.IAM_Type_of_Application}" value="{!v.typeofApplication}" required="true">
+						  
+							<option value="Subscribed">Subscribed</option>
+							<option value="Free">Free</option>
+						</lightning:select>   
+						<aura:renderIf isTrue="{!(v.typeofApplication=='Subscribed')}">
+						
+						
+						<aura:renderIf isTrue="{!(subAppError!=null)}">
+							<div class="slds-m-top_medium slds-text-color_error slds-text-align_center">  
+								<ui:outputText value="{!v.subAppError}"/>
+							</div> 
+						</aura:renderIf>
+						<aura:renderIf isTrue="{!(subAppSuccess!=null)}">
+							<div class="slds-m-top_medium slds-text-color_success slds-text-align_center">  
+								<ui:outputText value="{!v.subAppSuccess}"/>
+							</div> 
+						</aura:renderIf>
+						
+						<aura:renderIf isTrue="{!(v.subPresent!=null)}">
+							<div class="slds-m-top_medium slds-text-color_error slds-text-align_center">   
+								<ui:outputText value="{!v.subPresent}" />
+							</div>
+						</aura:renderIf>
+						-->
+						<!--end of that code-->
+						
+						<!--
+						<lightning:select name="mySelect" label="{!$Label.c.IAM_Select_Subscription}" class="slds-combobox-picklist" aura:id="mySelect" value="{!v.selectedValue}" onchange="{!c.diplaySelected}" required="true"> 
+								<option text="{!item.label}" value="{!item.value}" selected="{!item.selected}" />
+							</aura:iteration>
+						</lightning:select> 
+						-->
+						<!--Iterate the mapCompany this code is to display list as a table and read values from it commented for now but need to work afterwards-->
+						<table class="slds-table slds-table_cell-buffer">
+							<thead>
+							<tr class="slds-text-title_caps">
+							<th scope="col">
+							<div class="slds-truncate" title="Application Name" style="float:left;">Application Name</div>
+							</th>
+							</tr>
+							</thead>
+							<!--
+							<aura:iteration items="{!v.keyList}" var="key" >
+								<c:IAM_Application_Table map="{!v.companyMap}" key="{!key}" />
+							</aura:iteration>
+							-->
+                            
+                            <!--
+							<ui:outputCheckbox class="myCheckbox" aura:id="checkboxApp" 
+									value="{!v.appName}"
+                                            
+                              />
+                            <ui:inputCheckbox aura:id="checkbox" label="{!v.appName}" change="{!c.onCheck}"/>
+							-->
+                            <aura:renderIf isTrue="{!v.IsFromVFPage}">
+                            
+                            <tr class="slds-text-heading_medium">
+                                <td>
+                                    {!v.appName}
+                                </td>
+                            </tr>
+                                
+                            <aura:set attribute="else">
+                            
+                            <tr class="slds-text-title_caps">
+                                <td>
+                                    {!v.appName}
+                                </td>
+                            </tr>
+                             </aura:set>    
+                            </aura:renderIf>
+							<!--<lightning:input type="checkbox" class="myCheckbox" label="{!v.appName}" name="{!v.appName}" checked="true" disabled="true"/> -->
+							<aura:renderIf isTrue="{!!v.isConnected}">
+								<!--
+								<thead>
+								<tr class="slds-text-title_caps">
+								<th scope="col">
+								<div class="slds-truncate" title="Application Name" style="float:left;">Roles</div>
+								</th>
+								</tr>
+								</thead>
+								-->
+							</aura:renderIf> 
+							<aura:renderIf isTrue="{!v.isConnected}">
+							
+								<tr>
+								<td>
+								<!--<lightning:combobox name="progress"  value="inProgress" placeholder="Select Role" options="{! v.valueRoles }" onchange="{! c.handleChange }"/> 
+								<lightning:select aura:id="PCfield" name="PC Role" label="{!$Label.c.IAM_PC_Role}" value="{!v.PCRole}" required="true">
+									<option value="Primary Contact">Primary Contact</option>
+									<option value="Account Manager">Account Manager</option>
+									<option value="Service Technician">Service Technician</option>
+									<option value="Account Manager">Operator</option>
+									<option value="Service Technician">User</option>
+								</lightning:select>
+								-->
+								
+								<lightning:select aura:id="PCfield" label="User Role" name="PC_Role" value="{!v.PCRole}" required="true" onchange="{! c.handleChange }">
+									<aura:iteration items="{!v.options}" var="per">
+										<option value="{!per.value}" text="{!per.label}" />  
+									</aura:iteration>
+								</lightning:select>   
+								</td>
+								</tr>
+                                <aura:renderIf isTrue="{!((v.IsFromVFPage != 'true'))}">
+                                    <tr>
+                                        <td>
+                                            <lightning:input aura:id="customervaluelist" label="Customer List" value="{!v.customerlist}"  name="CList" required="true" onchange="{!c.handleChange }" pattern="(^ALL$)|([1-9]*$)|^[0-9]+(,[0-9]+)*$" messageWhenPatternMismatch="Please enter keyword ALL or number with Comma separation. Do not place any comma after last number"/>
+                                        </td>
+                                    </tr>
+                            	</aura:renderIf>         
+							</aura:renderIf> 
+							<aura:renderIf isTrue="{!!v.isConnected}">
+                          
+                            <tr>
+                                <td>
+                                    <lightning:checkboxGroup aura:id="CheckboxGroupRoles"
+									label="{!$Label.c.IAM_Roles_Features}"
+                             		options="{! v.optionstest }"
+                             		value="{! v.valuetest }"
+                             		onchange="{! c.selectoptionvalueRoles }" required="true" onError="{!c.handleError}"/>
+                                </td>
+                            </tr>
+							<!--
+							<tr  id="rolescheckboxes">
+							<td colspan="2" style="white-space:normal !important;" >
+							
+							<aura:iteration var="a" items="{!v.valueRoles}" indexVar="indx">
+								<ui:inputCheckbox  class="myCheckbox" aura:id="checkboxRoles" 
+									value="{!a.value}" 
+									text="{!a.label}" 
+									name="{!indx}" 
+									label="{!a.label}" 
+									change="{!c.selectoptionvalueRoles}"
+                                    />
+							</aura:iteration>
+							</td>
+							<td>
+
+							</td>
+							</tr>
+							-->
+							</aura:renderIf> 
+							<aura:renderIf isTrue="{!v.isCUMPAS}">
+							<!--
+							<thead>
+							
+
+							<tr class="slds-text-title_caps">
+							
+							<th scope="col">
+							
+							
+								<div class="slds-truncate" title="Application Name" style="float:left;">Modularity</div>
+								</th>
+								</tr>
+								</thead>
+								
+								<tr>
+								<td colspan="2" style="white-space:normal !important;">
+								<aura:iteration var="a" items="{!v.value}" indexVar="indx">
+									<ui:inputCheckbox class="myCheckbox" aura:id="checkboxModularity" 
+										value="{!a.value}" 
+										text="{!a.label}" 
+										name="{!indx}" 
+										label="{!a.label}" 
+										change="{!c.selectoptionvalueModularity}"/>
+								</aura:iteration>
+								</td>
+								
+								</tr>
+								-->
+								<tr>
+                                <td>
+                                    <lightning:checkboxGroup aura:id="CheckboxGroupModule"
+									label="{!$Label.c.IAM_Modules}"
+									options="{! v.optionsModularity }"
+									value="{! v.valueModularity }"
+									onchange="{! c.selectoptionvalueModularity}" required="true"/>
+                                </td>
+                            </tr>
+							</aura:renderIf>
+							
+							
+							<!--<button class="slds-button slds-button_neutral" onclick="{!c.diplaySelected}">Fetch Data</button> -->
+						</table> 
+					
+					</div>	
+						<footer class="slds-modal__footer">
+				
+							<!--Since we commented this section now we need to write this logic in regular save button. --> 
+							<!--<aura:renderIf isTrue="{! v.ShowSaveButton>0}">
+							<button class="slds-button slds-button_neutral" onclick="{!c.SaveSubscribedApp}">Save2</button>
+							</aura:renderIf>-->
+							<button class="slds-button slds-button_neutral" onclick="{!c.hideApp}">Close</button>
+							<aura:renderIf isTrue="{!(v.ShowSaveButton>0)}">
+								<button class="slds-button slds-button_brand" onclick="{!c.saveApp}">Save</button>
+							</aura:renderIf>
+                            
+						</footer>
+				
+				</div>		
+			</section>
+			<div class="slds-backdrop slds-backdrop_open"></div>
+		</div>
+	
+	</aura:renderIf> 
+		<!-- Amarnath Mishra added for the edit role ***Ends here -->
+
+</aura:component>

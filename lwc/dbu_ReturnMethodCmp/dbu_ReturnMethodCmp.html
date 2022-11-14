@@ -1,0 +1,180 @@
+<template>
+    <template if:true={screenLoaded}>
+        <c-dbu_page-loader></c-dbu_page-loader>
+    </template>
+    <div class="slds-container_x-large slds-container_center returnMethPage">
+        <div class="slds-grid slds-wrap">
+            <div class="slds-col slds-size_1-of-1 slds-large-size_8-of-12 slds-col_padded">
+                <h1>{label.dbu_Return_ReturnMethod_PageHeader}</h1>
+                <div class="shipMethod">
+                    <h5>{label.dbu_Return_Select_Return_Method}</h5>
+                    <br />
+                    <div class="shipPickMeth ">
+                        <template if:true={dbuShipToOnlyFlag}>
+                            <lightning-input type="radio" label={label.dbu_ShipToStore} name="input1" value="shipToStore"
+                                onchange={shipTo}></lightning-input>
+                        </template>
+                        <template if:true={dbuPickupOnlyFlag}>
+                        <lightning-input type="radio" label={label.dbu_DropOffAtStore} name="input1" value="dropOffAtStore"
+                            onchange={shipTo}></lightning-input>
+                        </template>
+                    </div>
+                </div>
+                <template if:true={shipToStoreAddress}>
+                    <div class="shipAdd">
+                        <p><strong>{label.dbu_Return_ShipLocationMsg}</strong></p>
+                        <h6>{label.dbu_Return_Your_address}</h6>
+                       <textarea name="name" rows="4" cols="50" readonly={isReadOnly} class="shipAddress">
+                   {addressValue}   
+            </textarea>
+         <!--  <lightning-input type="text" label="Address 1" class="addr1" read-only={isReadOnly}></lightning-input>
+            <lightning-input type="text" label="Address 2" class="addr2" read-only={isReadOnly}></lightning-input>
+            <lightning-input type="text" label="City" class="city" read-only={isReadOnly}></lightning-input>
+            <lightning-combobox name="Country" label="Country" placeholder="Select Country" options={countryOptions} class="country"
+            read-only={isReadOnly} onchange={handleCountryChange}>
+            </lightning-combobox>
+           <lightning-combobox name="State" label="State" placeholder="Select State" options={stateOptions} class="state" read-only={isReadOnly}> 
+            </lightning-combobox>
+            <lightning-input type="text" label="PostalCode" class="postalCode" read-only={isReadOnly}></lightning-input>--> 
+                        <div class="EditSave">
+                            <template if:true={showEdit}>
+                                <a onclick={editAddress}>{label.dbu_Return_BtnLabel_Edit}</a> 
+                            </template>
+                            <template if:true={showSave}>
+                                <a onclick={saveAddress}>{label.dbu_Return_BtnLabel_Save}</a>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- <template if:true={openModal}>
+                <c-dbu_return-shipping-info ship-info={shipToObj}></c-dbu_return-shipping-info>
+            </template> -->
+
+                <template if:true={dropOffAtStoreAddress}>
+                    <div>
+                        <h3>{label.dbu_Return_Review_your_return_request}</h3>
+                        <form class="searchForm slds-m-bottom_small">
+
+                                <div class="mapTextBox">
+                                    <div class="mapPickList ">
+                                        <template if:false={showState}>
+                                            <lightning-combobox name="state" class="stateValError" value={stateValMap} placeholder={valueDrpdwnMap}
+                                                options={statesPicklistForMap} onchange={showSelectedSates} label="Province" required>
+                                            </lightning-combobox>
+                                        </template>
+                                
+                                
+                                        <template if:true={showState}>
+                                            <lightning-combobox name="state" class="stateValError" value={stateValMap} placeholder={valueDrpdwnMap}
+                                                options={statesPicklistForMap} onchange={showSelectedSates} label="State" required>
+                                            </lightning-combobox>
+                                        </template>
+                                    </div>
+                                    <lightning-button variant="brand" label="Search" title="Primary action" onclick={handleSearch}
+                                        class="slds-m-left_x-small"></lightning-button>
+                                
+                                </div>
+                            
+
+                        </form>
+                        <div>
+                            <div if:true={showErrorMsg} class="errorMsg">
+                                <p>{errorMsg}</p>
+                            </div>
+                            <template if:true={storeLocationsToDisplay}>
+                                <lightning-map map-markers={storeLocationsToDisplay} list-view="hidden">
+                                </lightning-map>
+
+                                <div>
+                                    <table
+                                        class="slds-table slds-table_bordered slds-border_left slds-border_right mapTable">
+                                        <thead>
+                                            <tr class="slds-line-height_reset">
+                                                <th class="" scope="col"  valign="top">
+                                                    <p title="Name">{label.dbu_ReturnMapStoreName}</p>
+                                                </th>
+                                                <th class="timings" scope="col"  valign="top">
+                                                    <p class="slds-truncate" title="Some Custom Column">{label.dbu_ReturnMapOpenHours}<br/>{label.dbu_checkoutPage_Business_Hours}</p>
+                                                </th>
+                                                <th class="" scope="col"  valign="top">
+                                                    <p class="slds-truncate" title="Some Custom Column">{label.dbu_ReturnMapDistance}</p>
+                                                </th>
+                                                <!-- <th class="" scope="col">
+                                                    <p class="slds-truncate" title="Some Custom Column">{label.dbu_ReturnMapContact}</p>
+                                                </th> -->
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+
+                                            <template for:each={storeLocationsToDisplay} for:item="acc">
+                                                <tr key={acc.id}>
+                                                    <td>
+                                                        <label> {acc.description}, </label><br>
+                                                        {acc.location.Street},{acc.location.City}, {acc.location.State},
+                                                        {acc.location.PostalCode},{acc.location.Country}
+
+                                                    </td>
+                                                    <td> 
+                                                        {acc.businessHrs}
+                                                    </td>
+                                                    <td>
+                                                        <div if:true={acc.distance}>
+                                                            {acc.distance}&nbsp;miles
+                                                        </div>
+                                                    </td>
+                                                    <!-- <td>
+                                                        <label> {acc.Phone}</label>
+
+                                                    </td> -->
+                                                    <td>
+
+                                                        <div class="myRadio">
+                                                            <input type="radio" name="input2" id={acc.id}
+                                                                value={acc.id} data-pickupstorename={acc.description} onclick={getSelectedStore}/><label for={acc.id}>{label.dbu_ReturnSelectBtnLabel}</label>
+        
+                                                        </div>
+
+                                                        <!-- <lightning-input type="radio" label="Select" name="input2"
+                                                            value={acc.id} onclick={getSelectedStore}></lightning-input> -->
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    <!-- <div>
+                        <a class="prevLink" style="display:none;" onclick={prevPage}>Prev</a>&nbsp;&nbsp;
+                        <a class="nextLink" onclick={nextPage}>Next</a> 
+                        Page {currentPageNumber}
+                    </div> -->
+
+                    <div class="slds-grid slds-wrap slds-m-bottom_large mapPagination">
+                        <div class="slds-col slds-size_6-of-12 slds-large-size_6-of-12">
+                            <a class="prevLink" style="display:none;"
+                                onclick={prevPage}>{label.dbu_ReturnPrev}</a> 
+                            <a class="nextLink" onclick={nextPage}>{label.dbu_ReturnNext}</a>
+                        </div>
+                        <div class="slds-col slds-size_6-of-12 slds-large-size_6-of-12 showing">
+                         {label.dbu_ReturnShowingPage} <strong>{currentPageNumber} </strong>
+                        </div>
+                    </div>
+                </template>
+
+                <div class="slds-p-top_medium buttonsBot">
+                    <!-- <lightning-button variant="brand-outline" label={label.dbu_Return_BtnLabel_Back} onclick={backToReturnMethodPage}>
+                    </lightning-button>
+                    <lightning-button variant="brand" label={label.dbu_Return_BtnLabel_Proceed} onclick={proceed} class="proceed" disabled={btnInactive}>
+                    </lightning-button> -->
+
+                    <button class="slds-button slds-button_outline-brand" onclick={backToReturnMethodPage}>{label.dbu_Return_BtnLabel_Back}</button>
+                    <button class="slds-button slds-button_brand" onclick={proceed} disabled={btnInactive}>{label.dbu_Return_BtnLabel_Proceed}</button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</template>

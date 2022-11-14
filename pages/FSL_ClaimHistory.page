@@ -1,0 +1,296 @@
+<!--Name:CG_ClaimHistory
+Copyright Â© 2017  Cummins
+======================================================
+======================================================
+Purpose:                                                            
+-------  
+We are using this Page for ClaimHistory at User Tool.
+======================================================
+======================================================
+History                                                            
+-------                                                            
+
+***********************************************************************-->
+<apex:page docType="html-5.0" showHeader="false" standardStylesheets="false" controller="CG_CL_ClaimHistoryPageController">
+
+    <apex:slds />
+    <c:CSS_Standard_IntakeStyles />
+    <c:css_ExtraStyles />
+    <style>
+        
+        <!-- body{
+        overflow:hidden;
+        }-->
+        
+        @media (min-width: 992px) {
+         text-align:center;
+            .btn-intake:hover {
+                color: #ffffff !important;
+                text-decoration:unset !important;
+            }
+        }
+        
+         .ClaimHistory thead, .ClaimHistory tbody{
+            display: block;
+        text-align:center;
+         font-size:12px;
+        }
+
+        .ClaimHistory thead th {
+            text-align:center;
+        padding: 5px 5px !important;
+        font-size:12px;
+              
+        }
+
+         .ClaimHistory thead th {
+         font-size:12px;
+            width:5%;
+        } 
+        
+         .ClaimHistory tbody td {
+            width:8.2%;
+        text-align:center;
+        } 
+        
+        
+        .NTmargin{
+        margin:10px 0px
+        text-align:center;
+        }
+        .table-bordered.ClaimHistory > thead > tr > th {
+         font-size:12px;	
+         border:0px !important;
+        text-align:center;
+        } 
+    </style>
+    
+      <script>
+     function addScrollbar(){
+          console.log('calling addscrollbar');
+            var trLength= $(".ClaimHistory tbody tr").length;
+            var totalHeight = 0; 
+            for(i=0;i<trLength;i++){
+                totalHeight =$('.ClaimHistory tbody tr').eq(i).height()+totalHeight;
+                if(i == 9){
+                    $(".ClaimHistory tbody").height(totalHeight).css('overflow-y','scroll');
+                    console.log("trLength" + ' ' + trLength);
+                    console.log("totalHeight" + ' ' + totalHeight);
+                }
+                if(trLength<10){
+                    $(".ClaimHistory tbody, .ClaimHistory thead").css('display','table-row-group');
+                    $(".ClaimHistory tbody td").css('width','10%');
+                }
+            } 
+        }
+         
+         function removeTableBody(){
+          console.log('remove Body method');
+            $(".ClaimHistory tbody").height('0px').css('overflow-y,'hidden');  
+         }
+    </script>
+    
+    <c:CG_ClaimHistoryPage_Table_Script /> 
+    <div class="container-fluid1" >
+        <apex:composition template="FSL_STDTemplate"/> 
+        <apex:form >
+
+            <apex:outputPanel >
+                <ul class="nav nav-tabs desk-tabs" id="JobDetailTab" style="background-color: #eee; font-size:12px;">
+                   <li><a href="/apex/User_Tools"  class="claimsTabs"><b>{!$Label.CG_Check_Warranty_Coverage} </b></a> </li>
+                    <li class="active"><a class="claimsTabs"  style="color:#000000;border-bottom:1px"><b>{!$Label.CSS_Claims_History}</b></a></li>
+                    <li><a href="/apex/FSL_Helpful_Resources" class="claimsTabs"><b>{!$Label.CSS_Helpful_Resource}</b></a></li>
+                </ul>
+            </apex:outputPanel>
+
+            <div class="panel-body">
+                <div id="ng-accapp"  ng-app="myapp1" ng-controller="claimsController" >
+                    
+             <!-- <h2 class="claims" style="border-bottom: 2px solid #E5E5E5;"><br/><b>{!$Label.CSS_Claims_History}</b></h2> <br/>
+                    <h2 class="claims" style="border-bottom: 2px solid #E5E5E5;padding-bottom:10px; overflow-x: hidden"><b>{!$Label.CSS_Claims_History}</b></h2>-->
+
+                    <div>
+                        <label class="col-sm-2 col-xs-12 fset-label" style="font-size:12px">{!$ObjectType.CSS_PSN__c.fields.PSN__c.Label}
+                        <!--<label class="col-sm-12 col-xs-16 fset-label" size="3px" style="bold">{!$ObjectType.CSS_PSN__c.fields.PSN__c.Label}-->
+                            <span class="glyphicon-asterisk"  style="color:red;"></span>
+                        </label>
+                        <input type ="Text" class="col-sm-2" data-ng-model="PSN" style="height:25px;width:150px;padding:0px; font-size:12px;"/>
+                        <a class="col-sm-1 saveButton" href="#/" style="padding:5px 25px;margin:0px 25px;width:100px; font-size:10px;" ng-click="SearchClaims()">{!$Label.CSS_Search}</a>
+                      <div class="col-sm-2" data-ng-show="loadingImage"  style="margin:5px 0px 0px -44px;">      
+                            {!$Label.CSS_Loading_Image}<img src="/img/loading.gif" />
+                        </div>
+                       <div class="col-sm-4 col-xs-12" ng-if="errorMessage" style="color:red;"><b>{{ errorMessage }}</b></div>
+                       <!-- <div class="col-sm-4 col-xs-12" ng-if="historyClaimRecords==null" style="color:red;"><b>No claim history found for the entered PSN.</b></div>-->
+                        <div class="clearfix"></div>
+                    </div>
+                    <br/>
+
+                    <div class="col-sm-12 	col-xs-12" >
+                        <fieldset class="field_set" style="width:100%  !important;">
+                            <div id="claimHistory" class="panel-collapse collapse in" aria-expanded="true">
+                                <br/>
+                                <!--  <div ng-controller="ClaimHistController" ng-app="ClaimHistoryApp"> -->
+                                <div class="col-sm-4">
+
+                                    <div ng-show="recCount ==0">
+                                        <font face="Helvetica neue" size="3px" style="Color:Red"> 
+                                            <b> {!$Label.CSS_JOB_FILTER_NORECS} </b>     
+                                        </font>
+                                    </div>
+                                </div>
+                                <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                                    <thead>
+                                        <tr>
+                                            <th class="tblhead" ng-click="sort('sFailure_date')">
+                                                <b>  {!$Label.CSS_Failure_date}
+                                                    <span class="{{Header[0]}}"></span>
+                                                </b>
+                                            </th>  
+
+
+                                            <th class="tblhead" ng-click="sort('sFailure_Pointc')">
+                                                <b>  {!$Label.CSS_Failure_Pointc}
+                                                    <span class="{{Header[2]}}"></span>
+                                                </b>
+                                            </th>  
+
+                                            <th class="tblhead" ng-click="sort('sRoot_Cause')">
+                                                <b>  {!$Label.CSS_Root_Cause}
+                                                    <span class="{{Header[3]}}"></span>
+                                                </b>
+                                            </th>  
+
+                                            <th class="tblhead" ng-click="sort('sRepair_Location')">
+                                                <b> {!$Label.css_Repair_Location}
+                                                    <span class="{{Header[4]}}"></span>
+                                                </b>
+                                            </th> 
+
+                                            <th class="tblhead" ng-click="sort('sClaim')">
+                                                <b> Narratives
+                                                    <span class="{{Header[5]}}"></span>
+                                                </b>
+                                            </th> 
+                                        </tr>
+                                    </thead>
+                                    <tbody>  
+                                        <tr  data-ng-repeat="jo in ItemsByPage[currentPage] | filter:search "> 
+                                            <td>{{jo.sFailure_date}} </td>
+                                            <td>{{jo.sFailure_Pointc}} {{jo.sFailure_Measure}}</td>
+                                            <td>{{jo.sRoot_Cause}}</td>
+                                            <td>{{jo.sRepair_Location}}</td> 
+                                            <td style="min-width:90px;">
+                                                <span class="underline">
+                                                    <!--<body ng-app="PopupDemo">-->
+                                                    <!--<div ng-app="PopupDemo" ng-controller="PopupDemoCont">-->
+                                                    <!--<a ng-click="openPopupfun(jo.sClaim)"><u><b>View Narratives</b></u></a>-->
+                                                    <!--<div id="ng-accap"  ng-app="myapp2" ng-controller="notesController" >-->
+                                                    <a ng-click="callGetSPClaimDetails(jo.sClaim); openPopupfun()" style="cursor:pointer"><u><b>View Narrative</b></u></a>
+
+                                                </span>
+
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table> 
+                                
+                                <!-- ClaimsNotes Popup Begin -->
+                                <apex:outputPanel id="rerenderWApopup">
+            
+                                    <div class="modal fade" id ="openPopup" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" >
+                                         <div class="modal-dialog">
+                                            <div class="modal-content"> 
+                                                <fieldset style="margin:5px;padding:0px;">
+                                                <div class="modal-body" data-ng-if="ItemsByPageone.length==0">
+                                                    <div class="col-sm-3 cmi-tar NTmargin">
+                                                        <b>{!$Label.CSS_Complaint}: </b>
+                                                    </div>
+                                                    <div class="clearfix"></div>
+                                                     <div class="col-sm-3 cmi-tar NTmargin">
+                                                        <b> {!$Label.CSS_Cause}: </b>
+                                                    </div>
+                                                    <div class="clearfix"></div>
+                                                     <div class="col-sm-3 cmi-tar NTmargin">
+                                                        <b> {!$Label.CSS_Correction}: </b>
+                                                    </div>
+                                                    <div class="clearfix"></div>
+                                                     <div class="col-sm-3 cmi-tar NTmargin">
+                                                        <b> {!$Label.CG_RejectReason}: </b>
+                                                    </div>
+                                                    <div class="clearfix"></div>
+                                                     <div class="col-sm-3 cmi-tar NTmargin">
+                                                        <b> {!$Label.CSS_Narratives}: </b>
+                                                    </div>
+                                                   <div class="clearfix"></div>
+                                                </div>
+                                                
+                                                <div class="modal-body" data-ng-repeat="notesWrapper in ItemsByPageone[currentPageone]" style="padding-bottom:0px;">
+                                                    <div class="col-sm-3 cmi-tar NTmargin">
+                                                        <b> {!$Label.CSS_Complaint}: </b>
+                                                    </div>
+                                                    <!--<div ng-if="notesWrapper.sNote_Type == 'Cause'" class="col-sm-9">-->
+                                                    <div ng-if="notesWrapper.sComplaint != ''" class="col-sm-9 NTmargin">
+                                                        <span style=" white-space: pre-line;">{{notesWrapper.sComplaint}}
+                                                        </span>
+                                                    </div>
+                                                    <div class="clearfix"></div>
+                                                    
+                                                    <div class="col-sm-3 cmi-tar NTmargin">
+                                                        <b> {!$Label.CSS_Cause}: </b>
+                                                    </div>
+                                                    <!--<div ng-if="notesWrapper.sNote_Type == 'Cause'" class="col-sm-9">-->
+                                                    <div ng-if="notesWrapper.sCause != ''" class="col-sm-9 NTmargin">
+                                                        <span style=" white-space: pre-line;">{{notesWrapper.sCause}} </span>
+                                                    </div>
+                                                    <div class="clearfix"></div>
+                                                    
+                                                    <div class="col-sm-3 cmi-tar NTmargin">
+                                                        <b> {!$Label.CSS_Correction}: </b>
+                                                    </div>
+                                                    <!--<div ng-if="notesWrapper.sNote_Type == 'Cause'" class="col-sm-9">-->
+                                                    <div ng-if="notesWrapper.sCorrection != ''" class="col-sm-9 NTmargin">
+                                                        <span style=" white-space: pre-line;">{{notesWrapper.sCorrection}} </span>
+                                                    </div>
+                                                    <div class="clearfix"></div>
+                                                    
+                                                    <div class="col-sm-3 cmi-tar NTmargin">
+                                                        <b> {!$Label.CG_RejectReason}: </b>
+                                                    </div>
+                                                    <!--<div ng-if="notesWrapper.sNote_Type == 'Cause'" class="col-sm-9">-->
+                                                    <div ng-if="notesWrapper.sReason != ''" class="col-sm-9 NTmargin">
+                                                        <span style=" white-space: pre-line;">{{notesWrapper.sReason}} </span>
+                                                    </div>
+                                                    <div class="clearfix"></div>
+                                                    
+                                                    <div class="col-sm-3 cmi-tar NTmargin">
+                                                        <b> {!$Label.CSS_Narratives}: </b>
+                                                    </div>
+                                                    <!--<div ng-if="notesWrapper.sNote_Type == 'Cause'" class="col-sm-9">-->
+                                                    <div ng-if="notesWrapper.sNarrative != ''" class="col-sm-9 NTmargin">
+                                                        <span style=" white-space: pre-line;">{{notesWrapper.sNarrative}} </span>
+                                                    </div>
+                                                    <div class="clearfix"></div>
+                                                </div>   
+                                               
+                                                <div class="modal-footer" style="border-top:1px solid gray;">
+                                                    <div class="col-sm-offset-10 col-sm-2">
+                                                        <button type="button" class="btn-intake btn-intake-footer m-btn-width" data-dismiss="modal">{!$Label.css_Close}</button>
+                                                    </div>
+                                                </div>
+                                                </fieldset>
+                                            </div>
+                                        </div>
+                                  
+                            </div>
+                                        
+                            </apex:outputPanel>
+                                
+                            </div>
+                        </fieldset>
+                    </div>
+                </div> 
+            </div>
+        </apex:form>
+        <br/>
+    </div>
+</apex:page>

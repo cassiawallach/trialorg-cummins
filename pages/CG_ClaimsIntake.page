@@ -1,0 +1,735 @@
+<!--**********************************************************************
+Name:CG_ClaimsIntake
+Copyright Â© 2018  Cummins
+======================================================
+======================================================
+
+Purpose:                                                            
+-------  
+We are using this Page for Intake Claims Chevron.
+======================================================
+======================================================
+History                                                            
+-------                                                            
+VERSION  AUTHOR                          DATE                DETAIL                                 
+1.0 -    Anvesh Sama                 1/22/2018          INITIAL DEVELOPMENT
+1.1      Rupesh Pande                1/23/2018          Bottom Chevron Navigation except action method 
+3.o -    Rajesh Pasupuleti           2/05/2018          Added UnitandEngine component     
+1.3 -    Rupesh Pande                2/05/2018          Added ClaimsIntakeCust component
+1.4 -    Surender M                  2/05/2018          Added Catastrophic Javascript
+3.1 -    Rajesh Pasupuleti           17/04/2018         Added claims and psn id to Audit trail component
+3.2 -    Rajesh Pasupuleti           06/06/2018         Added Claim Submission Id,Credit and claim Number into Audit Component 
+3.3-     Miruthula Kanagaraj         03/09/2018         Added condition for Information only claim
+********************************************************************************************************************************-->
+<apex:page id="ClaimsIntks" Controller="CG_CL_ClaimsIntake" docType="html-5.0" showHeader="false" standardStylesheets="false" action="{!pageAction}">
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content=""/>
+    <meta name="author" content="Cummins Inc."/>
+    <meta name="copyright" content="(C)2016 Cummins Inc., Box 3005, Columbus, IN 47202-3005 U.S.A."/>
+    <title>{!$Label.css_Cummins_Service_System} | {!$Label.css_Warranty_Claim} </title>
+
+    <c:CSS_Standard_IntakeStyles /> 
+    <c:css_ExtraStyles />
+    <!-- Added below script as part of the story GSSC-71 -->
+    <script>
+        var partsWarrCheckbox;
+        var isPaccarClaim;
+    </script>
+   
+    <script>function setFocusOnLoad() {}
+
+        $( window ).ready(function() {
+            showPACCARPopup('{!claimsRec.PACCAR_Flag__c}','{!claimsRec.PACCAR_Auth_Required__c}','{!claimsRec.Parts_Warranty_Claim_Only__c}','{!claimsRec.CSS_Job__c}','{!claimsRec.Dealer_Service_Job__c}','{!claimsRec.Css_paccar_approve_reject_flag__c}',this,'true');
+            // HideLoadingPopup();
+        });
+    </script>
+    <script type="text/javascript">    
+        var jq = $.noConflict();
+
+        function activateSort() {        
+            console.log('activate sort calling');
+            jq('#contentsContainer').dataTable({
+                "aoColumns": [
+                    {"sType": "html","bSortable": false, "orderable": false, "visible": true},
+                    { "sSortDataType": "dom-text", type: 'string'  },
+                    { "sSortDataType": "dom-text", type: 'string'  },
+                    { "sSortDataType": "dom-text", type: 'string' },
+                    { "sSortDataType": "dom-text", type: 'string' },
+                    { "sSortDataType": "dom-text", type: 'string' },
+                    { "sSortDataType": "dom-text", type: 'string' }
+                ],
+                "bFilter": false,
+                "bPaginate": false,
+                "bInfo": false,
+                "columnDefs": [
+                    { targets: 'no-sort', orderable: false }
+                ]         
+            });        
+        }
+
+        function showPACCARPopup(paccarFlag,paccarAuthFlag,partsWarrFlag,serJob,dealerSerJob,paccarAprRejFlag,e,isOnLoad,status){
+            //alert(paccarFlag+paccarAuthFlag+partsWarrFlag+'**'+serJob+'**'+dealerSerJob);
+            //Added as part of the story GSSC-71 - START
+            if(paccarFlag === 'true' && paccarAuthFlag === 'true' && paccarAprRejFlag != 'Approved' && paccarAprRejFlag != 'Rejected'){
+                if(isOnLoad == 'true'){
+                    isPaccarClaim = 'true';
+                }
+                else{
+                    isPaccarClaim = 'false';
+                }
+            }
+            //Added as part of the story GSSC-71 - END
+            if(paccarFlag === 'true' && paccarAuthFlag === 'true' && (serJob === '' && dealerSerJob === '') && paccarAprRejFlag != 'Approved' && paccarAprRejFlag != 'Rejected'){
+                if(partsWarrFlag !== 'true'){
+                    if(partsWarrCheckbox != true){  //Added as part of the story GSSC-71
+                        $('#paccarPopup').modal(
+                            {backdrop: 'static',
+                             keyboard: false,
+                             show:true
+                            });
+                        e.preventDefault();
+                    }
+                    else{
+                        if(isOnLoad=='false' && status !== 'Submitted')
+                            showLoadingPopup();
+                    }
+                }
+                else{
+                    if(isOnLoad=='false' && status !== 'Submitted')
+                        showLoadingPopup();
+                    //window.location.reload();
+                }
+            }
+            else{
+                if(isOnLoad=='false' && status !== 'Submitted')
+                    showLoadingPopup();
+            }
+            //rerenderModalPopup();
+        }
+
+        function showLoadingPopup(){
+            $('#loadingModal').modal(
+                {backdrop: 'static',
+                 keyboard: false,
+                 show:true
+                });
+            //rerenderModalPopup();
+        }
+
+        function hideResolvePopUp(){
+            document.getElementById('ClaimsIntks:Intakefrm:resolvepopup').style.display = "None";
+        }
+
+        function hideclaimInfoModal(){
+            document.getElementById('claimInfoModal').style.display = "None";
+            $('.modal-open').css('overflow-y','scroll').css('padding-right','0px');
+        }
+
+        function focusPSN(){
+            document.getElementById('ClaimsIntks:Intakefrm:oneBMSUECompId:claimsUEComp:psnField').focus();
+        }
+        //Added below method as part of the story GSSC-71
+        function partsWarrChecked(compId){
+            partsWarrCheckbox = compId.checked;
+            if(isPaccarClaim == 'true' && partsWarrCheckbox == true){
+                sendPWCB('true');
+            }
+            else{
+                sendPWCB('false');
+            }
+        }
+
+    </script>
+
+    <div class="container-fluid1" >
+        <apex:composition template="CSS_STDTemplate" />
+        <apex:define name="body">
+            <apex:form id="Intakefrm" html-novalidate="True"> 
+                <!--Added as part of the story GSSC-71 - START -->
+                <apex:actionRegion > 
+                    <apex:actionFunction name="sendPWCB" action="{!setPaccarPW}" rerender="none">
+                        <apex:param name="partsWar" value="" assignTo="{!isPaccarAndPW}"></apex:param>
+                    </apex:actionFunction>
+                </apex:actionRegion>
+                <!--Added as part of the story GSSC-71 - END -->
+                <apex:message />
+                <div>
+                    <ul class="nav nav-tabs desk-tabs" id="JobDetailTab" style="background-color: #eee;">
+                        <li><a href="" data-toggle="tab" style="color:#888;" class="not-active">{!$Label.css_Intake}</a></li>
+                        <li><a href="" style="color:#888;" class="not-active">{!$Label.css_Triage} &amp; {!$Label.css_Diagnosis}</a></li>
+                        <li><a href="" style="color:#888;" class="not-active">{!$Label.css_Job_Plan}</a></li>
+                        <li><a href="" style="color:#888;" class="not-active">{!$Label.css_Repairs}</a></li>
+                        <li class="active"><a href="#Claims" style="color:#888;">{!$Label.css_Warramnty_Claim}</a></li>
+                        <li><a href="" style="color:#888;" class="not-active">{!$Label.css_Invoice}</a></li>
+                    </ul>
+                    <ul class="nav nav-tabs mob-tabs" id="JobDetailTab" style="background-color: #eee;">
+                        <li class="active"><a href="#intake" data-toggle="tab">{!$Label.css_Intake}</a></li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane active" id="Claims">
+                            <div>
+                                <div class="intakechevs" style="padding-top:1px;text-align:center;">
+                                    <!-- START - Chevrons -->
+                                    <div class="col-sm-12 col-md-12 col-xs-12" style="padding-top:1px;text-align:center;" >
+                                        <ul class="intakechevs">
+
+                                            <li class="first-child">
+                                                <apex:actionRegion ><apex:commandLink styleclass="sactive-first" style="padding:0px 5px;border-top:{!IF(claimsRec.ODM_Status__c == 'ERROR','none',IF(claimsRec.ODM_Status__c == 'YTBV','none',IF((claimsRec.ODM_Status__c == 'PASSED' || claimsRec.ODM_Status__c == 'WARN' || claimsRec.ODM_Status__c == 'NA'),'none','0px')))};
+                                                                                                                                        border-bottom:{!IF(claimsRec.ODM_Status__c == 'ERROR','none',IF(claimsRec.ODM_Status__c == 'YTBV','none',IF((claimsRec.ODM_Status__c == 'PASSED' || claimsRec.ODM_Status__c == 'WARN' || claimsRec.ODM_Status__c == 'NA'),'none','0px')))}">
+                                                    <span class="chev_co_img_active"/>
+                                                    <apex:outputtext styleClass="chev_text_active" value="{!$Label.CSS_Warranty}&nbsp; <br/>{!$Label.css_jo_label}" escape="false" />
+                                                    </apex:commandLink></apex:actionRegion>
+                                            </li>
+
+                                            <li>
+                                                <apex:actionRegion ><apex:commandLink styleclass="sopen" action="{!nvClaimsWC}"  onclick="return stopDOMLoadOnClick(),showPACCARPopup('{!claimsRec.PACCAR_Flag__c}','{!claimsRec.PACCAR_Auth_Required__c}','{!claimsRec.Parts_Warranty_Claim_Only__c}','{!claimsRec.CSS_Job__c}','{!claimsRec.Dealer_Service_Job__c}','{!claimsRec.Css_paccar_approve_reject_flag__c}',this,'false','{!claimsRec.Status__c}');" > 
+                                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.CSS_Warranty_Coverage}" escape="false"/>
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">2</div>
+                                                    </div>
+                                                    </apex:commandLink></apex:actionRegion>
+                                            </li> 
+
+                                            <li>
+                                                <apex:actionRegion ><apex:commandLink styleclass="sopen" action="{!nvClaimsVH}"  onclick="return stopDOMLoadOnClick(),showPACCARPopup('{!claimsRec.PACCAR_Flag__c}','{!claimsRec.PACCAR_Auth_Required__c}','{!claimsRec.Parts_Warranty_Claim_Only__c}','{!claimsRec.CSS_Job__c}','{!claimsRec.Dealer_Service_Job__c}','{!claimsRec.Css_paccar_approve_reject_flag__c}',this,'false','{!claimsRec.Status__c}');">
+                                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.css_vhist_chev}" escape="false"/>
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">3</div>
+                                                    </div>
+                                                    </apex:commandLink>
+                                                    <apex:outputPanel id="setDataStringValue">
+                                        <apex:inputHidden value="{!startRequestCalled}" id="setDataStringValue2"/>
+                                        </apex:outputPanel>
+                                                    </apex:actionRegion>
+                                            </li>  
+
+                                             <!--Commented as part of Story GSSC-377 -->
+                                            <!--<li>
+                                                <apex:actionRegion ><apex:commandLink styleclass="sopen" action="{!nvClaimsCC}" onclick="showPACCARPopup('{!claimsRec.PACCAR_Flag__c}','{!claimsRec.PACCAR_Auth_Required__c}','{!claimsRec.Parts_Warranty_Claim_Only__c}','{!claimsRec.CSS_Job__c}','{!claimsRec.Dealer_Service_Job__c}','{!claimsRec.Css_paccar_approve_reject_flag__c}',this,'false','{!claimsRec.Status__c}');">
+                                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.css_cuco_chev}" escape="false" />
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">4</div>
+                                                    </div>
+                                                    </apex:commandLink></apex:actionRegion>
+                                            </li> -->
+
+                                            <li>
+                                                <apex:actionRegion ><apex:commandLink styleclass="sopen" action="{!nvClaimsFC}" onclick="return stopDOMLoadOnClick(),showPACCARPopup('{!claimsRec.PACCAR_Flag__c}','{!claimsRec.PACCAR_Auth_Required__c}','{!claimsRec.Parts_Warranty_Claim_Only__c}','{!claimsRec.CSS_Job__c}','{!claimsRec.Dealer_Service_Job__c}','{!claimsRec.Css_paccar_approve_reject_flag__c}',this,'false','{!claimsRec.Status__c}');" 
+                                                                                      style="border-top:{!IF(claimsRec.Failures_ODM_Status__c == 'ERROR','None',IF(claimsRec.Failures_ODM_Status__c == 'YTBV','None',IF((claimsRec.Failures_ODM_Status__c == 'PASSED' || claimsRec.Failures_ODM_Status__c == 'WARN' || claimsRec.Failures_ODM_Status__c == 'NA'),'None','0px')))};
+                                                                                                             border-bottom:{!IF(claimsRec.Failures_ODM_Status__c == 'ERROR','None',IF(claimsRec.Failures_ODM_Status__c == 'YTBV','None',IF((claimsRec.Failures_ODM_Status__c == 'PASSED' || claimsRec.Failures_ODM_Status__c == 'WARN' || claimsRec.Failures_ODM_Status__c == 'NA'),'None','0px')))}">
+                                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.CSS_FailuresAndCampaigns}" escape="false" />
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">2</div>
+                                                    </div>
+                                                    </apex:commandLink></apex:actionRegion>
+                                            </li>
+
+
+                                            <!--Added below code as per Silicon Valley sprint #154239,By RAJESH 20th Aug 2018-->
+                                            <apex:outputPanel rendered="{!IF(psncheck == true,true,false)}">
+                                                <li>
+                                                    <apex:actionRegion ><apex:commandLink styleclass="sopen" action="{!nvClaimsPSN}" onclick="return stopDOMLoadOnClick(),showPACCARPopup('{!claimsRec.PACCAR_Flag__c}','{!claimsRec.PACCAR_Auth_Required__c}','{!claimsRec.Parts_Warranty_Claim_Only__c}','{!claimsRec.CSS_Job__c}','{!claimsRec.Dealer_Service_Job__c}','{!claimsRec.Css_paccar_approve_reject_flag__c}',this,'false','{!claimsRec.Status__c}');">
+                                                        <apex:outputtext styleClass="chev_text_open" value="{!$Label.css_MultiPSN}" escape="false" />
+                                                        <div class="chev-mobile-text">
+                                                            <div class="txt_numb">2</div>
+                                                        </div>
+                                                        </apex:commandLink></apex:actionRegion>
+                                                </li>
+                                            </apex:outputPanel>
+                                            <apex:outputPanel rendered="{!IF(psncheck == false,true,false)}">
+                                                <li>
+                                                    <apex:actionRegion ><apex:commandLink styleclass="sdisable" onClick="!{window.location.reload()}" rerender="">
+                                                        <apex:outputtext styleClass="chev_text_disable" value="{!$Label.css_MultiPSN}" escape="false" />
+                                                        <div class="chev-mobile-text">
+                                                            <div class="txt_numb">2</div>
+                                                        </div>
+                                                        </apex:commandLink>
+                                                    </apex:actionRegion>
+                                                </li>
+                                            </apex:outputPanel>
+                                            <li>
+                                                <apex:actionRegion ><apex:commandLink styleclass="sopen" action="{!nvClaimsPOC}" onclick="return stopDOMLoadOnClick(),showPACCARPopup('{!claimsRec.PACCAR_Flag__c}','{!claimsRec.PACCAR_Auth_Required__c}','{!claimsRec.Parts_Warranty_Claim_Only__c}','{!claimsRec.CSS_Job__c}','{!claimsRec.Dealer_Service_Job__c}','{!claimsRec.Css_paccar_approve_reject_flag__c}',this,'false','{!claimsRec.Status__c}');" style="border-top:{!IF(claimsRec.Parts_ODM_Status__c == 'ERROR','None',IF(claimsRec.Parts_ODM_Status__c == 'YTBV','None',IF((claimsRec.Parts_ODM_Status__c == 'PASSED' || claimsRec.Parts_ODM_Status__c == 'WARN' || claimsRec.Parts_ODM_Status__c == 'NA'),'None','0px')))};
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        border-bottom:{!IF(claimsRec.Parts_ODM_Status__c == 'ERROR','None',IF(claimsRec.Parts_ODM_Status__c == 'YTBV','None',IF((claimsRec.Parts_ODM_Status__c == 'PASSED' || claimsRec.Parts_ODM_Status__c == 'WARN' || claimsRec.Parts_ODM_Status__c == 'NA'),'None','0px')))}">
+                                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.CSS_PartsandOC}" escape="false" />
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">2</div>
+                                                    </div>
+                                                    </apex:commandLink></apex:actionRegion>
+                                            </li>
+
+                                            <li>
+                                                <apex:actionRegion ><apex:commandLink styleclass="sopen" action="{!nvClaimsSRTs}" onclick="return stopDOMLoadOnClick(),showPACCARPopup('{!claimsRec.PACCAR_Flag__c}','{!claimsRec.PACCAR_Auth_Required__c}','{!claimsRec.Parts_Warranty_Claim_Only__c}','{!claimsRec.CSS_Job__c}','{!claimsRec.Dealer_Service_Job__c}','{!claimsRec.Css_paccar_approve_reject_flag__c}',this,'false','{!claimsRec.Status__c}');" style="border-top:{!IF(claimsRec.SRTs_ODM_Status__c == 'ERROR','None',IF(claimsRec.SRTs_ODM_Status__c == 'YTBV','None',IF((claimsRec.SRTs_ODM_Status__c == 'PASSED' || claimsRec.SRTs_ODM_Status__c == 'WARN' || claimsRec.SRTs_ODM_Status__c == 'NA'),'None','0px')))};
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        border-bottom:{!IF(claimsRec.SRTs_ODM_Status__c == 'ERROR','None',IF(claimsRec.SRTs_ODM_Status__c == 'YTBV','None',IF((claimsRec.SRTs_ODM_Status__c == 'PASSED' || claimsRec.SRTs_ODM_Status__c == 'WARN' || claimsRec.SRTs_ODM_Status__c == 'NA'),'None','0px')))}">
+                                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.CSS_SRTs}" escape="false" />
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">2</div>
+                                                    </div>
+                                                    </apex:commandLink></apex:actionRegion>
+                                            </li>
+
+                                            <li>
+                                                <apex:actionRegion ><apex:commandLink styleclass="sopen" action="{!nvClaimsJobNotes}" onclick="return stopDOMLoadOnClick(),showPACCARPopup('{!claimsRec.PACCAR_Flag__c}','{!claimsRec.PACCAR_Auth_Required__c}','{!claimsRec.Parts_Warranty_Claim_Only__c}','{!claimsRec.CSS_Job__c}','{!claimsRec.Dealer_Service_Job__c}','{!claimsRec.Css_paccar_approve_reject_flag__c}',this,'false','{!claimsRec.Status__c}');">
+                                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.CSS_JobandNotes}" escape="false" />
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">2</div>
+                                                    </div>
+                                                    </apex:commandLink></apex:actionRegion>
+                                            </li>
+
+                                            <li>
+                                                <apex:actionRegion ><apex:commandLink styleclass="sopen-last" action="{!nvClaimsVS}" onclick="return stopDOMLoadOnClick(),showPACCARPopup('{!claimsRec.PACCAR_Flag__c}','{!claimsRec.PACCAR_Auth_Required__c}','{!claimsRec.Parts_Warranty_Claim_Only__c}','{!claimsRec.CSS_Job__c}','{!claimsRec.Dealer_Service_Job__c}','{!claimsRec.Css_paccar_approve_reject_flag__c}',this,'false','{!claimsRec.Status__c}');">
+                                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.CSS_VerifyandSubmit}" escape="false"/>
+                                                    <div class="chev-mobile-text">
+                                                        <div class="txt_numb">6</div>
+                                                    </div>
+                                                    </apex:commandLink></apex:actionRegion>
+                                            </li> 
+
+                                        </ul>
+                                    </div>
+
+                                </div>  
+                                <!-- END - Chevrons -->
+                             
+                                <div class="container-fluid">
+                                    <apex:outputPanel id="joboverviewpnl"> 
+                                        <div class="col-md-12">
+                                            <div class="row">
+                                                <c:CG_ClaimsOverview ClaimId="{!claimsRec.id}" mainController="{!controllerRef}" claimRecord="{!claimsRec}" JobId="{!claimsRec.CSS_Job__c}" JobIdDealer="{!claimsRec.Dealer_Service_Job__c}" pgName="ClaimsIntake"/>
+                                            </div>
+                                        </div>
+                                    </apex:outputPanel>
+                                </div>
+                                <!--div class="container-fluid">
+<apex:outputPanel id="Displayappcodeerror" >
+
+<apex:outputLabel rendered="{!IF((prodcodeErrormessage || psnRec.ProductAppcodeErrorflag__c),true,false)}" style="color:red"> <b>{!$Label.CSS_Application_code_Error_flag} </b> </apex:outputLabel>
+</apex:outputPanel>
+</div-->                          
+                                <apex:outputPanel id="SPDataWarMsg" style="margin-left:20px">
+                                   <b><apex:outputText value="{!$Label.CSS_GetSPDataWarningMsg}" style="color:red;" rendered="{!IF(CONTAINS(claimsRec.SPDataWebserviceResult__c,'Error'),true,false)}"></apex:outputText></b>
+                                </apex:outputPanel>
+
+
+                                <div class="container-fluid">
+                                    <apex:outputPanel id="jobodmerror" rendered="{!IF(claimsRec.Id != null && claimsRec.Status__c='Draft',true,false)}">
+                                        <div class="col-md-12">
+                                            <div class="row">
+                                                <c:CG_ClaimsODMMessages LicensePlateState="" mainController="{!controllerRef}" pgName="CG_ClaimsIntake"/>
+                                            </div>
+                                        </div>
+                                    </apex:outputPanel>
+                                    <apex:outputPanel id="warrOverviewErrorBox" rendered="{!IF(claimsRec.Id == null && isWarrCustomer == true,true,false)}">
+                                        <div class="col-md-12">
+                                            <div class="row">
+                                                <!--c:CG_ClaimsWarrantyOverviewMessages /-->
+                                                <div class="col-md-12 col-xs-12">
+                                                    <apex:outputpanel >
+                                                        <div class="col-sm-12" style="border: 1px solid red;background-color:#FFB6C1;overflow-y: scroll;word-wrap:break-word;padding:5px 10px;height:100px">
+                                                            <div style="font-size:16px;">
+                                                                <b>{!$Label.CG_WarrantyValidationErrors}</b> 
+                                                            </div> 
+                                                            <div>
+                                                                <span class="cmi-catastrophicWarning-icon"/>
+                                                                <span>{!$Label.CSS_Claims_ODM_Messages}</span>
+                                                            </div>
+                                                             <div><b>{!$Label.CG_WarrantyOverview}</b></div>
+                                                                    <apex:outputPanel rendered="{!IF((claimsRec.Customer_Name__c == null && isWarrCustomer==true ),true,false)}">
+                                                                        <div>{!$Label.CG_Customer_Company_Error}</div>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF((claimsRec.Shop_Work_Order__c == null && isWarrCustomer==true ),true,false)}">
+                                                                        <div>{!$Label.CG_Shop_Work_Order_Error}</div>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF((psnRec.PSN__c == null && isWarrCustomer==true ),true,false)}">
+                                                                        <div>{!$Label.CG_PSN_Error}</div>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF((psnRec.Warranty_Start_Date__c == null && psnRec.Before_In_Service__c == false && isWarrCustomer==true ),true,false)}">
+                                                                        <div>{!$Label.CG_WSD_or_BIS_Error}</div>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF((psnRec.Failure_Date__c == null && isWarrCustomer==true ),true,false)}">
+                                                                        <div>{!$Label.CG_Failure_Date_Error}</div>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(((filterApplication == '----None----' || filterApplication == null || filterApplication == '') && isWarrCustomer==true ),true,false)}">
+                                                                        <div>{!$Label.CG_Application_Error}</div>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(((filterMake == '----None----' || filterMake == null || filterMake == '') && isWarrCustomer==true ),true,false)}">
+                                                                        <div>{!$Label.CG_Make_Error}</div>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(((filterModel == '----None----' || filterModel == null || filterModel =='')&& isWarrCustomer==true ),true,false)}">
+                                                                        <div>{!$Label.CG_Model_Error}</div>
+                                                                    </apex:outputPanel>
+                                                             <apex:outputpanel rendered="{!IF(claimsRec.Actual_Technician_Time__c==null && isWarrCustomer==true, true, false)}">
+                                                                <div>
+                                                                    <div><b>{!$Label.CSS_Claims_SRT}</b></div>
+                                                                    <div>{!$Label.CG_Actual_Technician_Time_Error}</div>
+                                                                </div>
+                                                            </apex:outputpanel>
+                                                        </div>
+                                                    </apex:outputpanel>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </apex:outputPanel>
+                                </div>
+                                <!--story#183077-->
+                                <apex:outputPanel id="psnerror" style="margin-left:20px">
+                                    <!--apex:outputText value="{!$Label.CG_PSN_FLAG}" style="color:red" rendered="{!PSNFlag}"></apex:outputText-->
+                                   <b><apex:outputText value="{!$Label.CG_PSN_FLAG}" style="color:red;" rendered="{!claimsRec.CG_Get_Engine_data_flag__c}"></apex:outputText></b>
+                                </apex:outputPanel>
+                                
+                                <apex:outputPanel id="faerror" style="margin-left:20px">
+                                    <b><apex:outputText value="{!$Label.CG_FA_FLAG}" style="color:red;" rendered="{!if(((claimsRec.id == 'null' || claimsRec.id == '') && claimsRec.FieldActionWebServiceResult__c == 'Error'),true,false)}"></apex:outputText></b>
+                                </apex:outputPanel>
+                           
+
+                                <!--end-->
+                                <apex:outputpanel id="esnChangedPnlJP" style="margin-left:20px" rendered="{!psnRec.CoverageFlag__c}">
+
+                                    <apex:outputLabel id="esnChangedLblJP"><span style="color:red">{!$Label.CSS_esnChanged_ChkWarranty}</span></apex:outputLabel>
+                                </apex:outputpanel>
+
+                                <!--<apex:inputHidden value="{!claimsRec.Address__c}" id="theHiddenInput"/>-->
+
+                                <!-- Information Only claim -->
+                                <!--Show Information-only checkbox for Dealer-Manual claims only as per story Despicable Me #161401-->
+
+                                <hr style="border-top:2px solid #eee;"/>
+
+                                <!--Added dealerUser into below condition as per Despicable Me story #161401,-By RAJESH 15th Nov 2018-->
+                                <!--<apex:outputPanel rendered="{!if(claimsRec.CSS_Job__c==null && dealerUser == true,true,false)}">-->
+
+                               <apex:outputPanel rendered="{!if(dealerUser == true,true,false)}">
+                                    <apex:outputpanel id="claimInfo">
+                                        <div style="text-align:center;font-size: 15px;">
+                                            
+                                            <apex:outputPanel rendered="{!If(claimsRec.Information_Only_Claim__c == true,true,false)}" id="redClaim" >
+                                                <apex:outputText value="{!$Label.CSS_Information_Claim}" style="color:red"/>
+                                            </apex:outputPanel>
+                                        </div>
+
+                                        <div class="col-sm-2 col-xs-12" style="margin-bottom:10px;">
+                                            <apex:actionRegion >
+                                                <apex:inputCheckbox value="{!claimsRec.Information_Only_Claim__c}" disabled="{!If((claimsRec.Status__c !='' && claimsRec.Status__c != 'Draft') || claimsRec.Information_Only_Claim__c == true || Information == true || (ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && ClaimsRec.IsDealerCreatedClaim__c==true) || ($User.isClaimReadOnly__c ==true),true,false)}" html-data-target="#claimInfoModal" html-data-toggle="modal" html-data-backdrop="static" html-data-keyboard="false"/>&nbsp; <!--onchange="checkedCatastrophic(this);"/>-->
+                                                <apex:outputText value="{!$Label.CSS_Claim_Information}"/>
+                                            </apex:actionRegion>
+                                        </div>
+                                    </apex:outputpanel>
+                                </apex:outputPanel>
+                                
+                                 <!--  <apex:outputPanel rendered="{!if(dealerUser == true || DistributorUser == true,true,false)}"> -->
+                                <div class="col-sm-10 col-xs-12" ><!-- Added onclick event in below line as part of the story GSSC-71 --><!-- Added claimsRec.PACCAR_Mixed_Accountcodes__c == true as part of the story defect GSSC-225 -->
+                                    <apex:inputCheckbox value="{!claimsRec.Parts_Warranty_Claim_Only__c}" onclick="partsWarrChecked(this)" disabled="{!If((claimsRec.Status__c !='' && claimsRec.Status__c != 'Draft') || claimsRec.PACCAR_Mixed_Accountcodes__c == true || claimsRec.Parts_Warranty_Claim_Only__c == true && (claimsRec.CSS_Job__c != null || claimsRec.Dealer_Service_Job__c != null) || ($User.isClaimReadOnly__c ==true),true,false)}"/>&nbsp; 
+                                    <apex:outputText value="{!$Label.CG_Parts_Warranty_Claim_Only}"/>
+                                </div>
+                                <div class="clearfix"></div> 
+                                <!--</apex:outputPanel>-->
+                                <apex:outputPanel rendered="{!If(claimsRec.Account__r.Type == 'Dealer Account' && claimsRec.PACCAR_Auth_Required__c == true && (claimsRec.CSS_Job__c != null || claimsRec.Dealer_Service_Job__c != null) && claimsRec.Css_paccar_approve_reject_flag__c != 'Approved' && claimsRec.Css_paccar_approve_reject_flag__c != 'Rejected',true,false)}" id="redClaimPaccar" >
+                                    <div style="text-align:center;font-size: 15px;">
+                                        <apex:outputText value="{!$Label.CG_PACCAR_Error_Claims}" style="color:red"/>
+                                    </div>
+                                </apex:outputPanel>
+
+
+                                <!-- Info only popup-->
+
+                                <div class="modal fade" id ="claimInfoModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog" style="width:590px;">
+                                        <div class="modal-content">
+                                            <div class="modal-header"> 
+                                                <!--  <apex:actionRegion >
+<apex:commandButton title="Close the popup" html-data-dismiss="modal" styleClass="cross_butten" rerender="popup"/>
+</apex:actionRegion> -->
+                                                <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Cummins_Service_System} </h4>
+                                            </div>
+                                            <div class="clearfix"></div> 
+                                            <div class="modal-body" style="margin:15px 0px 50px 50px;"> 
+                                                <div class="col-md-12 col-xs-12">
+                                                    <b>{!$Label.CSS_Claim_Info_Desrcription}</b>
+                                                </div>
+                                            </div>
+                                            <div class="clearfix"></div>
+                                            <div class="modal-footer">
+                                                <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                                                    <apex:actionRegion ><!--Please do not change command link to command button which will autoselect information only on click of enter-->
+                                                        <apex:commandLink value="{!$Label.css_Ok}" action="{!checkPopupsave}" html-data-dismiss="modal" styleClass="saveButton" rerender="claimInfo" onComplete="hideclaimInfoModal();" >
+                                                        </apex:commandLink>
+                                                    </apex:actionRegion>                                
+                                                </div>
+                                                <div class="col-sm-5 col-xs-4 cmi-tar"> <!--Please do not change command button to command link which will autoselect information only on click of enter-->
+                                                    <apex:actionRegion > <apex:commandButton value="{!$Label.css_Cancel}"  html-data-dismiss="modal" styleClass="cancelButton" rerender="claimInfo"/></apex:actionRegion>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="container-fluid">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="col-md-12">
+                                                <apex:outputPanel id="clmServProv">
+                                                    <c:CG_ClaimsServiceProvider claimRecord="{!claimsRec}" mainController="{!controllerRef}"/> 
+                                                </apex:outputPanel>
+                                            </div>
+                                            <!-- GSSC-37- Read only fields - Start-->
+                                            <apex:outputPanel rendered="{!IF((ClaimsRec.Status__c != 'Draft' && ClaimsRec.id!=null) || ClaimsRec.Pending_Authorization__c =='Not Authorized' || (ClaimsRec.Catastrophic__c==true && $UserRole.Name != 'Factory' && ClaimsRec.IsDealerCreatedClaim__c==true) || ($User.isClaimReadOnly__c ==true), true, false)}">
+                                                <div class="col-md-12">
+
+                                                    <c:CG_ClaimsCustOneBMSRO id="pgToCompro" mainController="{!controllerRef}" DateIn="{!claimsRec.Service_Date__c}" DateInTime="{!claimsRec.Repair_Completion__c}" isAutomatedDealerloaction="{!isAutomatedDealer}" isManualDealerlocation="{!isManualDealer}"/>  <!--CSS_Job__r.Date_In__c, CSS_Job__r.LastUpdateSubStatus__c-->
+                                                </div>
+                                            </apex:outputPanel>
+                                            <apex:outputPanel rendered="{!IF((ClaimsRec.Status__c == 'Draft' || ClaimsRec.id==null) && ClaimsRec.Pending_Authorization__c !='Not Authorized' && (ClaimsRec.Catastrophic__c!=true ||  ClaimsRec.IsDealerCreatedClaim__c==false || ($UserRole.Name == 'Factory' && ClaimsRec.IsDealerCreatedClaim__c==true)) && ($User.isClaimReadOnly__c !=true), true, false)}">
+                                                <!-- <apex:outputPanel rendered="{!IF((ClaimsRec.Status__c == 'Draft' || ClaimsRec.Status__c == 'None' || ClaimsRec.Status__c == '') , true, false)}">-->
+                                                <div class="col-md-12">
+                                                    <c:CG_ClaimsCustOneBMS id="pgToComp" mainController="{!controllerRef}" DateIn="{!claimsRec.Service_Date__c}" DateInTime="{!claimsRec.Repair_Completion__c}" isAutomatedDealerloaction="{!isAutomatedDealer}" isManualDealerlocation="{!isManualDealer}" isDealerlocation="{!dealerUser}"/> 
+                                                </div>
+                                            </apex:outputPanel>
+                                            <!-- GSSC-37- Read only fields - End-->
+                                            <div class="col-md-12" id="ClaimsUnitndEngineSection">
+                                               <c:CG_ClaimsUEOneBMS id="oneBMSUECompId" mainController="{!controllerRef}" pgName="ClaimsIntakeUE" isAutomatedDealerloaction="{!isAutomatedDealer}" isManualDealerlocation="{!isManualDealer}"/>  
+                                            </div>
+                                        </div> 
+                                        <div class="col-md-6">
+                                            <div class="col-md-12">
+                                                <!--<c:CG_ClaimsAuthorizations mainController="{!controllerRef}" ERPSystem="{!claimsRec.Account__r.ERP_System__c}" />-->
+                                                <!--Added  AccERPSystem and claimId as a attribuites as per defect #153859 needed ,-By RAJESH 12th July 2018-->            
+                                                <!-- <c:CG_ClaimsAuthorizations mainController="{!controllerRef}" claimRecord1="{!claimsRec}" ERPSystem="{!claimsRec.Account__r.ERP_System__c}"  AccERPSystem="{!acc.ERP_System__c}" claimId="{!cId}" /> -->
+                                                <c:CG_ClaimsAuthorizations mainController="{!controllerRef}"  claimRecord="{!claimsRec}" ERPSystem="{!claimsRec.Account__r.ERP_System__c}"  AccERPSystem="{!acc.ERP_System__c}" claimId="{!cId}" /> 
+                                            </div>
+                                            <br/>
+                                            <div class="col-md-12">
+                                                <c:CG_ClaimsFailureCampaignTRPsandATCs />  
+                                            </div>
+                                            <div class="col-md-12">
+                                                <c:CG_ClaimsPartsandOtherClaimbles isAutomatedDealerloaction="{!isAutomatedDealer}"/>
+                                            </div>
+                                            <div class="col-md-12">
+                                                <apex:outputPanel id="srtSection">
+                                                    <c:CG_ClaimsSRT techTimeReadonly="false" mainController="{!controllerRef}" RedirectPage5="/apex/CG_ClaimsSRTs?id={!claimsRec.Id}" totaldiagSRT="{!totaldigSRT}" totalrepSRT="{!totalrepSRT}" totalcampSRT="{!totalcampSRT}" totaltrpSRT="{!totaltrpSRT}" totalatcSRT="{!totalatcSRT}" totalnon="{!totalNON}" totalSRTs="{!totalSRT}" />
+                                                </apex:outputPanel>
+                                            </div>
+                                            <div class="col-md-12">
+                                                <c:CG_ClaimsJobNotesComp />  
+                                            </div> 
+                                            <div class="col-md-12">
+                                                <c:CG_ClaimsCCComp id="CCPg2Comp" mainController="{!controllerRef}" pgName="ClaimsIntks" />  <!-- rendered="true"-->
+                                            </div>
+                                            
+                                            <!--Need conformation with satish/onshore team -->
+                                            <apex:outputPanel rendered="{!IF(claimsRec.ID!=NULL,true,false)}">
+                                                <div class="col-md-12">
+                                                    <!--<c:CG_ClaimsAuditTrail ClaimId="{!claimsRec.id}"  psnId="{!IF(claimsRec.ID!=NULL,claimsRec.CSS_PSNs__r[0].id,null)}" jobordID="{!claimsRec.CSS_Job__c}" />-->
+                                                    <c:CG_ClaimsAuditTrail ClaimId="{!claimsRec.id}"  psnId="{!psnRec.id}" jobordID="{!claimsRec.CSS_Job__c}" cliamStatus="{!ClaimsRec.Status__c}" claSubmId="{!claSubRec.Id}" claNumver="{!claSubRec.Claim_Number__c}" creDate="{!claSubRec.Credit_Date__c}"/>
+                                                </div>
+                                            </apex:outputPanel>
+                                            <div class="col-md-12">
+                                                <c:CG_AttachmentComp pgName="ClaimsIntake" JoId="{!claimsRec.id}" DeleteFlag="false"  />
+                                                <!--<c:CG_AttachmentComp pgName="ClaimsIntake" JoId="{!claimsRec.id}" DeleteFlag="false" rendered="{!AdvancedUserprofiles}"/>-->
+                                                <!--<c:CG_AttachmentComp pgName="ClaimsIntake" JoId="{!claimsRec.id}" DeleteFlag="false" rendered="{!FactoryUserRoles}"/>-->
+                                                <!--<c:CG_AttachmentComp pgName="ClaimsIntake" JoId="{!claimsRec.id}" DeleteFlag="false" rendered="{userProfileName!='System Administrator'}" />-->
+                                            </div> 
+                                        </div>     
+                                    </div>    
+                                </div>                                   
+                                <!-- Ends -->
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Tabs end -->
+                </div>
+
+                <!----Loading Pop Up----->
+                <div class="modal fade" id ="loadingModal" role="dialog" data-backdrop="static" data-keyboard="false">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Cummins_Service_System} </h4>
+                            </div>
+                            <div class="clearfix"></div> 
+                            <div class="modal-body"> 
+                                <b>{!$Label.CSS_Validation_Msg}</b><br/><br/>
+                                <b>{!$Label.CSS_Refresh_Msg}</b><br/><br/>
+                                <!--<img src="/img/loading.gif" style="float:center"/>-->
+
+
+                            </div>
+                            <div class="modal-body">
+                                <apex:image url="{!$Resource.LoadingImg}" width="50" height="50" style="align:center"/>  
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!----Loading Pop Up----->
+
+                <!----Resolve Error Pop Up----->
+                <div class="modal fade" id ="resolvepopup" role="dialog" data-backdrop="static" data-keyboard="false">
+                    <div class="modal-dialog" style="width:800px;height:350px;">
+                        <!--apex:outputPanel id="resolvepopup" style="display:none; width: 500px;margin-left:35%;top: 70%;position: absolute;z-index: 10040;overflow:auto;overflow-y: auto;"-->
+                        <apex:outputPanel rendered="{!showErrorPopup}">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Cummins_Service_System} </h4>
+                                </div>
+                                <div class="clearfix"></div> 
+                                <div class="modal-body" style="padding:0px">
+                                    <div class="col-sm-11" style="margin:20px 35px;">
+                                        <div>There are errors on this page, please refer to the Warranty Validation Error section for more error messages. </div><br/>
+                                        <div style="border:1px solid black;overflow-y:scroll;height:210px;">
+                                            <apex:repeat value="{!ODMDisplayMsgs}" var="ODMDisplay">
+                                                <div>{!ODMDisplay.type}: {!ODMDisplay.description}</div>
+                                            </apex:repeat>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                                        <apex:actionRegion ><apex:commandButton value="{!$Label.CSS_Resolve_Error}" styleClass="saveButton" action="{!resolveErrorNow}" rerender="none" onComplete="hideResolvePopUp();"/></apex:actionRegion>
+                                    </div>
+
+                                    <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                                        <apex:commandlink value="{!$Label.CSS_Continue}" action="{!continueNext}" styleClass="cancelButton" immediate="true"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </apex:outputPanel>
+                    </div>
+                </div>
+
+                <!--/apex:outputPanel-->
+                <!----Resolve Error Pop Up----->
+
+                <!----PACCAR Pop Up----->
+                <div class="modal fade" id ="paccarPopup" role="dialog">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+
+                            <div class="modal-header">
+                                <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_Cummins_Service_System} </h4>
+                            </div>
+                            <div class="clearfix"></div> 
+                            <div class="modal-body">
+                                {!$label.CSS_PACCAR_popup_message}<br/>
+                                {!$label.CSS_PACCAR_popup_message2}<sup>TM</sup>{!$label.CSS_PACCAR_popup_message3}
+                            </div>
+                            <div class="modal-footer" style="border-top:0px">
+                                <div style="text-align:center"> 
+                                    <apex:actionRegion ><apex:commandButton value="{!$Label.css_Ok}" action="{!paccarPopUP_OK}" onComplete="focusPSN();" styleClass="saveButton" rerender="none" html-data-dismiss="modal"/></apex:actionRegion>
+                                </div>                                        
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!----PACCAR Pop Up----->
+
+                <!--Bottom Right Navigation---Start-->
+                <div class="row" style="margin:0px;">
+                    <div class="pull-right btncrumbs" style="margin-right: 60px;">
+                        <ul class="desk-ulist">
+                            <li>&nbsp;</li>
+                            <li>
+                                <apex:actionRegion ><apex:commandLink styleclass="sopen" id="Bcwcsave" action="{!nvClaimsWC}" onclick="return stopDOMLoadOnClick(),showPACCARPopup('{!claimsRec.PACCAR_Flag__c}','{!claimsRec.PACCAR_Auth_Required__c}','{!claimsRec.Parts_Warranty_Claim_Only__c}','{!claimsRec.CSS_Job__c}','{!claimsRec.Dealer_Service_Job__c}','{!claimsRec.Css_paccar_approve_reject_flag__c}',this,'false','{!claimsRec.Status__c}');">
+                                    <span class="chev_cwc_img_open"/>
+                                    <apex:outputtext styleClass="chev_text_open" value="{!$Label.CSS_Warranty_Coverage}" escape="false"/>
+                                    <div class="chev-mobile-text">
+                                        <div class="txt_numb">2</div>
+                                    </div>
+                                    </apex:commandLink></apex:actionRegion>
+                            </li>
+                            <li>&nbsp;</li>
+                        </ul>
+                    </div>        
+                </div>
+                <!--Bottom Right Navigation---End-->
+
+                <!---Bottom Save Button start--->
+                <!--<div style="text-align:center;">
+<apex:actionRegion >
+<apex:commandLink value="{!$Label.css_save_btn}" action="{!pgSave}" styleclass="btn-intake btn-intake-footer m-btn-width" ></apex:commandLink>
+</apex:actionRegion>
+</div>
+<div class="clearfix"></div><br/>-->
+                <!---Bottom Save Button END--->  
+            </apex:form>
+        </apex:define>
+    </div>
+
+    <script>
+        window.onload = function(){
+
+            var  showErrorPopup = {!showErrorPopup};
+            if(showErrorPopup== true)
+                $('#resolvepopup').modal('show');
+            else
+                $('#resolvepopup').modal('hide');
+
+
+            // var cataValue = {!claimsRec.Catastrophic__c};
+            // if(cataValue == true)
+            //     document.getElementById('cataId').style.display = 'inline';
+            // else
+            //     document.getElementById('cataId').style.display = 'none';
+        }
+
+        // function checkedCatastrophic(catastrophicCheckValue){
+        //     if(catastrophicCheckValue.checked)
+        //         document.getElementById('cataId').style.display = 'inline';
+        //     else
+        //         document.getElementById('cataId').style.display = 'none';
+        // }
+    </script>
+    
+   <script> 
+    //GSSC-240, added the script to stop navigation to other chevrons, if the startRequest Service is not called up
+        var waitTime = 1;
+        var countDown = waitTime+1;
+        var clickAllowed = true;
+        function stopDoubleClick(){ 
+            countDown=waitTime+1;
+            if(clickAllowed==true){
+                clickAllowed=false;
+                runCountDown(); 
+                return true;
+            }
+            else{ return false; } 
+        }
+        function runCountDown(){ 
+            countDown--;
+            if(countDown<=0){ 
+                clickAllowed=true; 
+            }
+            else{
+                window.setTimeout(runCountDown,1000);
+            } 
+        } 
+        function stopDOMLoadOnClick(){
+            //alert('test');
+                var strtReq = document.getElementById("ClaimsIntks:Intakefrm:setDataStringValue2").value;
+               // alert('kal'+strtReq);
+                var pPSN = '{!previousPSN}';
+                //alert(pPSN);
+                   var ESNN;
+                   var autoClaim = '{!claimsRec.CSS_Job__c}';
+                   var autoDlrClaim = '{!claimsRec.Dealer_Service_Job__c}';
+                   if(autoClaim == null && autoDlrClaim == null){
+                   ESNN = document.getElementById("ClaimsIntks:Intakefrm:oneBMSUECompId:claimsUEComp:psnField").value;
+                   // alert(ESNN);
+               
+                //alert(strtReq + 'previous>>>'+pPSN+'current>>'+ESNN);
+                if(strtReq == 'false' && pPSN != ESNN){
+                    return false;
+                }else{
+                    stopDoubleClick();
+                    return true;
+                }
+                    
+            }
+            else{
+                    stopDoubleClick();
+                    return true;
+                }
+        }
+
+</script> 
+</apex:page>

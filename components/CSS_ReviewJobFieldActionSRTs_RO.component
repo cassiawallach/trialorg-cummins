@@ -1,0 +1,713 @@
+<!--/**********************************************************************
+Name:CSS_ReviewJobFieldActionSRTs_RO
+Copyright Â© 2018  Cummins
+======================================================
+======================================================
+Purpose: 
+======================================================
+======================================================
+History                                                            
+-------                                                            
+VERSION   AUTHOR                    DATE                DETAIL                                 
+1.0     -                                               INITIAL DEVELOPMENT 
+2.0     -Rajesh Pasupuleti         02/09/2018           Added code as per NCIS story no #84383(Functionality)
+***********************************************************************/-->
+<apex:component controller="CG_CL_RJFieldActionSRTs_RO">
+    <style>
+        @media (min-width: 750px) and (max-width: 1149px){
+
+            table.cmi_jobplan-table{
+                width:10% !important;
+                display:inline;
+            }
+        }
+        
+         function srtEdit(url,title,w){
+            var left = (screen.width/2)-(w/2);
+            window.open(url, title, 'status = 1 scrollbars=yes, resizable=1, copyhistory=no, width='+w+', height=800,left='+left);
+            
+        } 
+
+    </style>
+
+    <!-- Rajasekhar H UI code start -->
+    <style>
+
+        #accordion1-body-3 a {
+            font-weight:normal !important;
+        }
+
+        .cmi-accessibility-checklist-icon {
+            background: url({!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/CSS_TND_Icon.png')}) no-repeat scroll -205px -616px rgba(0, 0, 0, 0);
+        display: inline-block;
+        height: 50px;
+        width: 50px;
+        position: relative;
+        }
+
+        .cmi-accessibility-checklist-disabled-icon {
+            background: url({!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/CSS_TND_Icon.png')}) no-repeat scroll -80px -616px rgba(0, 0, 0, 0);
+        display: inline-block;
+        height: 50px;
+        width: 50px;
+        position: relative;
+        }
+
+        <!-- start -->
+
+        .cmi_jobplan-table th,.cmi_jobplan-table td{
+            text-align: center;
+        }
+
+       
+
+        .cmi_srtaccordian-table-xs {
+            border-top: 2px solid #000000;
+            border-bottom: 2px solid #999;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .cmi_srt-accordian-table{
+            background-color:#f2f2f2;
+        }
+
+    </style> 
+    
+    <!--For Popup Script Code start --> 
+    <script type="text/javascript">
+        function accWin(url){
+            //alert('Hi');
+            window.open( url, "myWindow", "status = 1,  height = 800, width = 600,scrollbars=yes,resizable=1");
+        }  
+        
+         
+        
+    </script>
+    <!--For Popup Script Code End --> 
+    <!--CTA-->
+    <apex:attribute name="pgName" description="Page Name" type="String" /> <!--GSSC-448-->
+    <div class="panel-group cmi_generic-accordion" > 
+
+        <div class="panel panel-default">
+            <div class="panel-heading " id="accordion1-heading-33" onclick ="filedsetMethodCampaignTRPATCs();">
+                <h4 class="panel-title" data-toggle="collapse" data-parent="#accordion1-heading-33" data-target="#campaign-accordian" aria-expanded="true">
+                    <a class="accordion-toggle" >
+                        <span class="glyphicon glyphicon-plus"></span>
+                        <div class="cmi_accordion-title"><b>{!$Label.css_Camp_TRP_ATC}</b></div>
+                    </a>
+                </h4>
+            </div>
+        </div>
+    
+        <div id="campaign-accordian" class="panel-collapse collapse" aria-expanded="true" style="margin-top:10px">
+            
+            <apex:outputPanel id="campPanelValues"> 
+                <div class="col-md-12">
+                    <!-- campaigns desktop start -->
+                    <div class="hidden-xs">
+
+                        <div class="row">
+                            <br/>
+                        <div style="float: right;margin-top:-10px;margin-right:18px;">
+                            <!--116998 start and 116998 end-->
+                                <div style="float: right;margin-top: -10px;margin-right:5px;">
+                                    <i class="CMI-edit-icon"></i>
+                                   <apex:commandLink value="{!$Label.css_Edit}" action="{!gotoJobPlanSrt}" rendered="{!IF(pgName!='ReadOnly',true,false)}"/>
+                                    
+                                </div><br/>
+                        </div>
+                    </div>
+                </div>
+                </div>
+
+            <table class="mytable table table-bordered table-striped cmi_jobplan-table" width="100%" cellpadding="0" cellspacing="0">
+
+                <thead>
+                    <tr>
+                        <td colspan="14">
+                            <p style="font-weight: bold;font-size: 14px;text-align: left;margin-bottom:0px">{!$Label.css_Campaigns}</p>
+                        </td>
+                    </tr>
+                </thead>
+
+                <thead>
+                    <tr>
+                        <th>{!$Label.css_Campaign}</th>
+                        <th>{!$Label.css_Accessibility_Checklist}</th>
+                        <th>{!$Label.css_Select}</th>
+                        <th>{!$Label.css_SRT_Code}</th>
+                        <th>{!$Label.css_SRT_Description}</th>
+                        <th>{!$Label.css_Quantity}<span style="color: red">*</span></th>
+                        
+                        
+                        <!--177452 Rupesh Story Rremove Access SRT Time Column-->
+                        <!--<th>{!$Label.css_ACCESS_SRT_Hours}</th>-->
+                        
+                        <th>{!$Label.css_SRT_Time}</th>
+                        <th>{!$Label.css_Extended_Hours}</th>
+                        <th>{!$Label.css_Access_Code}</th>
+                        <th>{!$Label.css_SRT_Hours}</th>
+                        <!--<th>{!$Label.CSS_Estimate}</th> -->
+                        <th>{!$Label.css_Adjustment_Reason}</th>
+
+                    </tr>
+                </thead>
+                <!--Campaign Code start #84383--> 
+                <tbody>
+                    <apex:variable var="solcnt" value="{!0}" />
+                    <apex:repeat value="{!listcompWrapper}" var="camRec" id="camp1">
+                        <apex:variable var="srtcount" value="{!0}" />
+                        <apex:repeat value="{!camRec.srtWrapper}" var="srtRec" id="srt1">
+                            <apex:variable var="solcnt" value="{!solcnt+1}" />
+                            <apex:variable var="srtcount" value="{!srtcount + 1}" />
+                            <tr>
+                                <apex:outputText rendered="{!IF(srtcount == 1,true,false)}">  
+                                    <td  rowspan="{!camRec.srtcount}" style="width:20%">
+                                        <apex:outputText value="{!camRec.fieldactnum}"/>
+                                    </td>
+                                </apex:outputText> 
+                                <apex:outputText rendered="{!IF(srtcount == 1 && pgName!='ReadOnly' ,true,false)}"> 
+                                    <td rowspan="{!camRec.srtcount}" style="width:20%">
+                                        <!--<a> <span class="cmi-accessibility-checklist-icon"></span></a>
+<!--/td-->
+                                        <a onclick="accWin('/apex/css_srtAccessChecklist?JobOrderId={!Wid}&componentId={!camRec.CompIds}&typ=Camp&pgName=RepairRj')" href="" target="_blank">
+                                                <span class="cmi-accessibility-checklist-icon"></span></a>
+                                    </td>
+                                </apex:outputText>
+                                 <apex:outputText rendered="{!IF(srtcount == 1 && pgName=='ReadOnly' ,true,false)}">
+                                                    <td rowspan="{!camRec.srtcount}"  style="width:20%"><span class="cmi-accessibility-checklist-disabled-icon"></span></td>
+                                                    </apex:outputText>
+                                <td>
+                                    <apex:inputCheckbox value="{!srtRec.selectedComponent}" styleClass="URCheckbox" disabled="true" ></apex:inputCheckbox>
+                                    
+                                </td>
+                                <td>
+                                    <apex:outputText value="{!srtRec.SRTCode}"/> 
+                                </td>
+                                <td>
+                                    <apex:outputText value="{!srtRec.SRTDescription}"/>
+                                </td>                               
+                                <td>
+                                    <apex:outputText value="{!srtRec.Quantity}"/>
+                                </td>
+
+                                <!--177452 Rupesh Story Rremove Access SRT Time Column-->
+                                
+                                <!--<td>
+                                <apex:outputText rendered="{!IF(srtRec.Type == 'Field Action Access',true,false)}" value="{!srtRec.SRTTime}"/>
+                                </td>
+
+                                <td>
+                                    <apex:outputText rendered="{!IF(srtRec.Type != 'Field Action Access',true,false)}" value="{!srtRec.SRTTime}"/>
+                                </td>-->
+                                
+                                <!--Finally One Td-->
+                                <td>
+                                <apex:outputText value="{!srtRec.SRTTime}"/>
+                                </td>
+
+                                <td>
+                                    <apex:outputText value="{!srtRec.extendedHours}"/>
+                                </td>
+                                <td>
+                                    <apex:outputText value="{!srtRec.AccessCode}"/>
+                                </td>
+                                <td>
+                                    {!srtRec.SRTHours}
+                                    <!--  <apex:Inputtext value="{!custParts.coveredPercent}" style="width:100px;"  id="ValCovered" maxlength="3" onkeyup="validateMaxVal(this);" onkeypress="return qtyPressURP(event,this)"/>-->
+                                </td>
+                                
+                                <!--<td><apex:inputCheckbox value="{!srtRec.estimate}" styleClass="estimate" /></td> -->
+                                <td>
+                                   {!srtRec.AdjustmentReason}
+                                </td>                              
+                            </tr>
+                        </apex:repeat>
+                    </apex:repeat>                     
+                </tbody>
+                  <tbody>
+                    <apex:variable var="solcnt" value="{!0}" />
+                    <apex:repeat value="{!addlistcompWrapper}" var="cRec" id="cp1">
+                        <apex:variable var="srtcount" value="{!0}" />
+                        <apex:repeat value="{!cRec.srtWrapper}" var="srtRec" id="st1">
+                            <apex:variable var="solcnt" value="{!solcnt+1}" />
+                            <apex:variable var="srtcount" value="{!srtcount + 1}" />
+                            <tr>
+                                <apex:outputText rendered="{!IF(srtcount == 1,true,false)}">  
+                                    <td  rowspan="{!cRec.srtcount}" style="width:20%">
+                                        <apex:outputText value="{!cRec.fieldactnum}"/>
+                                    </td>
+                                </apex:outputText> 
+                                <apex:outputText rendered="{!IF(srtcount == 1 && pgName != 'ReadOnly' ,true,false)}">
+                                    <td rowspan="{!cRec.srtcount}" style="width:20%">
+                                        <!--<a> <span class="cmi-accessibility-checklist-icon"></span></a>
+                                    <!--/td-->
+                                            <a onclick="accWin('/apex/css_srtAccessChecklist?JobOrderId={!Wid}&componentId={!cRec.CompIds}&typ=Camp&pgName=RepairRj')" href="" target="_blank">
+                                                <span class="cmi-accessibility-checklist-icon"></span></a>
+                                        </td>
+                                </apex:outputText>
+                                 <apex:outputText rendered="{!IF(srtcount == 1 && pgName == 'ReadOnly' ,true,false)}">
+                                                    <td  rowspan="{!cRec.srtcount}"><span class="cmi-accessibility-checklist-disabled-icon"></span></td>
+                                                    </apex:outputText>
+                                
+                                <td>
+                                    <apex:inputCheckbox value="{!srtRec.selectedComponent}" styleClass="URCheckbox" disabled="true" ></apex:inputCheckbox>
+                                     
+                                   
+                                </td>
+                                <td>
+                                    <apex:outputText value="{!srtRec.SRTCode}"/>
+                                </td>
+                                <td>
+                                    <apex:outputText value="{!srtRec.SRTDescription}"/>
+                                </td>                               
+                                <td>
+                                    <apex:outputText value="{!srtRec.Quantity}"/>
+                                </td>
+
+
+                                <!--177452 Rupesh Story Rremove Access SRT Time Column-->
+                                
+                                <!--<td>
+                                    <apex:outputText rendered="{!IF(srtRec.Type == 'Field Action Access',true,false)}" value="{!srtRec.SRTTime}"/>
+                                </td>
+
+                                <td>
+                                    <apex:outputText rendered="{!IF(srtRec.Type != 'Field Action Access',true,false)}" value="{!srtRec.SRTTime}"/>
+                                </td>-->
+                                
+                                <!--Finally One Td-->
+                                <td>
+                                
+                                <apex:outputText value="{!srtRec.SRTTime}"/>    
+                                    
+                                </td>
+
+                                <td>
+                                    <apex:outputText value="{!srtRec.extendedHours}"/>
+                                </td>
+                                <td>
+                                    <apex:outputText value="{!srtRec.AccessCode}"/>
+                                </td>
+                                <td>
+                                    {!srtRec.SRTHours}
+                                    <!--  <apex:Inputtext value="{!custParts.coveredPercent}" style="width:100px;"  id="ValCovered" maxlength="3" onkeyup="validateMaxVal(this);" onkeypress="return qtyPressURP(event,this)"/>-->
+                                </td>
+                                <!--<td><apex:inputCheckbox value="{!srtRec.estimate}" styleClass="estimate" /></td> -->
+                                <td>
+                                    {!srtRec.AdjustmentReason}
+                                </td>                              
+                            </tr>
+                        </apex:repeat>
+                    </apex:repeat>                     
+                </tbody>
+            </table> 
+
+            <!--Total Campaign Access 177452 Rupesh Story-->
+            
+            <!--<span><b>{!$Label.css_Total_Campaign_Access_Time}RRR</b></span> 
+            <div ><apex:outputText value="{!totalCampaignAccessTime}"/></div>-->
+            
+            
+            <!-- Commented as Part of #189753 -- Rajasekhar -->
+            <!--<span><b>{!$Label.css_Total_Campaign_SRT_Time}</b></span> 
+            <div><apex:outputText value="{!totalCampaignSRT}"/></div> -->
+            <!--Campaign Code End -->   
+            <!--TRP Code Start -->
+            <div style="float: right;margin-top:-10px;margin-right:18px;">
+                                <div style="float: right;margin-top: -10px;margin-right:5px;">
+                                    <i class="CMI-edit-icon"></i>
+                                   <apex:commandLink value="{!$Label.css_Edit}" action="{!gotoJobPlanSrt}" rendered="{!IF(pgName!='ReadOnly',true,false)}"/>
+                                                                    
+                                </div><br/>
+                </div>
+
+            <table class="mytable table table-bordered table-striped cmi_jobplan-table" width="100%" cellpadding="0" cellspacing="0">
+
+                <thead>
+                    <tr>
+                        <td colspan="14">
+
+                            <p style="font-weight: bold;font-size: 14px;text-align: left;margin-bottom:0px">{!$Label.css_TRPs}</p>
+                        </td>
+                    </tr>
+                </thead>
+
+                <thead>
+                    <tr>
+                        <th>{!$Label.css_TRP}</th>
+                        <th>{!$Label.css_Accessibility_Checklist}</th>
+                        <th>{!$Label.css_Select}</th>
+                        <th>{!$Label.css_SRT_Code}</th>
+                        <th>{!$Label.css_SRT_Description}</th>
+                        <th>{!$Label.css_Quantity}<span style="color: red">*</span></th>
+                        
+                        <!--177452 Rupesh Story Rremove Access SRT Time Column-->
+                        
+                        <!--<th>{!$Label.css_ACCESS_SRT_Hours}</th>-->
+                        
+                        <th>{!$Label.css_SRT_Time}</th>
+                        <th>{!$Label.css_Extended_Hours}</th>
+                        <th>{!$Label.css_Access_Code}</th>
+                        <th>{!$Label.css_SRT_Hours}</th>
+                        <!--<th>{!$Label.CSS_Estimate}</th> -->
+                        <th>{!$Label.css_Adjustment_Reason}</th>
+
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <apex:variable var="solcnt" value="{!0}" /> 
+
+                    <apex:repeat value="{!listtrpWrapper1}" var="trpRec" >
+                        <apex:variable var="trpsrtcount" value="{!0}" />
+
+                        <apex:repeat value="{!trpRec.trpsrtWrapper}" var="trpsrtRec" id="srt1">
+                            <apex:variable var="solcnt" value="{!solcnt+1}" />
+                            <apex:variable var="trpsrtcount" value="{!trpsrtcount + 1}" />
+                            <tr>
+                                <apex:outputText rendered="{!IF(trpsrtcount == 1,true,false)}">  
+                                    <td  rowspan="{!trpRec.trpsrtcount}" style="width:20%">
+                                        <apex:outputText value="{!trpRec.fieldactnum}"/>
+                                    </td>
+                                </apex:outputText>                        
+                                <apex:outputText rendered="{!IF(trpsrtcount == 1 && pgName != 'ReadOnly' ,true,false)}">
+                                    <td rowspan="{!trpRec.trpsrtcount}" style="width:20%">
+                                            <a onclick="accWin('/apex/css_srtAccessChecklist?JobOrderId={!Wid}&componentId={!trpRec.CompIds}&typ=camp&pgName=RepairRj')" href="" target="_blank">
+                                                <span class="cmi-accessibility-checklist-icon"></span></a>
+                                        </td>
+                                </apex:outputText>
+                                <apex:outputText rendered="{!IF(trpsrtcount == 1 && pgName == 'ReadOnly' ,true,false)}">
+                                                    <td rowspan="{!trpRec.trpsrtcount}"><span class="cmi-accessibility-checklist-disabled-icon"></span></td>
+                                                    </apex:outputText>
+                                <td>
+                                    <apex:inputCheckbox value="{!trpsrtRec.selectedComponent}" styleClass="URCheckbox" disabled="true" ></apex:inputCheckbox>
+                                    
+                                </td>
+                                <td>
+                                    <apex:outputText value="{!trpsrtRec.SRTCode}"/>
+                                </td>
+                                <td>
+                                    <apex:outputText value="{!trpsrtRec.SRTDescription}"/>
+                                </td>                               
+                                <td>
+                                    <apex:outputText value="{!trpsrtRec.Quantity}"/>
+                                </td>
+                                
+                                <!--177452 Rupesh Story Rremove Access SRT Time Column-->
+                                
+                                <!--<td>
+                                    <apex:outputText rendered="{!IF(trpsrtRec.Type == 'Field Action Access',true,false)}" value="{!trpsrtRec.SRTTime}"/>
+                                </td>
+                                <td>
+                                    <apex:outputText rendered="{!IF(trpsrtRec.Type != 'Field Action Access',true,false)}" value="{!trpsrtRec.SRTTime}"/>
+                                </td>-->
+                                
+                                <!--Finally One td-->
+                                <td>
+                                <apex:outputText value="{!trpsrtRec.SRTTime}"/>
+                                </td>
+
+
+                                <td>
+                                    <apex:outputText value="{!trpsrtRec.extendedHours}"/>
+                                </td>
+                                <td>
+                                    <apex:outputText value="{!trpsrtRec.AccessCode}"/>
+                                </td>
+                                <td>
+                                    {!trpsrtRec.SRTHours}
+                                </td>
+                                
+                                <!--<td><apex:inputCheckbox value="{!trpsrtRec.estimate}" styleClass="estimate" /></td> -->
+                                <td>
+                                    {!trpsrtRec.AdjustmentReason}
+                                </td>                              
+                            </tr>
+                        </apex:repeat> 
+                    </apex:repeat>
+                </tbody>
+                <tbody>
+
+                    <apex:variable var="solcnt" value="{!0}" /> 
+
+                    <apex:repeat value="{!addlisttrpWrapper}" var="trpRec" >
+                        <apex:variable var="trpsrtcount" value="{!0}" />
+
+                        <apex:repeat value="{!trpRec.trpsrtWrapper}" var="trpsrtRec" id="srt1">
+                            <apex:variable var="solcnt" value="{!solcnt+1}" />
+                            <apex:variable var="trpsrtcount" value="{!trpsrtcount + 1}" />
+                            <tr>
+                                <apex:outputText rendered="{!IF(trpsrtcount == 1,true,false)}">  
+                                    <td  rowspan="{!trpRec.trpsrtcount}" style="width:20%">
+                                        <apex:outputText value="{!trpRec.fieldactnum}"/>
+                                    </td>
+                                </apex:outputText>                        
+                                <apex:outputText rendered="{!IF(trpsrtcount == 1 && pgName != 'ReadOnly' ,true,false)}">
+                                    <td rowspan="{!trpRec.trpsrtcount}" style="width:20%">
+                                            <a onclick="accWin('/apex/css_srtAccessChecklist?JobOrderId={!Wid}&componentId={!trpRec.CompIds}&typ=camp&pgName=RepairRj')" href="" target="_blank">
+                                                <span class="cmi-accessibility-checklist-icon"></span></a>
+                                        
+                                    </td>
+                                </apex:outputText>
+                                <apex:outputText rendered="{!IF(trpsrtcount == 1 && pgName == 'ReadOnly' ,true,false)}">
+                                                    <td rowspan="{!trpRec.trpsrtcount}"><span class="cmi-accessibility-checklist-disabled-icon"></span></td>
+                                                    </apex:outputText>
+                                <td>
+                                    <apex:inputCheckbox value="{!trpsrtRec.selectedComponent}" styleClass="URCheckbox" disabled="true" ></apex:inputCheckbox>
+                                </td>
+                                <td>
+                                    <apex:outputText value="{!trpsrtRec.SRTCode}"/>
+                                </td>
+                                <td>
+                                    <apex:outputText value="{!trpsrtRec.SRTDescription}"/>
+                                </td>                               
+                                <td>
+                                    <apex:outputText value="{!trpsrtRec.Quantity}"/>
+                                </td>
+                                
+                                <!--177452 Rupesh Story Rremove Access SRT Time Column-->
+                                
+                                <!--<td>
+                                   <apex:outputText rendered="{!IF(trpsrtRec.Type == 'Field Action Access',true,false)}" value="{!trpsrtRec.SRTTime}"/>
+                                </td>
+                                <td>
+                                    <apex:outputText rendered="{!IF(trpsrtRec.Type != 'Field Action Access',true,false)}" value="{!trpsrtRec.SRTTime}"/>
+                                </td>-->
+                                <!--finally One td-->
+                                <td>
+                                
+                                  <apex:outputText value="{!trpsrtRec.SRTTime}"/>    
+                                    
+                                </td>
+
+
+                                <td>
+                                    <apex:outputText value="{!trpsrtRec.extendedHours}"/>
+                                </td>
+                                <td>
+                                    <apex:outputText value="{!trpsrtRec.AccessCode}"/>
+                                </td>
+                                <td>
+                                  {!trpsrtRec.SRTHours}
+                                </td>
+                                
+                                <td>
+                                    {!trpsrtRec.AdjustmentReason}
+                                </td>                              
+                            </tr>
+                        </apex:repeat> 
+                    </apex:repeat>
+                </tbody>
+
+            </table> 
+
+            <!--Total TRP Access 177452 Rupesh Story-->
+            <!--<span><b>{!$Label.css_Total_TRP_Access_Time}RRR</b></span> 
+            <div><apex:outputText value="{!totalTRPAccessTime}"/></div>-->
+            
+
+            <!-- Commented as Part of #189753 -- Rajasekhar -->
+            <!--<span><b>{!$Label.css_Total_TRP_SRT_Time}</b></span> 
+            <div><apex:outputText value="{!totalTRPSRT}"/></div>-->
+
+            <div style="float: right;margin-top:-10px;margin-right:18px;">
+                                <div style="float: right;margin-top: -10px;margin-right:5px;">
+                                    <i class="CMI-edit-icon"></i>
+                                    <apex:commandLink value="{!$Label.css_Edit}" action="{!gotoJobPlanSrt}" rendered="{!IF(pgName!='ReadOnly',true,false)}"/>
+                                                          
+                                </div><br/>
+                </div>
+
+            <table class="mytable table table-bordered table-striped cmi_jobplan-table" width="100%" cellpadding="0" cellspacing="0">
+
+                <thead>
+                    <tr>
+                        <td colspan="14">
+
+                            <p style="font-weight: bold;font-size: 14px;text-align: left;margin-bottom:0px">{!$Label.css_ATCs} </p>
+                        </td>
+                    </tr>
+                </thead>
+
+                <thead>
+                    <tr>
+                        <th>{!$Label.css_ATC}</th>
+                        <th>{!$Label.css_Accessibility_Checklist}</th>
+                        <th>{!$Label.css_Select}</th>
+                        <th>{!$Label.css_SRT_Code}</th>
+                        <th>{!$Label.css_SRT_Description}</th>
+                        <th>{!$Label.css_Quantity}<span style="color: red">*</span></th>
+                        
+                        <!--177452 Rupesh Story Rremove Access SRT Time Column-->
+                        <!--<th>{!$Label.css_ACCESS_SRT_Hours}</th>-->
+                        
+                        
+                        <th>{!$Label.css_SRT_Time}</th>
+                        <th>{!$Label.css_Extended_Hours}</th>
+                        <th>{!$Label.css_Access_Code}</th>
+                        <th>{!$Label.css_SRT_Hours}</th>
+                        
+                        <!--<th>{!$Label.CSS_Estimate}</th> -->
+                        <th>{!$Label.css_Adjustment_Reason}</th>
+
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <apex:variable var="solcnt" value="{!0}" />                               
+                    <apex:repeat value="{!listatcWrapper}" var="atcRec" >
+                        <apex:variable var="atcsrtcount" value="{!0}" />
+                        <apex:repeat value="{!atcRec.atcsrtWrapper}" var="atcsrtRec" >
+                            <apex:variable var="solcnt" value="{!solcnt+1}" />
+                            <apex:variable var="atcsrtcount" value="{!atcsrtcount + 1}" />
+                            <tr>
+                                <apex:outputText rendered="{!IF(atcsrtcount == 1,true,false)}">  
+                                    <td  rowspan="{!atcRec.atcsrtcount}" style="width:20%">
+                                        <apex:outputText value="{!atcRec.fieldactnum}"/>
+                                    </td>
+                                </apex:outputText> 
+                                <apex:outputText rendered="{!IF(atcsrtcount == 1 && pgName != 'ReadOnly' ,true,false)}">
+                                    <td rowspan="{!atcRec.atcsrtcount}" style="width:20%">
+                                            <a onclick="accWin('/apex/css_srtAccessChecklist?JobOrderId={!Wid}&componentId={!atcRec.CompIds}&typ=camp&pgName=RepairRj')" href="" target="_blank">
+                                                <span class="cmi-accessibility-checklist-icon"></span></a>
+                                    </td>
+                                </apex:outputText>
+                                 <apex:outputText rendered="{!IF(atcsrtcount == 1 && pgName == 'ReadOnly' ,true,false)}">
+                                                    <td rowspan="{!atcRec.atcsrtcount}"><span class="cmi-accessibility-checklist-disabled-icon"></span></td>
+                                                    </apex:outputText>
+                                <td>
+                                    <apex:inputCheckbox value="{!atcsrtRec.selectedComponent}" styleClass="URCheckbox" disabled="true" ></apex:inputCheckbox>
+                                    
+                                </td>
+                                <td>
+                                    <apex:outputText value="{!atcsrtRec.SRTCode}"/>
+                                </td>
+                                <td>
+                                    <apex:outputText value="{!atcsrtRec.SRTDescription}"/>
+                                </td>                               
+                                <td>
+                                    <apex:outputText value="{!atcsrtRec.Quantity}"/>
+                                </td>
+                                
+                                <!--177452 Rupesh Story Rremove Access SRT Time Column-->
+                                <!--<td>
+                                    <apex:outputText rendered="{!IF(atcsrtRec.Type == 'Field Action Access',true,false)}" value="{!atcsrtRec.SRTTime}"/>
+                                </td>
+                                <td>
+                                    <apex:outputText rendered="{!IF(atcsrtRec.Type != 'Field Action Access',true,false)}" value="{!atcsrtRec.SRTTime}"/>
+
+                                </td>-->
+                                
+                                <!--Finally One td-->
+                                
+                                <td>
+                                <apex:outputText value="{!atcsrtRec.SRTTime}"/>
+                                </td>
+                                
+                                
+                                <td>
+                                    <apex:outputText value="{!atcsrtRec.extendedHours}"/>
+                                </td>                                  
+                                <td>
+                                    <apex:outputText value="{!atcsrtRec.AccessCode}"/>
+                                </td>
+                                <td>
+                                   {!atcsrtRec.SRTHours}
+                                </td>
+                                
+                                <!-- <td><apex:inputCheckbox value="{!atcsrtRec.estimate}" styleClass="estimate" /></td> -->
+                                <td>
+                                   {!atcsrtRec.AdjustmentReason}
+                                </td>                              
+                            </tr>
+                        </apex:repeat> 
+                    </apex:repeat>
+                </tbody>
+                  <tbody>
+
+                    <apex:variable var="solcnt" value="{!0}" />                               
+                    <apex:repeat value="{!addlistatcWrapper}" var="atcRec1" >
+                        <apex:variable var="atcsrtcount" value="{!0}" />
+                        <apex:repeat value="{!atcRec1.atcsrtWrapper}" var="atcsrtRec1" >
+                            <apex:variable var="solcnt" value="{!solcnt+1}" />
+                            <apex:variable var="atcsrtcount" value="{!atcsrtcount + 1}" />
+                            <tr>
+                                <apex:outputText rendered="{!IF(atcsrtcount == 1,true,false)}">  
+                                    <td  rowspan="{!atcRec1.atcsrtcount}" style="width:20%">
+                                        <apex:outputText value="{!atcRec1.fieldactnum}"/>
+                                    </td>
+                                </apex:outputText> 
+                                <apex:outputText rendered="{!IF(atcsrtcount == 1 && pgName != 'ReadOnly' ,true,false)}">
+                                    <td rowspan="{!atcRec1.atcsrtcount}" style="width:20%">
+                                            <a onclick="accWin('/apex/css_srtAccessChecklist?JobOrderId={!Wid}&componentId={!atcRec1.CompIds}&typ=camp&pgName=RepairRj')" href="" target="_blank">
+                                                <span class="cmi-accessibility-checklist-icon"></span></a>
+                                        
+                                    </td>
+                                </apex:outputText>
+                                <apex:outputText rendered="{!IF(atcsrtcount == 1 && pgName == 'ReadOnly' ,true,false)}">
+                                                    <td rowspan="{!atcRec1.atcsrtcount}"><span class="cmi-accessibility-checklist-disabled-icon"></span></td>
+                                                    </apex:outputText>
+                                <td>
+                                    <apex:inputCheckbox value="{!atcsrtRec1.selectedComponent}" styleClass="URCheckbox" disabled="true" ></apex:inputCheckbox>
+                                    
+                                </td>
+                                <td>
+                                    <apex:outputText value="{!atcsrtRec1.SRTCode}"/>
+                                </td>
+                                <td>
+                                    <apex:outputText value="{!atcsrtRec1.SRTDescription}"/>
+                                </td>                               
+                                <td>
+                                    <apex:outputText value="{!atcsrtRec1.Quantity}"/>
+                                </td>
+                                
+                                <!--177452 Rupesh Story Rremove Access SRT Time Column-->
+                                
+                                <!--<td>
+                                    <apex:outputText rendered="{!IF(atcsrtRec1.Type == 'Field Action Access',true,false)}" value="{!atcsrtRec1.SRTTime}"/>
+                                </td>
+                                <td>
+                                    <apex:outputText rendered="{!IF(atcsrtRec1.Type != 'Field Action Access',true,false)}" value="{!atcsrtRec1.SRTTime}"/>
+                                </td>-->
+                                
+                                <!--Finally One td-->
+                                <td>
+                                <apex:outputText value="{!atcsrtRec1.SRTTime}"/>
+                                </td>
+
+                                
+                               
+                                <td>
+                                    <apex:outputText value="{!atcsrtRec1.extendedHours}"/>
+                                </td>                                  
+                                <td>
+                                    <apex:outputText value="{!atcsrtRec1.AccessCode}"/>
+                                </td>
+                                <td>
+                                  {!atcsrtRec1.SRTHours}
+                                </td>
+                                
+                                
+                                <td>
+                                    {!atcsrtRec1.AdjustmentReason}
+                                </td>                              
+                            </tr>
+                        </apex:repeat> 
+                    </apex:repeat>
+                </tbody>
+            </table> 
+
+            <!--Total ATC Access 177452 Rupesh Story-->
+            <!--<span><b>{!$Label.css_Total_ATC_Access_Time}RRR</b></span> 
+            <div><apex:outputText value="{!totalATCAccessTime}"/></div>-->
+
+            <!-- Commented as Part of #189753 -- Rajasekhar -->
+            <!--<span><b>{!$Label.css_Total_ATC_SRT_Time}</b></span> 
+            <div id="totalATCSRT"><apex:outputText value="{!totalATCSRT}"/></div>-->
+
+            </apex:outputPanel></div>
+
+    </div>      
+</apex:component>

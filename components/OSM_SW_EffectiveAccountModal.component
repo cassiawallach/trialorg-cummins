@@ -1,0 +1,358 @@
+<apex:component id="OSM_SW_EffectiveAccountModal" controller="OSM_SW_EffectiveAccountModalCtrl">
+    <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.dataTableJqueryExtension, 'css/dataTables.bootstrap.css')}" />
+    <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.dataTableJqueryExtension, 'css/fixedHeader.bootstrap.css')}" />
+    <link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.dataTableJqueryExtension, 'css/responsive.bootstrap.css')}" />
+    
+    <script type="text/javascript" charset="utf8" src="{!URLFOR($Resource.dataTableJqueryExtension, 'js/jquery.dataTables.js')}"/>
+    <script type="text/javascript" charset="utf8" src="{!URLFOR($Resource.dataTableJqueryExtension, 'js/dataTables.bootstrap.js')}"/>
+    <script type="text/javascript" charset="utf8" src="{!URLFOR($Resource.dataTableJqueryExtension, 'js/dataTables.fixedHeader.js')}"/>
+    <script type="text/javascript" charset="utf8" src="{!URLFOR($Resource.dataTableJqueryExtension, 'js/dataTables.responsive.js')}"/>
+    <script type="text/javascript" charset="utf8" src="{!URLFOR($Resource.dataTableJqueryExtension, 'js/responsive.bootstrap.js')}"/>
+    <style>
+        #tableAccounts{
+            overflow-x:visible !important; 
+        }
+        #tableContacts{
+            overflow-x: visible !important;
+        }
+        .tab{
+            margin-bottom: 0;
+            list-style: none;
+            margin-top: 5px !important;
+            margin-left: 4px !important;
+        }
+        .table.dataTable.fixedHeader-floating{
+            display: none !important;
+        }
+        .cc_effectiveCCTable>tbody>tr:hover {
+            background-color: teal;
+            color: #ffffff;
+       }
+     
+       .nav {
+        height: 45px;
+        margin-top: -7px;
+        font-size: 13px;
+        font-weight: 500;
+        padding-left: 10px;
+       
+        
+    }
+    .nav-tabs>li.active>a{
+    color: black;
+    cursor: default;
+    background-color: #ffffff;
+    border: 1px solid teal;
+    border-bottom-color: transparent;
+   
+    }
+    .nav-tabs>li.active>a:hover,.nav-tabs>li.active>a:focus {
+    color: black;
+    cursor: default;
+    background-color: #ffffff;
+    border: 1px solid teal;
+    border-bottom-color: transparent;
+   }
+    .nav-tabs {
+    border-bottom: 1px solid teal;
+    }
+    
+    div.dataTables_wrapper div.dataTables_filter {
+        text-align: right;
+        padding-top: 10px;
+    }
+    </style>
+    <script type="text/javascript">
+        CCRZ.uiProperties.EffAccountSelView.header.tmpl = 'OSM-SW-EffAcctSel-Head-View-Desktop';
+    
+    
+    </script>
+    <script id="OSM-SW-EffAcctSel-Head-View-Desktop" type="text/template">
+        <ul class="list-inline navbar-nav cc_navbar-nav">
+            {{#if this.ro}}
+             <li class="effAccount cc_eff_account" >
+              <a href="#">
+               <!-- {{pageLabelMap 'SELECTED_ACCOUNT' workingEffAccount.name workingEffAccount.accountNumber workingEffAccount.shippingAddress.address1 workingEffAccount.shippingAddress.city workingEffAccount.shippingAddress.state workingEffAccount.shippingAddress.countryCode}} -->
+               {{unescape workingEffAccount.name}}
+              </a>
+             </li>
+            {{else}}
+             <li class="effAccount cc_eff_account" data-toggle="modal" data-target="#effAccounts">
+              <a href="#">
+               {{#if this.workingEffAccount }}
+                <!-- {{pageLabelMap 'SELECTED_ACCOUNT' workingEffAccount.name workingEffAccount.accountNumber workingEffAccount.shippingAddress.address1 workingEffAccount.shippingAddress.city workingEffAccount.shippingAddress.state workingEffAccount.shippingAddress.countryCode}} -->
+                {{unescape workingEffAccount.name}}
+               {{else}}
+                {{unescape workingEffAccount.name}}
+               {{/if}}
+               <span class="launchSel cc_launch_sel" aria-hidden="true"></span>
+              </a>
+             </li>
+            {{/if}}
+           </ul>
+           <div class="modal fade cc_modal cc_effective_accounts_modal" id="effAccounts" tabindex="-1" role="dialog" aria-labelledby="effAccountsLabel">
+            <div class="modal-dialog" >
+             <div class="modal-content cc_modal_content" style="border-radius: 0px;">
+              <div class="modal-header cc_modal_header" style="background-color:black !important;color:#ffffff;">
+               <button type="button" class="close cc_close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&#215;</span></button>
+               <h4 class="modal-title cc_modal_title" id="effAccountsLabel">{{pageLabelMap 'EFFECTIVE_ACCOUNT_TITLE'}}</h4>
+              </div>
+              <div class="modal-body cc_modal_body">
+                    <div role="tabpanel">
+                            <!-- Nav tabs -->
+                            <div align="left" class="row">
+                                    <ul id="tabs" class="nav nav-tabs"  style="float: none;"  role="tablist" >
+                                            <li role="presentation" class="tab active"><a  class="nav-link active" href="#accountTab" aria-controls="accountTab" role="tab" data-toggle="tab">Accounts</a>
+                    
+                                            </li>
+                                            <li role="presentation" class="tab"><a  href="#contactTab" aria-controls="contactTab" role="tab" data-toggle="tab">Contacts</a>
+                    
+                                            </li>
+                                    </ul>
+                            </div>
+
+                            <!-- Tab panes -->
+                            <div class="tab-content">
+                                <div role="tabpanel" class="tab-pane active" id="accountTab">
+                                    <div class="table-responsive" id="tableAccounts">
+                                        <table class="table table-hover cc_table cc_effectiveCCTable" id="effectacct-table" >
+                                        <thead class="cc_thead" style="color:black;">
+                                        <tr class="cc_tr">
+                                        <th class="cc_th_name">{{pageLabelMap 'Name'}}</th>
+                                        <th class="cc_th_account_number" style="width:9rem;">{{pageLabelMap 'LOCATION_CODE'}}</th>
+                                        <th class="cc_th_address">{{pageLabelMap 'Address'}}</th>
+                                        <th class="cc_th_picked"></th>
+                                        </tr>
+                                        </thead>
+                                        <tbody class="cc_tbody" style="color:black;">
+                                        {{#each this.effectiveList}}
+                                         {{#ifEquals this.extrinsic.DistributorType 'Distributor Account'}}
+                                        <tr class="cc_tr_values"  data-id="{{sfid}}" >
+                                        <td class="cc_td_name effective-account-name" '>{{unescape name}}</td>
+                                        <td class="cc_td_account_number">{{this.extrinsic.LocationCode}}</td>
+                                        <td class="cc_td_address">{{pageLabelMap 'ADDRESS_FORMAT' billingAddress.address1 billingAddress.city billingAddress.state billingAddress.postalCode billingAddress.countryCode}}</td>
+                                        <td><a href="#"><i class="pickSel cc_pick_account fa fa-chevron-right pickAccount" data-id="{{sfid}}" aria-hidden="true"></i><span class="sr-only">Select Account</span></a></td>
+                                        </tr>
+                                        {{/ifEquals}}
+                                        {{/each}}
+                                        
+                                        {{#each this.effectiveList}}
+                                        {{#ifEquals this.extrinsic.DistributorType 'Distributor Branch Account'}}
+                                        <tr class="cc_tr_values"  data-id="{{sfid}}  style="color:black;">
+                                        <td class="cc_td_name effective-account-name">{{name}}</td>
+                                        <td class="cc_td_account_number">{{this.extrinsic.LocationCode}}</td>
+                                        <td class="cc_td_address">{{pageLabelMap 'ADDRESS_FORMAT' billingAddress.address1 billingAddress.city billingAddress.state billingAddress.postalCode billingAddress.countryCode}}</td>
+                                        <td><a href="#"><i class="pickSel cc_pick_account fa fa-chevron-right pickAccount" data-id="{{sfid}}" aria-hidden="true"></i><span class="sr-only">Select Account</span></a></td>
+                                        </tr>
+                                        {{/ifEquals}}
+                                        {{/each}}
+                                        
+                                        <!-- {{#each this.effectiveList}}
+                                        <tr class="cc_tr_values"  data-id="{{sfid}}">
+                                        <td class="cc_td_name effective-account-name">{{name}}</td>
+                                        <td class="cc_td_account_number">{{this.extrinsic.LocationCode}}</td>
+                                        <td class="cc_td_address">{{pageLabelMap 'ADDRESS_FORMAT' billingAddress.address1 billingAddress.city billingAddress.state billingAddress.postalCode billingAddress.countryCode}}</td>
+                                        <td><a href="#"><i class="pickSel cc_pick_account fa fa-chevron-right pickAccount" data-id="{{sfid}}" aria-hidden="true"></i><span class="sr-only">Select Account</span></a></td>
+                                        </tr>
+                                        {{/each}} -->
+                                        </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div role="tabpanel" class="tab-pane" id="contactTab">
+                                    <div class="table-responsive" id="tableContacts">
+                                        <table class="table table-hover cc_table cc_effectiveCCTable" style="color:black;">
+                                            <thead class="cc_thead" style="color:black;>
+                                                <tr class="cc_tr">
+                                                <th class="cc_th_name">Contacts</th>
+                                                <!-- <th class="cc_th_account_number">{{pageLabelMap 'ACCOUNT_NUMBER'}}</th> -->
+                                                <!-- <th class="cc_th_address">{{pageLabelMap 'Address'}}</th> -->
+                                                <th class="cc_th_picked"></th>
+                                            </tr>
+                                            </thead>
+                                            <tbody class="cc_tbody" id="contactTableBody" style="color:black;">
+                                                <!-- {{#each this.contactList}} 
+                                                <tr>
+                                                    <td class="cc_td_name">{{Name}}</td>
+                                                    <td class="cc_td_account_number">{{accountNumber}}</td> 
+                                                    <td class="cc_td_address">{{pageLabelMap 'ADDRESS_FORMAT' MailingAddress.address1 MailingAddress.city MailingAddress.state MailingAddress.postalCode MailingAddress.countryCode}}</td>
+                                                    <td><a href="#"><i class="pickSel cc_pick_account fa fa-chevron-right pickContact" data-id="{{Id}}" aria-hidden="true"></i><span class="sr-only">Select Contacts</span></a></td>
+                                                </tr>
+                                                {{/each}} -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+               <!-- <div class="table-responsive">
+                <table class="table table-hover cc_table cc_effectiveCCTable">
+                 <thead class="cc_thead">
+                  <tr class="cc_tr">
+                   <th class="cc_th_name">{{pageLabelMap 'Name'}}</th>
+                   <th class="cc_th_account_number">{{pageLabelMap 'ACCOUNT_NUMBER'}}</th>
+                   <th class="cc_th_address">{{pageLabelMap 'Address'}}</th>
+                   <th class="cc_th_picked"></th>
+                  </tr>
+                 </thead>
+                 <tbody class="cc_tbody">
+                  {{#each this.effectiveList}}
+                  <tr class="cc_tr_values pickAccount"  data-id="{{sfid}}">
+                   <td class="cc_td_name">{{name}}</td>
+                   <td class="cc_td_account_number">{{accountNumber}}</td>
+                   <td class="cc_td_address">{{pageLabelMap 'ADDRESS_FORMAT' shippingAddress.address1 shippingAddress.city shippingAddress.state shippingAddress.postalCode shippingAddress.countryCode}}</td>
+                   <td><a href="#"><i class="pickSel cc_pick_account fa fa-chevron-right" data-id="{{sfid}}" aria-hidden="true"></i><span class="sr-only">Select Account</span></a></td>
+                  </tr>
+                  {{/each}}
+                 </tbody>
+                </table>
+               </div> -->
+              </div>
+             </div>
+            </div>
+           </div>
+       </script>
+
+
+       <script type="text/javascript">
+       
+        jQuery(function($){
+
+        function decodeHtml(html) {
+            var txt = document.createElement("textarea");
+            txt.innerHTML = html;
+            return txt.value;
+        }
+
+
+
+            
+
+
+            CCRZ.pubSub.once('view:EffAccountSelView:refresh',function(view){
+                var v = view;
+                var effectiveNames = document.getElementsByClassName("effAccount cc_eff_account");
+                console.log('effectiveNames %o',effectiveNames);
+                var showEffect= '{!showEffectiveAccount}';
+                var viewPrototype = Object.getPrototypeOf(view);
+                // viewPrototype.defaultProcessSelection = viewPrototype.processSelection;
+                console.log('showEffect: '+showEffect);
+                if(showEffect === 'true'){
+                    var table = $('#effectacct-table').DataTable({
+                    fixedHeader:false,
+                    response:true,
+                    "ordering": false,
+                    "lengthChange": false,
+                    "info":true,
+                    "pagingType": "first_last_numbers"
+                     
+                    
+                    });
+                    table.fixedHeader.disable();
+                    new $.fn.dataTable.FixedHeader(table);
+                }
+
+                // v.defaultProcessSelection(CCRZ.headerModel.attributes.accountId);
+
+                if (viewPrototype != null) {
+
+                
+                    viewPrototype.events = _.extend(viewPrototype.events, {
+                        "click .select_contact" : "pickContact",
+                    });
+                    
+                    viewPrototype.pickAccount = function(event) {
+                        var v = this;
+                        var selAccId = $(event.currentTarget).data("id");
+                        OSM_SW_EffectiveAccountModalCtrl.getContactsList(CCRZ.pagevars.remoteContext, selAccId, function(response){
+                            if(response.success){
+                                var contactList = response.data.contacts;
+                                CCRZ.effSelectorView.dataSet.contacts = response.data.contacts;
+                                $("#contactTableBody").empty();
+                                contactList.forEach(function(contact){
+                                    $("#contactTableBody").append('<tr><td class="cc_td_name select_contact" data-id="'+contact.Id+'" data-name="'+selAccId+'">'+contact.Name+'</td><td></td></tr>');
+                                });
+                                $('#tabs a[href=#contactTab]').tab('show');
+                            } else if(response.data.message){
+                                $("#contactTableBody").empty();
+                                $("#contactTableBody").append('<tr><td class="cc_td_name>">'+response.data.message+'</td><td></td></tr>');
+                                $('#tabs a[href=#contactTab]').tab('show');
+                            } else{
+                                
+                            }
+                            console.log(response);
+                            
+                        });
+                    
+
+
+                        // new processSelection method();
+
+                        // $('#effAccounts').modal('hide')
+                        // v.processSelection(selAccId);
+                    };
+                    viewPrototype.processSelectiond = function(selAccId){
+                        console.log("custom processSelection");
+                        var v = this;
+                        var selAcc = this.accounts.get(selAccId);
+                        if (selAcc) {
+                            $('#effAccounts').toggle('close');
+                            CCRZ.console.log(selAcc);
+                            CCRZ.pagevars.remoteContext.effAccountId = selAcc.get('sfid');
+                            v.invokeCtx('selectEffectiveAccount', selAcc.toJSON(), v.miscData, function(response) {
+                                CCRZ.console.log(response);
+                                if (response && response.success) {
+                                    // if(CCRZ.headerModel.attributes.accountId && CCRZ.headerModel.attributes.accountId != response.data.workingEffAccount.sfid)
+                                    //     CCRZ.pagevars.effAccountId = CCRZ.headerModel.attributes.accountId;
+                                    // else
+                                    CCRZ.pagevars.effAccountId = response.data.workingEffAccount.sfid;
+
+                                    if (response.data.cartBean) {
+                                    CCRZ.pagevars.currentCartID = response.data.cartBean.encryptedId;
+                                    CCRZ.pubSub.trigger('cartChange', CCRZ.pagevars.currentCartID);
+                                    }
+                                    if(CCRZ.headerModel.attributes.accountId !== response.data.workingEffAccount.sfid){
+                                        CCRZ.headerModel.attributes.accountId = response.data.workingEffAccount.sfid
+                                    }
+                                    v.postProcessSelection();
+                                }
+                            });
+                        }
+                    };
+
+                    viewPrototype.pickContact = function(event){
+                        var v = this;
+                        var selContId = $(event.currentTarget).data("id");
+                        var selAcctId = $(event.currentTarget).data("name");
+                        // CCRZ.setCookie('apex__effacc', response.data.workingEffAccount.sfid, null);
+                        CCRZ.setCookie('apex__effacc', v.dataSet.workingEffAccount.sfid, -1); 
+                        // CCRZ.setCookie('apex__reset', false, null);
+                        console.log('selContId '+selContId + ' selAcctId ' +selAcctId);
+                        if(selContId && selAcctId){
+                            // CCRZ.setCookie('apex__effcontact', selContId, 50);
+                            OSM_SW_EffectiveAccountModalCtrl.updateLatestContact(CCRZ.pagevars.remoteContext, selContId,selAcctId, function(response){
+                              // CCRZ.setCookie('apex__effacc', selAcctId, -1);
+                              // CCRZ.setCookie('apex__effcontact', selContId, -1);
+                                console.log('OSM_SW_EffectiveAccountModalCtrl resp %o',response);
+                                v.processSelection(selAcctId);
+                            });
+                        }
+
+
+                    };
+
+
+                }
+                view.delegateEvents();
+                if(CCRZ.pagevars.remoteContext.effAccountId !== CCRZ.pagevars.effAccountId){
+                    v.processSelectiond(CCRZ.pagevars.effAccountId);
+                }
+                
+
+                    
+            });
+        });
+
+       </script>
+</apex:component>

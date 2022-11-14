@@ -1,0 +1,137 @@
+<apex:page showHeader="false" sidebar="false" standardStylesheets="false" applyHtmlTag="false" controller="disco.Ctl_SF1FormsList" docType="html-5.0">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <head>
+        <Title>Mobile Forms</Title>
+        <apex:styleSheet value="{!URLFOR($Resource.disco__SLDS250, 'assets/styles/salesforce-lightning-design-system-vf.min.css')}" />
+        <apex:includeScript value="{!URLFOR($Resource.disco__jquery_3_6_0, 'jquery.min.js')}"/>
+        <apex:includeScript value="{!$Resource.disco__sf1FormsList_js}"/>
+        <!-- <script src="https://localhost:9005/sf1App/sf1FormsList.js"></script> -->
+        <style>
+            .slds-scope button.mobile-button {
+                width: 100%;
+                min-height: 50px;
+                text-align: left;
+                margin-top: 20px;
+                font-size: 18px;
+            }
+            .youreka-icon {
+                max-width: 32px;
+            }
+
+            .slds-scope div.slds-spinner_container {
+                position: fixed;
+            }
+
+            .slds-scope div.slds-tabs_default__content {
+                text-align: center;
+            }
+
+            .slds-scope .get-more {
+                margin: 12px auto;
+            }
+
+            .page-error-cont {
+                text-align: center;
+                width: 400px;
+                max-width: 90%;
+                margin: 40px auto;
+                padding: 20px;
+                background-color: #353f54;
+                color: #fff;
+                border-radius: 10px;
+            }
+        </style>
+        <script>
+            var sfEnv = {};
+            sfEnv.getMoreNewFormVFR = '{!JSENCODE($RemoteAction.Ctl_SF1FormsList.queryMoreNewMobileForms)}';
+            sfEnv.getMoreMyFormsVFR = '{!JSENCODE($RemoteAction.Ctl_SF1FormsList.queryMoreMyMobileForms)}';
+            sfEnv.getMoreAllFormsVFR = '{!JSENCODE($RemoteAction.Ctl_SF1FormsList.queryMoreAllMobileForms)}';
+            sfEnv.newFormVFR = '{!JSENCODE($RemoteAction.Ctl_SF1FormsList.newFormForFormTemplate)}';
+            sfEnv.namespace = '{!JSENCODE(namespace)}';
+            sfEnv.sldsLink = "{!URLFOR($Resource.disco__SLDS100)}";
+            sfEnv.mobileForms  = {
+                'new-form': JSON.parse('{!JSENCODE(queryAllMobileTemplates)}'),
+                'my-forms' : JSON.parse('{!JSENCODE(queryMyMobileForms)}'),
+                'all-forms': JSON.parse('{!JSENCODE(queryAllMobileForms)}')
+            }
+            sfEnv.sfTheme = '{!JSENCODE(userTheme)}';
+            sfEnv.isSF1 = sfEnv.sfTheme === 'Theme4t' ? true : false;
+            sfEnv.isLEX = sfEnv.sfTheme === 'Theme4d' ? true : false;
+        </script>
+    </head>
+    <body class="slds-scope">
+        <apex:outputPanel rendered="{!yourekaDisabled}">
+            <c:YourekaDisabled messageText="{!yourekaDisabledMessage}"/>
+        </apex:outputPanel>
+        <apex:outputPanel layout="block" styleClass="builderPageIntro alertErrorContainer" rendered="{!NOT(isUserOkForMobile)}">
+            <div class="page-error-cont">
+                <div class="alertError">
+                    Using Youreka in Salesforce1 requires a Premium+Mobile, Community+Mobile, or Template Builder Youreka User License. Please contact your System Admin for more information.
+                </div>
+            </div>
+        </apex:outputPanel>
+        <div class="slds-spinner_container slds-hide">
+            <div class="slds-spinner_brand slds-spinner slds-spinner_medium" role="alert">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+        <apex:form rendered="{!isUserOkForMobile}">
+            <div>
+                <div class="slds-page-header" role="banner">
+                    <div class="slds-media">
+                        <div class="slds-media__figure">
+                            <img class="youreka-icon" src="{!$Resource.youreka_icon_100}"/>
+                        </div>
+                        <div class="slds-media__body">
+                            <p class="slds-page-header__title slds-truncate" title="Youreka Mobile Forms">
+                                Youreka Mobile Forms
+                            </p>
+                            <!-- <p class="slds-text-body_small">
+                                Click a form to begin editing.
+                            </p> -->
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-tabs_default">
+                    <ul class="slds-tabs_default__nav js-tab-list" role="tablist">
+                        <li class="slds-tabs_default__item slds-text-title_caps slds-active" title="New Form" role="presentation">
+                            <a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" tabindex="0" aria-selected="true" aria-controls="new-form" id="new-form__item">
+                                New Form
+                            </a>
+                        </li>
+                        <li class="slds-tabs_default__item slds-text-title_caps" title="My Forms"
+                      role="presentation">
+                            <a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" tabindex="-1" aria-selected="false" aria-controls="my-forms" id="my-forms__item">
+                                My Forms
+                            </a>
+                        </li>
+                        <li class="slds-tabs_default__item slds-text-title_caps" title="All Mobile Forms"
+                      role="presentation">
+                            <a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" tabindex="-1" aria-selected="false" aria-controls="all-forms" id="all-forms__item">
+                                All Mobile Forms
+                            </a>
+                        </li>
+                    </ul>
+                    <div id="new-form" class="slds-tabs_default__content slds-show" role="tabpanel" aria-labelledby="new-form__item">
+                        <p class="slds-p-left_small slds-text-heading_small">Create a new Form from a Template:</p>
+                        <div class="new-form-rows slds-m-horizontal_x-small"></div>
+                        <button type="button" data-type="new-form" class="slds-button slds-button_neutral get-more js-get-more new-form-btn">Get More Templates</button>
+                    </div>
+                    <div id="my-forms" class="slds-tabs_default__content slds-hide" role="tabpanel" aria-labelledby="my-forms__item">
+                        <p class="slds-p-left_small slds-text-heading_small">Pick a Form to edit:</p>
+                        <div class="my-forms-rows slds-m-horizontal_x-small"></div>
+                        <button type="button" data-type="my-forms" class="slds-button slds-button_neutral get-more js-get-more my-forms-btn">Get More Forms</button>
+                    </div>
+                    <div id="all-forms" class="slds-tabs_default__content slds-hide" role="tabpanel" aria-labelledby="all-forms__item">
+                        <p class="slds-p-left_small slds-text-heading_small">Pick a Form to edit:</p>
+                        <div class="all-forms-rows slds-m-horizontal_x-small"></div>
+                        <button type="button" data-type="all-forms" class="slds-button slds-button_neutral get-more js-get-more all-forms-btn">Get More Forms</button>
+                    </div>
+                </div>
+            </div>
+        </apex:form>
+    </body>
+</html>
+</apex:page>

@@ -1,0 +1,183 @@
+<apex:component controller="CSS_LaunchEDS_Controller_Repair" allowDML="true">
+		<apex:attribute name="jobOrdId" description="CSS Job Order Number"
+			type="ID" assignTo="{!eds_JobOrd}" />
+		<apex:attribute name="jobOrdStatus" description="CSS Job Order Status"
+			type="String" />
+		<apex:attribute name="sDSID" description="CSS Job Customer Name"
+			type="String" />
+		<apex:attribute name="dDSIDUpdTime" description="CSS Job Technician ID"
+			type="DateTime" />
+		<c:CSS_edsRepairOrMaintenanceStatus />
+		<!--  <c:css_styles_intake />-->
+		<style>
+	.EditPopupEDS {
+		background-color: white;
+		border-style: solid;
+		border-width: 2px;
+		left: 37%;
+		padding: 10px;
+		position: absolute;
+		z-index: 9999;
+		width: 450px;
+		height: 230px;
+		top: 40%;
+	}
+	
+	.closeButton {
+		float: right;
+	}
+	</style>
+	<fieldset style="border: 1px solid grey;">
+		<legend class="fs_legend">EDS</legend>
+		<apex:outputPanel rendered="{!IF(Contains(jobOrdStatus,'Repair'), false, true)}">
+			<div class="col-md-12 col-xs-12">
+				<div class="panel-heading">
+					<b> Work in EDS </b>
+				</div>
+				<div class="panel-body">
+					<div class="col-md-12 col-xs-12">
+						<p>Once you have completed your EDS session and close or exit,
+							the EDS information will be sent back to Cummins Service System
+							(CSS).</p>
+					</div>
+					<div class="row">
+						<div class="col-md-6 col-xs-12">You can launch EDS now or if
+							you are returning from EDS and the DSID is still open, you can
+							return to EDS to continue your work.
+						</div>
+						<div class="col-md-6 col-xs-12">
+							If you are returning from EDS,you have closed the DSID and
+							repairs have been made, you can now view the solutions and
+							repairs made in the repair section.<br /> <br />
+						</div>
+					</div>
+                    <br/><br/>
+					<div class="row">
+						<div class="col-md-6 col-xs-12">
+							<apex:commandLink action="{!getID}" value="Launch EDS" styleclass="saveButton" />
+						</div>
+						<div class="col-md-6 col-xs-12">
+							<apex:commandLink action="{!getJobRepairs}" value="Pull In Repairs" styleclass="saveButton" />
+						</div>
+					</div>
+					<apex:outputPanel rendered="{!IF(dDSIDUpdTime == null, false, true)}">
+						<b> Last Activity: {!DSIDStamp}</b>
+					</apex:outputPanel>
+				</div>
+			</div>
+		</apex:outputPanel>
+		<apex:outputPanel id="EditPopup">
+			<apex:outputPanel id="popInnerOutputPn5" styleClass="EditPopupEDS"
+				rendered="{!displayPopup10}">
+				<table id="fieldTable">
+					<tr>
+						<td>
+							<font face="Helvetica neue" size="5px">No Repairs have been made yet</font> 
+							<apex:commandButton image="{!URLFOR($Resource.CSS_Cross_Button)}" 
+								title="Close the popup" action="{!closePopup10}"
+								styleClass="closeButton" rerender="EditPopup">
+							</apex:commandButton>
+						</td>
+					</tr>
+					<tr>
+						<!--  <td> Modify attachment for {!atthId} </td>-->
+					</tr>
+					<tr>
+						<td><br /> <br /> <br /> <br /> <br /> <br />
+							<div align="center" draggable="false">
+								<apex:commandButton value="Close" action="{!closePopup10}"
+									styleClass="cancelButton" rerender="EditPopup"></apex:commandButton>
+							</div>
+						</td>
+					</tr>
+				</table>
+			</apex:outputPanel>
+		</apex:outputPanel>
+		<apex:outputPanel rendered="{!IF(Contains(jobOrdStatus,'Repair'), true, false)}">
+			<div class="col-md-12 col-xs-12">
+				<div class="panel-heading">
+					<b> Solutions and Repairs Made </b>
+				</div>
+			</div>
+			<div class="panel-body">
+				<div class="col-md-12 col-xs-12">
+					<apex:outputPanel rendered="{!IF(dDSIDUpdTime == null, false, true)}">
+						<b> Last Activity: {!DSIDStamp}</b>
+					</apex:outputPanel>
+				</div>
+				<br />
+				<div class="col-md-12 col-xs-12">
+					<apex:outputPanel rendered="{!IF(sDSID == 'OPEN' || sDSID == null, true, false)}" >
+		               	<!-- BEGIN - Defect 50307 -->
+						<div class="col-md-12 col-xs-12">
+							<div class="panel-heading">
+								<b> Work in EDS </b>
+							</div>
+							<div class="panel-body">
+								<div class="col-md-12 col-xs-12">
+									<p>Once you have completed your EDS session and close or exit,
+										the EDS information will be sent back to Cummins Service System
+										(CSS).</p>
+								</div>
+								<div class="row">
+									<div class="col-md-6 col-xs-12">You can launch EDS now or if
+										you are returning from EDS and the DSID is still open, you can
+										return to EDS to continue your work.
+									</div>
+									<div class="col-md-6 col-xs-12">
+										If you are returning from EDS,you have closed the DSID and
+										repairs have been made, you can now view the solutions and
+										repairs made in the repair section.<br /> <br />
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-md-6 col-xs-12">
+										<apex:commandLink action="{!getID}" value="Launch EDS" styleclass="saveButton" />
+									</div>
+									<div class="col-md-6 col-xs-12">
+										<apex:commandLink action="{!getJobRepairs}" value="Pull In Repairs" styleclass="saveButton" />
+									</div>
+								</div>
+								<apex:outputPanel rendered="{!IF(dDSIDUpdTime == null, false, true)}">
+									<b> Last Activity: {!DSIDStamp}</b>
+								</apex:outputPanel>
+							</div>
+						</div>
+						<!-- END - Defect 50307 -->
+					</apex:outputPanel>
+
+					<apex:outputPanel rendered="{!IF(sDSID == 'CLOSE', true, false)}">
+						<div class="col-md-12 col-xs-12"></div>
+						<div class="row">
+							<div class="col-md-6 col-xs-6">Solutions</div>
+							<div class="col-md-6 col-xs-6">Repairs</div>
+						</div>
+						<hr />
+						<apex:repeat value="{!solutions}" var="CSSol" id="theRepeat">
+							<div class="row">
+								<div class="col-md-6 col-xs-12">
+									{!CSSol.Case_Name__c} <br /> {!CSSol.Solution_Title__c}<br />
+								</div>
+								<div class="col-md-6 col-xs-12">
+									<apex:outputPanel rendered="{!CSSol.Name == 'Repair Successful - Problem Solved'}">
+										<a><span class="css_repairSuccessfulProblemSolved"></span></a>{!CSSol.Name}
+									</apex:outputPanel>
+									<apex:outputPanel rendered="{!CSSol.Name == 'Repair Successful - Solved with additional parts/procedure'}">
+										<a><span class="css_repairSuccessfulWithAddtionalParts"></span></a>{!CSSol.Name}
+									</apex:outputPanel>
+									<apex:outputPanel rendered="{!CSSol.Name == 'Repair Performed - Did not resolve root cause'}">
+										<a><span class="css_repairPerformedDidNotResolveRootCause"></span></a>{!CSSol.Name}
+									</apex:outputPanel>
+									<apex:outputPanel rendered="{!CSSol.Name == 'Repair not performed'}">
+										<a> <span class="css_repairNotPerformed"></span></a>{!CSSol.Name}
+                                       </apex:outputPanel>
+								</div>
+							</div>
+							<hr />
+						</apex:repeat>
+					</apex:outputPanel>
+				</div>
+			</div>
+		</apex:outputPanel>
+	</fieldset>
+</apex:component>

@@ -1,0 +1,1 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="25.263" height="16.5" viewBox="0 0 25.263 16.5" id="Message"><defs><style>.a{fill:#005587;}</style></defs><path class="a" d="M0,16.5V2.579L12.508,9.492l.049.023h.074l.05-.023L25.263,2.579V16.5ZM0,0H25.263L12.632,6.937Z"/></svg>

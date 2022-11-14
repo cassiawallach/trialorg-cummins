@@ -1,0 +1,111 @@
+<apex:page applyHtmlTag="false"  docType="html-5.0" sidebar="false" showHeader="false" controller="OSM_SW_OrderConfirmationPg_Ctrl"
+           standardStylesheets="false" cache="false">
+    <script id="FSD-Confirmation-Template" type="text/template">
+    </script>
+    
+    <script>
+       Visualforce.remoting.timeout = 120000; // Set timeout at page level
+        jQuery(function($){
+         
+            CCRZ.util.createView({
+            viewName : "testView",
+            className : "OSM_SW_OrderConfirmationPg_Ctrl",
+            desktop:{template : 'FSD-Confirmation-Template',target : 'waitingDiv'},
+            phone:{template : 'MyExampleTemplate',target : 'waitingDiv'},
+            init:function()
+            {
+                // debugger;
+                this.callDiscountingLogic();
+            },
+            callDiscountingLogic:function(){
+                objThis =  this;
+                this.invokeContainerLoadingCtx($('body'),"callDiscountingLogic",CCRZ.pagevars.queryParams.o,
+                function(result,event)
+                {
+                    console.log(result);
+                    console.log(event);
+                    if(event.status && event.result.success && event.result.data != undefined)
+                    {
+                        objThis.callOneFSD();
+                    }
+                    else
+                    {
+                        //$("#waitingDiv").text("");
+                        $('#waitingDiv').css("display","none");
+                        $('#errorDiv').css("display","block");
+                    }
+                    
+                },{buffer:false,escape:false,nmsp:false});
+            },
+            callOneFSD:function(){
+                   objThis =  this;
+                 this.invokeContainerLoadingCtx($('body'),"doOneBMSFSDCall",CCRZ.pagevars.queryParams.o,
+                function(result,event)
+                {
+                    console.log(result);
+                    console.log(event);
+                    //console.log('GOMS>>>>>>>'+event.result.data.IsGOMSAccount);
+                    
+                    if(event.status && event.result.success && event.result.data != undefined)
+                    {
+                        if(event.result.data.FSDNotNeeded)
+                        {
+                            if(event.result.data.IsGOMSAccount)
+                            {
+                                objThis.callInterCompanyITN();
+                                window.location = "CCRZ__OrderConfirmation?o=" + CCRZ.pagevars.queryParams.o + getCSRQueryString();
+                            }
+                            else
+                            {
+                                window.location = "CCRZ__OrderConfirmation?o=" + CCRZ.pagevars.queryParams.o + getCSRQueryString();
+                            }
+                            
+                        }
+                        else
+                        {
+                            if(event.result.data.FSDRes != undefined && !event.result.data.FSDRes.exceptionFlag)
+                            { 
+                                objThis.callInterCompanyITN();
+                                window.location = "CCRZ__OrderConfirmation?o=" + CCRZ.pagevars.queryParams.o + getCSRQueryString();
+                            }
+                            else
+                            {
+                                //$("#waitingDiv").text("{!$Label.OSM_SW_Checkout_OneBMS_Validation_Failure}");
+                                $('#waitingDiv').css("display","none");
+                                $('#errorDiv').css("display","block");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        $('#waitingDiv').css("display","none");
+                        $('#errorDiv').css("display","block");
+                    }
+                    
+                    
+                  
+                },{buffer:true,escape: true, timeout: 120000,nmsp:false});
+            },
+            callInterCompanyITN:function(){
+                 this.invokeContainerLoadingCtx($('body'),"callInterCompany",CCRZ.pagevars.queryParams.o,
+                function(result,event)
+                {
+                    console.log(result);
+                    console.log(event);
+                    
+                },{buffer:false,escape:false,nmsp:false});
+            }
+            
+            });
+            
+        });
+    </script>
+        <div id="waitingDiv">
+            Please wait while we process your order.
+        </div>
+        <div id="errorDiv" style="background-color: #FEEEED;padding: 10px;border: solid 2px red;display:none">
+            <span class="icon-Warning" style="color:red; font-size:18px; vertical-align: middle;padding: 2px;"></span>
+            &nbsp;{!$Label.OSM_SW_Checkout_OneBMS_Validation_Failure}
+        </div>
+    
+</apex:page>

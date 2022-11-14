@@ -1,0 +1,236 @@
+<apex:page controller="EVL_ServiceOrderAuditTrialPDFController" renderAs="pdf">
+    <html>
+        
+        <head>
+            <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet"/>
+            <style type="text/CSS">
+                @page:first
+                {
+                size:landscape;
+                }
+                .table-bordered {
+                border: 1px solid #000;
+                border-collapse : collapse;
+                }
+                .table-cell {
+                vertical-align: center;
+                border: 1px solid #000;
+                border-spacing: 0;
+                text-align:center;
+                border-collapse: collapse;
+                }
+                
+                .customerTable {
+                border:1px solid #333;
+                background:#333;
+                }
+                .customerTable tr td {
+                border:1px solid #333;
+                }
+                .customerTable tr td:last-child {
+                border-right:none;
+                border-bottom:none;
+                }
+                
+            </style>
+        </head>
+        
+        <apex:form >
+            <apex:image url="{!$Label.EVL_Logo_ImageURL}" width="50" height="50"/>
+            <apex:outputPanel >
+                <apex:pageBlock title="Work Order Details">
+                    <table id="pgb_table" class="customerTable print-friendly" style="border:0px solid #333;" cellspacing="0" cellpadding="6" width="80%">
+                        <tr >
+                            <td style="font-weight:" >{!$Label.EVL_customer_name}</td>
+                            <td >{!woObj.EVL_Customer__c}</td>
+                            <td style="font-weight:">{!$Label.EVL_Account}</td>
+                            <td >{!woObj.Account.Name}</td>
+                            
+                        </tr>
+                        <tr >
+                            <td style="font-weight:">{!$Label.EVL_Service_Order}</td>
+                            <td >{!woObj.WorkOrderNumber}</td>
+                            <td style="font-weight:">{!$Label.EVL_Shop_Work_Order}</td>
+                            <td >{!woObj.Dealer_Shop_Work_Order__c}</td>
+                        </tr>
+                        <tr >
+                            <td style="font-weight:">{!$Label.EVL_Technician}</td>
+                            <td >{!woObj.EVL_Assigned_Technician__c}</td>
+                        </tr>
+                    </table>
+                </apex:pageBlock>
+                
+                <apex:pageBlock title="Asset Details">
+                    <table id="pgb_table1" class="customerTable print-friendly" style="border:0px solid #333;" cellspacing="0" cellpadding="6" width="80%">
+                        <tr >
+                            <td style="font-weight:">{!$Label.Evl_Asset}</td>
+                            <td >{!woObj.Asset.Name}</td>
+                            <td style="font-weight:">{!$Label.EVL_SMN}</td>
+                            <td >{!woObj.FSL_SMN__r.Name}</td>
+                        </tr>
+                        <tr >
+                            <td style="font-weight:">{!$Label.EVL_Make}</td>
+                            <td >{!woObj.Make__c}</td>
+                            <td style="font-weight:">{!$Label.EVL_Model}</td>
+                            <td >{!woObj.Model__c}</td>
+                        </tr>
+                        <tr >
+                            <td style="font-weight:">{!$Label.EVL_VIN}</td>
+                            <td >{!woObj.Asset.VIN__c}</td>
+                            <td style="font-weight:">{!$Label.EVL_Unit_Number}</td>
+                            <td >{!woObj.Unit_Number_Formula__c}</td>
+                        </tr>
+                        <tr >
+                            <td style="font-weight:">{!$Label.EVL_Application}</td>
+                            <td>{!woObj.Application__c}</td>
+                            <td style="font-weight:">{!$Label.EVL_Warranty_Start_Date}</td>
+                            <td ><apex:outputField value="{!woObj.Warranty_Start_Date__c}" /></td>
+                        </tr>
+                        <tr >
+                            <td style="font-weight:">{!$Label.EVL_Failure_Date}</td>
+                            <td ><apex:outputField value="{!woObj.Failure_Date__c}" /></td>
+                            <td style="font-weight:">{!$Label.EVL_product_Mileage}</td>
+                            <td >{!woObj.Mileage__c} {!woObj.Mileage_Measure__c}</td>
+                        </tr>
+                        <tr >
+                            <td style="font-weight:"></td>
+                            <td ></td>
+                            <td style="font-weight:">{!$Label.EVL_Product_Hours}</td>
+                            <td >{!woObj.CSS_Hours__c}</td>
+                        </tr>
+                        
+                    </table>
+                </apex:pageBlock>
+                
+                
+                
+            </apex:outputPanel>
+            <br/>
+            <apex:outputPanel layout="block" style="page-break-inside: avoid;">
+                <apex:pageBlock title="Solution History">
+                    <apex:outputPanel rendered="{!woObj.CSS_Solutions__r.size > 0}">
+                        <apex:pageBlockTable value="{!woObj.CSS_Solutions__r}" var="part" width="99%" border="1" style="font-size: 15px;">
+                            <apex:column value="{!part.Name}"/>
+                            <apex:column value="{!part.FSL_Fault_Code_Formula__c}"/>
+                            <apex:column >
+                                <apex:facet name="header">Solution Position</apex:facet>
+                                {!part.FSL_PositionOfSolution__c}
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Solution Content</apex:facet>
+                                {!part.FSL_Solution_Content__r.Title}
+                            </apex:column>
+                            <apex:column value="{!part.Diagnostic_Response__c}"/>
+                            <apex:column value="{!part.Diagnostic_Notes__c}"/>
+                            <apex:column value="{!part.Repair_Response__c}"/>
+                            <apex:column value="{!part.Repair_Notes__c}"/>
+                            <apex:column >
+                                <apex:facet name="header">Created By</apex:facet>
+                                {!part.CreatedBy.Name}
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Last Modified Date</apex:facet>
+                                <apex:outputField value="{!part.LastModifiedDate}" />
+                            </apex:column>
+                        </apex:pageBlockTable>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!woObj.CSS_Solutions__r.size < 1}">
+                        <table class="customerTable" style="border:1px solid #333;font-size: 15px;" cellspacing="0" border="1" cellpadding="6" width="90%">
+                            <tr >
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Solution Name</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Fault Code</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Solution Position</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Solution Content</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Diagnostic Response</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Diagnostic Notes</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Repair Response</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Repair Notes</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Created By</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Last Modified Date</th>
+                            </tr>
+                            <tr>
+                                <td colspan="10">No Records available</td>
+                            </tr>
+                        </table>
+                    </apex:outputPanel>
+                </apex:pageBlock>
+            </apex:outputPanel>
+            <apex:outputPanel layout="block" style="page-break-inside: avoid;">
+                <apex:pageBlock title="Service Order History">
+                    <apex:outputPanel rendered="{!woObj.Histories.size > 0}">
+                        <apex:pageBlockTable value="{!woObj.Histories}" var="part" width="90%" border="1" style="font-size: 15px;">
+                            <apex:column >
+                                <apex:facet name="header">Date</apex:facet>
+                                <apex:outputField value="{!part.CreatedDate}" />
+                            </apex:column>
+                            <apex:column value="{!part.Field}">
+                                <apex:facet name="header">Field</apex:facet>
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">User</apex:facet>
+                                <apex:outputField value="{!part.CreatedBy.Name}" />
+                            </apex:column>
+                            <apex:column value="{!part.OldValue}">
+                                <apex:facet name="header">Original Value</apex:facet>
+                            </apex:column>
+                            <apex:column value="{!part.NewValue}"/>
+                        </apex:pageBlockTable>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!woObj.Histories.size < 1}">
+                        <table class="customerTable" style="border:1px solid #333;font-size: 15px;" cellspacing="0" border="1" cellpadding="6" width="90%">
+                            <tr >
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Date</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Field</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >User</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Original Value</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >New Value</th>
+                            </tr>
+                            <tr>
+                                <td colspan="5">No Records available</td>
+                            </tr>
+                        </table>
+                    </apex:outputPanel>
+                </apex:pageBlock>
+            </apex:outputPanel>
+            
+            <apex:outputPanel layout="block" style="page-break-inside: avoid;" rendered="{!isFactoryUser}">
+                <apex:pageBlock title="Audit Trial">
+                    <apex:outputPanel rendered="{!woObj.FSL_Audit_Trail__r.size > 0}">
+                        <apex:pageBlockTable value="{!woObj.FSL_Audit_Trail__r}" var="audit" width="99%" border="1" style="font-size: 15px;">
+                            <apex:column >
+                                <apex:facet name="header">User Name</apex:facet>
+                                {!audit.CreatedBy.Name}
+                            </apex:column>
+                            <apex:column >
+                                <apex:facet name="header">Date/Time</apex:facet>
+                                <apex:outputField value="{!audit.CreatedDate}" />
+                            </apex:column>
+                            <apex:column value="{!audit.Symptom__c}"/>
+                            <apex:column value="{!audit.Rank__c}"/>
+                            <apex:column value="{!audit.FSL_Description__c}"/>
+                            <apex:column >
+                                <apex:facet name="header">Solution</apex:facet>
+                                {!audit.Icon__c}
+                            </apex:column>
+                        </apex:pageBlockTable>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!woObj.FSL_Audit_Trail__r.size < 1}">
+                        <table class="customerTable" style="border:1px solid #333;font-size: 15px;" cellspacing="0" border="1" cellpadding="6" width="90%">
+                            <tr >
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >User Name</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Date/Time</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Symptom/Fault Code</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Rank</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Description</th>
+                                <th style="font-weight: bold;border-bottom:1px solid #333;border-right:1px solid #333;" >Solution</th>
+                            </tr>
+                            <tr>
+                                <td colspan="10">No Records available</td>
+                            </tr>
+                        </table>
+                    </apex:outputPanel>
+                </apex:pageBlock>
+            </apex:outputPanel>
+        </apex:form>
+    </html>
+</apex:page>

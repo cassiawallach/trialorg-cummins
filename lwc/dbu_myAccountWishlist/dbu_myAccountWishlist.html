@@ -1,0 +1,140 @@
+<template>
+  <template if:true={ScreenLoaded}>
+    <c-dbu_page-loader></c-dbu_page-loader>
+  </template>
+
+  <div class="slds-container_x-large slds-container_center wishListPage">
+    <template if:false={dataLoadedSuccess}>
+      <strong class="noWishList">{dbu_noitemsWishlist}</strong>
+    </template>
+
+    <template if:true={dataLoadedSuccess}>
+      <h4>{dbu_myAccount_yourWishList} ({noOfItems} {items})</h4>
+      <div class="slds-grid slds-wrap cartTitHeader">
+        <div class="slds-col slds-size_5-of-12 slds-col_padded">
+          {dbu_myAccount_product}
+        </div>
+        <div class="slds-col slds-size_2-of-12 slds-col_padded">
+          {dbu_myAccount_quantity}
+        </div>
+        <div class="slds-col slds-size_2-of-12 slds-col_padded">
+          {dbu_myAccount_unitPrice}
+        </div>
+        <div class="slds-col slds-size_2-of-12 slds-col_padded">
+          &nbsp;
+        </div>
+        <div class="slds-col slds-size_1-of-12 slds-col_padded">
+          &nbsp;
+        </div>
+      </div>
+
+      <template for:each={wishlistItems} for:item="wishlist">
+        <div key={wishlist.ProductID} class="slds-grid slds-wrap cartItemRow">
+          <div class="slds-col slds-size_5-of-12 slds-col_padded slds-grid slds-wrap itemInfo">
+            <div class="slds-col slds-size_3-of-12 slds-col_padded">
+            <!--  <img src={wishlist.ProductURL} />--> 
+
+              <template if:true ={wishlist.ProductURL}>
+                <c-dbu_image-Generator imageurl={wishlist.ProductURL}></c-dbu_image-Generator>
+                </template>
+            </div>
+            <div class="slds-col slds-size_9-of-12">
+              <h6><a href={productURL} onclick={navigateToProductPage} data-productname={wishlist.ProductName} data-id={wishlist.ProductID}>{wishlist.ProductName}</a></h6>
+              
+              <template if:false={wishlist.IsCoreProductcheck}>
+              <template if:true ={wishlist.stockstatus}>
+                <span class="stockAvb outStockClr" data-val={dbu_myAccount_inStock}>{dbu_myAccount_inStock}</span>
+              </template>
+            </template>
+            <template if:false={wishlist.IsCoreProductcheck}>
+              <template if:false ={wishlist.stockstatus}>
+                <span class="stockAvb outStockClr" data-val={dbu_myAccount_outOfStock}>{dbu_myAccount_outOfStock}</span>
+              </template>
+            </template>
+            <!--Sasikanth CECI-957 start-->
+            <template if:true={wishlist.promotionTag}>
+              <div class="d-flex sale-tag mt-10">
+                <img alt = "Clearance Sale" src={clearanceImg}>
+                <span>{wishlist.promotionTag}</span>
+                <!-- <span>Clearance Sale</span> -->
+              </div>
+            </template>
+            <!--Sasikanth CECI-957 end-->
+            </div>
+
+          </div>
+          <div class="slds-col slds-size_2-of-12 slds-col_padded qty blockAlign">
+            <template if:true ={wishlist.stockstatus}>
+
+            <template if:false ={wishlist.quantityThresholdExceeded}>
+            <lightning-combobox name="progress1" value={valueDrp} placeholder={wishlist.ProductQuantity} options={wishlist.quantityOptions}
+             class="productDetail_Combo qtyDropdown" data-id={wishlist.ProductID} data-quantity={wishlist.ProductQuantity} onchange={handleChangeQnty}>
+            </lightning-combobox>
+            </template>
+            <template if:true ={wishlist.quantityThresholdExceeded}>
+              <template if:true ={wishlist.quantityVisible}>
+                <lightning-combobox name="progress" value={valueDrpdwnlst} placeholder={wishlist.ProductQuantity} options={options}
+                class="productDetail_Combo qtyDropdown" data-id={wishlist.ProductID} data-quantity={wishlist.ProductQuantity} onchange={handleChangeQnty} >
+                </lightning-combobox>
+              </template>
+              <template if:false ={wishlist.quantityVisible}>
+                <lightning-input class="wishlisttextboxinput" type="text" name="progress2" data-id={wishlist.ProductID} value={enteredval} data-quantity={wishlist.ProductQuantity} onchange={handleChangeQnty} ></lightning-input> 
+              </template>
+            </template>
+
+          </template>
+          </div>
+
+          <div class="slds-col slds-size_2-of-12 slds-col_padded amt">
+            {wishlist.modifiedPrice}
+          </div>
+          <div class="slds-col slds-size_12-of-12 slds-large-size_2-of-12 slds-col_padded cart">
+            <template if:true={wishlist.stockstatus}>
+            <template if:false={wishlist.IsCoreProductcheck}>
+              
+            <button class="slds-button slds-button_brand" data-prodid={wishlist.ProductID} data-crateproduct={wishlist.IsCrateProductCheck}
+              data-quantity={wishlist.ProductQuantity} data-proname={wishlist.ProductName} data-proprice={wishlist.modifiedPrice} onclick={handleAddToCart}>{dbu_myAccount_addToCart}</button>
+            </template>
+          </template>
+          </div>
+          <div class="slds-col slds-size_1-of-12 slds-col_padded del">
+            <template if:false={wishlist.IsCoreProductcheck}>
+            <a class="del">
+              <i class="icon-trash" data-prodid={wishlist.ProductID} data-proname={wishlist.ProductName} data-prodsku={wishlist.ProductSKU}
+                   data-proprice={wishlist.modifiedPrice} onclick={onWishlistDelete}></i>
+            </a>
+          </template>
+          </div>
+        </div>
+      </template>
+
+      <div class="newAddBtn">
+        <button class="slds-button slds-button_outline-brand" onclick={handleAddallItemsToCart}><span>+</span>
+            {dbu_myAccount_addAllItemsToCart}
+        </button>
+    </div> 
+
+    </template>
+
+
+  </div>
+  
+  <template if:true={isModalOpen}>
+    <!-- Modal/Popup Box LWC starts here -->
+    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open alertPopUp">
+      <div class="slds-modal__container">
+ 
+         <!-- Modal/Popup Box LWC body starts here -->
+         <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+          <!-- <h5>Success</h5> -->
+          <p>{recordUpdate}</p>
+         </div>
+         <!-- Modal/Popup Box LWC footer starts here -->
+         <footer class="slds-modal__footer t-center">
+         <a class="slds-button slds-button_outline-brand" onclick={closeModal}>{dbu_done}</a> 
+         </footer>
+      </div>
+    </section>
+  <div class="slds-backdrop slds-backdrop_open"></div>
+  </template>
+</template>

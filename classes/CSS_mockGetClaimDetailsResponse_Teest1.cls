@@ -1,0 +1,18 @@
+global class CSS_mockGetClaimDetailsResponse_Teest1 implements HttpCalloutMock {
+    global HTTPResponse respond(HTTPRequest req) 
+    {
+        
+        HttpResponse res = new HttpResponse();
+        {
+            //string json = '{"Header": {"ReturnCodeDescription": "<Message from Siebel>","Status": "Success","ReturnCode": "<MessageCode from Siebel>","MessageIdentifier": "<Identifier from MW>" },"DataArea": [{"FailurePoint": 3,"FailureMeasure": "FailureMeasure","ECMCalibAfter": "ECMCalibAfter","FailureList": [{"SystemCode": "TestComplaint","ComponentCode": "Complaint","FailMode": "FailMode","PartsList":[{"AdjustedQty": "3","PartNumber": "TestComplaint","PartDescription": "Complaint","ClaimedQty": "FailMode"}],"OtherClaimablesList":[{"Item": "TestComplaint","ItemDescription": "Complaint","ClaimedAmount": 2.2,"AdjustedAmount": 2.2}],"SRTList":[{"SRTCode": "TestComplaint","SRTDescription": "Complaint","SRTHours": 2.8,"AdjustedHours": 2.8,"ClaimedQty": 2,"ClaimedHours": 2.8,"ClaimedPercent": 8}],"TravelList":[{"TravelType": "Towing","ClaimedDistance": "3","ClaimedHours": "22"}]}] ,"Notes": [{"Note": "TestComplaint","NoteType": "Complaint","CreatedDate": "2012-06-06"},{"Note": "TestComplaint1","NoteType":"Complaint","CreatedDate":"2012-06-07"},{"Note": "TestCause","NoteType": "Cause","CreatedDate": "2013-06-10"},{"Note": "TestCorrection1","NoteType": "Correction","CreatedDate": "2014-06-09"},{"Note": "TestComplaint","NoteType": "Reject Reason","CreatedDate": "2015-06-06"},{"Note": "TestComplaint1","NoteType": "Narratives","CreatedDate": "2016-06-07"},{"Note": "NarrativesTest","NoteType": "Narratives","CreatedDate": "2017-06-10"},{"Note": "RejectTest reason","NoteType": "Cause","CreatedDate": "2018-06-09"}]}]}';
+            string json = '{"Header": {"ReturnCodeDescription": "<Message from Siebel>","Status": "Success","ReturnCode": "<MessageCode from Siebel>","MessageIdentifier": "<Identifier from MW>" },"DataArea": [{"FailurePoint": 3,"FailureMeasure": "FailureMeasure","ECMCalibAfter": "ECMCalibAfter","FailureList": [{"SystemCode": "TestComplaint","ComponentCode": "Complaint","FailMode": "FailMode","PartsList":[{"AdjustedQty": "3","PartNumber": "TestComplaint","PartDescription": "Complaint","ClaimedQty": "FailMode"}],"OtherClaimablesList":[{"Item": "TestComplaint","ItemDescription": "Complaint","ClaimedAmount": 2.2,"AdjustedAmount": 2.2}],"SRTList":[{"SRTCode": "TestComplaint","SRTDescription": "Complaint","SRTHours": 2.8,"AdjustedHours": 2.8,"ClaimedQty": 2,"ClaimedHours": 2.8,"ClaimedPercent": 8}],"TravelList":[{"TravelType": "Non-Commercial","ClaimedDistance": "3","ClaimedHours": "22"}]}] ,"Notes": [{"Note": "TestComplaint","NoteType": "Complaint","CreatedDate": "2012-06-06"},{"Note": "TestComplaint1","NoteType":"Complaint","CreatedDate":"2012-06-07"},{"Note": "TestCause","NoteType": "Cause","CreatedDate": "2013-06-10"},{"Note": "TestCorrection1","NoteType": "Correction","CreatedDate": "2014-06-09"},{"Note": "TestComplaint","NoteType": "Reject Reason","CreatedDate": "2015-06-06"},{"Note": "TestComplaint1","NoteType": "Narratives","CreatedDate": "2016-06-07"},{"Note": "NarrativesTest","NoteType": "Narratives","CreatedDate": "2017-06-10"},{"Note": "RejectTest reason","NoteType": "Cause","CreatedDate": "2018-06-09"}]}]}';
+
+            //Create a fake response
+            res.setHeader('Content-Type', 'application/json');
+            res.setStatusCode(200);
+            		res.setBody(json);
+        }
+        return res;
+    }
+    
+}

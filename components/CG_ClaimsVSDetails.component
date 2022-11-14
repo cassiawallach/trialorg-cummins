@@ -1,0 +1,693 @@
+<apex:component layout="none" controller="CG_CL_ClaimsVSDetails" allowDML="true">
+    <apex:attribute type="CG_CL_ClaimsVS" name="claimdetail" description="Selected claim" assignTo="{!controllerRef}"/>
+    <apex:attribute type="string" name="JobId" description="Service job Id details"/>
+    <apex:attribute name="isAutomatedDealerloaction" description="getting isAutomatedDealer value from main class" type="Boolean" />
+
+    <style>
+        @media (min-width: 750px) and (max-width: 1149px){
+
+            table.cmi_jobplan-table{
+                width:10% !important;
+                display:inline;
+            }
+        }
+        .column-left{ float: left; width: 9%; }
+        .column-left1{ float: left;  width: 25%; padding-left: 15px; }
+        .column-left2{ float: left;  width: 25%; padding-left: 10px; display: inline-block;}
+        .column-right{ float: right; width: 25%; }
+        .column-rightt{ float: right;}
+        .column-centers{ text-align:center;}
+        .column-center{ float: center; width: 25%; }
+        .column-center2{ float: center; width: 20%; padding-left: 250px;}
+        
+        .column-center3 {padding-left: 99px;}
+        
+        .accordion-toggle.hover:hover {
+            background: #007c7c;
+            color :#ffffff;
+            font-weight:bold;
+        } 
+        .cmi_viewmore-icon-2 {
+            border-left: 6px solid #606060 !important;
+        }
+        .cmi_viewmore-icon-open{
+            border-top: 6px solid #606060 !important;
+            border-left:6px solid transparent !important;
+        }
+    </style>
+
+
+    <!-- Claim Details accordian starts -->
+
+    <apex:actionRegion >
+        <apex:actionFunction name="assignPrimaryFlag" action="{!assignPrimaryFailureFlag}" rerender="">
+            <apex:param name="claimidd" value="" assignto="{!primaryFlagClaimID}"/>
+            <apex:param name="failureIdd" value="" assignto="{!primaryFlagFailureID}"/>
+        </apex:actionFunction>
+        <apex:actionFunction name="assignLineItemAC" action="{!nvJobNotes}" reRender="">
+            <apex:param name="ClaimIdItem" value="" assignTo="{!LineItemClaimId}"/>
+        </apex:actionFunction>
+    </apex:actionRegion>
+    <div class="panel-group cmi_generic-accordion" id="expandAllAccordion">                                   
+
+        <div class="panel panel-default">
+            <div class="panel-heading active">
+                <h4 class="panel-title" data-toggle="collapse" data-parent="#accordion1-heading-3" data-target="#details-accordian" aria-expanded="true">
+                    <a class="accordion-toggle" >
+                        <span class="glyphicon glyphicon-minus"></span>
+                        <div class="cmi_accordion-title">{!$Label.CSS_Claim_Details}</div>
+                    </a>
+                </h4>
+            </div>
+            <div id="details-accordian" class="panel-collapse collapse in" aria-expanded="true">
+                <apex:outputPanel >
+                    <apex:repeat value="{!controllerRef.lstclaimWrapper}" var="wrap" id="theRepeathead">
+                        <div class="panel-heading1" style="border:1px solid #a9a9a9;padding:10px 15px;margin:10px 50px;">
+                            <div class="cmi_viewmore-2">
+                                <h4 class="panel-title hover">
+                                    <a class="accordion-toggle hover">
+                                        <span class="cmi_viewmore-icon-2 column-left" id="AccountCodeAccordians" style="margin:0px;"></span>
+                                        <div class="text" style="cursor:pointer;">
+                                            <div class="col-sm-4">{!$Label.CSS_Account_Code}:{!wrap.accountcode} </div>
+                                            <div class="col-sm-2">{!wrap.claimFAType} {!wrap.claimFACampaignNumber}</div>
+                                            <div class="col-sm-3">{!$Label.CG_ClaimId}:{!wrap.claimid}</div>
+                                            <div class="col-sm-2">{!$Label.CSS_Status}:{!wrap.status}</div>
+                                            <div class="clearfix"></div>
+                                        </div>
+                                    </a>
+                                </h4>
+                                <!--  </div> -->
+                                <div class="cmi_viewmore-body-2" aria-expanded="true">
+                                    <div class="panel-body">
+
+                                        <div class="hidden-xs">
+
+                                            <div class="row">
+                                                <br/>
+                                                <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+                                                    <u><div class="cmi_accordion-title"><b>{!$Label.css_compfailid}</b></div></u><br/> <br/>
+                                                    <hr style="border-top:1px solid #eee;margin-top:-10px !important;"/>
+                                                    <!-- added the below condition as per the story 156990-->
+                                                    <!-- dealer check venkat---:{!$Setup.css_header_nav__c.RSWButtonEnable__c}
+claim enable check venkat---:{!controllerRef.displayEdit}
+Status venkat---:{!controllerRef.ClaimsRec.Status__c}
+ERP system venkat---:{!controllerRef.claimsRec.Account__r.ERP_System__c}-->
+                                                    <!--  <apex:outputPanel rendered="{!IF((controllerRef.ClaimsRec.Status__c == 'Draft' || controllerRef.ClaimsRec.Status__c =='Pending Authorization') && ((controllerRef.displayEdit == true && $Setup.css_header_nav__c.RSWButtonEnable__c == true) || controllerRef.claimsRec.Account__r.ERP_System__c == 'One BMS'),true,false)}">-->
+
+                                                    <apex:outputPanel rendered="{!if((wrap.showEditLink == true) && (controllerRef.displayEdit == true || controllerRef.claimsRec.Account__r.ERP_System__c == 'One BMS'),true,false)}">                                                  
+                                                        <div style="float: right;margin-right:5px;">
+                                                            <i class="CMI-edit-icon"></i>
+                                                            <apex:commandLink value="{!$Label.css_Edit}" action="{!nvFC}" />
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel id="detTable">
+                                                        <table class="mytable table table-bordered table-striped cmi_jobplan-table" width="100%" cellpadding="0" cellspacing="0"> 
+                                                            <thead>
+                                                                <tr>
+                                                                    <th style="text-align:Center">{!$ObjectType.CSS_Solution_Component__c.fields.CSS_Primary_Failure__c.Label}</th>
+                                                                    <th style="text-align:Center">{!$Label.CSS_Fail_Code}</th>
+                                                                    <th style="text-align:Center">{!$Label.CG_FailureName}</th>
+
+                                                                    <!-- commented CSS_Validation_Message column as per The Gap story #149875, -By RAJESH 11th June 2018 -->
+                                                                    <!--th>{!$Label.CSS_Validation_Message}</th-->
+                                                                </tr>
+                                                            </thead>
+                                                            <apex:outputPanel id="testing123" rendered="{!IF(wrap.failureWrapper.size>0 , true, false)}">
+                                                                <apex:repeat value="{!wrap.failureWrapper}" var="failurewrap">
+
+                                                                    <tr>
+                                                                        <td>
+                                                                            <div class="column-centers">
+																				<apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c==false, true,false)}">
+                                                                                <input type="radio" name="{!wrap.claimid}" id="{!failurewrap.validationmessage}" value="{!failurewrap.PrimaryFailureFlag}" onClick="assignPrimaryFlag('{!wrap.claimid}','{!failurewrap.validationmessage}');"/>
+                                                                                </apex:outputPanel>
+                                                                                <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c==true, true,false)}">
+                                                                                <input type="radio" disabled="true" name="{!wrap.claimid}" id="{!failurewrap.validationmessage}" value="{!failurewrap.PrimaryFailureFlag}" onClick="assignPrimaryFlag('{!wrap.claimid}','{!failurewrap.validationmessage}');"/>
+                                                                                </apex:outputPanel>    
+                                                                                <script>
+                                                                                    var primFaFlag = '{!failurewrap.PrimaryFailureFlag}';
+                                                                                    console.log('primFaFlag'+primFaFlag);
+                                                                                    if(primFaFlag == 'true'){
+                                                                                        document.getElementById('{!failurewrap.validationmessage}').setAttribute("checked","checked");
+                                                                                    }
+                                                                                </script>
+                                                                            </div>
+
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!failurewrap.failcode}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!failurewrap.failureName}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <!-- commented validationmessage value as per The Gap story #149875, -By RAJESH 11th June 2018 -->
+                                                                        <!--td align="center">
+<div class="column-centers"><apex:outputText value="{!failurewrap.validationmessage}"></apex:outputText></div>
+</td-->
+                                                                    </tr>
+                                                                </apex:repeat>
+                                                            </apex:outputPanel>
+                                                        </table>
+                                                    </apex:outputPanel>
+                                                </div>
+
+                                                <apex:outputPanel >
+                                                    <apex:outputPanel rendered="{!if((controllerRef.claimsRec.Multi_PSN_Claim__c==true && controllerRef.claimsRec.CSS_Job__c==null),true,false)}">
+                                                        <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+                                                            <u><div class="cmi_accordion-title"><b>{!$Label.css_MultiPSN}</b></div></u><br/> <br/>
+                                                            <hr style="border-top:1px solid #eee;margin-top:-10px !important;"/>
+                                                            <!--{!if((wrap.showEditLink == true) && ((controllerRef.displayEdit == true && $Setup.css_header_nav__c.RSWButtonEnable__c == true) || controllerRef.claimsRec.Account__r.ERP_System__c == 'One BMS'),true,false)}-->
+                                                            <apex:outputPanel rendered="{!if((wrap.showEditLink == true) && (controllerRef.displayEdit == true || controllerRef.claimsRec.Account__r.ERP_System__c == 'One BMS'),true,false)}">                                                    
+                                                                <div style="float: right;margin-right:5px;">
+                                                                    <i class="CMI-edit-icon"></i>
+                                                                    <apex:commandLink value="{!$Label.css_Edit}" action="{!nvMPSN}" />
+                                                                </div>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel id="otc1">
+                                                                <table class="mytable table table-bordered table-striped cmi_jobplan-table" width="100%" cellpadding="0" cellspacing="0"> 
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th style="text-align:Center">{!$Label.css_Product_Serial_Number}</th>
+                                                                            <th style="text-align:Center">{!$Label.CSS_Failure_Date}</th>
+                                                                            <th style="text-align:Center">{!$Label.CSS_Failure_Pointc}</th>
+                                                                            <th style="text-align:Center">{!$Label.css_Warranty_Start_Date}</th>
+                                                                            <th style="text-align:Center">{!$Label.CSS_VIN}</th>
+                                                                            <th style="text-align:Center">{!$Label.CG_Calibration_Before}</th>
+                                                                            <th style="text-align:Center">{!$Label.CG_Revision_Before}</th>
+                                                                            <th style="text-align:Center">{!$Label.CG_Calibration_After}</th>
+                                                                            <th style="text-align:Center">{!$Label.CG_Revision_After}</th>
+                                                                        </tr>
+                                                                    </thead>
+
+                                                                    <!--  <apex:outputPanel rendered="{!IF(wrap.lstmultiPartWrapper.size>0,true,false)}">  {!controllerRef.lstmultiPartWrapper}" -->
+                                                                    <apex:repeat value="{!wrap.lstmultiPartWrapper}" var="multiPSNWrap">
+
+                                                                        <tr>
+                                                                            <td>
+                                                                                <div class="column-centers"><apex:outputText value="{!multiPSNWrap.PSN}"></apex:outputText></div>
+
+                                                                            </td>
+                                                                            <td> 
+                                                                                <div class="column-centers"><apex:outputText value="{!multiPSNWrap.FailureDate}"></apex:outputText></div>
+                                                                                <!--<div class="column-centers">
+<apex:outputText value="{0,date,dd'/'MM'/'yyyy}">
+<apex:param value="{!multiPSNWrap.FailureDate}" />   
+</apex:outputText>
+</div>-->
+                                                                            </td>
+                                                                            <td>
+                                                                                <div class="column-centers"><apex:outputText value="{!multiPSNWrap.FailurePoint} &nbsp; {!multiPSNWrap.Milagemeasure}" escape="false"></apex:outputText></div>
+                                                                            </td>
+                                                                            <td>
+                                                                                <div class="column-centers"><apex:outputText value="{!multiPSNWrap.WarrantyStartDate}"></apex:outputText></div>
+                                                                            </td>
+                                                                            <td>
+                                                                                <div class="column-centers"><apex:outputText value="{!multiPSNWrap.VIN}"></apex:outputText></div>
+                                                                            </td>
+                                                                            <td>
+                                                                                <div class="column-centers"><apex:outputText value="{!multiPSNWrap.CalibrationBefore}"></apex:outputText></div>
+                                                                            </td>
+                                                                            <td>
+                                                                                <div class="column-centers"><apex:outputText value="{!multiPSNWrap.RevisionBefore}"></apex:outputText></div>
+                                                                            </td>
+                                                                            <td>
+                                                                                <div class="column-centers"><apex:outputText value="{!multiPSNWrap.CalibrationAfter}"></apex:outputText></div>
+                                                                            </td>
+                                                                            <td>
+                                                                                <div class="column-centers"><apex:outputText value="{!multiPSNWrap.RevisionAfter}"></apex:outputText></div>
+                                                                            </td>
+
+                                                                        </tr>    
+                                                                    </apex:repeat>
+                                                                    <!-- </apex:outputPanel>-->
+                                                                </table>
+
+                                                            </apex:outputPanel>
+                                                        </div>
+                                                    </apex:outputPanel>
+
+                                                    <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+                                                        <!--Added code for displaying the Parts based on claim type as per The gap story #147389, -By RAJESH 14th JUNE 2018 -->            
+                                                        <!--<apex:outputPanel rendered="{!IF(JobId!=null,true,false)}">   
+<u><div class="cmi_accordion-title"><b>{!$Label.CSS_Parts_ERP}</b></div></u><br/> <br/>
+</apex:outputPanel>-->
+                                                        <!--<apex:outputPanel rendered="{!IF(JobId==null,true,false)}">     
+<u><div class="cmi_accordion-title"><b>{!$Label.CSS_Parts}</b></div></u><br/> <br/>
+</apex:outputPanel>-->
+                                                        <!-- <apex:outputPanel rendered="{!IF((JobId!=null && $Setup.css_header_nav__c.RSWButtonEnable__c==false || (controllerRef.claimsRec.Account__r.Type !='Dealer Account' && CONTAINS($UserRole.Name,'Factory'))),true,false)}"> -->
+                                                        <!-- <apex:outputPanel rendered="{!IF(isAutomatedDealerloaction=true,true,false)}">     
+<u><div class="cmi_accordion-title"><b>{!$Label.CSS_Parts_ERP}</b></div></u><br/> <br/>
+</apex:outputPanel>-->
+                                                        <!-- <apex:outputPanel rendered="{!IF(((JobId==null) || ($Setup.css_header_nav__c.RSWButtonEnable__c==true && JobId!=null)),true,false)}"> -->
+                                                        <apex:outputPanel rendered="{!IF(isAutomatedDealerloaction=false,true,false)}">     
+                                                            <u><div class="cmi_accordion-title"><b>{!$Label.CSS_Parts}</b></div></u><br/> <br/>
+                                                        </apex:outputPanel> 
+
+                                                        <hr style="border-top:1px solid #eee;margin-top:-10px !important;"/>
+                                                        <!-- added the below condition as per the story 156990-->
+                                                        <!-- dealer check venkat---:{!$Setup.css_header_nav__c.RSWButtonEnable__c}
+claim enable check venkat---:{!controllerRef.displayEdit}
+Status venkat---:{!controllerRef.ClaimsRec.Status__c}
+ERP system venkat---:{!controllerRef.claimsRec.Account__r.ERP_System__c}-->
+                                                        <!--   <apex:outputPanel rendered="{!IF((controllerRef.ClaimsRec.Status__c == 'Draft' || controllerRef.ClaimsRec.Status__c =='Pending Authorization') && ((controllerRef.displayEdit == true && $Setup.css_header_nav__c.RSWButtonEnable__c == true) || controllerRef.claimsRec.Account__r.ERP_System__c == 'One BMS'),true,false)}">-->
+                                                        <apex:outputPanel rendered="{!IF(isAutomatedDealerloaction=true,true,false)}">     
+                                                            <apex:outputPanel rendered="{!if((wrap.showEditLink == true) && (controllerRef.displayEdit == true || controllerRef.claimsRec.Account__r.ERP_System__c == 'One BMS'),true,false)}">                                                    
+                                                                <div style="float: right;margin-right:5px;">
+                                                                    <i class="CMI-edit-icon"></i>
+                                                                    <apex:commandLink value="{!$Label.css_Edit}" action="{!nvparts}" />
+                                                                </div>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel id="PFERP">
+
+                                                            <table class="mytable table table-bordered table-striped cmi_jobplan-table" width="100%" cellpadding="0" cellspacing="0"> 
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th style="text-align:Center">{!$Label.CSS_Fail_Code}</th>
+                                                                        <!--<th style="text-align:Center">{!$Label.CSS_Service} {!$Label.CSS_Part_Number}</th>-->
+                                                                        <th style="text-align:Center">{!$Label.CSS_Part_Number}</th>
+                                                                        <th style="text-align:Center">{!$Label.CSS_Part} {!$Label.CSS_Description}</th>
+                                                                        <th style="text-align:Center">{!$Label.css_Quantity}</th>
+                                                                        <th style="text-align:Center">{!$Label.css_Percent_Requested}</th>
+                                                                        <apex:outputPanel rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==true,false,true)}">
+                                                                          <!--  <th style="text-align:Center">{!$Label.css_Unit_Price_USD}</th>
+                                                                            <th style="text-align:Center">{!$Label.CSS_Total_USD}</th>-->
+                                                                            <th style="text-align:Center">{!$Label.CG_UnitPrice} ({!controllerRef.userRec.DefaultCurrencyIsoCode})</th>
+                                                                            <th style="text-align:Center">{!$Label.CSS_Total} ({!controllerRef.userRec.DefaultCurrencyIsoCode})</th>
+                                                                        </apex:outputPanel>
+                                                                        <!-- commented CSS_Validation_Message column as per The Gap story #149875, -By RAJESH 11th June 2018 -->
+                                                                        <!--th>{!$Label.CSS_Validation_Message}</th-->
+
+                                                                    </tr>
+                                                                </thead>
+                                                                <apex:outputPanel rendered="{!IF(wrap.partsWrapper.size>0 , true, false)}">
+
+                                                                    <apex:repeat value="{!wrap.partsWrapper}" var="partswrap">
+                                                                        <tr>
+                                                                            <td>
+                                                                                <div class="column-centers"><apex:outputText value="{!partswrap.failcode}"></apex:outputText></div>
+                                                                            </td>
+                                                                            <td>
+                                                                                <div class="column-centers"><apex:outputText value="{!partswrap.spn}"></apex:outputText></div>
+                                                                            </td>
+                                                                            <td>
+                                                                                <div class="column-centers"><apex:outputText value="{!partswrap.partdescription}"></apex:outputText></div>
+                                                                            </td>
+                                                                            <td>
+                                                                                <div class="column-centers"><apex:outputText value="{!partswrap.quantity}"></apex:outputText></div>
+                                                                            </td>
+                                                                            <td>
+                                                                                <div class="column-centers"><apex:outputText value="{!partswrap.percentReq}"></apex:outputText></div>
+                                                                            </td>
+                                                                            <apex:outputPanel rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c==true,false,true)}">
+                                                                                <td>
+
+                                                                                    <div>
+                                                                                        <apex:outputPanel rendered="{!IF(partswrap.sellprice != null && partswrap.sellprice != '',true,false)}">
+                                                                                            <apex:outputText styleClass="column-rightt" value="{!partswrap.sellprice}"></apex:outputText>
+                                                                                        </apex:outputPanel>
+                                                                                        <apex:outputPanel styleClass="column-rightt" rendered="{!IF(partswrap.sellprice == null || partswrap.sellprice == '',true,false)}">
+                                                                                            0.00
+                                                                                        </apex:outputPanel>
+                                                                                    </div>
+                                                                                </td>
+                                                                                <td >
+                                                                                    <div><apex:outputText styleClass="column-rightt" value="{!partswrap.totalUSD}"></apex:outputText></div>
+                                                                                    <!-- <div><apex:outputText styleClass="column-rightt" value="{!partswrap.ExtendedPrice}"></apex:outputText></div>-->
+                                                                                </td>
+                                                                            </apex:outputPanel>
+                                                                            <!-- commented validationmessage value as per The Gap story #149875, -By RAJESH 11th June 2018 -->
+                                                                            <!--td>
+<div class="column-centers"><apex:outputText value="{!partswrap.validationmessage}"></apex:outputText></div>
+</td-->
+                                                                        </tr>    
+                                                                    </apex:repeat>
+                                                                </apex:outputPanel>
+                                                            </table>
+
+                                                        </apex:outputPanel>
+                                                    </div>
+                                                </apex:outputPanel>
+
+
+                                                <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+                                                    <u><div class="cmi_accordion-title"><b>{!$Label.CSS_OtherClaimables}</b></div></u><br/> <br/>
+                                                    <hr style="border-top:1px solid #eee;margin-top:-10px !important;"/>
+                                                    <!-- added the below condition as per the story 156990-->
+                                                    <!-- dealer check venkat---:{!$Setup.css_header_nav__c.RSWButtonEnable__c}
+claim enable check venkat---:{!controllerRef.displayEdit}
+Status venkat---:{!controllerRef.ClaimsRec.Status__c}
+ERP system venkat---:{!controllerRef.claimsRec.Account__r.ERP_System__c}-->
+                                                    <!--<apex:outputPanel rendered="{!if((wrap.showEditLink == true) && (controllerRef.ClaimsRec.Status__c == 'Draft' || controllerRef.ClaimsRec.Status__c =='Pending Authorization') && ((controllerRef.displayEdit == true && $Setup.css_header_nav__c.RSWButtonEnable__c == true) || controllerRef.claimsRec.Account__r.ERP_System__c == 'One BMS'),true,false)}">-->
+                                                    <apex:outputPanel rendered="{!if((wrap.showEditLink == true) && (controllerRef.displayEdit == true || controllerRef.claimsRec.Account__r.ERP_System__c == 'One BMS'),true,false)}">                                                    
+                                                        <div style="float: right;margin-right:5px;">
+                                                            <i class="CMI-edit-icon"></i>
+                                                            <apex:commandLink value="{!$Label.css_Edit}" action="{!nvparts}" />
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel id="otc">
+                                                        <table class="mytable table table-bordered table-striped cmi_jobplan-table" width="100%" cellpadding="0" cellspacing="0"> 
+                                                            <thead>
+                                                                <tr>
+                                                                    <th style="text-align:Center">{!$Label.CSS_Fail_Code}</th>
+                                                                    <th style="text-align:Center">{!$Label.CSS_Claims_Items}</th>
+                                                                    <th style="text-align:Center">{!$Label.css_Quantity}</th>
+                                                                   <!-- <th style="text-align:Center">{!$Label.CSS_Claims_Amount}</th>--><!-- added by venkat for GSSC 148-->
+                                                                    <th style="text-align:Center">{!$Label.CSS_Amount} ({!controllerRef.userRec.DefaultCurrencyIsoCode})</th>
+                                                                    <th style="text-align:Center">{!$Label.css_Percent_Requested}</th>
+                                                                    <!-- commented CSS_Validation_Message column as per The Gap story #149875, -By RAJESH 11th June 2018 -->
+                                                                    <!--th>{!$Label.CSS_Validation_Message}</th-->
+
+                                                                </tr>
+                                                            </thead>
+                                                            <apex:outputPanel rendered="{!IF(wrap.otherClaimWrapper.size>0,true,false)}">
+                                                                <apex:repeat value="{!wrap.otherClaimWrapper}" var="ocwrap">
+
+                                                                    <tr>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!ocwrap.failcode}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!ocwrap.item}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!ocwrap.quantity}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!ROUND(VALUE(ocwrap.amount), 2)}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!ocwrap.percentReq}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <!-- commented validationmessage value as per The Gap story #149875, -By RAJESH 11th June 2018 -->
+                                                                        <!--td>
+<div class="column-centers"><apex:outputText value="{!ocwrap.validationmessage}"></apex:outputText></div>
+</td-->
+
+                                                                    </tr>    
+                                                                </apex:repeat>
+                                                            </apex:outputPanel>
+                                                        </table>
+                                                    </apex:outputPanel>
+                                                </div>
+
+                                                <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+                                                    <u><div class="cmi_accordion-title"><b>{!$Label.CSS_Travel_Towing_Meals_and_Lodging}</b></div></u><br/> <br/>
+                                                    <hr style="border-top:1px solid #eee;margin-top:-10px !important;"/>
+                                                    <!-- added the below condition as per the story 156990-->
+                                                    <!-- dealer check venkat---:{!$Setup.css_header_nav__c.RSWButtonEnable__c}
+claim enable check venkat---:{!controllerRef.displayEdit}
+Status venkat---:{!controllerRef.ClaimsRec.Status__c}
+ERP system venkat---:{!controllerRef.claimsRec.Account__r.ERP_System__c}-->
+                                                    <!--<apex:outputPanel rendered="{!if((wrap.showEditLink == true) && (controllerRef.ClaimsRec.Status__c == 'Draft' || controllerRef.ClaimsRec.Status__c =='Pending Authorization') && ((controllerRef.displayEdit == true && $Setup.css_header_nav__c.RSWButtonEnable__c == true) || controllerRef.claimsRec.Account__r.ERP_System__c == 'One BMS'),true,false)}">-->
+                                                    <apex:outputPanel rendered="{!if((wrap.showEditLink == true) && (controllerRef.displayEdit == true || controllerRef.claimsRec.Account__r.ERP_System__c == 'One BMS'),true,false)}">                                                    
+                                                        <div style="float: right;margin-right:5px;">
+                                                            <i class="CMI-edit-icon"></i>
+                                                            <apex:commandLink value="{!$Label.css_Edit}" action="{!nvparts}" />
+                                                            <!-- <a onclick="srtEdit('/apex/CG_ClaimsSRTEditPopUp?ClaimsId={!CID}&type=AdditionalDiag&pgName=ClaimsSRTs','srtPopup',900)" href="" target="_blank"  onmouseover="" style="cursor: pointer;">{!$Label.css_Edit}</a><!--Kalpana:Added as per stroy#121938,118127-->
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel id="ttml">
+                                                        <table class="mytable table table-bordered table-striped cmi_jobplan-table" width="100%" cellpadding="0" cellspacing="0"> 
+                                                            <thead>
+                                                                <tr>
+                                                                    <th style="text-align:Center">{!$Label.CSS_Fail_Code}</th>
+                                                                    <th style="text-align:Center">{!$Label.CSS_Type}</th>
+                                                                    <!--<th class="column-centers">{!$Label.css_Technician}</th> --> <!-- Removed the column based on confirmation from Rajesh B & Julie for Defect 151666 Rajasekhar H -->
+                                                                   <!-- <th style="text-align:Center">{!$Label.CSS_TotalExpense}</th>-->
+                                                                   <th style="text-align:Center">Expense Total ({!controllerRef.userRec.DefaultCurrencyIsoCode})</th>
+                                                                    <th style="text-align:Center">{!$Label.css_Percent_Requested}</th>
+                                                                    <!-- commented CSS_Validation_Message column as per The Gap story #149875, -By RAJESH 11th June 2018 -->
+                                                                    <!--th>{!$Label.CSS_Validation_Message}</th-->
+
+                                                                </tr>
+                                                            </thead>
+                                                            <apex:outputPanel rendered="{!IF(wrap.TTMLWrapper.size>0 , true, false)}">
+                                                                <apex:repeat value="{!wrap.TTMLWrapper}" var="TTMLwrap">
+
+                                                                    <tr>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!TTMLwrap.failcode}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!TTMLwrap.type}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <!-- Commented based on Confirmation from Rajesh B & Julie for defect 151666 Rajasekhar H -->
+                                                                        <!--<td>
+<div class="column-centers"><apex:outputText value="{!TTMLwrap.Technician}"></apex:outputText></div>
+</td> -->
+                                                                        <td>
+                                                                            <div><apex:outputText styleClass="column-center3" value="{!ROUND(VALUE(TTMLwrap.expenseTotal), 2)}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!TTMLwrap.percentReq}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <!-- commented validationmessage value as per The Gap story #149875, -By RAJESH 11th June 2018 -->
+                                                                        <!--td>
+<div class="column-centers"><apex:outputText value="{!TTMLwrap.validationmessage}"></apex:outputText></div>
+</td-->
+
+                                                                    </tr>    
+                                                                </apex:repeat>
+                                                            </apex:outputPanel>
+                                                        </table>
+                                                    </apex:outputPanel>
+                                                </div>
+
+                                                <div class="col-md-12 col-xs-12" >
+                                                    <u><div class="cmi_accordion-title"><b>{!$Label.CSS_Claims_SRT}</b></div></u><br/> <br/>
+                                                    <hr style="border-top:1px solid #eee;margin-top:-10px !important;"/>
+                                                    <!-- added the below condition as per the story 156990-->
+                                                    <!-- dealer check venkat---:{!$Setup.css_header_nav__c.RSWButtonEnable__c}
+claim enable check venkat---:{!controllerRef.displayEdit}
+Status venkat---:{!controllerRef.ClaimsRec.Status__c}
+ERP system venkat---:{!controllerRef.claimsRec.Account__r.ERP_System__c}-->
+                                                    <!--<apex:outputPanel rendered="{!if((wrap.showEditLink == true) && (controllerRef.ClaimsRec.Status__c == 'Draft' || controllerRef.ClaimsRec.Status__c =='Pending Authorization') && ((controllerRef.displayEdit == true && $Setup.css_header_nav__c.RSWButtonEnable__c == true) || controllerRef.claimsRec.Account__r.ERP_System__c == 'One BMS'),true,false)}">-->
+                                                    <apex:outputPanel rendered="{!if((wrap.showEditLink == true) && (controllerRef.displayEdit == true || controllerRef.claimsRec.Account__r.ERP_System__c == 'One BMS'),true,false)}">                                                    
+                                                        <div style="float: right;margin-right:5px;">
+                                                            <i class="CMI-edit-icon"></i>
+                                                            <apex:commandLink value="{!$Label.css_Edit}" action="{!nvsrts}" />
+                                                            <!-- <a onclick="srtEdit('/apex/CG_ClaimsSRTEditPopUp?ClaimsId={!CID}&type=AdditionalDiag&pgName=ClaimsSRTs','srtPopup',900)" href="" target="_blank"  onmouseover="" style="cursor: pointer;">{!$Label.css_Edit}</a><!--Kalpana:Added as per stroy#121938,118127-->
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel id="srt">
+                                                        <table class="mytable table table-bordered table-striped cmi_jobplan-table" width="100%" cellpadding="0" cellspacing="0"> 
+                                                            <thead>
+                                                                <tr>
+                                                                    <th style="text-align:Center">{!$Label.CSS_Fail_Code}</th>
+                                                                    <th style="text-align:Center">{!$Label.css_SRT_Code}</th>
+                                                                    <th style="text-align:Center">{!$Label.css_SRT_Description}</th>
+                                                                    <th style="text-align:Center">{!$Label.CSS_Access_Code}</th>
+                                                                    <th style="text-align:Center">{!$Label.css_SRT_Time}</th>
+                                                                    <th style="text-align:Center">{!$Label.css_Quantity}</th>
+                                                                    <th style="text-align:Center">{!$Label.css_Percent_Requested}</th>
+                                                                    <th style="text-align:Center">{!$Label.CSS_Claimed_Hours}</th>
+                                                                    <!-- commented CSS_Validation_Message column as per The Gap story #149875, -By RAJESH 11th June 2018 -->
+                                                                    <!--th>{!$Label.CSS_Validation_Message}</th-->
+
+                                                                </tr>
+                                                            </thead>
+                                                            <apex:outputPanel rendered="{!IF(wrap.SRTsWrapper.size>0 , true, false)}">
+                                                                <apex:repeat value="{!wrap.SRTsWrapper}" var="SRTswrap">
+
+                                                                    <tr>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!SRTswrap.failcode}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!SRTswrap.srtcode}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!SRTswrap.srtDesc}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!SRTswrap.accesscode}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td >
+                                                                            <div><apex:outputText styleClass="column-rightt" value="{!SRTswrap.srtTime}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!SRTswrap.quantity}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!SRTswrap.percentReq}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div><apex:outputText styleClass="column-rightt"  value="{!SRTswrap.claimedHours}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <!-- commented validationmessage value as per The Gap story #149875, -By RAJESH 11th June 2018 -->
+                                                                        <!--td>
+<div class="column-centers"><apex:outputText value="{!SRTswrap.validationmessage}"></apex:outputText></div>
+</td-->
+                                                                    </tr>
+
+
+                                                                </apex:repeat>
+                                                            </apex:outputPanel>
+                                                        </table>
+                                                    </apex:outputPanel>
+                                                    <div class ="row" style="margin-top:10px">
+                                                        <div class="col-sm-12">      
+                                                            <span><b>{!$Label.CG_TotalSRTHours}</b></span> 
+                                                            <apex:outputPanel id="totalsrtTime">
+                                                                {!wrap.SRTTime}
+                                                            </apex:outputPanel>
+                                                        </div>    
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+                                                    <u><div class="cmi_accordion-title"><b>{!$Label.css_Camp_TRP_ATC}</b></div></u><br/> <br/>
+                                                    <hr style="border-top:1px solid #eee;margin-top:-10px !important;"/>
+                                                    <!-- added the below condition as per the story 156990-->
+                                                    <!-- dealer check venkat---:{!$Setup.css_header_nav__c.RSWButtonEnable__c}
+claim enable check venkat---:{!controllerRef.displayEdit}
+Status venkat---:{!controllerRef.ClaimsRec.Status__c}
+ERP system venkat---:{!controllerRef.claimsRec.Account__r.ERP_System__c}-->
+                                                    <!-- <apex:outputPanel rendered="{!if((wrap.showEditLink == true) && (controllerRef.ClaimsRec.Status__c == 'Draft' || controllerRef.ClaimsRec.Status__c =='Pending Authorization') && ((controllerRef.displayEdit == true && $Setup.css_header_nav__c.RSWButtonEnable__c == true) || controllerRef.claimsRec.Account__r.ERP_System__c == 'One BMS'),true,false)}">-->
+                                                    <apex:outputPanel rendered="{!if((wrap.showEditLink == true) && (controllerRef.displayEdit == true || controllerRef.claimsRec.Account__r.ERP_System__c == 'One BMS'),true,false)}">                                                    
+                                                        <div style="float: right;margin-right:5px;">
+                                                            <i class="CMI-edit-icon"></i>
+                                                            <apex:commandLink value="{!$Label.css_Edit}" action="{!nvsrts}" />
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel id="camp">
+                                                        <table class="mytable table table-bordered table-striped cmi_jobplan-table" width="100%" cellpadding="0" cellspacing="0"> 
+                                                            <thead>
+                                                                <tr>
+                                                                    <th style="text-align:Center">{!$Label.CSS_Fail_Code}</th>
+                                                                    <th style="text-align:Center">{!$Label.CSS_Field_Action_Number}</th>
+                                                                    <th style="text-align:Center">{!$Label.css_SRT_Code}</th>
+                                                                    <th style="text-align:Center">{!$Label.css_SRT_Description}</th>
+                                                                    <th style="text-align:Center">{!$Label.CSS_Access_Code}</th>
+                                                                    <th style="text-align:Center">{!$Label.css_SRT_Time}</th>
+                                                                    <th style="text-align:Center">{!$Label.CSS_Qty}</th>
+                                                                    <th style="text-align:Center">{!$Label.css_Percent_Requested}</th>
+                                                                    <th style="text-align:Center">{!$Label.CSS_Claimed_Hours}</th>
+                                                                    <!-- commented CSS_Validation_Message column as per The Gap story #149875, -By RAJESH 11th June 2018 -->
+                                                                    <!--th>{!$Label.CSS_Validation_Message}</th-->
+
+                                                                </tr>
+                                                            </thead>
+                                                            <apex:outputPanel rendered="{!IF(wrap.fieldActionSRTsWrapper.size>0 , true, false)}">
+                                                                <apex:repeat value="{!wrap.fieldActionSRTsWrapper }" var="faSRTswrap">
+
+                                                                    <tr>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!faSRTswrap.failcode}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!faSRTswrap.fan}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!faSRTswrap.srtcode}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!faSRTswrap.srtDesc}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!faSRTswrap.accesscode}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td >
+                                                                            <div><apex:outputText styleClass="column-rightt" value="{!faSRTswrap.srtTime}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!faSRTswrap.quantity}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div class="column-centers"><apex:outputText value="{!faSRTswrap.percentReq}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <td>
+                                                                            <div><apex:outputText styleClass="column-rightt" value="{!faSRTswrap.claimedHours}"></apex:outputText></div>
+                                                                        </td>
+                                                                        <!--<td>
+<div class="column-centers"><apex:outputText value="{!faSRTswrap.validationmessage}"></apex:outputText></div>
+</td>-->
+                                                                    </tr>
+
+
+                                                                </apex:repeat>
+                                                            </apex:outputPanel>
+                                                        </table>
+                                                    </apex:outputPanel>
+
+                                                    <div class ="row" style="margin-top:10px">
+                                                        <div class="col-sm-12">      
+                                                            <span><b>{!$Label.CG_TotalSRTHours}</b></span> 
+                                                            <apex:outputPanel id="totalFATime">
+                                                                {!wrap.FASRTTime}
+                                                            </apex:outputPanel>
+                                                        </div>    
+                                                    </div> 
+                                                </div>
+
+                                                <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+                                                    <u><div class="cmi_accordion-title"><b>{!$Label.css_Notes}</b></div></u><br/> <br/> 
+                                                    <hr style="border-top:1px solid #eee;margin-top:-10px !important;"/>
+                                                    <div style="float: right;margin-right:5px;">
+                                                        <i class="CMI-edit-icon"></i>
+                                                        <apex:commandLink value="{!$Label.css_Edit}" onclick="assignLineItemAC('{!wrap.claimid}')" reRender="none"></apex:commandLink> 
+                                                        <!--   <apex:commandLink value="{!$Label.css_Edit}" action="{!nvJobNotes}"></apex:commandLink> -->
+
+                                                    </div>
+                                                </div>
+                                                <apex:outputPanel id="notes">
+                                                    <div class="col-sm-3 col-xs-12 ">
+                                                        <apex:outputLabel style="font-size:14px;" value="{!$Label.CG_Adjucator} {!$Label.CSS_Communication}" />
+                                                    </div> 
+                                                </apex:outputPanel>
+ <br/><br/>
+                                                <div  align= "left" class="col-sm-12 col-xs-12 ">
+                                                    <br/><br/>
+                                                    <apex:outputPanel rendered="{!IF((wrap.claimSubNotes != null && wrap.claimSubNotes.size>0) , true, false)}">
+
+                                                        <apex:repeat value="{!wrap.claimSubNotes}" var="CN">
+                                                            <!--<div class="col-sm-12">
+<apex:outputLabel value="{!CN.CreatedBy.firstname} {!CN.CreatedBy.lastname}  " />
+</div> --><!--GSSC 152 start-->
+                                                            <div class="col-sm-12 "> 
+                                                            
+                                                                <apex:outputText style="font-weight:bold;" value="{!$Label.CG_AdjudicatorNote}: " rendered="{!IF(CONTAINS(CN.noteTitle,'Adjudicator'),true,false)}" />
+                                                                 <apex:outputText style="font-weight:bold;" value="{!$Label.CG_ServiceProviderResponse}: " rendered="{!IF(CONTAINS(CN.noteTitle,'Service Provider Response'),true,false)}" />
+                                                                <!--apex:outputLabel style="font-weight:normal;" value="{!$Label.CSS_Last_Saved}:" /> &nbsp;-->
+                                                                <apex:outputLabel style="font-weight:bold;" value="{!CN.lastSaveDate}:" />
+                                                                &nbsp;
+                                                                    <apex:outputText value="{!LEFT(CN.noteBody,4000)}" escape="false"
+                                                                                 />
+                                                            </div>
+<!--GSSC 152 end-->
+                                                            <!--div class="col-sm-12" style="word-break: break-all;"-->
+                                                                <!-- <br/> <apex:outputText value="{!LEFT(CN.nBody,255)}"/>  <br/><br/>-->
+                                                                <!--br/-->
+                                                                <!--apex:outputText value="{!LEFT(CN.Notes.Body,4000)}" escape="false"
+/>  <br/><br/-->
+                                                                  <br/><br/>
+                                                            <!--/div-->
+                                                        </apex:repeat>
+
+                                                    </apex:outputPanel>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </apex:repeat>
+
+                </apex:outputPanel>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function(){
+            $(".cmi_viewmore-icon-2, .cmi_viewmore-2 .text").on('click',function(){
+                var parent = $(this).parents('.cmi_viewmore-2')[0];
+                $(parent).find(".cmi_viewmore-body-2").toggleClass("cmi_viewmore-show");
+                $(parent).find(".cmi_viewmore-icon-2").toggleClass("cmi_viewmore-icon-open");
+            });
+        });
+    </script>
+</apex:component>

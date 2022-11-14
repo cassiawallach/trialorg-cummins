@@ -1,0 +1,1251 @@
+<!--**********************************************************************
+Name:CG_CheckWarranty_Coverage
+Copyright Â© 2017  Cummins
+======================================================
+======================================================
+Purpose:                                                            
+-------  
+We are using this Page for Checking Warranty Coverage at home.
+======================================================
+======================================================
+History                                                            
+-------                                                            
+VERSION  AUTHOR            DATE                DETAIL                                 
+1.0 - Saikomal Kattamudi      08/07/2018      INITIAL DEVELOPMENT                    
+***********************************************************************-->
+<apex:page docType="html-5.0" showHeader="false" standardStylesheets="false" controller="CG_CL_CheckWarrantyCoverage"> 
+    <c:CSS_Standard_IntakeStyles />
+    <c:css_ExtraStyles />
+    <!--<apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/jquery-1.11.2.min.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/jquery.dataTables.min.js')}"/>   
+<apex:stylesheet value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/css/component_specific/jquery.dataTables.css')}"/>      
+<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.1.1.min.js"></script> -->
+
+    <style>
+        .datepicker table tr td.active, .datepicker table tr td.active:hover, 
+        .datepicker table tr td.active.disabled, .datepicker table tr td.active.disabled:hover {
+            background-color: #ddd !important;
+            color:blue !important;
+        }
+
+        .calendar {
+            background: url(/resource/1490588295000/CSS_New_UI_APRIL_15th/New_UI_APRIL_15th/New_UI_APRIL_15th/assets/img/CMI-WebIcon-Sprite.png) no-repeat scroll -100px -3109px rgba(0, 0, 0, 0);
+            display: inline-block;
+            height: 21px;
+            margin: -16px -10px 0px 0px;
+            position: relative;
+            width: 22px;
+            zoom: 1.1;
+        }
+
+        div.row {
+            margin-left:0px;
+            margin-right:0px;
+        }
+    </style>
+
+    <!--<c:CSS_Standard_Header1 />-->
+
+
+    <style>
+        .bgActive{
+            background:#007c7c;
+        }
+        .bgInActive{
+            background:#7DAFAF;
+        }
+
+    </style>
+    <script type="text/javascript">
+        function mileagePressBMS(e){
+            $('#divMileageI').keypress(function(e){
+                //alert('keycode:'+e.which);
+                if(e.which == 48 || e.which == 49 || e.which == 50 || e.which == 51 || e.which == 52 || e.which == 53 || e.which == 54 || e.which == 55 || e.which == 56 || e.which == 57 || e.which == 8 ){
+
+                } else {
+                    return false; 
+                }
+            });
+        }
+
+        function hoursPressBMS(e){
+            $('#divHoursI').keypress(function(e){
+                //alert('keycode:'+e.which);
+                if(e.which == 48 || e.which == 49 || e.which == 50 || e.which == 51 || e.which == 52 || e.which == 53 || e.which == 54 || e.which == 55 || e.which == 56 || e.which == 57 || e.which == 8 )
+                {
+
+                } else {
+                    return false;
+                }
+            });
+        }
+
+        function ShowPSNModalPopup(condbasedPSNPopup){
+            //alert('condbasedPSNPopup' + '  ' + condbasedPSNPopup);
+            if(condbasedPSNPopup == 'true') {
+                $('#psnServModelPopupDiv').modal('show');
+            }
+            else{
+                //startRequestJS();
+                return false;
+            }
+        }
+
+    </script>
+
+    <div class="container-fluid1" >
+
+
+        <apex:composition template="CSS_STDTemplate"/>
+        <apex:form >
+            <apex:outputPanel >
+                <ul class="nav nav-tabs desk-tabs" id="JobDetailTab" style="background-color: #eee;">
+                    <li class="active"><a href="#/" data-toggle="tab" class="claimsTabs" style="color:#000000;border-bottom:1px"><b>{!$Label.CG_Check_Warranty_Coverage} </b></a> </li>
+                    <li><a href="/apex/CG_ClaimHistory" class="claimsTabs"><b>{!$Label.CSS_Claims_History}</b></a></li>
+                    <li><a href="/apex/CG_UserTools_HelpfulResources" class="claimsTabs"><b>{!$Label.CSS_Helpful_Resource}</b></a></li>
+                    <!--<li><a href="/apex/CG_ClaimHistory" class="claimsTabs"><b>{!$Label.CSS_Claim} {!$Label.CSS_History}</b></a></li> <!--added as per 161420-->
+                </ul>
+
+            </apex:outputPanel>
+            <div class="form-horizontal" role="form"> 
+                <div class="row intakerow">
+
+                    <label class="col-sm-2 col-xs-12 fset-label">{!$ObjectType.CSS_PSN__c.fields.PSN__c.Label}
+                        <span class="glyphicon-asterisk"  style="color:red;"></span>
+                    </label>
+                    <apex:outputPanel id="psnPanel">
+                        <div class="col-sm-1 col-xs-12">
+                            <apex:inputText value="{!psn}" style="width:120px;"> 
+                                <apex:actionSupport event="onchange" action="{!startRequest}" status="updating_esn_status" rerender="FATable,PSNFlag,prodMiKm,prodHrs,ApplicationUE,psnServModelPopup,psnServModelPopupDiv,wsd,readonlyWSD,bisSection,Displayappcodeerror,applnPanel,wsdErr,warrantyCoverageDetail,failDatePanel,DisplayNoWarrantyError1,DisplayNoWarrantyError" immediate="false" oncomplete="ShowPSNModalPopup('{!displayPSNSrvModPopup}');" /> 
+                            </apex:inputText>
+                        </div>
+                        <div class="col-sm-1">
+                            <apex:actionStatus startText="(fetching additional values...)" id="updating_esn_status"/>
+                        </div>
+
+                        <div class="col-sm-2">
+                            <apex:outputLabel rendered="{!psnMandatoryFlag}" style="color:red">
+                                {!$Label.CSS_Enter_Value}
+                            </apex:outputLabel>
+                        </div>
+                    </apex:outputPanel>
+                    <label class="col-sm-2 col-xs-6 fset-label">{!$Label.CSS_Regions}
+                        <span class="glyphicon-asterisk"  style="color:red;"></span>
+                    </label>
+
+                    <apex:outputPanel rendered="{!if(contains($Profile.Name ,'Dealer'),'true','false')}">
+                        <div class="col-sm-2 col-xs-3">
+                            <apex:outputText value="{!Region}"/>
+                        </div>
+                    </apex:outputPanel>
+
+                    <apex:outputPanel id="regionPanel" rendered="{!if(contains($Profile.Name ,'Dealer'),'false','true')}">
+                        <div class="col-sm-2 col-xs-3">
+                            <!-- <apex:inputField value="{!claim.Region__c}" style="width:172px;">
+<apex:actionSupport event="onchange" reRender="terrPicklst"/>
+</apex:inputField>-->
+                            <!-- <apex:selectList size="1" value="{!regionSelected}" style="width:172px;">-->
+                            <apex:selectList size="1" value="{!Region}" style="width:172px;">
+                                <apex:actionSupport event="onchange" reRender="terrPicklst"/>
+                                <apex:selectOptions value="{!RegionValues}"/>
+
+                            </apex:selectList>
+                        </div>
+                        <div class="col-sm-2">
+                            <apex:outputLabel rendered="{!regionMandatoryFlag}" style="color:red">
+                                {!$Label.CSS_Enter_Value}
+                            </apex:outputLabel>
+                        </div>
+                    </apex:outputPanel>
+                </div> 
+                <div class="clearfix"></div>
+                <div class="row intakerow">
+                    <label class="col-sm-2 col-xs-12 fset-label">{!$Label.CSS_Application}
+                        <span class="glyphicon-asterisk"  style="color:red;"></span>
+                    </label>
+
+
+                    <apex:actionFunction name="callmarketappcode" action="{!updateproductappcode}" reRender="Displayappcodeerror"></apex:actionFunction>
+                    <apex:outputPanel id="applnPanel">
+                        <div class="col-sm-2 col-xs-12">
+                            <!--Select size="1" style="width:172px;" disabled="true">
+<option value="Select One" >None</option>
+</select-->
+                            <apex:selectList value="{!filterApplication}" size="1" style="padding:0px;width:180px;" id="ApplicationUE" onchange="callmarketappcode()">
+                                <apex:selectOptions value="{!Application}"></apex:selectOptions>
+                            </apex:selectList>
+
+                            <!-- <div class="row intakerow">-->
+                            <apex:outputPanel id="Displayappcodeerror" >
+                                <apex:outputLabel rendered="{!prodcodeErrormessage}" style="color:red"> <b>{!$Label.CSS_Application_code_Error_flag} </b> </apex:outputLabel>
+                            </apex:outputPanel>
+
+                            <!-- </div>-->
+                        </div>
+
+                        <div class="col-sm-2">
+                            <apex:outputLabel rendered="{!applnMandatoryFlag}" style="color:red">
+                                {!$Label.CSS_Enter_Value}
+                            </apex:outputLabel>
+                        </div>
+                    </apex:outputPanel>
+                    <label class="col-sm-2 col-xs-6 fset-label">{!$Label.CSS_Territory}
+                        <span class="glyphicon-asterisk"  style="color:red;"></span>
+                    </label>
+                    <apex:outputPanel rendered="{!if(contains($Profile.Name ,'Dealer'),'true','false')}">
+                        <div class="col-sm-2 col-xs-3">
+                            <apex:outputText value="{!Territory}"/>
+                        </div>
+                    </apex:outputPanel>
+                    <apex:outputPanel rendered="{!if(contains($Profile.Name ,'Dealer'),'false','true')}">
+                        <div class="col-sm-2 col-xs-3">
+                            <!--<apex:inputField value="{!claim.Territory__c}" style="width:172px;">
+</apex:inputField>-->
+
+                            <!-- <apex:selectList size="1" value="{!territorySelected}" id="terrPicklst" style="width:172px;">-->
+                            <apex:selectList size="1" value="{!Territory}" id="terrPicklst" style="width:172px;">
+                                <apex:selectOptions value="{!TerritoryValues}"/>
+                            </apex:selectList>
+                        </div>
+                        <div class="col-sm-2">
+                            <apex:outputLabel rendered="{!territoryMandatoryFlag}" style="color:red">
+                                {!$Label.CSS_Enter_Value}
+                            </apex:outputLabel>
+                        </div>
+                    </apex:outputPanel>
+                </div> 
+                <apex:outputPanel id="wsdPanel">
+                    <div class="row intakerow">
+                        <label class="col-sm-2 col-xs-12 fset-label">{!$Label.css_Warranty_Start_Date}
+                            <span class="glyphicon-asterisk"  style="color:red;"></span>
+                        </label>
+
+                        <!-- As per story #GSSC-376-->
+                        <!--<div class="col-sm-2 col-xs-12">-->
+                        <div class="col-sm-6 col-xs-4 ">
+                            <apex:outputPanel id="wsd" >
+
+                                <div class="input-group date" id="warrantyDate" data-provide="datepicker" data-date-format="{!datebyLocaleValue}">
+                                    <apex:outputPanel rendered="{!IF((ReadonlyWSD == false && psn != '' && bisFlag == false && ExternReturnDateFlag != true) && wsdReadOnlyFromContr != true, true,false)}">
+                                        <apex:inputtext id="warrStDt" value="{!WarrStartDt}"  style="padding:3px;" styleclass="form-control cmi-cal css_ipfiel_size"  
+                                                        html-placeholder="MM/DD/YYYY" ><!--onkeypress="return false;"--><!-- As per story #GSSC-376-->
+
+                                            <apex:actionSupport event="onchange" action="{!MakeBISReadOnly}" reRender="DateErr,bisSection,oneBMSUEPnlId"/>
+
+                                        </apex:inputtext>
+
+                                        <!--  <apex:input value="{!warrStDtHidden}" readonlyBIS onchange="assignWSDtoActual(this);" style="display:none"/>-->
+                                        <!--<span class="input-group-addon" style="border:0px;background: none;">-->
+                                        <!--    <span class="calendar" style="margin:-35px 140px"></span>-->
+                                        <!--</span>-->
+                                        <!-- As per story #GSSC-376-->
+                                        <span class="input-group-addon" style="width:100px; border: 0px; background: none;">
+                                            <span class=""><div class="calendar"></div></span>
+                                        </span>
+                                    </apex:outputPanel>
+                                </div>
+                            </apex:outputPanel>
+                            <apex:outputPanel id="readonlyWSD">
+                                <apex:outputText value="{!FormattedDate}" rendered="{!IF(ReadonlyWSD == true || FormattedDate != null && FormattedDate != '', true,false)}"></apex:outputText>
+                                <apex:outputText value="{!wraadate}" rendered="{!IF(ReadonlyWSD == true || wraadate!=null && wraadate!='',true,false)}"/>
+                            </apex:outputPanel>
+                        </div>
+
+                        <apex:actionFunction name="makeBISreadOnlyJS" action="{!MakeBISReadOnly}" reRender="DateErr,readonlyBIS,InputBIS,oneBMSUEPnlId"/> 
+                        <apex:outputPanel id="wsdErr">
+                            <div class="col-sm-2">
+                                <apex:outputLabel rendered="{!wsdMandatoryFlag}" style="color:red">
+                                    {!$Label.CSS_Enter_Value}
+                                </apex:outputLabel>
+                            </div>
+                        </apex:outputPanel>
+
+                    </div>
+                </apex:outputPanel>
+                <div class="row intakerow">
+                    <label class="col-sm-2 col-xs-12 fset-label">{!$ObjectType.CSS_Job_Order__c.fields.Before_In_Service__c.Label}
+
+                    </label>
+                    <div class="col-sm-4 col-xs-12">
+
+                        <!--apex:inputCheckbox selected="false"/-->
+                        <apex:outputPanel id="bisSection"> 
+                            <apex:outputPanel id="readonlyBIS" rendered="{!(psn == null || ReadonlyBIS_New == true || WarrStartDt != null)}">
+                                <apex:inputCheckbox value="{!bisFlag}" disabled="true"/>
+                            </apex:outputPanel>
+                            <apex:outputPanel id="InputBIS" rendered="{!IF(ReadonlyBIS_New == false && (psn != null || psn != '') && WarrStartDt == null, true,false)}">
+                                <!--InputBIS:{!ReadonlyBIS}-->
+                                <apex:InputCheckBox value="{!bisFlag}" >
+                                    <apex:actionSupport event="onchange" action="{!MakeWSDReadOnly}" reRender="wsd,readonlyWSD"/></apex:InputCheckBox>
+                            </apex:outputPanel>
+                        </apex:outputPanel> 
+
+                    </div>
+
+                </div> 
+
+
+                <!-- commented the below code by Venkat for GSSC-119 on 14th oct 2019 -->
+                <!--<div class="row intakerow">
+<label class="col-sm-2 col-xs-12 fset-label">{!$Label.CSS_Failure_date}
+
+</label>
+<apex:outputPanel id="failDatePanel">
+<div class="col-sm-2 col-xs-12 ">
+<div class="input-group date" data-date-format="{!datebyLocaleValue}" id="failureDate" data-provide="datepicker">
+<apex:inputText value="{!failureDt}" html-placeholder="MM/DD/YYYY"/>&nbsp;&nbsp;&nbsp;
+
+<span class="input-group-addon" style="width:100px; border: 0px; background: none;">
+<span class="calendar"></span>
+</span>
+</div>
+</div>     
+
+
+<div class="col-sm-2">
+<apex:outputPanel id="failuredatecheck">
+
+<apex:outputLabel rendered="{!failDateMandatoryFlag}" style="color:red">
+&nbsp;&nbsp; &nbsp;   {!$Label.CSS_Enter_Value}
+</apex:outputLabel>
+
+</apex:outputPanel>
+</div>
+</apex:outputPanel>
+</div> -->
+
+                <div class="row intakerow">
+                    <label class="col-sm-2 col-xs-12 fset-label">{!$Label.CSS_Product_Mileage_Hours}
+
+                    </label>
+                    <div id="divMileageI" class="col-sm-4 col-xs-12">
+                        <apex:inputText value="{!prodMileKm}" id="prodMiKm" styleClass="css_ipfiel_size" maxlength="8" onKeyPress="mileagePressBMS(this.event);"  />
+                    </div>
+                </div>
+                <div class="row intakerow">
+
+                    <div class="clearfix"></div>
+                    <div class="col-sm-2 cmi-tar"></div>
+                    <div class="col-sm-2 col-xs-4" >
+                        <apex:selectRadio layout="lineDirection" styleClass="cmi-td" value="{!mil_measure}">
+                            <apex:selectOptions value="{!items}"/>
+                            <!--apex:actionSupport event="onchange" action="{!milekmconv}" reRender="oprepeat,FailurePoint" /-->
+                        </apex:selectRadio>
+
+                    </div>
+                </div> 
+
+
+
+                <div class="row intakerow">
+                    <label class="col-sm-2 col-xs-12 fset-label">{!$Label.CSS_Product_Hours}
+
+                    </label>
+                    <div id="divHoursI" class="col-sm-4 col-xs-12">
+                        <apex:inputText value="{!prodHours}" id="prodHrs" styleClass="css_ipfiel_size" maxlength="8" onKeyPress="hoursPressBMS(event);"/>  
+
+                    </div>
+
+                </div>
+
+                <div class="col-sm-8 col-xs-2">
+                    <apex:outputPanel id="DisplayNoWarrantyError" >
+                        <apex:outputLabel rendered="{!noWarranFlagError}" style="margin:20px 20px;color:red "> <b>{!$Label.CG_NoWarrantyFlag_Error} </b> </apex:outputLabel>
+                    </apex:outputPanel>
+                </div>
+                <div >
+                    <!--Story#183077-->
+                    <div class="col-sm-8 col-xs-2">          
+                        <apex:outputPanel id="PSNFlag">
+                            <b><apex:outputText style="color:red;" value="{!$Label.CG_PSN_FLAG}"  rendered="{!psnstatusflag}" ></apex:outputText></b>
+                        </apex:outputPanel>
+                        <!--end-->
+                    </div>
+                    <apex:outputPanel id="DisplayNoWarrantyError1" >
+                        <div class="col-sm-4 col-xs-10" style="padding-left: 0px;">
+
+                            <div style="{!IF(noWarranFlagError == true, 'display:block', 'display:none')}">
+                                <apex:commandButton value="{!$Label.CSS_Search}" styleClass="saveButton" disabled="true"/>
+                            </div>
+
+                            <div style="{!IF(noWarranFlagError == false, 'display:block', 'display:none')}"> 
+                                <apex:commandLink value="{!$Label.CSS_Search}" action="{!searchMethod}" status="getCovDetls" rerender="FATable,warrantyCoverageDetail,applnPanel,psnPanel,territoryPanel,regionPanel,failuredatecheck,wsdErr" styleClass="saveButton" >
+                                    <apex:param assignTo="{!coverageFlag}" value="true"/>
+                                </apex:commandLink>
+                                <apex:actionStatus startText="{!$Label.CSS_Fetching_Coverage_details}" id="getCovDetls" />
+                            </div>
+                        </div>
+                    </apex:outputPanel>
+                </div>
+ 
+                <!-- Field Actions Section Start -->
+                <!-- <c:CG_UTCampaignsTRPsATCs />  -->
+                <div class="panel-body">
+                    <div class="col-sm-12 col-xs-12">
+
+                        <fieldset class="cmi_field_set" style="width:60%">
+                            <!--<apex:actionRegion>-->
+                            <apex:outputpanel id="claimsPanel" >
+                                <div class="panel-body">  
+                                    <div class="col-md-15 col-xs-15">
+                                        <div class="container-fluid">
+                                            <div class="form-horizontal" role="form"> 
+                                                <div class="form-group">
+                                                    <h4><b>{!$Label.css_Camp_TRP_ATC}</b></h4>
+                                                </div>
+                                            </div>
+                                            <!--Place holder for error message
+<apex:outputLabel style="text-align:center; color: red ; display: block;" value="Please enter value"  
+rendered="{!IF(noclvalueerror == true, true, false)}"/> 
+<!--End Placeholder for error message-->
+
+                                            <apex:outputpanel id="FATable" >
+                                                <div class="">
+                                                    <div class="form-horizontal" role="form">
+                                                        <div class="form-group form-group1">
+                                                            <div class="col-md-15">
+                                                                <apex:outputText id="displayText" value="{!errormsg}" style="color:red" rendered="{!IF(errormsg!=null,true,false)}" />
+                                                                <!--::{!listSolcompWrapper}-->
+                                                                <table class="mytable table table-striped table-bordered" style="width:80%; " id="tab">
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <td class="tblhead" style="text-align:center;"><b>{!$Label.CSS_Field_Action}</b></td>
+                                                                            <td class="tblhead" style="text-align:center;"><b>{!$Label.CSS_Field_Action_Number}</b></td>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <!--<apex:outputText rendered="{!If(claimsRec.Account__r.isCampTrp__c == 'Y' && showFieldActionPaccar == true ,true,false)}"> -->
+                                                                    <!-- </apex:outputText> -->
+
+
+                                                                    <tbody>
+                                                                        
+                                                                        <apex:repeat value="{!lstCAM}" var="fc2" >
+                                                                            <tr>
+                                                                                <!-- CAM no: {fc2.Doc_Title__c} CAM Title: {fc2.Doc_Num__c} -->
+                                                                                <td style="text-align:center;">
+                                                                                    <!--<apex:outputText value="{!fc2.Doc_Num__c}"></apex:outputText> -->
+                                                                                    <apex:outputPanel id="url" rendered="{!IF(fc2.URL__c != '' || fc2.URL__c != null, true, false)}">
+                                                                                        <b><U>
+                                                                                            <apex:outputLink value="{!fc2.URL__c}" target="_blank">{!'CAMPAIGN' + '-' + fc2.Doc_Title__c}</apex:outputLink>
+                                                                                            <!--<apex:outputLink value="{!fc2.URL__c}" target="_blank">{!fc2.Type__c + ' - ' + fc2.Campaign_Description__c}</apex:outputLink>  -->
+                                                                                            </U></b>
+                                                                                    </apex:outputPanel>
+                                                                                    <apex:outputPanel rendered="{!IF(fc2.URL__c==null || fc2.URL__c=='',true,false)}">
+                                                                                        <b>
+                                                                                            <apex:outputText value="{!'CAMPAIGN' + '-' + fc2.Doc_Title__c}"></apex:outputText>
+                                                                                        </b>
+                                                                                    </apex:outputPanel> 
+                                                                                </td>
+                                                                                <td style="text-align:center;">
+                                                                                    <b>
+                                                                                        <apex:outputText value="{!fc2.Doc_Num__c}"></apex:outputText>
+                                                                                    </b>
+                                                                                </td>
+                                                                            </tr>
+                                                                        </apex:repeat>
+                                                                        <apex:repeat value="{!lstTRP}" var="fc2" >
+                                                                            <tr>
+                                                                                <!-- CAM no: {fc2.Doc_Title__c} CAM Title: {fc2.Doc_Num__c} -->
+                                                                                <td style="text-align:center;">
+                                                                                    <!--<apex:outputText value="{!fc2.Doc_Num__c}"></apex:outputText> -->
+                                                                                    <apex:outputPanel id="url" rendered="{!IF(fc2.URL__c != '' || fc2.URL__c != null, true, false)}">
+                                                                                        <b><U>
+                                                                                            <apex:outputLink value="{!fc2.URL__c}" target="_blank">{!'TRP' + '-' + fc2.Doc_Title__c}</apex:outputLink>
+                                                                                            <!--<apex:outputLink value="{!fc2.URL__c}" target="_blank">{!fc2.Type__c + ' - ' + fc2.Campaign_Description__c}</apex:outputLink>  -->
+                                                                                            </U></b>
+                                                                                    </apex:outputPanel>
+                                                                                    <apex:outputPanel rendered="{!IF(fc2.URL__c==null || fc2.URL__c=='',true,false)}">
+                                                                                        <b>
+                                                                                            <apex:outputText value="{!'TRP' + '-' + fc2.Doc_Title__c}"></apex:outputText>
+                                                                                        </b>
+                                                                                    </apex:outputPanel> 
+                                                                                </td>
+                                                                                <td style="text-align:center;">
+                                                                                    <b>
+                                                                                        <apex:outputText value="{!fc2.Doc_Num__c}"></apex:outputText>
+                                                                                    </b>
+                                                                                </td>
+                                                                            </tr>
+                                                                        </apex:repeat>
+                                                                        <apex:repeat value="{!lstATC}" var="fc2" >
+                                                                            <tr>
+                                                                                <!-- CAM no: {fc2.Doc_Title__c} CAM Title: {fc2.Doc_Num__c} -->
+                                                                                <td style="text-align:center;">
+                                                                                    <!--<apex:outputText value="{!fc2.Doc_Num__c}"></apex:outputText> -->
+                                                                                    <apex:outputPanel id="url" rendered="{!IF(fc2.URL__c != '' || fc2.URL__c != null, true, false)}">
+                                                                                        <b><U>
+                                                                                            <apex:outputLink value="{!fc2.URL__c}" target="_blank">{!'ATC' + '-' + fc2.Doc_Title__c}</apex:outputLink>
+                                                                                            <!--<apex:outputLink value="{!fc2.URL__c}" target="_blank">{!fc2.Type__c + ' - ' + fc2.Campaign_Description__c}</apex:outputLink>  -->
+                                                                                            </U></b>
+                                                                                    </apex:outputPanel>
+                                                                                    <apex:outputPanel rendered="{!IF(fc2.URL__c==null || fc2.URL__c=='',true,false)}">
+                                                                                        <b>
+                                                                                            <apex:outputText value="{!'ATC' + '-' + fc2.Doc_Title__c}"></apex:outputText>
+                                                                                        </b>
+                                                                                    </apex:outputPanel> 
+                                                                                </td>
+                                                                                <td style="text-align:center;">
+                                                                                    <b>
+                                                                                        <apex:outputText value="{!fc2.Doc_Num__c}"></apex:outputText>
+                                                                                    </b>
+                                                                                </td>
+                                                                            </tr>
+                                                                        </apex:repeat>
+
+                                                                    </tbody>
+                                                                </table>
+
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </apex:outputpanel>
+                                        </div>
+                                    </div>
+                                </div>
+                            </apex:outputpanel>
+                        </fieldset>
+                    </div>
+                </div>
+                <!-- Field Actions Section End -->
+
+
+                <!-- Warranty Coverage Section Start -->
+                <apex:outputPanel id="warrantyCoverageDetail">
+                    <div class="panel-body">
+                        <div class="col-sm-12 col-xs-12">
+                            <fieldset class="field_set" style="width:100% !important;">
+                                <legend class="fs_legend">{!$Label.CSS_Warranty} {!$Label.CSS_Coverage}</legend>
+
+                                <apex:outputpanel id="CoverageDetailsPanelsss1">
+                                    <apex:outputPanel >
+                                        <div class="col-sm-9" style="margin:10px 0px;">
+                                            <span class="col-sm-3" style="padding-left:0px;margin-top:10px;margin-right:-44px;"><b>{!$Label.CSS_Display_Coverage_in} </b></span>
+                                            <span class="col-sm-6">
+                                                <apex:selectRadio layout="lineDirection" styleClass="cmi-td" value="{!kil_measure}">
+                                                    <apex:selectOptions value="{!items}"/>
+                                                    <apex:actionSupport event="onchange" action="{!milekmconv}" reRender="oprepeat,FailurePoint" />
+                                                </apex:selectRadio>
+                                            </span>
+                                        </div>
+                                    </apex:outputPanel>
+                                    <div class="clearfix"></div>
+                                    <!--ED --->
+                                    <apex:outputPanel rendered="{!IF(showWarrDetailsSection==true, true,false)}" id="FailurePoint">
+                                        <apex:outputPanel id="oprepeat">
+                                            <apex:repeat value="{!coverageByDefTypeMap}" var="a">
+                                                <apex:repeat value="{!coverageByDefTypeMap[a]}" var="key">
+                                                    <tr>
+                                                        <td>
+                                                            <br/>                                                           
+                                                        </td>
+                                                    </tr>
+                                                    <apex:repeat value="{!mapGroupCoverageByDefTypeNewENG[key]}" var="key2" rendered="{!IF(a=='A-New Engine Warranty' && recconFlag == false,TRUE,FALSE)}" >
+
+                                                        <div class="cmi_warrantylinkcolor" style="margin-left:15px;">
+                                                            <div >
+                                                                <apex:outputPanel rendered="{!key2.status == 'Active'}">
+                                                                    <apex:outputLabel style="background-color: #007c7c; width: 1000px; height: 27px;color: white; margin-bottom: 0px !important;"> &nbsp;{!key} </apex:outputLabel>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!key2.status == 'Expired'}">
+                                                                    <apex:outputLabel style="background-color: #cc0000; width: 1000px; height: 27px;color: white; margin-bottom: 0px !important;"> &nbsp;{!key} </apex:outputLabel>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!key2.status == 'Not Started'}">
+                                                                    <apex:outputLabel style="background-color: gray; width: 1000px; height: px;color: white; margin-bottom: 0px !important;">&nbsp;{!key}</apex:outputLabel>
+                                                                </apex:outputPanel>
+                                                            </div>
+                                                            <br/>
+                                                            <div>
+                                                                <b>{!$Label.CSS_Status}: </b> 
+                                                                <apex:outputPanel rendered="{!key2.status == 'Active'}">
+                                                                    <apex:outputText ><b> {!key2.status}! </b> </apex:outputText>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!key2.status == 'Expired'}">
+                                                                    <apex:outputText ><b> {!key2.status}! </b> </apex:outputText>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!key2.status == 'Not Started'}">
+                                                                    <apex:outputText ><b> {!key2.status}! </b></apex:outputText>
+                                                                </apex:outputPanel>
+                                                            </div>
+                                                            <div>
+                                                                <b>{!$Label.CSS_Warranty_Start}: </b> {!WarrCreatedDate} 
+                                                            </div>
+                                                            <div>
+                                                                <b>{!$Label.CSS_Warranty_End}: </b> {!key2.WarrantyEndDate}
+                                                            </div>
+                                                            <div>
+                                                                <b>{!$Label.CSS_Coverage}: </b> {!key2.CoverageMaxMonths} Months &nbsp;
+                                                                <apex:outputText value="Unlimited" rendered="{!IF(key2.CoverageMiles=='9999999' || key2.CoverageMiles=='16093439', true,false)}" />
+                                                                <apex:outputText value="{!key2.CoverageMiles}" rendered="{!IF(key2.CoverageMiles !='9999999' && key2.CoverageMiles !='16093439', true,false)}" />
+                                                                {!kil_measure} or &nbsp; 
+                                                                <apex:outputText value="Unlimited" rendered="{!IF(key2.CoverageHours=='9999999', true,false)}" />
+                                                                <apex:outputText value="{!key2.CoverageHours}" rendered="{!IF(key2.CoverageHours!='9999999', true,false)}" />
+                                                                {!$Label.css_hours}
+
+                                                            </div>
+                                                            <apex:outputPanel rendered="{!key2.status != 'Expired'}">
+                                                                <div>
+                                                                    <b>{!$Label.CSS_Remaining}: </b>
+                                                                    {!key2.Remaining}
+                                                                    <apex:outputText id="remainkey2" />
+
+                                                                </div>
+
+                                                                <Script>
+                                                                    var past = new Date('{!key2.WarrantyEndDate}');
+                                                                    var years =0;
+                                                                    var month = 0;
+                                                                    var days = 0;
+                                                                    if(isNaN(past)) {
+                                                                        days = 0;
+                                                                        console.log('days with isNaN 2' + days);
+                                                                    } else {
+                                                                        // Defect # 190127
+                                                                        today = new Date();
+                                                                        time = today.toLocaleTimeString();
+                                                                        var t = time;
+                                                                        var getHours = today.getHours();
+                                                                        var hoursplus = getHours + 12;
+                                                                        var getHoursmillisec = hoursplus* 60*1000;
+                                                                        var getMinutes = today.getMinutes();
+                                                                        var getMinutesmillisec = getMinutes*1000;
+                                                                        var addHoursAndMinMillsec = getHoursmillisec + getMinutesmillisec;
+                                                                        var todaychangevalue = today.getTime() - addHoursAndMinMillsec;
+                                                                        var diff = Math.floor(past.getTime() - todaychangevalue);
+                                                                        var day = 1000 * 60 * 60 * 24;
+                                                                        days = Math.ceil(diff/day);
+                                                                        days += 1;
+                                                                        console.log('days without isNaN 2' + days);
+                                                                        if(days <= 0) {
+                                                                            days = 0;
+                                                                        } else {
+                                                                            if(days > 365) {
+                                                                                years = Math.floor(days/365);
+                                                                                console.log(years);
+                                                                                var leap = Math.floor(years/4);
+                                                                                console.log(leap);
+                                                                                days = days - (years*365)-leap;
+                                                                                console.log(days);
+                                                                            }
+                                                                            if(days > 30) {
+                                                                                //month = Math.floor(days/31);
+                                                                                //console.log(month);
+                                                                                //days = days - (month*31);
+                                                                                //console.log(days);
+                                                                                // Defect # 190127
+                                                                                month = Math.floor(days/30.41);
+                                                                                days = Math.floor(days - (month*30.41));
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    //var WarrD2 = years + " Years, " + month + " Months, " + days +" Days" ;
+                                                                    //document.getElementById('{!$Component.remainkey2}').innerHTML = WarrD2;
+
+                                                                    var CMiles = "{!key2.CoverageMiles}";
+                                                                    var CHours = "{!key2.CoverageHours}";
+                                                                    var FPMiles = "{!prodMileKm}";
+                                                                    var FPHours = "{!prodHours}";
+                                                                    var mikm = "{!kil_measure}";
+
+                                                                    if(CMiles=='9999999' || CMiles=='16093439'){
+                                                                        var miles = "Unlimited";
+                                                                    }
+                                                                    else{
+                                                                        var miles = CMiles - FPMiles;
+                                                                        if(miles <0)
+                                                                            miles = 0;
+                                                                    }
+
+                                                                    if(CHours=='9999999'){
+                                                                        var hours = "Unlimited";
+                                                                    }
+                                                                    else{
+                                                                        var hours = CHours - FPHours;
+                                                                        if(hours <0)
+                                                                            hours = 0;
+                                                                    }
+                                                                    //var WarrD2 = years + " Years, " + month + " Months, " + days +" Days or " + miles +" " + mikm + " or " + hours + " Hours";   
+                                                                    var WarrD2 = " or " + miles +" " + mikm + " or " + hours + " Hours";
+                                                                    document.getElementById('{!$Component.remainkey2}').innerHTML = WarrD2;
+                                                                </Script>
+                                                            </apex:outputPanel>
+                                                            <div>
+                                                                *<b>{!$Label.CSS_Deductible}: </b>{!NewEngWarrantyDedutibles}
+                                                            </div>
+
+
+                                                            <div>
+                                                                <div class="cmi_viewallsolutions-icon"></div>
+                                                                <u>
+                                                                    <!--<a href="https://qsol.cummins.com/qs3/portal/warranty/index.html?esn={!jobSFDCESN}&tokenId={!token}" target="_blank">{!$Label.css_View_Warranty_Details}</a> -->
+                                                                    <a href="{!key2.WarrantyManualURL}" target="_blank">{!$Label.css_View_Warranty_Details}</a> <br />
+
+                                                                </u>                                                
+                                                            </div>
+
+                                                            <div>
+                                                                <br/>
+                                                                <apex:outputPanel rendered="{!NewEngWarrantyDedutiblesFlag == false}"><!-- true to false for Defect #611-->
+                                                                    <apex:outputLabel style="color:#F2003C"> {!$Label.CSS_DeductibleErrorMsg}</apex:outputLabel>
+                                                                </apex:outputPanel>
+                                                            </div> 
+                                                        </div>
+                                                    </apex:repeat>
+                                                    <apex:repeat value="{!mapGroupCoverageByDefTypeRecEng[key]}" var="key2" rendered="{!IF(a=='C-Recon Engine Warranty' && recconFlag == true,TRUE,FALSE)}" >
+                                                        <div class="cmi_warrantylinkcolor" style="margin-left:15px;">
+                                                            <div >
+                                                                <apex:outputPanel rendered="{!key2.status == 'Active'}">
+                                                                    <apex:outputLabel style="background-color: #007c7c; width: 1000px; height: 27px;color: white; margin-bottom: 0px !important;"> &nbsp;{!key} </apex:outputLabel>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!key2.status == 'Expired'}">
+                                                                    <apex:outputLabel style="background-color: #cc0000; width: 1000px; height: 27px;color: white; margin-bottom: 0px !important;"> &nbsp;{!key} </apex:outputLabel>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!key2.status == 'Not Started'}">
+                                                                    <apex:outputLabel style="background-color: gray; width: 1000px; height: px;color: white; margin-bottom: 0px !important;">&nbsp;{!key}</apex:outputLabel>
+                                                                </apex:outputPanel>
+                                                            </div>
+                                                            <br/>
+                                                            <div>
+                                                                <b>{!$Label.CSS_Status}: </b> 
+                                                                <apex:outputPanel rendered="{!key2.status == 'Active'}">
+                                                                    <apex:outputText ><b> {!key2.status}! </b> </apex:outputText>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!key2.status == 'Expired'}">
+                                                                    <apex:outputText ><b> {!key2.status}! </b> </apex:outputText>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!key2.status == 'Not Started'}">
+                                                                    <apex:outputText ><b> {!key2.status}! </b></apex:outputText>
+                                                                </apex:outputPanel>
+                                                            </div>
+                                                            <div>
+                                                                <b>{!$Label.CSS_Warranty_Start}: </b> {!WarrCreatedDate} 
+                                                            </div>
+                                                            <div>
+                                                                <b>{!$Label.CSS_Warranty_End}: </b> {!key2.WarrantyEndDate}
+                                                            </div>
+                                                            <div>
+                                                                <b>{!$Label.CSS_Coverage}: </b> {!key2.CoverageMaxMonths} Months &nbsp;
+                                                                <apex:outputText value="Unlimited" rendered="{!IF(key2.CoverageMiles=='9999999' || key2.CoverageMiles=='16093439', true,false)}" />
+                                                                <apex:outputText value="{!key2.CoverageMiles}" rendered="{!IF(key2.CoverageMiles !='9999999' && key2.CoverageMiles !='16093439', true,false)}" />
+                                                                {!kil_measure} or &nbsp; 
+                                                                <apex:outputText value="Unlimited" rendered="{!IF(key2.CoverageHours=='9999999', true,false)}" />
+                                                                <apex:outputText value="{!key2.CoverageHours}" rendered="{!IF(key2.CoverageHours!='9999999', true,false)}" />
+                                                                {!$Label.css_hours}
+
+                                                            </div>
+                                                            <apex:outputPanel rendered="{!key2.status != 'Expired'}">
+                                                                <div>
+                                                                    <b>{!$Label.CSS_Remaining}: </b>
+                                                                    {!key2.Remaining}
+                                                                    <apex:outputText id="remainkey2" />
+
+                                                                </div>
+                                                                <Script>
+                                                                    var past = new Date('{!key2.WarrantyEndDate}');
+                                                                    var years =0;
+                                                                    var month = 0;
+                                                                    var days = 0;
+                                                                    if(isNaN(past)) {
+                                                                        days = 0;
+                                                                        console.log('days with isNaN 2' + days);
+                                                                    } else {
+                                                                        /*  today = new Date();
+                                                                        var diff = Math.floor(past.getTime() - today.getTime());
+                                                                        var day = 1000 * 60 * 60 * 24;
+                                                                        days = Math.floor(diff/day);
+                                                                        console.log('days without isNaN 2' + days); */
+                                                                        // Defect # 190127
+                                                                        today = new Date();
+                                                                        time = today.toLocaleTimeString();
+                                                                        var t = time;
+                                                                        var getHours = today.getHours();
+                                                                        var getHoursmillisec = getHours* 60*1000;
+                                                                        var getMinutes = today.getMinutes();
+                                                                        var getMinutesmillisec = getMinutes*1000;
+                                                                        var addHoursAndMinMillsec = getHoursmillisec + getMinutesmillisec;
+                                                                        var todaychangevalue = today.getTime() - addHoursAndMinMillsec;
+                                                                        var diff = Math.floor(past.getTime() - todaychangevalue);
+                                                                        var day = 1000 * 60 * 60 * 24;
+                                                                        days = Math.ceil(diff/day);
+                                                                        days += 1;
+                                                                        if(days <= 0) {
+                                                                            days = 0;
+                                                                        } else {
+                                                                            if(days > 365) {
+                                                                                years = Math.floor(days/365);
+                                                                                //console.log(years);
+                                                                                var leap = Math.floor(years/4);
+                                                                                //console.log(leap);
+                                                                                days = days - (years*365)-leap;
+                                                                                //console.log(days);
+                                                                            }
+                                                                            if(days > 30) {
+                                                                                //month = Math.floor(days/31);
+                                                                                //console.log(month);
+                                                                                //days = days - (month*31);
+                                                                                //console.log(days);
+                                                                                month = Math.floor(days/30.41);
+                                                                                days = Math.floor(days - (month*30.41));
+                                                                            }
+                                                                        }
+                                                                    }
+
+                                                                    var CMiles = "{!key2.CoverageMiles}";
+                                                                    var CHours = "{!key2.CoverageHours}";
+                                                                    var FPMiles = "{!prodMileKm}";
+                                                                    var FPHours = "{!prodHours}";
+                                                                    var mikm = "{!kil_measure}";
+
+                                                                    if(CMiles=='9999999' || CMiles=='16093439'){
+                                                                        var miles = "Unlimited";
+                                                                    }
+                                                                    else{
+                                                                        var miles = CMiles - FPMiles;
+                                                                        if(miles <0)
+                                                                            miles = 0;
+                                                                    }
+
+                                                                    if(CHours=='9999999'){
+                                                                        var hours = "Unlimited";
+                                                                    }
+                                                                    else{
+                                                                        var hours = CHours - FPHours;
+                                                                        if(hours <0)
+                                                                            hours = 0;
+                                                                    }
+                                                                    //var WarrD2 = years + " Years, " + month + " Months, " + days +" Days or " + miles +" " + mikm + " or " + hours + " Hours";   
+                                                                    var WarrD2 = " or " + miles +" " + mikm + " or " + hours + " Hours";
+                                                                    document.getElementById('{!$Component.remainkey2}').innerHTML = WarrD2;
+                                                                </Script>
+                                                            </apex:outputPanel>
+                                                            <div>
+                                                                *<b>{!$Label.CSS_Deductible}: </b>{!ReconWarrantyDedutibles}
+                                                            </div>
+                                                            <div>
+                                                                <div class="cmi_viewallsolutions-icon"></div>
+                                                                <u>
+                                                                    <!--<a href="https://qsol.cummins.com/qs3/portal/warranty/index.html?esn={!jobSFDCESN}&tokenId={!token}" target="_blank">{!$Label.css_View_Warranty_Details}</a> -->
+                                                                    <a href="{!key2.WarrantyManualURL}" target="_blank">{!$Label.css_View_Warranty_Details}</a> <br />
+
+                                                                </u>                                                
+                                                            </div>
+                                                            <div>
+                                                                <br/>
+                                                                <apex:outputPanel rendered="{!ReconWarrantyDedutiblesFlag == false}"><!-- true to false for Defect #611-->
+                                                                    <apex:outputLabel style="color:#F2003C"> {!$Label.CSS_DeductibleErrorMsg}</apex:outputLabel>
+                                                                </apex:outputPanel>
+                                                            </div>
+                                                        </div>
+                                                    </apex:repeat>
+
+
+
+                                                    <apex:repeat value="{!mapGroupCoverageByDefType[key]}" var="key3" rendered="{!IF(a=='B-Emissions Warranty',TRUE,FALSE)}" >
+
+                                                        <div class="cmi_warrantylinkcolor" style="margin-left:15px;">
+                                                            <div >
+                                                                <apex:outputPanel rendered="{!IF(emissionStatus != true,true,false)}">
+                                                                    <apex:outputLabel style="background-color: #007c7c; width: 1000px; height: 27px; color: white; margin-bottom: 0px !important;"> &nbsp;{!key} </apex:outputLabel>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF(emissionStatus == true,true,false)}">
+                                                                    <apex:outputLabel style="background-color: #cc0000; width: 1000px; height: 27px; color: white; margin-bottom: 0px !important;"> &nbsp;{!key} </apex:outputLabel>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF(key3.status == 'Not Started' && emissionStatus != true,true,false)}">
+                                                                    <apex:outputLabel style="background-color: gray; width: 1000px; height: 27px; color: white; margin-bottom: 0px !important;">&nbsp;{!key}</apex:outputLabel>
+                                                                </apex:outputPanel>
+                                                            </div><br/>
+                                                            <div>
+                                                                <b>{!$Label.CSS_Status}: </b> 
+                                                                <apex:outputPanel rendered="{!emissionStatus == true}">
+                                                                    <apex:outputText ><b> Expired! </b></apex:outputText>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!emissionStatus != true}">
+                                                                    <apex:outputText ><b> {!key3.status}! </b></apex:outputText>
+                                                                </apex:outputPanel>
+
+                                                            </div>
+                                                            <div>
+                                                                <b>{!$Label.CSS_Warranty_Start}: </b> {!WarrCreatedDate} 
+                                                            </div>
+                                                            <div>
+                                                                <b>{!$Label.CSS_Warranty_End}: </b> {!key3.WarrantyEndDate}
+                                                            </div>
+                                                            <div>
+                                                                <b>{!$Label.CSS_Coverage}: </b> {!key3.CoverageMaxMonths} Months &nbsp;
+                                                                <apex:outputText value="Unlimited" rendered="{!IF(key3.CoverageMiles=='9999999' || key3.CoverageMiles=='16093439', true,false)}" />
+                                                                <apex:outputText value="{!key3.CoverageMiles}" rendered="{!IF(key3.CoverageMiles!='9999999' && key3.CoverageMiles !='16093439', true,false)}" />
+                                                                {!kil_measure} or &nbsp; 
+                                                                <apex:outputText value="Unlimited" rendered="{!IF(key3.CoverageHours=='9999999', true,false)}" />
+                                                                <apex:outputText value="{!key3.CoverageHours}" rendered="{!IF(key3.CoverageHours!='9999999', true,false)}" />
+                                                                {!$Label.css_hours}
+                                                            </div>
+                                                            <!-- code Commented by RAJESH  Remaining label should be visuable as per Testing Team words 28-02-2018 -->
+                                                            <apex:outputPanel rendered="{!key3.status != 'Expired'}">
+                                                                <div>
+                                                                    <!-- <b>{!$Label.CSS_Remaining}: </b> -->
+                                                                    <!-- <apex:outputPanel rendered="{!emissionStatus != true}">
+<b><apex:outputText value="{!$Label.CSS_Remaining}:" rendered="{!emissionStatus != true}" />&nbsp;</b>
+<apex:outputText id="remainkey3" rendered="{!emissionStatus != true}" />
+</apex:outputPanel> -->
+                                                                    <b>Remaining: </b>
+                                                                    {!key3.Remaining}
+                                                                    <apex:outputText id="remainkey3" />
+
+                                                                </div>
+                                                                <Script>
+                                                                    var past = new Date('{!key3.WarrantyEndDate}');
+                                                                    var years =0;
+                                                                    var month = 0;
+                                                                    var days = 0;
+                                                                    if(isNaN(past)) {
+                                                                        days = 0;
+                                                                        console.log('days with isNaN 3' + days);
+                                                                    } else {
+
+                                                                        /* today = new Date();
+                                                                        console.log('Todaytime'+today.getTime());
+                                                                        console.log('pasttime'+past.getTime());
+                                                                        var diff = Math.floor(past.getTime() - today.getTime());
+                                                                        console.log('diff'+diff);
+                                                                        var day = 1000 * 60 * 60 * 24;
+                                                                        days = Math.floor(diff/day);
+                                                                        console.log('days without isNaN 3' + days); */
+                                                                        // Defect # 190127
+                                                                        today = new Date();
+                                                                        time = today.toLocaleTimeString();
+                                                                        var t = time;
+                                                                        var getHours = today.getHours();
+                                                                        //var hoursplus = getHours + 12;
+                                                                        var getHoursmillisec = getHours* 60*1000;
+                                                                        var getMinutes = today.getMinutes();
+                                                                        var getMinutesmillisec = getMinutes*1000;
+                                                                        var addHoursAndMinMillsec = getHoursmillisec + getMinutesmillisec;
+                                                                        var todaychangevalue = today.getTime() - addHoursAndMinMillsec;
+                                                                        var diff = (Math.floor(past.getTime() - todaychangevalue));
+                                                                        var day = 1000 * 60 * 60 * 24;
+                                                                        days = Math.ceil(diff/day);
+                                                                        days += 1;
+                                                                        // document.getElementById('{!$Component.remainkey3}').innerHTML = days;
+
+                                                                        if(days <= 0) {
+                                                                            days = 0;
+                                                                        } else {
+                                                                            if(days > 365) {
+                                                                                years = Math.floor(days/365);
+                                                                                console.log('yearssif'+years);
+                                                                                var leap = Math.floor(years/4);
+                                                                                console.log('leap**'+leap);
+                                                                                days = days - (years*365)-leap;
+                                                                                console.log('Days**'+days);
+                                                                            }
+                                                                            if(days > 30) {
+                                                                                month = Math.floor(days/30.41);
+                                                                                days = Math.floor(days - (month*30.41));
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    var CMiles = "{!key3.CoverageMiles}";
+                                                                    var CHours = "{!key3.CoverageHours}";
+                                                                    var FPMiles = "{!prodMileKm}";
+                                                                    var FPHours = "{!prodHours}";
+                                                                    var mikm = "{!kil_measure}";
+
+                                                                    if(CMiles=='9999999' || CMiles=='16093439'){
+                                                                        var miles = "Unlimited";
+                                                                    }
+                                                                    else{
+                                                                        var miles = CMiles - FPMiles;
+                                                                        if(miles <0)
+                                                                            miles = 0;
+                                                                    }
+
+                                                                    if(CHours=='9999999'){
+                                                                        var hours = "Unlimited";
+                                                                    }
+                                                                    else{
+                                                                        var hours = CHours - FPHours;
+                                                                        if(hours <0)
+                                                                            hours = 0;
+                                                                    }
+
+                                                                    //var WarrD3 = years + " Years, " + month + " Months, " + days +" Days or " + miles +" " + mikm + " or " + hours + " Hours";   
+                                                                    var WarrD3 = " or " + miles +" " + mikm + " or " + hours + " Hours";
+                                                                    document.getElementById('{!$Component.remainkey3}').innerHTML = WarrD3;
+
+                                                                </Script>
+                                                            </apex:outputPanel> 
+                                                            <div>
+                                                                *<b>{!$Label.CSS_Deductible}: </b>{!EmmisionWarrantyDedutibles}  
+                                                            </div>
+                                                            <div >
+                                                                <div class="cmi_viewallsolutions-icon"></div>
+                                                                <u>
+                                                                    <!-- <a href="https://qsol.cummins.com/qs3/portal/warranty/index.html?esn={!jobSFDCESN}&tokenId={!token}" target="_blank">{!$Label.css_View_Warranty_Details}</a> -->
+                                                                    <a href="{!key3.WarrantyManualURL}" target="_blank">{!$Label.css_View_Warranty_Details}</a>
+                                                                </u>                                               
+                                                            </div>
+                                                            <div>
+                                                                <br/>
+                                                                <apex:outputPanel rendered="{!EmmisionWarrantyDedutiblesFlag == false}"><!-- true to false for Defect #611-->
+                                                                    <apex:outputLabel style="color:#F2003C"> {!$Label.CSS_DeductibleErrorMsg}</apex:outputLabel>
+                                                                </apex:outputPanel>
+                                                            </div>
+
+                                                        </div>
+                                                    </apex:repeat>                                                                                       
+                                                </apex:repeat>
+                                            </apex:repeat>
+                                            <br/>                                     
+
+                                            <apex:repeat value="{!listcertificatedetails}" var="cert" rendered="{!IF(reqWrcertBoolean==false,TRUE,FALSE)}">
+                                                <tr>
+                                                    <td>                                               
+                                                        <!--To show red and green color bars. Active: Green Bar/Expired: Red Bar Start-->
+                                                        <!--<div class="col-sm-12" sytle="display:flex; align-items:center">-->
+                                                        <div class="cmi_warrantylinkcolor" style="margin-left:15px;">
+                                                            <b>   
+                                                                <!--<u> {!cert.CAPCoverageID} / {!cert.CertificateNumber}</u> -->
+                                                                <apex:outputPanel rendered="{!cert.status == 'Active'}">
+                                                                    <apex:outputLabel style="background-color: #007c7c;  width: 1000px; height: 27px; color: white; margin-bottom: 0px !important;">  &nbsp;{!$Label.CSS_Extended} {!$Label.CSS_Warranty} &nbsp;{!cert.CAPCoverageID} / {!cert.CertificateNumber} </apex:outputLabel>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!cert.status == 'Expired'}">
+                                                                    <apex:outputLabel style="background-color: #cc0000; vertical-align:middle; width: 1000px; height: 27px; color: white; margin-bottom: 0px !important;">  &nbsp;{!$Label.CSS_Extended} {!$Label.CSS_Warranty} &nbsp;{!cert.CAPCoverageID} / {!cert.CertificateNumber} </apex:outputLabel>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!cert.status == 'Not Started'}">
+                                                                    <apex:outputLabel style="background-color: gray; vertical-align:middle; width: 1000px; height: 27px; color: white; margin-bottom: 0px !important;"> &nbsp;{!$Label.CSS_Extended} {!$Label.CSS_Warranty} &nbsp;{!cert.CAPCoverageID} / {!cert.CertificateNumber}</apex:outputLabel>
+                                                                </apex:outputPanel>
+                                                            </b>
+                                                        </div>
+                                                        <!--To show red and green color bars. Active: Green Bar/Expired: Red Bar Edn-->
+                                                    </td>
+                                                </tr><br/>
+                                                <div class="cmi_warrantylinkcolor" style="margin-left:15px;">
+                                                    <div>
+                                                        <b>{!$Label.CSS_Status}: </b>  
+                                                        <apex:outputPanel rendered="{!cert.status == 'Active'}">
+                                                            <apex:outputText ><b> {!cert.status}! </b></apex:outputText>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!cert.status == 'Expired'}">
+                                                            <apex:outputText ><b> {!cert.status}! </b></apex:outputText>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!cert.status == 'Not Started'}">
+                                                            <apex:outputText ><b> {!cert.status}! </b></apex:outputText>
+                                                        </apex:outputPanel>    
+                                                    </div>                                           
+                                                    <div>
+                                                        <b>{!$Label.CSS_Warranty_Start}: </b> {!cert.StartDate} 
+                                                    </div>
+                                                    <div>
+                                                        <b>{!$Label.CSS_Warranty_End}: </b> {!cert.EndDate}
+                                                    </div>
+                                                    <div>
+                                                        <b>{!$Label.CSS_Coverage}: </b> {!cert.Months} Months &nbsp;
+                                                        <apex:outputText value="Unlimited" rendered="{!IF(cert.EndMiles=='9999999' || cert.EndMiles=='16093439', true,false)}" />
+                                                        <apex:outputText value="{!cert.EndMiles}" rendered="{!IF(cert.EndMiles!='9999999' && cert.EndMiles !='16093439', true,false)}" />
+                                                        {!kil_measure} or &nbsp; 
+                                                        <apex:outputText value="Unlimited" rendered="{!IF(cert.EndHours=='9999999', true,false)}" />
+                                                        <apex:outputText value="{!cert.EndHours}" rendered="{!IF(cert.EndHours!='9999999', true,false)}" />
+                                                        {!$Label.css_hours}                                                                
+                                                    </div>
+                                                    <!-- code Commented by RAJESH  Remaining label should be visuable as per Testing Team words -->
+                                                    <apex:outputPanel rendered="{!cert.status != 'Expired'}">
+                                                        <div>
+                                                            <b>{!$Label.CSS_Remaining}: </b>
+                                                            {!cert.Remaining}
+                                                            <apex:outputText id="remain" />
+
+                                                        </div>
+                                                        <Script>
+                                                            var past = new Date('{!cert.EndDate}');
+                                                            var years =0;
+                                                            var month = 0;
+                                                            var days = 0;
+                                                            if(isNaN(past)) {
+                                                                days = 0;
+                                                                console.log('days with isNaN 4' + days);
+                                                            } else {
+                                                                /*today = new Date();
+                                                                var diff = Math.floor(past.getTime() - today.getTime());
+                                                                var day = 1000 * 60 * 60 * 24;
+                                                                days = Math.floor(diff/day);
+                                                                console.log('days without isNaN 4' + days); */
+
+                                                                // Defect # 190127
+                                                                today = new Date();
+                                                                time = today.toLocaleTimeString();
+                                                                var t = time;
+                                                                var getHours = today.getHours();
+                                                                var getHoursmillisec = getHours* 60*1000;
+                                                                var getMinutes = today.getMinutes();
+                                                                var getMinutesmillisec = getMinutes*1000;
+                                                                var addHoursAndMinMillsec = getHoursmillisec + getMinutesmillisec;
+                                                                var todaychangevalue = today.getTime() - addHoursAndMinMillsec;
+                                                                var diff = Math.floor(past.getTime() - todaychangevalue);
+                                                                var day = 1000 * 60 * 60 * 24;
+                                                                days = Math.ceil(diff/day);
+                                                                days += 1;
+
+                                                                if(days <= 0) {
+                                                                    days = 0;
+                                                                } else {
+                                                                    if(days > 365) {
+                                                                        years = Math.floor(days/365);
+                                                                        //console.log(years);
+                                                                        var leap = Math.floor(years/4);
+                                                                        //console.log(leap);
+                                                                        days = days - (years*365)-leap;
+                                                                        //console.log(days);
+                                                                    }
+                                                                    if(days > 30) {
+                                                                        //month = Math.floor(days/31);
+                                                                        //console.log(month);
+                                                                        //days = days - (month*31);
+                                                                        //console.log(days);
+                                                                        // Defect # 190127
+                                                                        month = Math.floor(days/30.41);
+                                                                        days = Math.floor(days - (month*30.41));
+                                                                    }
+                                                                }
+                                                            }
+
+                                                            //var miles = 0;
+                                                            //var hours = 0;
+
+                                                            var CMiles = "{!cert.EndMiles}";
+                                                            var CHours = "{!cert.EndHours}";
+                                                            var FPMiles = "{!prodMileKm}";
+                                                            var FPHours = "{!prodHours}";
+                                                            var mikm = "{!kil_measure}";
+
+                                                            if(CMiles=='9999999' || CMiles=='16093439'){
+                                                                var miles = "Unlimited";
+                                                            }
+                                                            else{
+                                                                var miles = CMiles - FPMiles;
+                                                                if(miles <0)
+                                                                    miles = 0;
+                                                            }
+
+                                                            if(CHours=='9999999'){
+                                                                var hours = "Unlimited";
+                                                            }
+                                                            else{
+                                                                var hours = CHours - FPHours;
+                                                                if(hours <0)
+                                                                    hours = 0;
+                                                            }
+
+                                                            //var WarrD = years + " Years, " + month + " Months, " + days +" Days or " + miles +" " + mikm + " or " + hours + " Hours";  
+                                                            var WarrD = " or " + miles +" " + mikm + " or " + hours + " Hours";
+                                                            document.getElementById('{!$Component.remain}').innerHTML = WarrD;
+                                                        </Script>
+                                                    </apex:outputPanel>    
+                                                    <div>
+                                                        *<b>{!$Label.CSS_Deductible}: </b>{!ExtendedWarrantyDedutibles}
+                                                    </div>
+                                                    <div >
+                                                        <div class="cmi_viewallsolutions-icon"></div>
+                                                        <u>
+                                                            <!--<a href="https://qsol.cummins.com/qs3/portal/warranty/index.html?esn={!claimsRec.ESN__c}&tokenId={!token}" target="_blank">{!$Label.css_View_Warranty_Details}</a> -->
+                                                            <a href="{!cert.WarrantyManualURL}{!cert.ProcedureNumber}" target="_blank">{!$Label.css_View_Warranty_Details}</a>
+                                                        </u>
+
+                                                    </div>
+                                                    <div>
+                                                        <br/>
+                                                        <apex:outputPanel rendered="{!ExtendedWarrantyDedutiblesFlag == true}"><!-- true to false for Defect #611-->
+                                                            <apex:outputLabel style="color:#F2003C"> {!$Label.CSS_DeductibleErrorMsg}</apex:outputLabel>
+                                                        </apex:outputPanel>
+                                                    </div>
+                                                    <br/>
+                                                </div>
+                                            </apex:repeat>
+
+                                        </apex:outputPanel>
+                                        </apex:outputpanel>
+                                    </apex:outputPanel>
+                            </fieldset> <br/><br/>
+
+                            <apex:outputPanel rendered="{!IF(showWarrDetailsSection==false, true,false)}">
+                                <span style="color:red">
+                                    <label >{!$Label.Css_Coverage_Information_is_not_available}</label>
+                                </span>
+                            </apex:outputPanel>
+
+                        </div>
+                    </div>
+                </apex:outputPanel>
+
+                <!--   <apex:outputPanel id="psnServModelPopup">
+
+<apex:outputPanel id="servModelInnerOutputPnl" styleClass="customPopup" layout="block" rendered="{!displaySrvModPopup}">     
+<div class="modal-header">  
+<apex:commandButton title="Close the popup" action="{!closeSrvModPopup}" styleClass="cross_butten" rerender="psnServModelPopup"/>
+<h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_cummins_service_system} </h4>
+</div>
+<div class="clearfix"></div> 
+<div class="modal-body">
+<fieldset class="HHP_fieldSet">
+<div class="col-sm-2 col-xs-12">
+<div class="css_alert_red" style="zoom:1.95"/> 
+</div>
+<div class="col-md-10 col-xs-12">
+<b>{!$Label.css_Engine_Serial_Number_ESN_was_not_recognised}.</b><br/>
+<b>{!$Label.css_Please_verify_your_ESN}</b><br/>
+<b>{!$Label.css_If_you_feel_you_have_recieved_this_message}<br/>{!$Label.css_in_error_please_contact_Customer_Support}</b><br/>
+</div>
+</fieldset>        </div>
+<div class="clearfix"></div>
+<hr/>
+<div class="modal-footer">
+<div class="col-sm-7 col-xs-4 cmi-tar"> 
+<apex:commandButton value="OK" action="{!closeSrvModPopup}" styleClass="saveButton" rerender="psnServModelPopup"/>
+</div>
+</div>
+</apex:outputPanel> 
+</apex:outputPanel> -->
+
+                <div class="modal fade" id="psnServModelPopupDiv"  role="dialog" data-backdrop="static" html-keyboard="false">
+                    <div class="modal-dialog">
+                        <div class="modal-content"> 
+                            <!--   <apex:outputPanel id="servModelInnerOutputPnl" styleClass="customPopup" layout="block" rendered="{!displayPSNSrvModPopup}">   -->             
+                            <div class="modal-header">  
+                                <apex:actionRegion >
+                                    <apex:commandButton title="Close the popup"  html-data-dismiss="modal" styleClass="cross_butten" />
+                                </apex:actionRegion>
+                                <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_cummins_service_system} </h4>
+                            </div>
+                            <div class="clearfix"></div> 
+                            <div class="modal-body">
+                                <fieldset class="HHP_fieldSet">
+                                    <div class="col-sm-2 col-xs-12">
+                                        <div class="css_alert_red" style="zoom:1.95"/> 
+                                    </div>
+                                    <div class="col-md-10 col-xs-12">
+                                        <b>{!$Label.css_Engine_Serial_Number_ESN_was_not_recognised}.</b><br/>
+                                        <b>{!$Label.css_Please_verify_your_ESN}</b><br/>
+                                        <b>{!$Label.css_If_you_feel_you_have_recieved_this_message}<br/>{!$Label.css_in_error_please_contact_Customer_Support}</b><br/>
+                                    </div>
+                                </fieldset>        </div>
+                            <div class="clearfix"></div>
+                            <hr/>
+                            <div class="modal-footer">
+                                <div class="col-sm-7 col-xs-4 cmi-tar"> 
+                                    <apex:actionRegion >
+                                        <apex:commandButton value="OK" html-data-dismiss="modal" styleClass="saveButton"/>
+                                    </apex:actionRegion>
+                                </div>
+                            </div>
+                            <!--  </apex:outputPanel> -->
+                        </div>
+                    </div>
+                </div>
+
+
+
+            </div>
+        </apex:form>
+    </div>
+
+
+</apex:page>

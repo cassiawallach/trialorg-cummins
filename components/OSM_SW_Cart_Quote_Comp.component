@@ -1,0 +1,549 @@
+<apex:component controller="OSM_SW_Cart_Quote_Comp_Ctrl">
+    
+<style>
+ .CMI-tnc-text{    
+    margin: 4rem;
+    margin-top: 2rem;
+}
+.CMI-prod-text{
+margin-left: 6rem;
+    margin-top: 2rem;
+}
+
+.tnc-text-align{
+    text-align: center;
+ }
+    
+.QuoteDescParent {
+    padding-top: 20px;
+    padding-left: 114px;
+}
+.QuoteDesc {
+    width: 180px;
+    height: 70px;
+}
+.AcceptCls {
+    padding-right: 1px;
+    font-size: 14px;
+    color: teal;
+}
+    
+.errorMsgCls {
+ font-size: 18px;
+    color: RED;   
+}
+
+.accepted-disappear{
+    display : none !important;
+}
+</style>
+
+
+<script id="CMI-SW-QuickOrder-QuotelistItems-Desktop2" type="text/template">
+    <div class="quick_wishlist cc_quick_wishlist">
+     <!--**************************************************-->
+     <div class="orderPaginationSec cc_orderPaginationSec"></div>
+     <!--**************************************************-->
+    <input type="hidden" name="productToAccept" class="productToAccept" value="" />
+    <input type="hidden" name="prodName" class="prodName" value="" />
+    <input type="hidden" name="termNcond" class="termNcond" value="" />
+        
+    
+     <form id="deskQuickWishForm" class="wishForm cc_wish_form">
+     {{#if this.dataSet.QuoteListData}}
+       <div class="cc_name">
+
+           <h4><b>Quotes</b> </h4>
+        </div>
+        <div class="errorMsgCls cc_name">
+               {{this.errormsg}}
+        </div>
+
+         <div class="row CMI-Cart-table-header">
+             <div class="col-md-5">
+             </div>
+             <div class="col-md-7" class="CMI-Cart-Quote-Table-header">
+                 
+                     <div class="col-md-2">
+                           <B>Status</B>
+                     </div>                     
+                                         
+                     <div class="col-md-2">
+                           <B>Quantity</B>
+                     </div>
+                               
+                     <div class="col-md-2">
+                          <B>Unit Price</B>
+                     </div>
+                     
+                     <div class="col-md-2">
+                          <B>Discounted Unit Price</B>
+                     </div>
+                     
+                     <div class="col-md-2">
+                          <B>Billing Frequency</B>
+                     </div>
+                          
+                     <div class="col-md-2" style="padding-left:25px">
+                           <B>Subtotal</B>
+                     </div>
+             </div>
+        </div>
+
+      {{#ifNotEquals this.dataSet.QuoteListData.length 0}}
+     
+        {{#each this.dataSet.QuoteListData}}
+                
+        <div class="Cmi-Quotelist-Item">
+     
+        <div class="row cc_wish_row">
+            <div class="col-md-2 cc_wish_img">
+                <div class="col-xs-12">
+                <a href="#" class="prodLink cc_prod_link" data-id="{{this.productDetail.SKU}}">{{{displayImage this.mediaWrapper 'cart img-responsive'}}}</a>
+            </div> 
+                </div>
+         
+            <div class="col-md-3 cc_wish_prod_details"> 
+              <div>
+                {{productLink this.productDetail 'productName cc_prod_link'}}
+              </div>
+              
+              <div>
+                {{this.productDetail.shortDesc}}
+              </div>
+              <br/>
+              <textarea readonly class="QuoteDesc" >{{ this.description}}</textarea>
+            </div>
+         
+         <div class="col-md-7" style="text-align: center; padding-right:32px">         
+             <div class="col-md-2 cc_wish_prod_details">
+                  <div style="padding-left: 10px">
+                        {{this.quoteStatus}}
+                  </div>
+             </div>
+             <div class="col-md-2">
+                        {{this.quantity}}
+              </div>
+         
+              <div class="col-md-2">
+                     {{this.currencySymbol}}{{this.listPrice}}&nbsp; <br>per month
+                </div>
+          
+             <div class="col-md-2" style="text-align:right; padding-right:41px">  
+                  {{this.currencySymbol}}{{this.discountedPrice}}
+             </div>
+             
+            <div class="col-md-2"  style="padding-right:30px">
+                {{this.billingFreq}}
+             </div>
+            
+             <div class="col-md-2" style="text-align:right; padding-right:36px">                  
+                    {{#ifEquals this.hasDiscount false}}
+                        {{this.currencySymbol}}{{this.totalPrice}}
+                    {{/ifEquals}}
+                    {{#ifEquals this.hasDiscount true}}
+                        <del>{{this.currencySymbol}}{{this.totalPrice}}</del><br/>{{this.currencySymbol}}{{this.discountedTotalPrice}}
+                    {{/ifEquals}}
+                  
+             </div> 
+                   
+         </div>
+         
+        </div>
+        
+        <div class="row">
+          <div class="col-md-2">
+          </div>
+          
+         <div class="col-md-3">
+             
+            <div class="col-md-5">
+                {{#ifEquals this.isActionVisible true}}
+                    <div class="CMI-MoveToCart">
+                        <span class="AcceptCls CMI-Subscription-Icons" aria-hidden="true" class="AcceptCls" style="color: teal">[</span> 
+                        <a href="javascript:void(0);" class="cc_label approveQuote1" id="approveQuote" data-id="{{this.sfId}}" data-name="{{this.productDetail.name}}" data-TnC="{{this.productDetail.termNcond}}" style="color: teal">{{pageLabelMap 'Accept'}}</a>
+            
+                        </div>
+                {{/ifEquals}}
+             </div>            
+            
+            <div class="col-md-6">
+                {{#ifEquals this.isActionVisible true}}
+                    <div class="CMI-MoveToCart">
+                        <span class="AcceptCls CMI-Subscription-Icons" aria-hidden="true" class="errorMsgCls" style="color: red">(</span>
+                        <a href="#" class="cc_label rejectQuote" data-id="{{this.sfId}}" style="color: red">{{pageLabelMap 'Reject'}}</a>
+                    </div>
+                {{/ifEquals}}
+            </div>
+            
+            </div>
+        </div> 
+        <hr/>
+        </div>    
+       {{/each}}
+       
+      {{/ifNotEquals}}
+      {{/if}}
+     </form>
+    </div>
+      
+        <!-- approveQuote Modal -->
+<div id="ApproveQuoteModal" class="modal fade cc_modal cc_cart_rfq_modal" role="dialog">
+  <div class="modal-dialog" style="margin-left: 32%;" role="document">
+     <div class="modal-content cc_modal_content" style="width: 51rem;">
+     
+      <div class="modal-header CMI-DA-Packages cc_modal_header">
+       <button type="button" class="close cc_close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&#215;</span></button>
+       <h4 class="modal-title cc_modal_title tnc-text-align" id="CartRfqLabel">{{pageLabelMap 'Accept Quote'}}</h4>
+      </div>
+      
+      <!-- <div class="modal-body cc_modal_body">-->
+       <div class="messagingSection-FreeTrial-Error messagingSection-Error" style="display: none">
+        <div class="alert alert-danger" id="ErrorMsgDenger"></div>
+       </div>
+       <form id="freetrialForm" class="cc_cart_email_form">
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-md-x pull-left">
+                            <div class="action cc_action pull-right">
+                                 <div class="CMI-prod-text">
+                                  <label class="cc_est_shipping_label">
+                                   {{pageLabelMap 'Please read and accept the Terms and Conditions of Use for'}} <B><span class="productName"> </span></B>
+                                  </label>
+                                 </div>
+                                      
+                            </div>
+                        </div>
+                    </div>
+         </div>
+         
+       </form>
+      <!--</div>-->
+        
+      <div class="modal-footer rfq-margin-top">
+        <div class="row">
+                    <div class="col-md-x pull-left">
+                            <div class="action cc_action pull-right">
+                                 <div class="CMI-checkbox-freetrail checkbox">
+                                  <label for="acceptTnC" class="cc_est_shipping_label">
+                                   <input id="acceptTnC" type="checkbox" name="acceptTnC" class="boxes cc_ship_complete" value="true" />
+                                   {{pageLabelMap 'OSM_TnC_Accept'}} &nbsp; <a class='termsNCondTab'>{{pageLabelMap 'OSM_TnC_Text'}}</a>
+                                  </label>
+                                 </div>
+                                      
+                            </div>
+                        </div>
+                    </div>
+       <button type="button" id="AcceptQuote" class="btn" >Add To Cart</button>
+       <button type="button" class="btn CMI-DA-Packages " data-dismiss="modal" aria-label="Close" >Cancel</button>
+      </div>
+     </div>
+    </div>
+</div>
+                          
+                          
+             <!-- TnC Modal start -->
+               <div id="tncModalPopup" class="modal fade cc_modal cc_cart_rfq_modal" tabindex="-1" role="dialog" aria-labelledby="tncLabel">
+                <div class="modal-dialog" style="margin-left: 25%;" role="document">
+                 <div class="modal-content cc_modal_content" style="width: 100rem;"> 
+                  <div class="modal-header CMI-DA-Packages cc_modal_header">
+                   <button type="button" class="close cc_close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&#215;</span></button>
+                   <h4 class="modal-title cc_modal_title tnc-text-align" id="tncFormLabel">{{pageLabelMap 'OSM_TnC_Header'}}</h4>
+                  </div>
+                   <div class="messagingSection-tnc-Error" style="display: none"></div>
+                   <form id="tncForm" class="cc_cart_email_form">
+                        
+                        <div class="form-group">
+                           <div class="CMI-tnc-text">
+                                
+                            </div>
+                        </div>
+                        
+                        <div class="modal-footer rfq-margin-top">
+                        <button type="button" class="btn CMI-DA-Packages " data-dismiss="modal" aria-label="Close" >Cancel</button>
+                      </div>
+                    </form>
+                              
+                </div>
+               </div>
+               
+            </div>
+            <!--Tnc Modal end-->
+   </script>
+
+<script>
+   jQuery(function($) {    
+        CCRZ.models.WishlistItemModel = CCRZ.CloudCrazeModel.extend({
+            idAttribute: "uid"
+    });
+       
+        CCRZ.collections.WishlistItemList = CCRZ.CloudCrazeCollection.extend({
+             model : CCRZ.models.WishlistItemModel,
+             className: '',
+             initialize : function(dataList){
+             },   
+        });
+   });
+  </script>
+
+    <script type="text/javascript">
+    function waitCall()
+    {
+        debugger;
+    }
+    var quoteId = '';
+    
+   jQuery(function($) {
+
+       
+     CCRZ.views.CMIQuotelistView = CCRZ.CloudCrazeView.extend({
+     templatePhone : CCRZ.util.template('CMI-SW-QuickOrder-QuotelistItems-Desktop2'),
+     templateDesktop : CCRZ.util.template('CMI-SW-QuickOrder-QuotelistItems-Desktop2'),
+     viewName : "CMIQuotelistView",
+     className: 'OSM_SW_Cart_Quote_Comp_Ctrl',
+     init : function(){
+      
+      var v = this;
+      v.wishlistItems = new CCRZ.collections.WishlistItemList();
+         v.errormsg = "";
+      CCRZ.pubSub.on("action:MyWishListView:refresh",function(cartId) {
+      
+        CCRZ.console.log('Start Wishlist refresh');
+        this.fetchQuote();
+        v.render();
+        CCRZ.console.log('done with Wishlist refresh');
+    },this);
+    
+      this.fetchQuote();
+    
+     },
+     events: {
+      "click .rejectQuote" : "rejectQuoteCall",
+      "click .approveQuote1" : "OpenApproveQuoteModal", 
+       "click .termsNCondTab" : "openTnCModal",
+       "click #AcceptQuote" : "approveQuoteCall",  
+       "click #acceptTnC" : "tncOnChange"
+     },
+     render : function() {
+    var v = this;      
+    this.setElement($('.CMI-QuoteList-Div'));
+    this.$el.html(v.templateDesktop(this));
+    
+    },
+    openAcceptModal : function(){
+        $('#tncAcceptedModal').modal('show');
+    },
+    
+    tncOnChange : function(){
+        if($('input[id="acceptTnC"]:checked').val() != undefined){
+            
+             $('#AcceptQuote').attr('disabled', false);
+                 $('#AcceptQuote').addClass('CMI-DA-Packages');
+        }else{
+            $('#AcceptQuote').attr('disabled', true);
+                 $('#AcceptQuote').removeClass('CMI-DA-Packages');
+        }
+       },
+       
+    fetchQuote : function(callback){
+            var me = this;
+            this.invokeContainerLoadingCtx(
+                $('.cartContainer'),
+                'fetchQuote',
+                function(resp){
+                console.log(resp.data);
+                
+                    if(resp && resp.success){//response was successful
+                        me.dataSet = resp.data;
+                        if(me.dataSet != false)
+                            {
+                                console.log('==Response successful==='+resp.success);
+                                var i;
+                                for (i = 0; i < me.dataSet.QuoteListData.length ; i++) { 
+                                    me.dataSet.QuoteListData[i].currencySymbol = CCRZ.pagevars.currencyData.currencySymbol;
+                                    me.dataSet.QuoteListData[i].listPrice = me.dataSet.QuoteListData[i].listPrice.toFixed(2);
+                                    me.dataSet.QuoteListData[i].discountedPrice = me.dataSet.QuoteListData[i].discountedPrice.toFixed(2);
+                                    me.dataSet.QuoteListData[i].totalPrice = me.dataSet.QuoteListData[i].totalPrice.toFixed(2);
+                                    me.dataSet.QuoteListData[i].hasDiscount = me.dataSet.QuoteListData[i].hasDiscount;
+                                    me.dataSet.QuoteListData[i].discountedTotalPrice = me.dataSet.QuoteListData[i].discountedTotalPrice.toFixed(2);
+                                    me.dataSet.QuoteListData[i].termNcond = me.dataSet.QuoteListData[i].termNcond;
+                                }
+                             }
+                        
+                        console.log(me);
+                    }
+                    else{
+                    debugger;
+                        
+                       console.log(me.dataSet);
+                        me.errormsg = resp.data.errmsg;
+                    }
+                    me.render();
+                     $('#AcceptQuote').attr('disabled', false);
+                },
+                {
+                    buffer:false, //this call will be executed by itself
+                    nmsp : false //defines that this is a call to a subscriber class
+                }
+            );//end invokeCtx call
+        },
+         
+         OpenApproveQuoteModal:function(event)
+               {
+                    var objLink = $(event.target);
+                    var id = objLink.data("id");
+                    var tnc = objLink.data("tnc");
+                    var prodName = objLink.data("name");
+                 quoteId = id;
+                    console.log(id); 
+                   console.log(tnc); 
+                    console.log(objLink); 
+                    $('input[name="termNcond"]').val(tnc);
+                    $('input[name="prodName"]').val(prodName);
+                    
+                    $('span.productName').text(prodName);
+                   $('div.CMI-tnc-text').text(tnc);
+                $('input[name="productToAccept"]').val(id);
+                     $('#ApproveQuoteModal').modal('show');
+               },
+                       
+            // Juhi Changes START
+            openTnCModal : function(){
+            console.log("T n C Modal");                            
+            // $('#tncModalPopup').modal('show');
+            console.log('quoteId : ' + 'quoteId');
+
+            var baseUrl = '{!$Site.BaseUrl}';
+            console.log('baseUrl : '+baseUrl);
+
+            // when using Document with Document Link in label
+            $('.termsNCondTab').attr('href','{!$Label.OSM_TnC_Product_PDF_Link}');
+
+            $('.termsNCondTab').attr('target','_blank'); 
+
+            },
+            // Juhi Changes END
+        
+        approveQuoteCall: function(event) {
+          
+            if($('input[id="acceptTnC"]:checked').val() == undefined){
+                return; 
+            }
+            var id = $('input[name="productToAccept"]').val();
+         var v = this;
+         this.invokeContainerLoadingCtx( $('.cartContainer'), 'approveOrRejectQuote', id, "Accepted",  function(response) {
+             if(response && response.success)
+             {
+            v.dataSet = response.data;
+            console.log('New Cart Id==='+response.data.NEW_CARTID);
+                if(!_.isUndefined(response.data.NEW_CARTID)){
+                CCRZ.pagevars.currentCartID = response.data.NEW_CARTID;
+                }
+            CCRZ.pubSub.trigger("action:CartDetailView:refresh", v.cartView);
+               
+                 
+            console.log('==Printing Refresh===');     
+            console.log( v.dataSet); 
+               
+            v.render();
+            $('.modal-backdrop').fadeOut();
+            }
+            else{
+                v.errormsg = response.data.errmsg;
+                v.render();
+                $('.modal-backdrop').fadeOut();
+            }
+ 
+         },
+         {
+             buffer:false, //this call will be executed by itself
+             nmsp : false //defines that this is a call to a subscriber class
+         }
+         
+         ); 
+        },
+        
+        rejectQuoteCall: function(event) {
+        var objLink = $(event.target);
+        var id = objLink.data("id");
+
+        var objLinkParent = $(event.currentTarget);
+        var parentElement = objLink.parents(".Cmi-Quotelist-Item");      
+        var v = this;
+         this.invokeContainerLoadingCtx( $('.cartContainer'), 'approveOrRejectQuote', id, "Rejected" ,function(response) {
+         debugger;
+             if(response && response.success)
+             {
+                 
+                parentElement.fadeOut(2500);
+                setTimeout(waitCall(), 250000);
+                v.dataSet = response.data;
+                v.render();
+            }
+            else{
+                v.errormsg = response.data.errmsg;
+                v.render();
+            }
+ 
+         },
+         {
+             buffer:false, //this call will be executed by itself
+             nmsp : false //defines that this is a call to a subscriber class
+         }
+         
+         );
+        },
+         
+     showDetails: function (event) {
+          var objLink = $(event.target);
+          var id = objLink.data("id");
+          var selList = this.QuoteListData.get(id);
+          $('.selWish').html(selList.attributes.name);
+          this.detailsView.generateDisplay(selList);
+     },
+         
+     selectDetails: function (event) {
+          var objLink = $(event.target);
+          var id = objLink.val();
+          var selList = this.QuoteListData.get(id);
+          $('.selWish').html(selList.attributes.name);
+          this.detailsView.generateDisplay(selList);
+     },
+         
+     editEntity: function(event) {
+          var objLink = $(event.target);
+          var id = objLink.data("id");
+          var selList = this.wishlistData.get(id);
+          this.openModal(selList);
+     },
+     addAllItems: function(event) {
+          var formEle = $('form.wishForm');
+          var formData = form2js(formEle.attr('id'), '.', false, function(node) {}, false);
+          var dataSet = JSON.stringify(formData.quickadd);
+          var v = this;
+         
+          this.invokeContainerLoadingCtx($('.deskLayout'), 'handleAddBulktoCart', dataSet, function(response){
+               var cartId = response.data;
+               CCRZ.pagevars.currentCartID = cartId;
+               //cart change will update cookie
+               CCRZ.pubSub.trigger('cartChange', cartId);
+               if (CCRZ.getPageConfig('wl.g2c', false))
+                cartDetails();
+        });
+     }
+    });    
+    
+    CCRZ.QuoteListViewCMI = new CCRZ.views.CMIQuotelistView();
+    //5/3/2018: VS-Commented as this will be handled on refresh on cartdetailview
+     CCRZ.pubSub.on('view:CartDetailView:refresh',function(aggregateView){
+        CCRZ.QuoteListViewCMI.render();
+    });
+    
+        CCRZ.pubSub.on('view:CartDetailView:refresh',function(cartView){ 
+            console.log('====Setting the cartView from view:CartDetailView:refresh===');
+            CCRZ.QuoteListViewCMI.cartView = cartView;            
+       });    
+   });
+
+  </script>
+</apex:component>

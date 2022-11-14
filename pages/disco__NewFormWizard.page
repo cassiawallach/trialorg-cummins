@@ -1,0 +1,296 @@
+<apex:page showHeader="true" sidebar="true" standardController="disco__Form__c" extensions="disco.Ctl_NewForm" 
+	applyBodyTag="false" docType="html-5.0" action="{!checkIfGoDirect}">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<apex:styleSheet value="{!URLFOR($Resource.disco__jquerymodal, '/jquerymodal/jquery.modal.css')}" />
+	<apex:includeScript value="{!URLFOR($Resource.disco__jquery_3_6_0, 'jquery.min.js')}"/>
+	<apex:includeScript value="{!URLFOR($Resource.disco__jquerymodal, '/jquerymodal/jquery.modal.js')}"/>
+	<apex:includeScript value="{!$Resource.disco__newformJS}"/>
+<apex:styleSheet value="{!URLFOR($Resource.disco__SLDS100, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+<head>
+	<meta http-equiv="x-ua-compatible" content="ie=edge"/>
+	<title>New {!thisForm.name}</title>
+	<!-- Lightning Design -->
+	<style>
+	/* override position from SLDS style */
+	.slds-notify_container.slds-notify_container-OR {
+		position:static;
+	}
+	.slds .slds-notify--alert-OR {
+		padding:0; /* removed padding so it will be invisible when there are no messages */
+	}
+
+	.input-container{
+		width: 500px !important;
+	}
+	.wide-input {
+		width: 250px;
+	}
+	.wide-input:disabled {
+		cursor: not-allowed;
+		background-color: #e0e5ee;
+	}
+	
+	/* SF override */
+	.requiredInput {
+		display: inline-block;
+	}
+	
+	.slds .slds-spinner_container-OR {
+		border-radius: 4px;
+	}
+
+	.slds-grid-OR {
+		display:block !important;
+		margin-top:20px; /* not an override */
+	}
+
+	.slds-col--padded-OR {
+		display:inline-block !important;
+		width:33%; /* 33.33 (repeating of course) wraps for some reason */
+		vertical-align: top; /* not an actual override */
+		padding-bottom: 10px;  /*  an actual override */
+	}
+	/* Styling for the CRUD/FLS error */
+	.page-error-cont {
+		text-align: center;
+		width: 400px;
+		max-width:90%;
+		margin: 40px auto;
+		padding: 20px;
+		background-color: #353f54;
+		color: #fff;
+		border-radius: 10px;
+	}
+
+	.page-error-cont button {
+		color: #353f54;
+		margin-top: 10px;
+	}
+	.page-error-cont button:hover {
+		background-color: #F4F6F9;
+	}
+	.modal{
+		border-radius: 4px;
+	}
+	.errorMsg{
+		width: 400px;
+	}
+	.error-text {
+		color:#c23934;
+	}
+	.new-record-container {
+		display: inline-block;
+	}
+	
+	@media screen and (min-width: 480px) {
+		/* margin for when lookup mag. glass is removed */
+		.new-record-text-wrapper.margin-left {
+			margin-left: 23.5px;
+		}
+	}
+
+	@media screen and (max-width: 640px) {
+		#additionalFieldsModal.modal {
+			width: calc(100% - 1em);
+		}
+
+		#additionalFieldsModal.modal .slds-modal__footer {
+			text-align: center;
+		}
+
+		#additionalFieldsModal.modal .slds-modal__footer button.slds-button {
+			margin-top: 6px;
+		}
+
+		#additionalFieldsModal.modal .input-container {
+			max-width: 100%;
+		}
+
+		#additionalFieldsModal.modal .input-container{
+			max-width: 100%;
+		}
+
+		#additionalFieldsModal.modal .input-container .lookupInput input.wide-input {
+			max-width: calc(100% - 16px);
+		}
+	}
+
+	@media screen and (max-width: 440px) {
+		#additionalFieldsModal.modal .input-container .lookupInput .new-record-text-wrapper {
+			display: block;
+		}
+	}
+	</style>
+	<script>
+	var sfEnv = {};
+	sfEnv.templateID = '{!JSENCODE(templateID)}';
+	sfEnv.namespace = '{!JSENCODE(namespace)}';
+	var endpointAvailable = '{!JSENCODE(IF(endpointAvailable,"true", "false"))}';
+	var relsAllowingInserts = '{!JSENCODE(thisTemplate.rels_allowing_inserts__c)}';
+	var formID = '{!JSENCODE(thisForm.ID)}';
+	var retURL = '{!JSENCODE(retURL)}';
+	var yourekaDisabled = '{!JSENCODE(IF(yourekaDisabled,"true", "false"))}';
+	var allURLParameters = JSON.parse('{!JSENCODE(allURLParamsJSON)}');
+	var isLWC = '{!JSENCODE(IF(isLWC,"true","false"))}' === 'true'; // for going to new form wizard inside the LWC
+	var isWizard = true;
+
+	if (yourekaDisabled === 'true' || endpointAvailable=='false') {
+        if (isLightningExp) {
+            sforce.one.navigateToURL('/apex/'+ sfEnv.namespace +'GetStarted');
+        } else {
+            var pathName = window.location.pathname;
+            if (pathName.indexOf('apex') > -1) {
+                sfEnv.pathStart = 'apex/';
+            } else {
+                var noLeadingSlash = pathName.slice(1);
+                sfEnv.pathStart = noLeadingSlash.slice(0,noLeadingSlash.indexOf('/') + 1);
+            }
+            window.location.href='/'+sfEnv.pathStart+sfEnv.namespace+'GetStarted';
+        }
+    }
+    
+	function toggleTemplateSpinner(){
+		$('#goToTemplateSpinner').toggle();
+	}
+	</script>
+</head>
+<body>
+<apex:form >
+	<apex:actionFunction name="saveFormGotoDetailAF" action="{!goToFormDetailFromPage2}"/>
+	<apex:actionFunction name="saveFormGotoCompleteAF" action="{!goToCompleteFormFromPage2}"/>
+	<apex:actionFunction name="saveFormGotoLWCAF" action="{!goToLWCFromPage2}"/>
+	<apex:outputPanel layout="block" styleClass="slds" id="outermostPanel">
+
+
+		<apex:outputPanel layout="none" id="wholePanel">
+			<!-- display handled errors -->
+			<div class="slds-notify_container slds-notify_container-OR">
+				<div class="slds-notify slds-notify--alert slds-notify--alert-OR slds-theme--error slds-theme--alert-texture" role="alert">
+					<span class="slds-assistive-text">Info</span>
+				</div>
+			</div>
+
+			<!--- disabled background -->		
+			<!-- PAGE HEADER -->
+			<div class="slds-page-header" role="banner">
+				<div class="slds-grid">
+					<div class="slds-col">
+						<div class="slds-media">
+							<div class="slds-media__figure">
+								<!-- Alternative to using an SVG because svg4everybody doesn't play well with the apex:actionregion-->
+								<img src="{!URLFOR($Resource.description_icon_png)}" class="slds-icon slds-icon-text-default slds-icon--large"/>
+							</div>
+							<apex:outputPanel styleClass="slds-media__body" layout="block" id="headingText">
+								<h1 class="slds-text-heading--medium">
+									New Form 
+									<apex:outputPanel rendered="{!thisTemplate.name!=null}" layout="none">
+										for&nbsp;<apex:outputText value="{!thisTemplate.name}"/>
+									</apex:outputPanel>
+								</h1>
+							</apex:outputPanel>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<apex:outputPanel id="mainContent">
+				<!-- / Template Selection -->
+				<div class="slds-hide  modal" id="selectTemplateModal">
+								
+					<div class="slds-card modal-header slds-modal__header">
+						<apex:pageMessages rendered="{!showError}"/>
+						<div class="slds-card__header slds-grid">
+							<h2 class="slds-text-heading--small">Select a Form Template</h2>
+						</div>
+					</div>
+					<div class="slds-card__body modal_body">
+						<div class="slds-col--padded slds-col--padded-OR">
+							<dl>
+								<dt>
+									<p class="slds-text-heading--label ">
+										<abbr class="slds-required" title="required">*</abbr>
+										<apex:outputText value="Form Template" />
+									</p>
+								</dt>
+								<dd>
+									<apex:inputField value="{!thisForm.disco__Form_Template__c}" styleClass="wideInput"/>
+								</dd>
+							</dl>
+						</div>
+					</div>
+					<div class="slds-modal__footer">
+						<apex:outputPanel >
+							<button class="slds-button slds-button--neutral" onClick="goBack();" type="button">
+							Back
+							</button>
+							<apex:commandButton value="Next" styleClass="slds-button slds-button--brand" action="{!gotoCompleteFormFromPage1}" onclick="toggleTemplateSpinner()"/>
+						</apex:outputPanel>
+						<div id="goToTemplateSpinner" class="slds-spinner_container slds-spinner_container-OR" style="display:none;">
+	                        <div class="slds-spinner--brand slds-spinner slds-spinner--medium" aria-hidden="false" role="alert">
+	                            <div class="slds-spinner__dot-a"></div>
+	                            <div class="slds-spinner__dot-b"></div>
+	                        </div>
+	                    </div>
+					</div>
+				</div>
+
+				<!-- / required fields -->
+				<div class="slds-hide  modal" id="additionalFieldsModal">
+					<div class="slds-card ">
+						<apex:pageMessages rendered="{!showError}"/>
+											
+						<apex:outputPanel layout="block" styleClass="slds-card" rendered="{!NOT(requiredFormFieldsList.empty)&&hasCRUDFLS}">
+							<div class="slds-card__header slds-grid modal-header slds-modal__header">
+								<h2 class="slds-text-heading--small">Template Required Fields</h2>
+							</div>
+							<div class="slds-card__body slds-modal__body">
+								<apex:repeat value="{!requiredFormFields}" var="fieldName">
+									<div class="slds-col--padded slds-col--padded-OR input-container">
+										<dl>
+											<dt>
+												<p class="slds-text-heading--label ">
+													<abbr class="slds-required" title="required">*</abbr>
+													<apex:outputText value="{!$ObjectType.disco__Form__c.fields[fieldName].Label}"/>
+												</p>
+											</dt>
+											<dd>
+												<apex:inputField html-data-required="true" html-data-relname="{!fieldName}" styleClass="wide-input" value="{!thisForm[fieldName]}" />
+											</dd>
+										</dl>
+									</div>
+									<br/>
+								</apex:repeat>
+							</div>
+						</apex:outputPanel>
+						
+						<div class="slds-modal__footer">
+							<apex:outputPanel >
+								<button class="slds-button slds-button--neutral" onClick="goBack();" type="button">
+								Cancel
+								</button>
+								<apex:outputPanel layout="none" rendered="{!AND(hasCRUDFLS,NOT(toLWC))}">
+									<button type="button" class="slds-button slds-button--neutral" onClick="validateAndSubmit('detail');">Save the New Form</button>
+
+									<button type="button" class="slds-button slds-button--brand" onClick="validateAndSubmit('complete');">Complete the New Form</button>
+								</apex:outputPanel>
+								<apex:outputPanel layout="none" rendered="{!AND(hasCRUDFLS,toLWC)}">
+									<button type="button" class="slds-button slds-button--brand" onClick="validateAndSubmit('lwc');">Go To Form Component</button>
+								</apex:outputPanel>
+							</apex:outputPanel>
+							<div id="goToSpinner" class="slds-spinner_container slds-spinner_container-OR" style="display:none;">
+		                        <div class="slds-spinner--brand slds-spinner slds-spinner--medium" aria-hidden="false" role="alert">
+		                            <div class="slds-spinner__dot-a"></div>
+		                            <div class="slds-spinner__dot-b"></div>
+		                        </div>
+		                    </div>
+						</div>
+					</div>
+				</div>					
+			</apex:outputPanel>
+			
+		</apex:outputPanel>
+	</apex:outputPanel>
+</apex:form>
+</body>
+</html>
+</apex:page>

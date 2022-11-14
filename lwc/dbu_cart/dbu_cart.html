@@ -1,0 +1,766 @@
+<template>
+
+  <template if:true={ScreenLoaded}>
+    <c-dbu_page-loader></c-dbu_page-loader>
+  </template>
+  <div class="slds-container_x-large slds-container_center cartPage">
+    <div class="slds-grid slds-wrap">
+      <div class="slds-col slds-size_1-of-1 slds-large-size_8-of-12 slds-col_padded moPa-0">
+        <div class="emptyCart">
+          <h1>
+            {allLabels.dbu_miniCart_oopsYourCartIsEmpty}
+          </h1>
+          <a href={docontinueshopping} onclick={navigateToContinueToShoping} class="slds-button slds-button_outline-brand">{allLabels.dbu_shopCart_continueShopping}</a>
+        </div>
+
+        <template if:false={isEmptyCart}>
+          <h1>
+            {allLabels.dbu_shopCart_shoppingCart}
+          </h1>
+
+          <template if:false={cartDetails}>
+            <h1>
+              Your cart has expired or no product, please add new products.
+            </h1>
+          </template>
+
+          <template if:true={cartDetails}>
+            <h5 class="storepickLoc">{allLabels.dbu_storepickuplocation}</h5>
+
+          </template>
+
+          <template if:true={dropOffAtStoreAddress}>
+            <c-dbu_map-in-modal isdropoff={dropOffAtStoreAddress} onpass={fetchPickUpAddress}></c-dbu_map-in-modal>
+          </template>
+
+          <template if:true={cartDetails}>
+            <div class="slds-grid slds-wrap cartTitHeader">
+              <div class="slds-col slds-size_7-of-12 slds-col_padded">
+                {allLabels.dbu_shopCart_product}
+              </div>
+              <div class="slds-col slds-size_2-of-12 slds-col_padded">
+                {allLabels.dbu_shopCart_quantity}
+              </div>
+              <div class="slds-col slds-size_2-of-12 slds-col_padded">
+                {allLabels.dbu_shopCart_unitPrice}
+              </div>
+
+              <div class="slds-col slds-size_1-of-12 slds-col_padded">
+                &nbsp;
+              </div>
+            </div>
+          </template>
+          <template for:each={cartDetails} for:item="cart">
+            <div key={cart.ccrz__CartId__c}>
+              <template for:each={cart.lstCartItem} for:item="cartItem">
+                <div key={cartItem.Id} class="slds-grid slds-wrap cartItemRow">
+                  <div class="slds-col slds-size_7-of-12 slds-col_padded slds-grid slds-wrap itemInfo">
+                    <div class="slds-col slds-size_3-of-12 slds-col_padded">
+                      <c-dbu_image-Generator imageurl={cartItem.cartItemProductDetailWrapper.URI}>
+                      </c-dbu_image-Generator>
+                    </div>
+                    <div class="slds-col slds-size_9-of-12">
+                      <template if:false={cartItem.cartItemProductDetailWrapper.isCoreProduct}>
+                        <!-- CHG0108639 Ramesh-->
+                        <h6><a href={productURL} onclick={navigateToProductPage} onfocus={navigateToProductPage}
+                            data-id={cartItem.cartItemProductDetailWrapper.sfid}
+                            data-name={cartItem.cartItemProductDetailWrapper.sfdcName}>{cartItem.cartItemProductDetailWrapper.sfdcName}</a>
+                        </h6>
+                      </template>
+                      <template if:true={cartItem.cartItemProductDetailWrapper.isCoreProduct}>
+                        <h6><span>{cartItem.cartItemProductDetailWrapper.sfdcName}</span>
+                        </h6>
+                      </template>
+
+                      <template if:true={cartItem.cartItemProductDetailWrapper.dbuCrateEngine}>
+                        <template for:each={cratemetadata} for:item="meta">
+
+                          <div key={meta.id} class="slds-grid slds-grid_vertical">
+                            <div class="slds-col">
+                              <p> {meta.MasterLabel}: <strong>{allLabels.dbu_cart_page_Aggreed}</strong></p>
+                            </div>
+
+                          </div>
+                        </template>
+                      </template>
+                      <!--Condition for core charge-->
+                      <template if:false={cartItem.cartItemProductDetailWrapper.isCoreProduct}>
+                        <div class="d-flex mt-10">
+                          <span class="stockAvb outStockClr"
+                            data-val={cartItem.ItemAvailabilityMessage}>{cartItem.ItemAvailabilityMessage}</span>
+                        </div>
+                        <!--Sasikanth CECI-957 start-->
+                        <template if:true={cartItem.cartItemProductDetailWrapper.promotionTag}>
+                          <div class="d-flex sale-tag mt-10">
+                            <img alt = "Clearance Sale" src={clearanceImg}>
+                            <span>{cartItem.cartItemProductDetailWrapper.promotionTag}</span>
+                          </div>
+                        </template>
+                        <!--Sasikanth CECI-957 end-->
+                        <div class="d-flex mt-10">
+                          <span class="stockAvb outStockClr partialStockClr">
+                            <template if:true={cartItem.qtyAvailableForPartialInStock}>
+                              Available Quantity: {cartItem.qtyAvailableForPartialInStock}
+                            </template>
+                          </span>
+                        </div>
+                        <!--Aakriti CECI-693 start-->
+                        <div class="d-flex mt-10" if:true={cartItem.showQtyExceedError}>
+                          <span class="qtyNotifyError">
+                            {allLabels.dbu_maximum_quantity} {cartItem.maxAllowedQty}
+                          </span>
+                        </div>
+                        <!--Aakriti CECI-693 end-->
+                        <div class="d-flex mt-10">
+                          <span class="storePick">
+                            <template if:true={cartItem.cartItemProductDetailWrapper.availableToShip}>
+                              <template if:true={cartItem.cartItem.dbu_isShipTo__c}>
+                              <span>{allLabels.avialbleShipData}.</span>
+                              </template>
+                            </template>
+                            <template if:true={cartItem.cartItemProductDetailWrapper.pickUpOnly}>
+                              <span>{allLabels.pickUpOnlyPrdct}.</span>
+                            </template>
+                            <!--25th Feb 2021-->
+                            <template if:false={cartItem.cartItemProductDetailWrapper.availableToShip}>
+                              <template if:false={cartItem.cartItemProductDetailWrapper.pickUpOnly}>
+                                <template if:true={cartItem.cartItem.dbu_isShipTo__c}>
+                                  <div> {allLabels.avialbleShipData}</div>
+                                </template>
+                              </template>
+                            </template>
+                            <!--End 25th Feb 2021-->
+                            <template if:true={cartItem.cartItemProductDetailWrapper.nonReturnable}>
+                              <span> {allLabels.nonReturnable}.</span>
+                            </template>
+                          </span>
+                        </div>
+                      </template>
+                      <template if:true={cartItem.cartItemProductDetailWrapper.isCoreProduct}>
+                        <div>{allLabels.coreChargeAvailabilityMsg}</div>
+                      </template>
+                      <template if:false={cartItem.cartItemProductDetailWrapper.isCoreProduct}><!--CECI-987 modified--><!--CECI-958 GTM Events-->
+                        <a class="saveForLater_label" data-id={cartItem.cartItem.Id} data-price={cartItem.cartItem.ccrz__Price__c}
+                        data-proid={cartItem.cartItemProductDetailWrapper.SKU} data-proqty={cartItem.cartItem.ccrz__Quantity__c}
+                        data-name={cartItem.cartItemProductDetailWrapper.sfdcName} data-protype={cartItem.cartItemProductDetailWrapper.dbuCrateEngine} data-probrand={cartItem.cartItemProductDetailWrapper.Brandname} data-procategory={cartItem.cartItemProductDetailWrapper.Categoryname}
+                          onclick={saveforlaterAddProductOperation}>
+                          {allLabels.dbu_myAccount_saveForLater}
+                        </a>
+
+                      </template>
+                    </div>
+                  </div>
+                  <div class="slds-col slds-size_5-of-12 slds-col_padded slds-grid slds-wrap itemInfo">
+
+                    <div class="slds-col slds-size_5-of-12 qty blockAlign">
+                      <template if:false={cartItem.cartItemProductDetailWrapper.isCoreProduct}>
+                        <template if:false={cartItem.isQuantityAsTextInput}>
+                          <!--Aakriti CECI-693 added template true/false for error class in all inputs-->
+                          <template if:false={cartItem.cartItemProductDetailWrapper.dbuCrateEngine}>
+                            <template if:false={cartItem.showQtyExceedError}>
+                            <lightning-combobox name="progress" value={cartItem.Id} class="noLabel qtyDropdown"
+                              placeholder={cartItem.cartItem.ccrz__Quantity__c} label-hidden={cartItem.cartItem.Id}
+                              options={cartItem.quantityOptions} disabled={cartItem.isOutofStock}
+                              data-currprodname={cartItem.cartItemProductDetailWrapper.sfdcName} data-quantity={cartItem.cartItem.ccrz__Quantity__c}
+                              onchange={handleChangeQuantityForCart} data-id={cartItem.cartItem.Id} 
+                              data-productprice={cartItem.formatedUnitPrice} data-crateengine={cartItem.cartItemProductDetailWrapper.dbuCrateEngine}>
+                            </lightning-combobox>
+                            </template>
+                            <template if:true={cartItem.showQtyExceedError}>
+                              <lightning-combobox name="progress" value={cartItem.Id} class="noLabel qtyDropdown qtyInputError"
+                                placeholder={cartItem.cartItem.ccrz__Quantity__c} label-hidden={cartItem.cartItem.Id}
+                                options={cartItem.quantityOptions} disabled={cartItem.isOutofStock}
+                                data-currprodname={cartItem.cartItemProductDetailWrapper.sfdcName} data-quantity={cartItem.cartItem.ccrz__Quantity__c}
+                                onchange={handleChangeQuantityForCart} data-id={cartItem.cartItem.Id}
+                                data-productprice={cartItem.formatedUnitPrice} data-crateengine={cartItem.cartItemProductDetailWrapper.dbuCrateEngine}>
+                              </lightning-combobox>
+                              </template>
+                          </template>
+                        </template>
+                        <template if:false={cartItem.showQtyExceedError}>
+                        <template if:true={cartItem.cartItemProductDetailWrapper.dbuCrateEngine}>
+                          <lightning-combobox name="progress" value={cartItem.Id} class="noLabel qtyDropdown"
+                            placeholder={cartItem.cartItem.ccrz__Quantity__c} label-hidden={cartItem.cartItem.Id}
+                            options={optionscrate} disabled={cartItem.isOutofStock} data-id={cartItem.cartItem.Id}>
+
+                          </lightning-combobox>
+
+                        </template>
+
+                        <template if:true={cartItem.isQuantityAsTextInput}>
+
+                          <lightning-input type="text" class="instock_input"
+                            data-currprodname={cartItem.cartItemProductDetailWrapper.sfdcName} data-quantity={cartItem.cartItem.ccrz__Quantity__c}
+                            onblur={handleChangeQuantityForCartOnInputTxt} onchange={handleChangeInputQuantity}
+                            value={cartItem.cartItem.ccrz__Quantity__c} data-id={cartItem.cartItem.Id}
+                            data-productprice={cartItem.formatedUnitPrice} data-crateengine={cartItem.cartItemProductDetailWrapper.dbuCrateEngine}>
+                          </lightning-input>
+                        </template>
+                      </template>
+                      <template if:true={cartItem.showQtyExceedError}>
+                        <template if:true={cartItem.cartItemProductDetailWrapper.dbuCrateEngine}>
+                          <lightning-combobox name="progress" value={cartItem.Id} class="noLabel qtyDropdown qtyInputError"
+                            placeholder={cartItem.cartItem.ccrz__Quantity__c} label-hidden={cartItem.cartItem.Id}
+                            options={optionscrate} disabled={cartItem.isOutofStock} data-id={cartItem.cartItem.Id}>
+
+                          </lightning-combobox>
+
+                        </template>
+
+                        <template if:true={cartItem.isQuantityAsTextInput}>
+
+                          <lightning-input type="text" class="instock_input qtyInputError"
+                            data-currprodname={cartItem.cartItemProductDetailWrapper.sfdcName} data-quantity={cartItem.cartItem.ccrz__Quantity__c}
+                            onblur={handleChangeQuantityForCartOnInputTxt} onchange={handleChangeInputQuantity}
+                            value={cartItem.cartItem.ccrz__Quantity__c} data-id={cartItem.cartItem.Id}
+                            data-productprice={cartItem.formatedUnitPrice} data-crateengine={cartItem.cartItemProductDetailWrapper.dbuCrateEngine}>
+                          </lightning-input>
+                        </template>
+                      </template>
+                        <!-- </template> -->
+                      </template>
+                      <template
+                        if:true={cartItem.cartItemProductDetailWrapper.isCoreProduct}><strong>{cartItem.cartItem.ccrz__Quantity__c}</strong></template>
+                    </div>
+                    <!--Sasikanth CECI-957 start-->
+                    <template if:true={cartItem.isOriginalPrice}>
+                      <div class="slds-col slds-size_5-of-12" data-id={cartItem.sfid}>
+                          <div class="listProductPrice">
+                            <div class="originalPrice">{cartItem.originalPrice}</div>
+                              <div class="align-price">
+                                  <strong> {cartItem.formatedUnitPrice}</strong>
+                                  <template if:true={cartItem.discountPercentage}>
+                                    <span class="discountTag">({cartItem.discountPercentage}{allLabels.dbu_percentOff})</span>
+                                  </template>
+                              </div>
+                          </div>
+                      </div>
+                    </template>
+                    <template if:false={cartItem.isOriginalPrice}>
+                      <div class="slds-col slds-size_5-of-12" data-id={cartItem.sfid}>
+                        <strong> {cartItem.formatedUnitPrice}</strong>
+                      </div>
+                    </template>
+                    <!--Sasikanth CECI-957 end-->
+                    <div class="slds-col slds-size_1-of-12 slds-col_padded del" data-id={cartItem.Id}>
+                      <template if:false={cartItem.cartItemProductDetailWrapper.isCoreProduct}>
+                        <a><!--CECI-987 modified--><!--CECI-958 GTM Events-->
+                          <i class="icon-trash" data-id={cartItem.cartItem.Id} data-price={cartItem.cartItem.ccrz__Price__c}
+                            data-proid={cartItem.cartItemProductDetailWrapper.SKU} data-proqty={cartItem.cartItem.ccrz__Quantity__c} data-protype={cartItem.cartItemProductDetailWrapper.dbuCrateEngine} data-probrand={cartItem.cartItemProductDetailWrapper.Brandname} data-procategory={cartItem.cartItemProductDetailWrapper.Categoryname}
+                            data-name={cartItem.cartItemProductDetailWrapper.sfdcName} onclick={onProductDelete}></i>
+                        </a>
+                      </template>
+                    </div>
+                    <!--Shriram 10th Oct 2021-->
+                    <template if:false={cartItem.cartItemProductDetailWrapper.isCoreProduct}>
+                      <div class="slds-col slds-size_12-of-12 slds-col_padded slds-grid slds-wrap itemInfo shippingprd">
+
+                        <h5>{allLabels.dbu_checkoutPage_shippingMethod}</h5>
+                        <template if:true={cartItem.isProductShipable}>
+                          <lightning-input type="radio" label={allLabels.dbu_checkoutPage_shipToAddress}
+                            name={cartItem.nameValForShipTo} value="shipToStore" data-id={cartItem.cartItem.Id}
+                            data-productid={cartItem.cartItemProductDetailWrapper.sfid}
+                            onchange={shipTo} checked={cartItem.cartItem.dbu_isShipTo__c}>
+                          </lightning-input>
+                          <template if:true={cartItem.cartItem.dbu_isShipTo__c}>
+                            <div><p><strong>{allLabels.dbu_EstimatedDelivery}</strong></p>{cartItem.cartItem.dbu_Estimated_Delivery__c}</div>
+                          </template>
+                        </template>
+                        <template if:true={cartItem.isProductPickupable}>
+                          <template if:true={cartItem.cartItem.dbu_isShipTo__c}>
+                            <lightning-input type="radio" label={allLabels.dbu_PickupFromStoreFree}
+                              name={cartItem.nameValForPickUp} value="dropOffAtStore" data-id={cartItem.cartItem.Id}
+                              data-productid={cartItem.cartItemProductDetailWrapper.sfid} onclick={shipTo}
+                              class={cartItem.nameValForPickUp}></lightning-input>
+                          </template>
+                          <template if:false={cartItem.cartItem.dbu_isShipTo__c}>
+                            <lightning-input type="radio" label={allLabels.dbu_PickupFromStoreFree}
+                              name={cartItem.nameValForPickUp} value="dropOffAtStore" data-id={cartItem.cartItem.Id}
+                              data-productid={cartItem.cartItemProductDetailWrapper.sfid} onclick={shipTo}
+                              class={cartItem.nameValForPickUp} checked={cart.cartDetails.dbu_Pick_Up_From_Store__r}>
+                            </lightning-input>
+                            <template if:true={cart.cartDetails.dbu_Pick_Up_From_Store__r}>
+                              <p style="font-size: 16px; color: #000;">
+                                {cart.cartDetails.dbu_Pick_Up_From_Store__r.dbu_PickUp_Store_Name__c},
+                              </p>
+                              <p style="font-size: 16px; color: #000;">
+                                {cart.cartDetails.dbu_Pick_Up_From_Store__r.ccrz__AddressFirstline__c},
+                                {cart.cartDetails.dbu_Pick_Up_From_Store__r.ccrz__City__c},
+                                {cart.cartDetails.dbu_Pick_Up_From_Store__r.ccrz__State__c},
+                                {cart.cartDetails.dbu_Pick_Up_From_Store__r.ccrz__PostalCode__c},
+                                {cart.cartDetails.dbu_Pick_Up_From_Store__r.ccrz__Country__c}
+                              </p>
+                              <div>
+                                <p><strong>{allLabels.dbu_EstimatedPickup}</strong></p>{cartItem.cartItem.dbu_Estimated_PickUp__c}
+                            </div>
+                              <button class="slds-button btnstore slds-button_brand" onclick={shipTo} value="dropOffAtStoreForChangeStore">
+                                {allLabels.dbu_SelectAnotherStore}
+                              </button>
+                            </template>
+                          </template>
+                        </template>
+                      </div>
+                    </template>
+                    <!--Shriram-->
+                  </div>
+                  <!--Aakriti CECI-693 start-->
+                  <div class="slds-col slds-size_2-of-12 slds-grid slds-wrap itemInfo"></div>
+                  <div class="slds-col slds-size_10-of-12 slds-grid slds-wrap itemInfo">
+                    <div if:true={cartItem.showQtyExceedError} class="qtyError qtyErrorMargin">
+                      {allLabels.dbu_cart_page_max_quantity}
+                    </div>
+                  </div>
+                  <!--Aakriti CECI-693 end-->
+                  <!-- 1st Nov Changes related to partiall In Stock -->
+                          <template if:true={cartItem.qtyAvailableForPartialInStock}>
+                            <!-- 27th Oct 2021 Shriram to show partial Instock msg -->
+                                <template if:true={isPartialAvailability}>
+                                  <div class="partialStockMessage">
+                                    {allLabels.dbu_partialInStockMsg}
+                                  </div>
+                                </template>
+                            <!-- Ended here -->
+                    </template>
+              </div>
+            </template>
+
+          </div>
+          </template>
+          <template if:true={isPickupOnlyErrorMsg}>
+            <p style="color: red;"> {allLabels.dbu_PickupOnlyErrorMsg}</p>
+          </template>
+        </template>
+
+        <template if:true={saveForLaterItemsAvailable}>
+          <div class="saveForLater">
+
+            <template if:true={saveforlaterProductList}>
+              <h4>
+                {allLabels.dbu_shopCart_savedItems}
+              </h4>
+
+
+              <div class="slds-grid slds-wrap cartTitHeader">
+                <div class="slds-col slds-size_9-of-12 slds-col_padded">
+                  {allLabels.dbu_shopCart_product}
+                </div>
+
+                <div class="slds-col slds-size_2-of-12 slds-col_padded">
+                  {allLabels.dbu_shopCart_unitPrice}
+                </div>
+
+                <div class="slds-col slds-size_1-of-12 slds-col_padded">
+                  &nbsp;
+                </div>
+              </div>
+            </template>
+
+            <template for:each={saveforlaterProductList} for:item="sfl">
+              <div key={sfl.ProductID} class="slds-grid slds-wrap cartItemRow">
+                <div class="slds-col slds-size_7-of-12 slds-col_padded slds-grid slds-wrap itemInfo">
+                  <div class="slds-col slds-size_3-of-12 slds-col_padded">
+                    <template if:true={sfl.ProductURL}>
+                      <c-dbu_image-Generator imageurl={sfl.ProductURL}></c-dbu_image-Generator>
+                    </template>
+                  </div>
+                  <div class="slds-col slds-size_9-of-12">
+                    <h6><a href={productURL} onclick={navigateToProductPage}
+                        data-id={sfl.ProductID}>{sfl.ProductName}</a></h6>
+
+                    <template if:true={sfl.IsCoreProductcheck}>
+                      <div>{allLabels.coreChargeAvailabilityMsg}</div>
+                    </template>
+
+
+                    <template if:false={sfl.IsCoreProductcheck}>
+                      <!--Sasikanth CECI-957 start-->
+                      <template if:true={sfl.promotionTag}>
+                        <div class="d-flex mt-10 sale-tag">
+                          <img alt = "Clearance Sale" src={clearanceImg}>
+                          <span>{sfl.promotionTag}</span>
+                        </div>
+                      </template>
+                      <!--Sasikanth CECI-957 end-->
+                      <div class="d-flex mt-10">
+                        <template if:true={sfl.stockstatus}>
+                          <span class="stockAvb">{allLabels.dbu_myAccount_inStock}</span>
+                        </template>
+                        <template if:false={sfl.stockstatus}>
+                          <span class="stockAvb outStockClr">{allLabels.dbu_myAccount_outOfStock}</span>
+                        </template>
+                      </div>
+                      <template if:true={sfl.stockstatus}><!--CECI-987 modified--><!--CECI-958 GTM Events-->
+                        <a class="addtoCartTxt" data-id={sfl.ProductID} data-productprice={sfl.ProductPrice}  data-productid={sfl.ProductSKU} data-productbrand={sfl.Brandname} data-productcategory={sfl.Categoryname}
+                          data-productname={sfl.ProductName} onclick={saveforlaterAddProductToCart}>
+                          {allLabels.dbu_myAccount_addToCart}
+                        </a>
+                      </template>
+
+                    </template>
+
+
+                  </div>
+
+                </div>
+                <div class="slds-col slds-size_2-of-12 slds-col_padded amt">
+                  &nbsp;
+                </div>
+                <!--Sasikanth CECI-957 start-->
+                <template if:true={sfl.isOriginalPrice}>
+                  <div class="slds-col slds-size_2-of-12 slds-col_padded">
+                      <div class="listProductPrice">
+                        <div class="originalPrice">{sfl.originalprice}</div>
+                          <div class="align-price">
+                              <strong>{sfl.modifiedPrice}</strong>
+                              <template if:true={sfl.discountPercentage}>
+                                <span class="discountTag">({sfl.discountPercentage}{allLabels.dbu_percentOff})</span>
+                              </template>
+                          </div>
+                      </div>
+                  </div>
+                </template>
+                <template if:false={sfl.isOriginalPrice}>
+                  <div class="slds-col slds-size_2-of-12 slds-col_padded amt">
+                    <strong>{sfl.modifiedPrice}</strong>
+                  </div>
+                </template>
+                <!--Sasikanth CECI-957 end-->
+                <div class="slds-col slds-size_1-of-12 slds-col_padded del">
+                  <template if:false={sfl.IsCoreProductcheck}>
+                    <a class="del">
+                      <i class="icon-trash" data-id={sfl.ProductID} data-curproname={sfl.ProductName}
+                        data-curproprice={sfl.modifiedPrice} onclick={deleteSaveForLaterGuest}></i>
+                    </a>
+                  </template>
+                </div>
+              </div>
+            </template>
+            <div class="saveBtn">
+              <a class="slds-button slds-button_outline-brand "
+                onclick={SaveForLaterhandleAddallItemsToCart}>{allLabels.dbu_myAccount_addAllItemsToCart}</a>
+
+            </div>
+          </div>
+        </template>
+
+        <template if:true={showSFLItemsLoggedIN}>
+          <div class="saveForLater">
+            <h4>
+              {allLabels.dbu_shopCart_savedItems}
+            </h4>
+
+
+            <div class="slds-grid slds-wrap cartTitHeader">
+              <div class="slds-col slds-size_9-of-12 slds-col_padded">
+                {allLabels.dbu_shopCart_product}
+              </div>
+
+              <div class="slds-col slds-size_2-of-12 slds-col_padded">
+                {allLabels.dbu_shopCart_unitPrice}
+              </div>
+
+              <div class="slds-col slds-size_1-of-12 slds-col_padded">
+                &nbsp;
+              </div>
+            </div>
+
+            <template for:each={loggeInSFLData} for:item="sfloggedIn">
+              <div key={sfloggedIn.ProductID} class="slds-grid slds-wrap cartItemRow">
+                <div class="slds-col slds-size_7-of-12 slds-col_padded slds-grid slds-wrap itemInfo">
+                  <div class="slds-col slds-size_3-of-12 slds-col_padded">
+                    <template if:true={sfloggedIn.ProductURL}>
+                      <c-dbu_image-Generator imageurl={sfloggedIn.ProductURL}></c-dbu_image-Generator>
+                    </template>
+                  </div>
+                  <div class="slds-col slds-size_9-of-12">
+                    <h6><a href={productURL} onclick={navigateToProductPage}
+                        data-id={sfloggedIn.ProductID}>{sfloggedIn.ProductName}</a></h6>
+                    <template if:true={sfloggedIn.IsCoreProductcheck}>
+                      <div>{allLabels.coreChargeAvailabilityMsg}</div>
+                    </template>
+                    <!--Sasikanth CECI-957 Start-->
+                    <template if:true={sfloggedIn.promotionTag}>
+                      <div class="d-flex sale-tag mt-10">
+                        <img alt = "Clearance Sale" src={clearanceImg}>
+                        <span>{sfloggedIn.promotionTag}</span>
+                        <!-- <span>Clearance Sale</span> -->
+                      </div>
+                    </template>
+                    <!--Sasikanth CECI-957 end-->
+                    <template if:false={sfloggedIn.IsCoreProductcheck}>
+                      <div class="d-flex mt-10">
+                        <template if:false={sfloggedIn.stockstatus}>
+                          <span class="stockAvb outStockClr">{allLabels.dbu_myAccount_outOfStock}</span>
+                        </template>
+                      </div>
+                      <template if:true={sfloggedIn.stockstatus}><!--CECI-987 modified--><!--CECI-958 GTM Events-->
+                        <a class="saveForLater_label" data-id={sfloggedIn.ProductID} data-productid={sfloggedIn.ProductSKU}
+                          data-productprice={sfloggedIn.ProductPrice} data-productname={sfloggedIn.ProductName} data-productbrand={sfloggedIn.Brandname} data-productcategory={sfloggedIn.Categoryname}
+                          onclick={saveforlaterAddProductToCart}>
+                          {allLabels.dbu_myAccount_addToCart}
+                        </a>
+                      </template>
+
+                    </template>
+
+
+                  </div>
+
+                </div>
+                <div class="slds-col slds-size_2-of-12 slds-col_padded amt">
+                  &nbsp;
+                </div>
+                <!--Sasikanth CECI-957 start-->
+                <template if:true={sfloggedIn.isOriginalPrice}>
+                  <div class="slds-col slds-size_2-of-12 slds-col_padded">
+                      <div class="listProductPrice">
+                        <div class="originalPrice">{sfloggedIn.originalprice}</div>
+                          <div class="align-price">
+                              <strong>{sfloggedIn.modifiedPrice}</strong>
+                              <template if:true={sfloggedIn.discountPercentage}>
+                                <span class="discountTag">({sfloggedIn.discountPercentage}{allLabels.dbu_percentOff})</span>
+                              </template>
+                          </div>
+                      </div>
+                  </div>
+                </template>
+                <template if:false={sfloggedIn.isOriginalPrice}>
+                  <div class="slds-col slds-size_2-of-12 slds-col_padded amt">
+                    <strong>{sfloggedIn.modifiedPrice}</strong>
+                  </div>
+                </template>
+                <!--Sasikanth CECI-957 end-->
+                <div class="slds-col slds-size_1-of-12 slds-col_padded del">
+                  <template if:false={sfloggedIn.IsCoreProductcheck}>
+                    <a class="del">
+                      <i class="icon-trash" data-id={sfloggedIn.ProductID} data-curproname={sfloggedIn.ProductName}
+                        data-curproprice={sfloggedIn.modifiedPrice} onclick={deleteSaveForLaterLoggedIn}></i>
+                    </a>
+                  </template>
+                </div>
+              </div>
+            </template>
+            <div class="saveBtn">
+              <a class="slds-button slds-button_outline-brand "
+                onclick={SaveForLaterhandleAddallItemsToCart}>{allLabels.dbu_myAccount_addAllItemsToCart}</a>
+
+            </div>
+          </div>
+        </template>
+        
+      </div>
+      
+      <div class="slds-col slds-size_1-of-1 slds-large-size_4-of-12 slds-col_padded stickyElement">
+
+        <!--This addition div will be used for order summary-->
+        <template if:true={orderSummaryDisplay}>
+          <div class="orderSummary">
+            <h5>{allLabels.dbu_shopCart_orderSummary}</h5>
+            <ul>
+              <li>
+                <span>{allLabels.dbu_shopCart_items}: </span><span>{cartOriginalAmount}</span>
+              </li>
+              <li>
+                <span>{allLabels.dbu_shopCart_discount}:</span> <span>{cartDiscountAmount}</span>
+              </li>
+              <li>
+                <span>{allLabels.dbu_shopCart_subTotal}:</span> <span>{cartSubtotalAmount}</span>
+              </li>
+              <li>
+                <span>{allLabels.dbu_shopCart_tax} <div class="tooltip">
+                  <lightning-icon icon-name="utility:info"  size="x-small" >
+                  </lightning-icon>
+                  <span class="tooltiptext">{allLabels.dbu_taxMsg} <br/>
+                    {allLabels.dbu_taxMsg1} <br/>
+                    {allLabels.dbu_taxMsg2}
+                  </span>
+                </div>
+                </span>  
+                 
+                <span>{allLabels.dbu_shopCart_calculatedAtCheckout}</span>
+              </li>
+              <li>
+                <span>Estimated Shipping:</span><span>{EstimatedShippingAmount}</span>
+              </li>
+              <li>
+                <strong>{allLabels.dbu_shopCart_total}:</strong><strong>{cartTotalAmount}</strong>
+              </li>
+            </ul>
+            <div class="slds-grid slds-wrap">
+              <!--Aakriti CECI691 & CECI748 start-->
+              <div class="slds-size_1-of-1 agree">
+
+                <div class="slds-checkbox">
+                  <input type="checkbox" id="marketingemail" onchange={handleChangeMarketingEmail} checked={enableMarketingEmail}>
+                  <label for="marketingemail" class="slds-checkbox__label">
+                    <span class="slds-checkbox_faux"></span>
+                    <span class="slds-form-element__label"> {allLabels.dbu_shopCart_marketingEmail} </span>
+                  </label>
+                </div>
+
+                <div class="tAndCText">
+                  <span>{allLabels.dbu_shopCart_agreeWith}</span>
+                  <a href={gototermsandconditionsurl} onclick={navigatetotermsandconditions}
+                    target="_blank"><strong>{allLabels.dbu_shopCart_termsConditions}</strong></a>
+                </div>
+              </div>
+
+
+              <template if:true={proceedToCheckoutBtnDisabled}>
+                <a
+                  class="slds-button slds-button_brand w-100" disabled >{allLabels.dbu_shopCart_proceedToCheckout}
+                </a>
+              </template>
+              <template if:false={proceedToCheckoutBtnDisabled}>
+                <template if:false={isGuestUser}>
+                  <a onclick={handleClickGoToCheckout}
+                    class="slds-button slds-button_brand w-100">{allLabels.dbu_shopCart_proceedToCheckout}
+                  </a>
+                </template>
+                <template if:true={isGuestUser}>
+                  <template if:false={navToCheckoutForGuest}>
+                    <a onclick={openModelForGuestCart}
+                      class="slds-button slds-button_brand w-100">{allLabels.dbu_shopCart_proceedToCheckout}
+                    </a>
+                  </template>
+                  <template if:true={navToCheckoutForGuest}>
+                    <a onclick={handleClickGoToCheckout}
+                      class="slds-button slds-button_brand w-100">{allLabels.dbu_shopCart_proceedToCheckout}
+                    </a>
+                  </template>
+                </template>
+              </template>
+
+              <div class="promoBlock">
+                <img src={tagIconVar} /> <span>{allLabels.dbu_promoCouponMsg}</span>
+              </div>
+              <!--Aakriti CECI691 & CECI748 end-->
+              <a href={docontinueshopping} onclick={navigateToContinueToShoping}
+                class="btnLink">{allLabels.dbu_shopCart_continueShopping} </a>
+                  <!--Sandeep Starts - Cart-->	
+                  <div style="width: 100%;">	
+                    <div style="width: 15%; float: left;">	
+                      <img src={freeShippingImage}></img>	
+                    </div>	
+                    <div style="margin-left: 20%;">	
+                      <div if:true={displayShippingMessage}>
+                        <template if:true={isCanadaStore}>
+                          <div style="font-size: 13px; color: #000;" if:false={displayFreeShipping}>	
+                            You're {freeShippingRemainingValue} {allLabels.dbu_fromShipping}	<!--CHG0106444 - Ramesh -->	
+                          </div>
+                        </template>	
+                        <template if:false={isCanadaStore}>
+                          <div style="font-size: 13px; color: #000;" if:false={displayFreeShipping}>	
+                            You're {freeShippingRemainingValue} {allLabels.dbu_fromShipping}	<!--CHG0106444 - Ramesh -->	
+                          </div>
+                        </template>	
+                        <div style="font-size: 13px; color: #000;" if:true={displayFreeShipping}>	
+                          {allLabels.dbu_gotFreeShipping}	
+                        </div>
+                      </div>	
+                      <div>	
+                        <lightning-progress-bar value={cartValuePercentage} class="progressbar" variant="circular">	
+                        </lightning-progress-bar>	
+                      </div>	
+
+                      <template if:true={isCanadaStore}>
+                        <div style="color: #DA291C;">	
+                          {allLabels.dbu_shippingonOrders_canada} <a href={shippingPolicyURLredirect} target="_blank"	
+                            style="color: #DA291C;border-bottom: 2px solid;">({allLabels.dbu_restrictions_apply_link})</a>	
+                        </div>	
+                      </template>
+                      <template if:false={isCanadaStore}>
+                        <div style="color: #DA291C;">	
+                          {allLabels.dbu_shippingonOrders} <a href={shippingPolicyURLredirect} target="_blank"	
+                            style="color: #DA291C;border-bottom: 2px solid;">({allLabels.dbu_restrictions_apply_link})</a>	
+                        </div>	
+                      </template>
+                      
+                    </div>	
+                </div>
+                <!--Sandeep Ends - Cart-->
+            </div>
+          </div>
+        </template>
+        <!--Ended here-->
+      </div>
+    </div>
+    <template if:true={isOpenModelForGuestCart}>
+
+      <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-03" aria-modal="true"
+        aria-describedby="modal-content-id-3" class="slds-modal slds-fade-in-open signPopUp">
+        <div class="slds-modal__container">
+
+          <!-- Modal/Popup Box LWC body starts here -->
+          <div class="slds-modal__content slds-p-around_medium">
+            <button class="slds-button slds-button_icon  cross_btn slds-button_icon-inverse" title="Close"
+              onclick={closeModelForGuestCart}>
+              <i class="icon-close"></i>
+            </button>
+
+            <h5>{allLabels.dbu_notSignedIn}</h5>
+            <a class="slds-button slds-button_destructive" href={navigateToSignInURL}
+              onclick={handleToSignInLinkClick}>{allLabels.dbu_SignInCumminsAccount}</a>
+
+            <p>{allLabels.dbu_shopCart_dontHaveAccount} <a href={allLabels.registrationURL} target="_blank">{allLabels.dbu_shopCart_createAccount}</a></p>
+            <small>{allLabels.dbu_miniCart_or}</small>
+            <a onclick={handleClickGoToCheckout} class="closeLink">{allLabels.dbu_shopCart_continueAsGuest}</a>
+
+
+          </div>
+        </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <template if:true={showCookiePolicyModel}>
+
+      <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-03" aria-modal="true"
+        aria-describedby="modal-content-id-3" class="slds-modal slds-fade-in-open alertPopUp">
+        <div class="slds-modal__container">
+
+          <!-- Modal/Popup Box LWC body starts here -->
+          <div class="slds-modal__content slds-p-around_medium">
+            <h5>{allLabels.dbu_miniCart_pleaseAcceptOurCookiePolicy}</h5>
+            <p> {allLabels.dbu_miniCart_doYouWant} <a href={navigateToSignInURL}
+                onclick={handleToSignInLinkClick}>{allLabels.dbu_miniCart_signIn}</a> {allLabels.dbu_miniCart_or} <a
+                href={allLabels.registrationURL}>{allLabels.dbu_miniCart_register}</a> </p>
+          </div>
+          <!-- Modal/Popup Box LWC footer starts here -->
+          <footer class="slds-modal__footer">
+            <a class="slds-button slds-button_outline-brand"
+              onclick={showCookiePolicyModelCancelHandle}>{allLabels.dbu_miniCart_noThanks}
+            </a>
+            <a class="slds-button slds-button_brand"
+              onclick={showCookiePolicyModelAcceptHandle}>{allLabels.dbu_miniCart_accept}</a>
+
+
+          </footer>
+        </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- Save For Later Modal Begin - Malhar 10/11/2020 -->
+    <template if:true={isSFLmessageModalOpen}>
+      <!-- Modal/Popup Box LWC starts here -->
+      <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+        aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open alertPopUp">
+        <div class="slds-modal__container">
+          <!-- Modal/Popup Box LWC body starts here -->
+          <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+            <!-- <h5>Success</h5> -->
+            <h5>{recordUpdate}</h5>
+          </div>
+          <!-- Modal/Popup Box LWC footer starts here -->
+          <footer class="slds-modal__footer t-center">
+            <a class="slds-button slds-button_outline-brand" onclick={closeModal}>{allLabels.dbu_done}</a>
+          </footer>
+        </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+    <!-- Save For Later Modal End - Malhar 10/11/2020 -->
+
+  </div>
+</template>

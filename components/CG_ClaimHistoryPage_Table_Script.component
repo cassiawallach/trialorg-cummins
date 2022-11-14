@@ -1,0 +1,214 @@
+<apex:component controller="CG_CL_ClaimHistoryPageController">
+
+    <!-- Global CSS & Faviconv -->
+
+    <!--<link rel="stylesheet" href="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/bootstrap3/css/CMI-bootstrap.css')}"/>   
+<link rel="stylesheet" href="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/css/component_specific/CMI-global.css')}"/> 
+<link rel="stylesheet" href="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/css/component_specific/CMI-hometable.css')}"/>             
+<link rel="stylesheet" href="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/css/component_specific/CMI-myjobs.css')}"/>                           
+<link rel="stylesheet" href="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/css/component_specific/bootstrap-datepicker.css')}"/>                           
+<link rel="stylesheet" href="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/css/component_specific/CMI-Mini-Chevrons.css')}"/> 
+<link rel="stylesheet" type="text/css" href="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/css/component_specific/jquery-ui.min.css')}"/>
+<link rel="stylesheet" href="{!URLFOR($Resource.font_awesome, 'font-awesome/css/font-awesome.css')}"/>
+<apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/jquery-1.11.2.min.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/bootstrap-datepicker.js')}"/>  
+<apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/bootstrap3/js/bootstrap.js')}"/>  
+<apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/responsive-tabs.js')}" /> 
+<apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/app.js')}" /> 
+<apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/Css_header2_scripts.js')}"/> 
+<apex:includeScript value="{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/js/jquery-ui.min.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.css_angularjs, '/angular.js')}" />-->
+    <!--The 16 lines above commented because if uncomment will give defect# 176951-->
+
+    <apex:includeScript value="{!URLFOR($Resource.css_angularjs, '/angular.min.js')}"/>
+    <apex:includeScript value="{!URLFOR($Resource.css_angularjs, '/CSS_AngularPagination.js')}" />
+
+    <link rel="stylesheet" href="{!URLFOR($Resource.font_awesome, 'font-awesome/css/font-awesome.css')}"/>
+
+    <script type="text/javascript">
+        function dateFormat(inputDate , dtlocale){                                  
+            if(dtlocale == 'dd/MM/yyyy'){                    
+                return inputDate.split("/").reverse().join("-");
+            }
+            else
+            {                    
+                var dateParts = inputDate.split(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+                return dateParts[3] + "-" + dateParts[1] + "-" + dateParts[2];
+            }
+        }
+    </script>
+    <script>
+
+        var myapp = angular.module('myapp1',['ui.bootstrap']);
+
+        myapp.filter('jsonDate', ['$filter', function ($filter) {
+            return function (input, format) {
+                return (input) ? $filter('date')(input,format) : '';
+            };
+        }])    
+
+        myapp.controller('claimsController', ['$scope','$filter','$window',function($scope,$filter,$window){
+            $scope.items = [];
+            $scope.itemsone = [];
+            $scope.itemsCopy=$scope.items;
+            $scope.currentPage = 1;
+            $scope.currentPage1 = 1;
+            $scope.pageSize = 500; 
+            $scope.selectedPSN='';
+            $scope.loadingImage = false;
+
+            $scope.paged = function (valLists, pageSize) {
+                retVal = [];
+                for (var i = 0; i < valLists.length; i++) {
+                    if (i % pageSize === 0) {
+
+                        retVal[Math.ceil((i+1) / pageSize)] = [valLists[i]];
+                    } else {
+
+                        retVal[Math.ceil((i+1) / pageSize)].push(valLists[i]);
+                    }
+
+                }
+
+                return retVal;
+            }
+
+            $scope.$watch(function () {
+                $scope.filteredList = $scope.$eval("items | filter:search");
+                $scope.ItemsByPage = $scope.paged($scope.filteredList, $scope.pageSize);
+
+                $scope.filteredListone = $scope.$eval("itemsone | filter:search");
+                $scope.ItemsByPageone = $scope.paged($scope.filteredListone, $scope.pageSize);
+
+            });
+            $scope.SearchClaims = function() 
+            {               
+                $scope.errorMessage = null;
+                $scope.selectedPSN = $scope.PSN;
+                var selectedPSN = $scope.selectedPSN;
+                if(selectedPSN!=null && selectedPSN!=''){
+                    /**************** SEARCH QUERY  *****************/ 
+                    $scope.currentPage = 1;
+                    $scope.loadingImage = true;
+                    Visualforce.remoting.Manager.invokeAction(
+                        'CG_CL_ClaimHistoryPageController.SearchClaimHistory', selectedPSN,
+                        function(result, event) {  
+                            $scope.historyClaimRecords = result;
+                            $scope.loadingImage = false;
+                             console.log(' result ' + result.length);
+                            console.log(' $scope.historyClaimRecords' +  $scope.historyClaimRecords);
+                            if($scope.historyClaimRecords != null && $scope.historyClaimRecords != '') {
+                                    $scope.items = JSON.parse($scope.historyClaimRecords.replace(/(&amp\;)/g,'&').replace(/(&quot\;)/g,'"').replace(/(&#39\;)/g,'\''));
+                                    $scope.sort('newsFailure_date'); //
+                                	$scope.sort('newsFailure_date'); // sort called twice to fix Descending order
+                                    if($scope.items.length == 0){
+                                        $scope.errorMessage = 'No claim history found for the entered PSN.';
+                                        removeTableBody();
+                                    }
+                                    else{
+                                        $scope.errorMessage = '';
+                                        $scope.$apply();
+                                        addScrollbar();
+                                    }
+
+                                    $scope.$apply();
+
+                                }
+                           else {
+                                console.log('isside else ' + ' ' + $scope.historyClaimRecords );
+                                $scope.errorMessage = 'No claim history found for the entered PSN.';
+                                $scope.items = '';
+                                $scope.$apply();
+                                removeTableBody();
+                            }
+                        });
+                    //  $scope.loadingImage = false;
+                }
+                else
+                {
+                    $scope.loadingImage = true;
+                    $scope.errorMessage = 'You must enter value';
+                    $scope.items = null;
+                    $scope.ItemsByPage = null;
+                    removeTableBody();
+                    $scope.loadingImage = false;
+                    $scope.$apply(); 
+                }
+ 				scrollToTop();				
+            }
+            $scope.callGetSPClaimDetails = function(claimNum){
+                var ClaimNumber = claimNum;
+                $scope.acttab="0";
+                $scope.currentPageone = 1;
+                //$scope.loadingImage = true;
+                $scope.ItemsByPageone = null;
+                $scope.showLoader = true;
+                Visualforce.remoting.Manager.invokeAction(
+                    'CG_CL_ClaimHistoryPageController.SPClaimDetails', ClaimNumber,
+                    function(result, event) {  
+                        console.log("result1" + ' ' + result);
+                        if(result!=null && result!=''){
+                            $scope.SPClaimDetails = result;
+                            $scope.itemsone = JSON.parse($scope.SPClaimDetails.replace(/(&amp\;)/g,'&').replace(/(&quot\;)/g,'"').replace(/(&#39\;)/g,'\''));
+                            $scope.showLoader = false;
+                            $scope.$apply();
+                        }
+                        else{
+                            console.log("result1 null else" + ' ' + result);
+                            $scope.showLoader = false;
+                            $scope.itemsone='';
+                            $scope.$apply();
+
+                        } 
+                    });
+                //  $scope.loadingImage = false;
+            }
+            /* Code added for ROD Defect fix 178266 */
+
+            $scope.openPopupfun = function(){
+                $('#openPopup').modal({show:true,
+                                       backdrop:'static',
+                                       keyboard: false
+                                      })
+
+            }
+
+            $scope.resetAll = function () {
+                // $scope.items=$scope.itemsCopy;
+                $scope.filteredList = $scope.items;
+                $scope.Header = ['', '', '', '', '', '', '', '', '', '', '', ''];
+            }
+
+            $scope.sort = function (sortBy) {
+                //$scope.reverse =true;
+                //alert('Sort Logic Ivoke');
+
+                $scope.resetAll();
+                $scope.columnToOrder = sortBy;
+
+                if(sortBy === 'newsFailure_date'){
+                    $scope.items = $filter('orderBy')($scope.items,$scope.columnToOrder,$scope.reverse,$scope.columnToOrder);
+
+                }
+
+                console.log("$scope.reverse " + '  ' +   $scope.reverse);
+                if ($scope.reverse) iconName = 'fa fa-caret-down fa-lg';
+                else iconName = 'fa fa-caret-up fa-lg';
+
+
+                if (sortBy === 'newsFailure_date') {
+                    $scope.Header[0] = iconName;
+                } 
+
+
+                $scope.reverse = !$scope.reverse;
+                console.log("$scope.reverse End" + '  ' +   $scope.reverse);
+                //$scope.reverse = true;
+            };
+
+
+        }]);
+
+
+    </script>
+</apex:component>

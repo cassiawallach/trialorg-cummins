@@ -1,0 +1,161 @@
+<apex:page showHeader="true" sidebar="true" controller="disco.Ctl_UserLicensesOld">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<head>
+	<apex:styleSheet value="{!URLFOR($Resource.disco__SLDS212, 'assets/styles/salesforce-lightning-design-system.min.css')}"/>
+	<apex:styleSheet value="{!URLFOR($Resource.disco__jquery_ui_1_12_1, 'jquery-ui.min.css')}" />
+	
+	<apex:includeScript value="{!URLFOR($Resource.disco__jquery_3_6_0, 'jquery.min.js')}"/>
+	<apex:includeScript value="{!URLFOR($Resource.disco__jquery_ui_1_12_1, 'jquery-ui.min.js')}"/>
+	<style>
+	/* this is standard but if we're in classic need to scope it here instead of body tag */
+	.slds {
+		font-size: .8125rem;
+	}
+	/* override SF classic font  */
+	.slds h1 {
+		font-family: "Salesforce Sans",Arial,sans-serif;
+	}
+	.slds .slds-table td, .slds .slds-table th{
+		font-family: "Salesforce Sans",Arial,sans-serif;
+	}
+	.slds .slds-page-header {
+		font-family: "Salesforce Sans",Arial,sans-serif;
+	}
+	/* overrides for jquery UI tooltip */
+	.ui-tooltip {
+		padding: 8px;
+		position: absolute;
+		z-index: 9999;
+		-webkit-box-shadow: 0 0 5px #aaa;
+		box-shadow: 0 0 5px #aaa;
+		font: 100% / 1.5 "Salesforce Sans", Arial, sans-serif;
+	}
+	</style>
+	<script>
+	var isLightningExp = typeof sforce !== 'undefined';
+
+	$(document).ready(function() {
+		// if its classic set font-size to 12px to stop LDS style overriding classic styles in header/sidebar
+		if (!isLightningExp) {
+			$('body').css('font-size','12px');
+		}
+
+		$('.objectAccess').tooltip({
+			items: "a",
+			content: function() {
+				// get list of access objects for this user sort and join with line breaks
+				var objectList = $(this).find('.tooltipContent').text().trim().split('|');
+				var tooltipHTML = objectList.sort().join('<br>');
+				console.log('tooltipHTML : ' + tooltipHTML);
+				return tooltipHTML.slice(4); // remove first <br>
+			}
+		});
+	});
+	</script>
+</head>
+<body>
+<div class="slds">
+	<div class="slds-page-header" role="banner">
+		<div class="slds-grid">
+			<div class="slds-col slds-has-flexi-truncate">
+				<div class="slds-media slds-no-space slds-grow">
+					<div class="slds-media__figure">
+						<svg aria-hidden="true" class="slds-icon slds-icon-standard-user">
+							<use xlink:href="{!URLFOR($Resource.SLDS212, '/assets/icons/standard-sprite/svg/symbols.svg#user')}"></use>
+						</svg>
+					</div>
+					<div class="slds-media__body">
+						<h1 class="slds-page-header__title slds-m-right--small slds-align-middle slds-truncate" title="Youreka Users">Youreka Users</h1>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<apex:outputPanel layout="block" rendered="{!IsPremium}" styleclass="slds-grid slds-page-header__detail-row">
+			<p id="premiumLbl" class="slds-truncate slds-text-title--caps"><apex:outputText value="{!PremiumInfo}"/></p>
+		</apex:outputPanel>
+		<apex:outputPanel layout="block"  rendered="{!NOT(IsPremium)}" styleclass="slds-grid slds-page-header__detail-row slds-notify--alert slds-theme--warning">
+			<p id="nonPremiumLbl" class="slds-text-title--caps slds-truncate  slds-align--absolute-center"><apex:outputText value="{!PremiumInfo}" rendered="{!NOT(IsPremium)}"/></p>
+		</apex:outputPanel>
+		<ul class="slds-grid slds-page-header__detail-row">
+
+			<li class="slds-page-header__detail-block">
+				<p class="slds-text-title slds-m-bottom--xx-small" title="Total Standard Licenses">Total Standard Licenses</p>
+				<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!totalStandardLicenses}"/></p>
+			</li>
+			<li class="slds-page-header__detail-block">
+				<p class="slds-text-title slds-m-bottom--xx-small" title="Standard Licenses Used">Standard Licenses Used</p>
+				<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!standardUserCount}"/></p>
+			</li>
+			<li class="slds-page-header__detail-block">
+				<p class="slds-text-title slds-m-bottom--xx-small" title="Additional Standard Licenses">Standard Licenses Remaining</p>
+				<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!totalStandardLicenses-standardUserCount}"/></p>
+			</li>
+		</ul>
+		<ul class="slds-grid slds-page-header__detail-row">
+			<li class="slds-page-header__detail-block">
+				<p class="slds-text-title slds-m-bottom--xx-small" title="Total Community Licenses">Total Community Licenses</p>
+				<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!totalCommunityLicenses}"/></p>
+			</li>
+			<li class="slds-page-header__detail-block" style="padding-left:13px;">
+				<p class="slds-text-title slds-m-bottom--xx-small" title="Community License Used">Community Licenses Used</p>
+				<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!communityUserCount}"/></p>
+			</li>
+			<li class="slds-page-header__detail-block" style="padding-left:19px;">
+				<p class="slds-text-title slds-m-bottom--xx-small" title="Additional Community Licenses">Community Licenses Remaining</p>
+				<p class="slds-text-body--regular slds-truncate"><apex:outputText value="{!totalCommunityLicenses-communityUserCount}"/></p>
+			</li>
+		</ul>
+	</div>
+
+	<table class="slds-table slds-table--bordered slds-table--cell-buffer">
+		<thead>
+			<tr class="slds-text-title--caps">
+			<th scope="col">
+				<div class="slds-truncate" title="User">User</div>
+			</th>
+			<th scope="col">
+				<div class="slds-truncate" title="Profile">Profile</div>
+			</th>
+			<th scope="col">
+				<div class="slds-truncate" title="User Type">User Type</div>
+			</th>
+			<th scope="col">
+				<div class="slds-truncate" title="Youreka Object Access">Youreka Object Access</div>
+			</th>
+		</tr>
+		</thead>
+		<tbody>
+			<apex:repeat value="{!yourekaUsers}" var="thisUser" >
+			<tr>
+				<td data-label="User">
+					<div class="slds-truncate" title="User"><apex:outputText value="{!thisUser.name}"/></div>
+				</td>
+				<td data-label="Profile Name">
+					<div class="slds-truncate" title="Profile Name"><apex:outputText value="{!thisUser.profile.name}"/></div>
+				</td>
+				<td data-label="User Type">
+					<div class="slds-truncate" title="User Type"><apex:outputText value="{!thisUser.usertype}"/></div>
+				</td>
+				<td data-label="Youreka Object Access">
+					<div class="slds-truncate objectAccess">
+						<a>View Object Access
+							<div  style="display:none;" class="tooltipContent">
+								<apex:repeat value="{!userID2objectPermissions[thisUser.id]}" var="objectName">{!objectName}|</apex:repeat>
+							</div>
+						</a>
+					</div>
+				</td>
+			</tr>
+			</apex:repeat>
+		</tbody>
+	</table>
+	<apex:form >
+		<div class="slds-m-top--large">
+			<apex:commandLink action="{!RefreshLicenseInfo}" value="Refresh Page Information"  />
+		</div>
+	</apex:form>
+</div>
+</body>
+</html>
+</apex:page>

@@ -1,0 +1,1206 @@
+<apex:component controller="CSS_DARSRT_RO" allowDML="true">  
+    <apex:attribute name="JoId" description="Job Order ID" required="true" type="ID"  />
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js" />
+    <apex:attribute name="RedirectPage1" type="string" description="Page Name"/>
+    <apex:attribute name="diagind" type="boolean" description="DSID Indicator" />
+    <apex:attribute name="SRTstatus" type="string" description="SRTstatus"/> <!----65797------>
+    <apex:includeScript value="https://code.jquery.com/ui/1.12.1/jquery-ui.js" />
+    <apex:attribute name="pgName" description="Page Name" type="String"/> <!--GSSC-448-->
+
+    <style>
+     @media (min-width: 750px) and (max-width: 1149px){
+        
+            table.cmi_jobplan-table{
+              width:10% !important;
+                display:inline;
+            }
+        }
+    </style>
+    <script>
+        function qtyPressRepairSRT(e,compId){
+            // var technicianTimeVal= document.getElementById(compId.id).value;
+            if((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46 || e.which == 110 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105))
+            {
+
+            } 
+            else 
+            {
+                return false;
+            }        
+        }
+
+    </script>
+
+    <script type="text/javascript">
+        function accWin(url){
+            window.open( url, "myWindow", "status = 1,  height = 800, width = 600,scrollbars=yes,resizable=1");
+        }
+    </script>
+
+
+    <!-- Santosh UI code start -->
+    <style>
+        
+        .cmi-sortUpIcon{
+            background: url("{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/CMI-WebIcon-Sprite.png')}") no-repeat -10px -654px rgba(0, 0, 0, 0);
+            display: inline-block;
+            width: 24px;
+            height: 21px;
+            
+        }
+        
+        .cmi-sortDownIcon{
+            background: url("{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/CMI-WebIcon-Sprite.png')}") no-repeat -10px -593px rgba(0, 0, 0, 0);
+            display: inline-block;
+            width: 24px;
+            height: 21px;
+           
+        }
+
+        #accordion1-body-3 a {
+            font-weight:normal !important;
+        }
+
+        .cmi-accessibility-checklist-icon {
+            background: url({!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/CSS_TND_Icon.png')}) no-repeat scroll -205px -616px rgba(0, 0, 0, 0);
+        display: inline-block;
+        height: 50px;
+        width: 50px;
+        position: relative;
+        }
+
+        .cmi-accessibility-checklist-disabled-icon {
+            background: url({!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/CSS_TND_Icon.png')}) no-repeat scroll -80px -616px rgba(0, 0, 0, 0);
+        display: inline-block;
+        height: 50px;
+        width: 50px;
+        position: relative;
+        }
+        <!-- start -->
+
+
+        .cmi_jobplan-table th,.cmi_jobplan-table td{
+            text-align: center;
+        }
+
+        /*.cmi_jobplan-table tr:nth-of-type(even){
+        background:#f2f2f2;
+        }
+        .cmi_jobplan-table tr:nth-of-type(odd){
+        background:#ffffff;
+        } */
+
+        .cmi_adminmodalpopupdesktop tr:nth-of-type(even){
+            background:#f2f2f2;
+        }
+
+        .cmi_adminmodalpopupdesktop tr:nth-of-type(odd){
+            background:#ffffff;
+        }
+
+        .cmi_srtaccordian-table-xs {
+            border-top: 2px solid #000000;
+            border-bottom: 2px solid #999;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .cmi_srt-accordian-table{
+            background-color:#f2f2f2;
+        }
+        <!-- .tealButton{
+        background-color:#f2f2f2;
+        }
+        .tealButton1{
+        background-color:red;
+        }-->
+        <!-- End -->    
+
+
+
+
+    </style>
+
+
+    <!-- <div class="panel-body">
+<!--  <div class="row">f
+<div class="col-sm-12" style="margin-top:25px;"> -->
+   <!-- <div class="panel-group cmi_generic-accordion" id="expandAllAccordion"> -->                           
+
+        <div class="panel panel-default">
+            <apex:outputPanel id="DiagData">
+              
+            <!--DAA-->
+           <div class="panel-heading active" id="accordion1-heading-3">
+                <h4 class="panel-title" data-toggle="collapse" data-parent="#accordion1-heading-3" data-target="#diagnostic-accordian" aria-expanded="true" ><!--onclick="SrtsAction2(); return false;"-->
+                   <a class="accordion-toggle" >
+                        <span class="glyphicon glyphicon-minus"></span>
+                        <div class="cmi_accordion-title">{!$Label.CSS_Claims_Diag}</div>
+                    </a>
+                </h4>
+            </div>
+<!--apex:actionRegion--> <!--<apex:actionFunction name="SrtsAction2" action="{!getSRTRoData}" rerender="DiagData,RepairData" status="callSRTsStatus"/><!--/apex:actionRegion-->
+                <apex:actionStatus startText="requesting..." id="callSRTsStatus">
+                        <apex:facet name="start">Loading... <img src="/img/loading.gif" /></apex:facet>
+                        <apex:facet name="stop"></apex:facet>
+                    </apex:actionStatus>
+            <div id="diagnostic-accordian" class="panel-collapse collapse in" aria-expanded="true">
+                <div class="panel-body" id="accordion1-body-3">
+                    
+                    <!-- diagnostic desktop start -->
+                    <div class="hidden-xs">
+
+                        <div class="row">
+                            <br></br>
+                        <div style="float: right;margin-top:-10px;margin-right:18px;">
+                            <!--109745 start and 109745 end-->
+                            <apex:outputpanel rendered="{!IF(pgName!='ReadOnly',true,false)}">
+                                <div style="float: right;margin-top: -10px;margin-right:5px;">
+                                    <i class="CMI-edit-icon"></i>
+                                    <!-- Begin Sai: 10/24/2017: Made the change to navigate to JobPlanSRT page to avoid ViewState Issues -->
+                                    <!--<apex:commandLink value="{!$Label.css_Edit}" action="{!getDiagnosisSRTs}" reRender="newEditPopUp"/> -->
+                                     <apex:commandLink value="{!$Label.css_Edit}" action="{!gotoJobPlanSrt}"/>  
+                                    <!-- End:Sai: 10/24/2017-->
+                                </div><br/>
+                            </apex:outputPanel>   <!--109745 start and 109745 end-->
+<!-- Begin Sai: 10/24/2017: Commented the Check ALL & Uncheck ALL for ViewState Issues -->
+                           <!-- <u><a id ="uncheck_id" href="#" Class="text-decoration: none;">{!$Label.CSS_Uncheck_All}</a></u>&nbsp;&nbsp; -->
+                           <!-- <u><a id ="check_id" href="#" Class="text-decoration: none;">{!$Label.CSS_Check_All}</a></u>&nbsp;&nbsp; -->
+                            <!-- End Sai: 10/24/2017-->
+                            <!--                                            <u> <apex:commandLink value="{!$Label.CSS_Uncheck_All}" onclick="parentCheckBoxLogic('checkval','false');" style="right;" styleClass="text-decoration: none;font-weight: normal !important;"/></u> &nbsp;&nbsp; -->
+                            <!--                                            <u> <apex:commandLink value="{!$Label.CSS_Check_All}" onclick="parentCheckBoxLogic('checkval','true');" styleClass="text-decoration: none;font-weight: normal !important;"/></u>&nbsp;&nbsp;  -->
+                            <!--commenting as per story 109745 <u> <apex:commandLink value="{!$Label.CSS_Set_Defaults}" styleClass="text-decoration: none;font-weight: normal !important;"/></u>   -->
+                        </div>
+                        <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+<apex:outputPanel id="diagTable">
+                            <table class="mytable table table-bordered table-striped cmi_jobplan-table" width="100%" cellpadding="0" cellspacing="0">
+<!-- defect fix-->
+                                <apex:outputPanel rendered="{!IF(diagListWrap.size==0,true,false)}">
+                                        <thead>
+
+                                            <tr>
+                                                <td colspan="14">
+                                                    <!--p style="font-weight: bold;font-size: 14px;text-align: left;margin-bottom:0px">{!$Label.CSS_Fault_Code_Symptom} - </p-->
+                                                    <p style="font-weight: bold;font-size: 14px;text-align: left;margin-bottom:0px">{!$Label.CSS_Fault_Code_Symptom} - </p>
+                                                </td>
+                                            </tr>
+
+                                        </thead>
+                                        <thead>
+                                            <tr >
+                                                
+                                                <!--th>{!$Label.CSS_Fault_Code_Symptom}</th-->
+                                                <!--th>{!$Label.css_Sort_Order}</th-->
+                                                <th>{!$Label.css_Solutions}</th>
+                                                <th>{!$Label.css_Accessibility_Checklist}</th>
+                                                <!--th>{!$Label.css_ACCESS_SRT_Hours}</th-->
+                                                    <!--<th>
+                                                       <span class="cmi-sortUpIcon"/>
+                                                       <span class="cmi-sortDownIcon"/>
+                                                     
+                                                    </th>-->
+                                                <th>{!$Label.css_Select}</th>
+                                                <th>{!$Label.css_SRT_Code}</th>
+                                                <th>{!$Label.css_SRT_Description}</th>
+                                                
+                                                <th>{!$Label.css_Quantity}</th>
+                                                
+                                                <!--177452 Rupesh Story Rremove Access SRT Time Column-->  
+                                                <!--<th>{!$Label.css_ACCESS_SRT_Hours}</th>-->
+                                                
+                                                
+                                                <th>{!$Label.css_SRT_Time}</th>
+                                                <th>{!$Label.css_Access_Code}</th>
+                                                <th>{!$Label.CSS_Fail_Code}</th>
+                                                <th>{!$Label.CSS_Account_Code}</th>
+                                                <!-- <th>{!$Label.CSS_Percentage_Warrantable}</th>  -->
+                                                <th>{!$Label.css_SRT_Message}</th>
+                                                <th>{!$Label.css_Notes}</th>
+                                            </tr>
+                                        </thead> 
+                                    </apex:outputPanel>
+                            <!-- defect fix end-->    
+
+                                <!--       {!diagListWrap.fautCodeName}   -->
+                                <!-- {!diagListWrap.symptomName}  -->
+<!-- story 90222 Start-->
+                                <apex:variable value="{!0}" var="classCount"/>
+                                <!-- story 90222 End-->
+                                <apex:repeat value="{!diagListWrap}" var="dR" id="dia" >
+                                    <!--<apex:outputPanel rendered="{!IF(( dR.symptomName == null || dR.symptomName == '') ,FALSE,TRUE)}">-->
+                                    <!-- <apex:outputPanel > -->
+                                    <apex:outputPanel rendered="{!dR.showHeader}">
+                                        <thead>
+
+                                            <tr>
+                                                <td colspan="14">
+                                                    <!--p style="font-weight: bold;font-size: 14px;text-align: left;margin-bottom:0px">{!$Label.CSS_Fault_Code_Symptom} - {!dR.fautCodeName}{!dR.symptomName}</p-->
+                                                    <p style="font-weight: bold;font-size: 14px;text-align: left;margin-bottom:0px">{!$Label.CSS_Fault_Code_Symptom} - {!dR.fautCodeName}{!dR.symptomName}</p>
+                                                </td>
+                                            </tr>
+
+                                        </thead>
+                                        <thead>
+                                            <tr>
+                                                
+                                                <!--th>{!$Label.CSS_Fault_Code_Symptom}</th-->
+                                                <!--th>{!$Label.css_Sort_Order}</th-->
+                                                <th>{!$Label.css_Solutions}</th>
+                                                <th>{!$Label.css_Accessibility_Checklist}</th>
+                                                    <!--<th>
+                                                <span class="cmi-sortUpIcon"/>
+                                                    <span class="cmi-sortDownIcon"/>
+                                                    </th>-->
+                                                <th>{!$Label.css_Select}</th>
+                                                <th>{!$Label.css_SRT_Code}</th>
+                                                <th>{!$Label.css_SRT_Description}</th>
+                                                
+                                                <th>{!$Label.css_Quantity}</th>
+                                                
+                                                <!--177452 Rupesh Story Rremove Access SRT Time Column-->  
+                                                <!--<th>{!$Label.css_ACCESS_SRT_Hours}</th>-->
+                                                
+                                                
+                                                <th>{!$Label.css_SRT_Time}</th>
+                                                <th>{!$Label.css_Access_Code}</th>
+                                                <th>{!$Label.CSS_Fail_Code}</th>
+                                                <th>{!$Label.CSS_Account_Code}</th>
+                                                <!-- <th>{!$Label.CSS_Percentage_Warrantable}</th>  -->
+                                                
+                                                <th>{!$Label.css_SRT_Message}</th>
+                                                <th>{!$Label.css_Notes}</th>
+                                            </tr>
+                                        </thead> 
+                                    </apex:outputPanel>
+                                    <!--  </apex:outputPanel>-->
+                                    <!-- <apex:repeat value="{!dR.solList}" var="sollist">-->
+                                    <apex:variable value="{!0}" var="rCount"/>
+                                    
+<!-- story 90222 changed the list diagWrapSRT to lstDiagWrapSRT-->
+                                    <apex:repeat value="{!dR.lstDiagWrapSRT}" var="srtlist">
+                                        <tr>
+                                            
+                                            
+                                            <!--td>{!dR.fautCodeName}{!dR.symptomName}</td-->
+                                            <!--td>{!srtlist.srtRec.SRT_Order__c}</td-->
+                                            <apex:outputPanel rendered="{!IF(rCount==0,true, false)}">
+                                                <!-- story 90222 changed the list diagWrapSRT to lstDiagWrapSRT-->
+                                                <td rowspan="{!dR.lstDiagWrapSRT.size}" width="20%"> 
+                                                    <div><apex:outputText value="{!dR.solNum}"></apex:outputText></div>
+                                                    <div><apex:outputText value="{!dR.solTitle}"></apex:outputText></div>
+                                                </td>
+<!-- story 90222 changed the list diagWrapSRT to lstDiagWrapSRT-->
+                                                <apex:outputText rendered="{!IF(pgName='ReadOnly',false, true)}">
+                                                <td rowspan="{!dR.lstDiagWrapSRT.size}" class="cmi_srt-accordian-table">
+
+                                                 
+                                                    <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',false, true)}">
+                                                        <a onclick="accWin('/apex/CSS_SRTAccessCheckListClosed?JobOrderId={!dR.jobOrderId}&solutionId={!dR.solId}&typ=dig&pgName=JobPlan')" href="" target="_blank">
+                                                            <span class="cmi-accessibility-checklist-icon"></span></a>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',true, false)}">
+                                                        <a onclick="accWin('/apex/CSS_SRTAccessCheckListClosed?JobOrderId={!dR.jobOrderId}&solutionId={!dR.solId}&typ=dig&pgName=JobPlan')" href="" target="_blank">
+                                                            <span class="cmi-accessibility-checklist-icon"></span></a>
+                                                    </apex:outputPanel>
+
+                                                </td>
+                                                    </apex:outputText>
+                                                <apex:outputText rendered="{!IF(pgName='ReadOnly',true, false)}">
+                                                <td rowspan="{!dR.lstDiagWrapSRT.size}"><span class="cmi-accessibility-checklist-disabled-icon"></span></td>
+                                                </apex:outputText>
+                                                    </apex:outputPanel>
+                                            <!--sivaganesh commented below code for story GSSC--293-->
+                                           <!-- <td align="center">
+                                           <apex:inputCheckbox id="selectAccountRow2" styleClass="sortChk" disabled="true"/>
+                                            </td>-->
+                                            
+                                            <apex:outputPanel rendered="{!IF(srtList.srtRec.Type__c != 'Diag Access',true,false)}">
+                                            <td> 
+                                            <apex:outputPanel rendered="{!IF(srtList.srtRec.SRT_ID__c !=null,true,false)}"> <!--GSSC-328-->
+                                                <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',false, true)}"><!----65797------>
+                                                    <apex:inputCheckbox id="checkval" value="{!srtlist.srtRec.isPerformed__c}" selected="true" rendered="{!IF(diagind = false, true, false) }" styleClass="diagCheckbox" disabled="true">
+                                                       
+                                                    </apex:inputCheckbox>
+                                                </apex:outputPanel><!----65797------>
+                                                <apex:outputField value="{!srtlist.srtRec.isPerformed__c}"  rendered="{!IF(OR(diagind = true,SRTstatus = 'Closed'), true, false) }" styleClass="diagCheckbox" /><!----65797------>
+                                                </apex:outputPanel>
+                                            </td>
+                                            </apex:outputPanel>
+                                            <apex:outputPanel rendered="{!IF(srtList.srtRec.Type__c == 'Diag Access',true,false)}">
+                                            <td> 
+                                            <apex:outputPanel rendered="{!IF(srtList.srtRec.SRT_ID__c !=null,true,false)}"> <!--GSSC-328-->
+                                                <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',false, true)}"><!----65797------>
+                                                <apex:inputCheckbox id="checkval3" value="{!srtlist.srtRec.SRT_AccessiblityCheck__c}" selected="true" rendered="{!IF(diagind = false, true, false) }" styleClass="diagCheckbox" disabled="true">
+                                                        
+                                                    </apex:inputCheckbox>
+                                                </apex:outputPanel><!----65797------>
+                                                <apex:outputField value="{!srtlist.srtRec.SRT_AccessiblityCheck__c}"  rendered="{!IF(OR(diagind = true,SRTstatus = 'Closed'), true, false) }" styleClass="diagCheckbox" /><!----65797------>
+                                                </apex:outputPanel>
+                                            </td>
+                                            </apex:outputPanel>
+
+<td>
+
+                                                <apex:outputText value="{!srtlist.srtRec.SRT_ID__c}"/>
+                                            </td>
+                                            <!---97302-------->
+                                            <td>
+                                                <apex:outputText value="{!srtlist.srtRec.SRT_Title__c}"/>    
+                                            </td>
+                                             <td>
+                                                 <apex:outputPanel rendered="{!IF(srtList.srtRec.SRT_ID__c !=null,true,false)}"> <!--GSSC-328-->
+                                                <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',false, true)}"><!----65797------>
+                                                    <apex:outputText value="{!srtlist.srtRec.SRT_Quantity__c}" style="width:50px;" rendered="{!IF(diagind = false, true, false) }" id="quan1"/> 
+                                                </apex:outputPanel>
+                                                <apex:outputText value="{!srtlist.srtRec.SRT_Quantity__c}" style="width:50px;"  rendered="{!IF(diagind = true, true, false)}" id="quan2"/>
+                                                </apex:outputPanel>
+                                            </td>
+                                            
+                                            <td style="font-weight:normal;">
+                                                <apex:outputPanel rendered="{!IF(srtList.srtRec.SRT_ID__c !=null,true,false)}">
+                                                      <apex:outputPanel rendered="{!IF(srtList.srtRec.Type__c == 'Diag Access',true,false)}">
+                                                           <apex:outputText value="{!srtList.srtRec.Diag_Access_Time__c}" />
+                                                      </apex:outputPanel>
+                                                      <apex:outputPanel rendered="{!IF(srtList.srtRec.Type__c != 'Diag Access',true,false)}">
+                                                           <apex:outputText value="{!srtlist.srtRec.Diagnosis_Time__c}"/>
+                                                      </apex:outputPanel>
+                                                </apex:outputPanel>
+                                            </td>
+                                            
+                                            
+<!--Story# 109744-- Rearranging the columns--END-->
+                                            <td>
+                                                <apex:outputPanel rendered="{!IF(srtList.srtRec.SRT_ID__c !=null,true,false)}"> <!--GSSC-328-->
+                                                    <apex:outputText value="{!srtlist.srtRec.Access_Code__c}"/>
+                                                    </apex:outputPanel>
+                                             
+                                            </td>
+                                           
+                                            <td>
+                                                <apex:outputPanel rendered="{!IF(srtList.srtRec.SRT_ID__c !=null,true,false)}"> <!--GSSC-328-->
+                                                <apex:outputpanel rendered="{!IF(srtlist.srtRec.FailCode__c != '' && srtlist.srtRec.FailCode__c!=null && srtlist.srtRec.FailCode__c!='Select One',true,false)}">
+                                                    <apex:outputText value="{!srtlist.srtRec.FailCode__c}"/>
+                                                    
+                                                </apex:outputpanel>
+                                                </apex:outputPanel>
+                                               
+                                            </td>
+                                             <td>
+                                                 <apex:outputPanel rendered="{!IF(srtList.srtRec.SRT_ID__c !=null,true,false)}"> <!--GSSC-328-->
+                                                <apex:outputpanel rendered="{!IF(srtlist.srtRec.Account_Code__c!= '' && srtlist.srtRec.Account_Code__c!=null && srtlist.srtRec.Account_Code__c!='Select One',true,false)}">
+                                                    <apex:outputText value="{!srtlist.srtRec.Account_Code__c}"/>
+                                                    
+                                                </apex:outputpanel>
+                                                </apex:outputPanel>
+                                                
+                                               
+                                            </td>
+                                           
+                                        
+                                            <td width="20%">
+                                                <apex:outputText value="{!srtlist.srtRec.SRT_Status_Message__c}"/>
+                                            </td> 
+
+
+                                            <td style="text-align:center;min-width:180px;"><apex:inputTextarea value="{!srtList.srtRec.SRT_Notes__c}" html-maxlength="140" style="resize:none" readonly="true"/></td>
+
+
+
+                                        </tr>
+
+                                        <apex:variable var="rCount" value="{!rCount + 1}"/>
+                                    </apex:repeat>
+                                    <!--</apex:repeat>-->
+                                    <!--90222 story -->
+                                    <apex:variable value="{!classCount + 1}" var="classCount"/>
+                                </apex:repeat>
+
+
+                                <apex:repeat value="{!additionalDiagListWrap}" var="dR1" id="dia3">
+                                    <!-- <apex:repeat value="{!dR1.solList}" var="sollist1">-->
+                                    <apex:variable value="{!0}" var="rCount1"/>
+                                    <apex:repeat value="{!dR1.lstadditonalDiagSRT}" var="dR2" id="dia2">
+                                        <tr>
+                                            <!--td>{!dR2.srtRec.SRT_Order__c}</td-->
+                                            <apex:outputPanel rendered="{!IF(rCount1==0,true, false)}">
+                                                <td rowspan="{!dR1.lstadditonalDiagSRT.size}" width="20%"> 
+                                                    <div><apex:outputText value="{!dR1.solNum}"></apex:outputText></div>                                                                                   
+                                                </td>
+                                                <!---<td rowspan="{!dR1.additonalDiagSRT.size}" width="20%"> Solution Number</td>--->
+                                                <td rowspan="{!dR1.lstadditonalDiagSRT.size}"><span class="cmi-accessibility-checklist-disabled-icon"></span></td>
+                                               
+                                            </apex:outputPanel>
+                                            <!--sivaganesh commented below code for story GSSC--293-->
+                                            <!--<td align="center">
+                                           <apex:inputCheckbox id="selectAccountRow3" styleClass="sortChk" disabled="true"/>
+                                            </td>-->
+                                            
+                                            <apex:outputPanel rendered="{!IF(dR2.srtRec.Type__c != 'Access',true,false)}">
+                                            <td align="center"> 
+                                                <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',false, true)}"><!----65797------>
+                                                    <apex:inputCheckbox value="{!dR2.srtRec.isPerformed__c}" selected="true" rendered="{!IF(diagind = false, true, false) }" styleClass="diagCheckbox" disabled="true">
+                                                      
+                                                    </apex:inputCheckbox>
+                                                </apex:outputPanel>
+                                                <!----65797------>  <apex:outputField value="{!dR2.srtRec.isPerformed__c}"  rendered="{!IF(OR(diagind = true,SRTstatus = 'Closed'), true, false)}" />
+                                            </td>
+                                            </apex:outputPanel>
+                                             <apex:outputPanel rendered="{!IF(dR2.srtRec.Type__c == 'Access',true,false)}">
+                                            <td> 
+                                                <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',false, true)}"><!----65797------>
+                                                <apex:inputCheckbox id="checkval3" value="{!dR2.srtRec.SRT_AccessiblityCheck__c}" selected="true" rendered="{!IF(diagind = false, true, false) }" styleClass="diagCheckbox">
+                                                       
+                                                    </apex:inputCheckbox>
+                                                </apex:outputPanel><!----65797------>
+                                                <apex:outputField value="{!dR2.srtRec.SRT_AccessiblityCheck__c}"  rendered="{!IF(OR(diagind = true,SRTstatus = 'Closed'), true, false) }" styleClass="diagCheckbox" /><!----65797------>
+                                            </td>
+                                            </apex:outputPanel>
+                                            
+                                            <!-- story 90222 end sort order change -->
+                                            <td> 
+                                                <div><apex:outputText value="{!dR2.srtRec.SRT_ID__c}"></apex:outputText></div> 
+                                            </td>
+                                            <!--97302---->
+                                            <td>
+                                                <div><apex:outputText value="{!dR2.srtRec.SRT_Title__c}"></apex:outputText></div> 
+                                            </td>
+                                            <td>
+                                                <div><apex:outputText value="{!dR2.srtRec.SRT_Quantity__c}"></apex:outputText></div> 
+                                            </td>
+                                            <!--97302-end--->
+                                            
+                                            <!--177452 Rupesh Story Rremove Access SRT Time Column-->
+                                            
+                                            
+                                            
+                                            <apex:outputPanel rendered="{!IF(dR2.srtRec.Type__c == 'Access',true,false)}"> <!-- Kalpana story#121938-->
+                                            <td style="font-weight:normal;"><apex:outputText value="{!dR2.srtRec.Diag_Access_Time__c}" /></td>
+                                            </apex:outputPanel>
+                                            
+                                            <!--<apex:outputPanel rendered="{!IF(dR2.srtRec.Type__c != 'Access',true,false)}">
+                                            <td></td>
+                                            </apex:outputPanel>-->
+                                            
+                                            <!--<apex:outputPanel rendered="{!IF(dR2.srtRec.Type__c == 'Access',true,false)}">
+                                                <td></td>
+                                            </apex:outputPanel>-->
+                                            
+                                            <apex:outputPanel rendered="{!IF(dR2.srtRec.Type__c != 'Access',true,false)}">
+                                            <td>
+                                                <div><apex:outputText value="{!dR2.srtRec.Additional_SRT_Calculated__c}"/><!---KAL{!$Label.css_minutes}(<apex:outputText value="{!dR2.SRT_Decimal_Time__c}"/>)--></div> 
+                                            </td>
+                                            </apex:outputPanel>
+                                            
+                                            <td>
+ <apex:outputText value="{!dR1.Accesscode}"/>
+                                                
+                                            </td>
+                                             <td>
+                                            <apex:outputpanel rendered="{!IF(dR2.srtRec.FailCode__c != '' && dR2.srtRec.FailCode__c!=null && dR2.srtRec.FailCode__c!='Select One',true,false)}">
+
+                                              <apex:outputText value="{!dR2.srtRec.FailCode__c}"/>
+                                                  </apex:outputpanel>
+                                                </td>
+                                                <td>
+                                           <apex:outputpanel rendered="{!IF(dR2.srtRec.Account_Code__c!= '' && dR2.srtRec.Account_Code__c!=null && dR2.srtRec.Account_Code__c!='Select One',true,false)}">
+
+                                              <apex:outputText value="{!dR2.srtRec.Account_Code__c}"/>
+                                              </apex:outputpanel>
+                                                </td>
+                                            
+                                            <!--<td>
+<apex:inputCheckbox value="{!dR2.isPerformed__c}" selected="true" >
+</apex:inputCheckbox>
+</td>-->
+                                            <td>
+                                                <div><apex:outputText value="{!dR2.srtRec.SRT_Status_Message__c}"></apex:outputText></div> 
+                                            </td>
+                                            <td>
+                                                <div><apex:outputText value="{!dR2.srtRec.SRT_Notes__c}"></apex:outputText></div> 
+                                            </td>
+
+                                        </tr>
+
+
+                                        <apex:variable var="rCount1" value="{!rCount1 + 1}"/>
+                                    </apex:repeat>
+                                    <!-- </apex:repeat>                                                            -->
+                                </apex:repeat>
+                            </table>
+</apex:outputPanel>
+                            
+                            
+                            <!--Total Diagnostic Access 177452 Rupesh Story-->
+                            
+                            <!--<div class ="row" style="margin-top:10px">
+                                <div class="col-sm-12">      
+                                    <span><b>{!$Label.css_Total_ACCESS}</b></span> 
+                                    <apex:outputPanel id="totalDiagTime">
+                                    <div>{!diagAccTime}</div>
+                                        </apex:outputPanel>
+                                    </div>    
+                            </div>--> 
+                            
+                        <!--Story -->    
+                            <!--<div class ="row" style="margin-top:10px">
+                                <div class="col-sm-12">      
+
+                                    <span><b>{!$Label.css_Total_DIAGNOSTIC}</b></span> 
+                                    <apex:outputPanel id="rTime">
+                                       
+                                        <div>  {!totalDecimalTimediag} </div>
+                                        
+                                    </apex:outputPanel>
+                                </div>    
+                            </div>-->
+                            <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',false, true)}"><!----65797------>
+                                <div class="row" style="margin-top:10px">
+                                    <div class="col-sm-offset-4 col-sm-6 col-xs-12">
+                                        <!--  <input class="CMI-primary-button" style="padding: 0px 50px"  type="button" value="Save"/>
+<input class="btn-intake btn-intake-footer m-btn-width" style="padding: 4px 50px;margin-top:-2px" type="button" value="Cancel"/> -->
+                                        
+                                    </div>
+                                </div>
+                            </apex:outputPanel>
+                        </div>
+                    </div> 
+                </div>  <!-- diagnostic desktop end -->
+
+                <!-- diagnostic mobile start -->
+
+                <div class="col-xs-12 hidden-sm hidden-md hidden-lg" id="cmi-customer-approve-xs">
+                    <div class="row" style="margin-top: 10px;margin-bottom: 10px">
+                        <div class="col-md-12 col-xs-12">
+
+                            <span><b>{!$Label.css_Solutions}</b></span>
+                            <div><b>K37432475</b> <br/><span>{!$Label.css_Engine_oil_pressure_snsor_circuit_response}</span></div>
+                            <br/>
+
+                            <span><b>{!$Label.css_Accessibility_Checklist}</b></span>
+                            <br/>
+                            <span class="cmi-accessibility-checklist-icon" style="margin-top:10px"></span>
+                            <br/>
+
+                            <span><b>{!$Label.css_ACCESS_SRT_Hours}</b></span>
+                            <div>00 hours <br/>00 {!$Label.css_minutes}</div>
+
+                        </div>
+                    </div>                                                                                             
+                    <table class="cmi_srtaccordian-table-xs">                                           
+                        <tbody>
+                            <tr>
+                                <td><b>{!$Label.css_SRT_Code}</b></td>                              
+                                <td><b>11-401 </b><br/> 
+                                    <a href="#">
+                                        <span class="intake_help"></span>
+                                    </a> 
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>{!$Label.css_SRT_Description}</b></td>                              
+                                <td></td>
+                            </tr>
+
+                            <tr>
+                                <td><b>{!$Label.css_Quantity}</b></td>                              
+                                <td><input name="input5" type="text" style="width:50px;"/>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><b>{!$Label.css_SRT_Time}</b></td>                              
+                                <td>00 {!$Label.css_hours} <br/> 00 {!$Label.css_minutes} 
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>{!$Label.CSS_Percentage_Warrantable}</b></td>                              
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td><b>{!$Label.css_bill}</b></td>                              
+                                <td><input type="checkbox" name="checkbox2" id="checkbox2"/>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><b>{!$Label.css_Notes}</b></td>                              
+                                <td>
+                                    <div class="minimize">{!$Label.css_Up_to_40_charaters_Lorem_Ipsum_do_or_Lorem_ipsum_dolor_sasdfkh}.</div>
+                                </td>
+                            </tr>                                                                                                                
+                        </tbody>
+                    </table>
+
+                    <table class="cmi_srtaccordian-table-xs">                                           
+                        <tbody>
+                            <tr>
+                                <td><b>{!$Label.css_SRT_Code}</b></td>                              
+                                <td><b>11-401</b><br/>  
+                                    <a href="#">
+                                        <span class="intake_help"></span>
+                                    </a> 
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><b>{!$Label.css_Quantity}</b></td>                              
+                                <td><input name="input5" type="text" style="width:50px;"/>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><b>{!$Label.css_SRT_Time}</b></td>                              
+                                <td>00 {!$Label.css_hours} <br/> 00 {!$Label.css_minutes}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><b>{!$Label.css_Add}</b></td>                              
+                                <td><input type="checkbox" name="checkbox2" id="checkbox2"/>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><b>{!$Label.css_Notes}</b></td>                              
+                                <td>
+                                    <div class="minimize">{!$Label.css_Up_to_40_charaters_Lorem_Ipsum_do_or_Lorem_ipsum_dolor_sasdfkh}.</div>
+                                </td>
+                            </tr>                                                                                                                
+                        </tbody>
+                    </table>
+
+                    <table class="cmi_srtaccordian-table-xs">                                           
+                        <tbody>
+                            <tr>
+                                <td><b>{!$Label.css_SRT_Code}</b></td>                              
+                                <td><b>11-401 </b><br/> 
+                                    <a href="#">
+                                        <span class="intake_help"></span>
+                                    </a> 
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><b>{!$Label.css_Quantity}</b></td>                              
+                                <td><input name="input5" type="text" style="width:50px;"/>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><b>{!$Label.css_SRT_Time}</b></td>                              
+                                <td>00 {!$Label.css_hours} <br/> 00  {!$Label.css_minutes}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><b>{!$Label.css_Add}</b></td>                              
+                                <td><input type="checkbox" name="checkbox2" id="checkbox2"/>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><b>{!$Label.css_Notes}</b></td>                              
+                                <td>
+                                    <div class="minimize">{!$Label.css_Up_to_40_charaters_Lorem_Ipsum_do_or_Lorem_ipsum_dolor_sasdfkh}.</div>
+                                </td>
+                            </tr>                                                                                                                
+                        </tbody>
+                    </table>
+                </div> <!-- diagnostic mobile start -->
+
+            </div>
+        </div>
+            </apex:outputPanel>
+    </div>
+    
+    
+  <!--  </div>-->
+<!--</apex:component>-->
+    <!-- Diagnostic accordian end -->
+
+    <!-- Repair accordian start-->
+<!--<div class="panel-group cmi_generic-accordion">-->
+<!--<div class="panel-group cmi_generic-accordion" id="accordion1-overview2">-->
+<apex:outputPanel id="RepairData">
+    <div class="panel panel-default">
+        <!--RAA-->
+        <div class="panel-heading" >
+            <h4 class="panel-title" data-toggle="collapse" data-parent="#accordion1-overview2" data-target="#repair-accordian">
+                <a class="accordion-toggle" >
+                    <span class="glyphicon glyphicon-plus"></span><div class="cmi_accordion-title">{!$Label.CSS_Claims_Repair}</div>
+                </a>
+            </h4>
+        </div>
+
+        <div id="repair-accordian" class="panel-collapse collapse">
+            <!--<div class="panel-body" id="accordion1-overview2">-->
+            <div class="panel-body">
+                <!-- repair desktop code start -->
+
+                <div class="hidden-xs">
+
+                    <div class="row cmi_jobplan-table">
+                       <br/>
+                    <div style="float: right;margin-top: -10px;margin-right:18px;">
+                        <!----------------------------109746 edit----------->
+                       <apex:outputpanel rendered="{!IF(pgName!='ReadOnly',true,false)}">
+                            <div style="float: right;margin-top: -10px;">
+                                <i class="CMI-edit-icon"></i>
+                                <!-- Begin Sai: 10/24/2017: Made the change to navigate to JobPlanSRT page to avoid ViewState Issues -->
+                                <!-- <apex:commandLink value="{!$Label.css_Edit}" action="{!getRepairSRTs}" reRender="newEditPopUpRep"/> -->
+                                <apex:commandLink value="{!$Label.css_Edit}" action="{!gotoJobPlanSrt}"/> 
+                                <!-- End Sai: 10/24/2017 -->
+                            </div> <br/>
+                        </apex:outputPanel>
+                        <!----------------------------109746 edit----------->
+<!-- Begin Sai: 10/24/2017: Commented the Check ALL & Uncheck ALL for ViewState Issues -->
+                       <!-- <u><a id ="removelink_id" href="#" Class="text-decoration: none;">{!$Label.CSS_Uncheck_All}</a></u>&nbsp;&nbsp; -->
+                       <!-- <u><a id ="link_id" href="#" Class="text-decoration: none;">{!$Label.CSS_Check_All}</a></u>&nbsp;&nbsp; -->
+                        <!-- End Sai:10/24/2017 -->
+                        <!--u> <apex:commandLink value="{!$Label.CSS_Uncheck_All}" onclick="selectAllCheckboxes(this,'inputId')" reRender="repTable" style="right;" styleClass="text-decoration: none;">
+</apex:commandLink>
+</u> &nbsp;&nbsp;-->
+                        <!--u> <apex:commandLink value="{!$Label.CSS_Check_All}"  action="{!selectAll}" reRender="repTable" styleClass="text-decoration: none;"/></u>&nbsp;&nbsp;-->
+                       <!-- <u> <apex:commandLink value="{!$Label.CSS_Set_Defaults}" onclick="this.form.reset();   return false;" styleClass="text-decoration: none;" rerender="rep"/></u>--> </div>
+
+                    <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+                        <apex:outputPanel id="repTable">
+                            <table class="mytable table table-bordered table-striped" width="100%" cellpadding="0" cellspacing="0">
+                                <apex:outputPanel rendered="{!IF(repListWrap.size==0,true,false)}">
+                                    <thead>
+                                        <tr>
+                                            <td colspan="18">
+                                                <p style="font-weight: bold;font-size: 14px;text-align: left;margin-bottom:0px">{!$Label.CSS_Fault_Code_Symptom} - </p>
+                                            </td>
+                                        </tr>
+                                    </thead>
+                                    <thead>
+                                        <tr>
+                                            <!--Story109744-->
+                                            <th>{!$Label.CSS_Solution_ID}</th>
+                                            <!--th>{!$Label.css_compfailid}</th-->
+                                            <th>{!$Label.css_Accessibility_Checklist}</th>
+                                            <th>{!$Label.css_compfailid}</th>
+                                            <th>{!$Label.CSS_Select}</th>
+                                            <th>{!$Label.css_SRT_Code}</th>
+                                            <th>{!$Label.css_SRT_Description}</th>
+                                            <th>{!$Label.css_Quantity}</th>
+                                            
+                                            <!--177452 Rupesh Story Rremove Access SRT Time Column-->
+                                            <!--<th>{!$Label.css_ACCESS_SRT_Hours}</th>-->
+                                            
+                                            <th>{!$Label.css_SRT_Time}</th>
+                                            <th>{!$Label.CSS_Access_Code}</th>
+                                            <th>{!$Label.CSS_Percentage_Warrantable}</th>
+                                             <th>{!$Label.CSS_Fail_Code}</th> 
+                                            <th>{!$Label.CSS_Account_Code}</th>
+                                            <th>{!$Label.CSS_Assignment}</th>
+                                            <th>{!$Label.css_SRT_Message}</th>
+                                            <th>{!$Label.css_Notes}</th>
+                                        </tr>
+                                    </thead>
+
+                                </apex:outputPanel>
+                                <!--{!repListWrap}  -->
+                                <apex:repeat value="{!repListWrap}" var="repList" id="rep" >
+                                    <apex:outputPanel rendered="{!repList.showHeader}">
+                                        <thead>
+                                            <tr>
+                                                <td colspan="16">
+                                                    <p style="font-weight: bold;font-size: 14px;text-align: left;margin-bottom:0px">{!$Label.CSS_Fault_Code_Symptom} - {!repList.fautCodeName}{!repList.symptomName} </p>
+                                                </td>
+                                            </tr>
+                                        </thead>
+                                    </apex:outputPanel>
+                                    <!--thead>
+                                        <tr>
+                                            <td colspan="16">
+                                                <p style="font-weight: bold;font-size: 14px;text-align: left;margin-bottom:0px">{!$Label.CSS_Solution_ID} -<b><apex:outputText value="{!repList.solNum}"></apex:outputText></b> -  <b><apex:outputText value="{!repList.solTitle}"></apex:outputText> </b></p>
+                                            </td>
+                                        </tr>
+                                    </thead-->
+
+                                    <thead>
+                                        <tr>
+                                            <th>{!$Label.CSS_Solution_ID}</th>
+                                            <!--th>{!$Label.css_compfailid}</th-->
+                                            <th>{!$Label.css_Accessibility_Checklist}</th>
+                                            <th>{!$Label.css_compfailid}</th>
+                                            <th>{!$Label.CSS_Select}</th>
+                                            <th>{!$Label.css_SRT_Code}</th>
+                                            <th>{!$Label.css_SRT_Description}</th>
+                                            <th>{!$Label.css_Quantity}</th>
+                                            
+                                            <!--177452 Rupesh Story Rremove Access SRT Time Column-->
+                                            <!--<th>{!$Label.css_ACCESS_SRT_Hours}</th>-->
+                                            
+                                            <th>{!$Label.css_SRT_Time}</th>
+                                            <th>{!$Label.CSS_Access_Code}</th>
+                                            <th>{!$Label.CSS_Percentage_Warrantable}</th>
+                                             <th>{!$Label.CSS_Fail_Code}</th> 
+                                            <th>{!$Label.CSS_Account_Code}</th>
+                                            <th>{!$Label.CSS_Assignment}</th>
+                                            <th>{!$Label.css_SRT_Message}</th>
+                                            <th>{!$Label.css_Notes}</th>
+                                        </tr>
+                                    </thead>                                    
+<apex:variable value="{!0}" var="rCount"/> 
+                                    
+                                    <apex:repeat value="{!repList.compSRT}" var="compList">
+                                        
+                                        <!-- Story 90222 changing repairList to repairListWrap compSrt-->
+                                        <apex:variable value="{!0}" var="compSRTCount"/> 
+                                    
+                                        <apex:repeat value="{!compList.repairList}" var="srtList">
+                                            <tr>
+
+                                                <apex:outputPanel rendered="{!IF(rCount==0,true, false)}">
+                                                    <td rowspan="{!repList.allSRTCount}">
+                                                         <div><apex:outputText value="{!repList.solNum}"></apex:outputText></div> -
+                                                        <div><apex:outputText value="{!repList.solTitle}"></apex:outputText></div>
+                                                    </td>
+                                                    <!--td rowspan="{!compList.srtCount}"> 
+                                                        <div><apex:outputText value="{!compList.compName}"></apex:outputText></div> -
+                                                        <div><apex:outputText value="{!compList.compId}"></apex:outputText></div>
+                                                    </td-->
+                                                    <apex:outputText rendered="{!IF(pgName == 'ReadOnly',false, true)}">
+                                                    <td rowspan="{!repList.allSRTCount}" class="cmi_srt-accordian-table">
+                                                        <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',false, true)}">
+
+                                                            <a onclick="accWin('/apex/CSS_SRTAccessCheckListClosed?JobOrderId={!repList.jobOrderId}&solutionId={!repList.solId}&typ=rep&pgName=JobPlan')" href="" target="_blank">
+                                                                <span class="cmi-accessibility-checklist-icon"></span></a>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',true, false)}">
+
+                                                            <a onclick="accWin('/apex/CSS_SRTAccessCheckListClosed?JobOrderId={!repList.jobOrderId}&solutionId={!repList.solId}&typ=rep&pgName=JobPlan')" href="" target="_blank">
+                                                                <span class="cmi-accessibility-checklist-icon"></span></a>
+                                                        </apex:outputPanel>
+                                                        <!-- <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',true, false)}">
+<span class="cmi-accessibility-checklist-disabled-icon"></span>
+</apex:outputPanel>-->
+                                                    </td>
+                                                    </apex:outputText>
+                                                    <apex:outputText rendered="{!IF(pgName == 'ReadOnly',true, false)}">
+                                                    <td rowspan="{!repList.allSRTCount}"><span class="cmi-accessibility-checklist-disabled-icon"></span></td>
+                                                    </apex:outputText>
+                                                        </apex:outputPanel>
+                                                <!--{!compSRTCount}-->
+                                                   <apex:outputPanel rendered="{!IF(compSRTCount==0,true, false)}">
+                                                    <apex:outputPanel rendered="{!IF(srtList.Type__c != 'Repair Access',true,false)}">
+                                                    <td rowspan="{!compList.srtCount}"> 
+                                                           <div><apex:outputText value="{!compList.compName}"></apex:outputText></div> -
+                                                           <div><apex:outputText value="{!compList.compId}"></apex:outputText></div>
+                                                    </td>
+                                                    </apex:outputPanel>
+                                                </apex:outputPanel>
+                                                 <apex:outputPanel rendered="{!IF(srtList.Type__c == 'Repair Access',true,false)}">
+                                                  <td></td>
+                                                </apex:outputPanel>
+                                                
+                                                <!--sivaganesh added below code for story GSSC--293-->
+                                                <apex:outputPanel rendered="{!IF(srtList.Type__c != 'Repair Access',true,false)}">
+                                                <td align="center">
+                                                    <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',false, true)}">
+                                                        <apex:inputCheckbox value="{!srtList.isPerformed__c}" selected="true" rendered="{!IF(diagind = false, true, false) }" id="inputId" styleClass="repCheckbox" disabled="true">
+                                                            
+                                                        </apex:inputCheckbox>
+                                                    </apex:outputPanel>
+                                                    <apex:outputField value="{!srtList.isPerformed__c}"  rendered="{!IF(OR(diagind = true,SRTstatus = 'Closed'), true, false)}" />
+                                                </td>
+                                                </apex:outputPanel>
+                                                
+                                                <apex:outputPanel rendered="{!IF(srtList.Type__c == 'Repair Access',true,false)}">
+                                                <td align="center">
+                                                    <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',false, true)}">
+                                                        <apex:inputCheckbox value="{!srtList.SRT_AccessiblityCheck__c}" selected="true" rendered="{!IF(diagind = false, true, false) }" id="inputId3" styleClass="repCheckbox" disabled="true">
+                                                          
+                                                        </apex:inputCheckbox>
+                                                    </apex:outputPanel>
+                                                    <apex:outputField value="{!srtList.SRT_AccessiblityCheck__c}"  rendered="{!IF(OR(diagind = true,SRTstatus = 'Closed'), true, false)}" />
+                                                </td>
+                                                </apex:outputPanel>
+                                                
+                                                    <td align="center">
+                                                    <apex:outputText value="{!srtList.SRT_ID__c}"/>
+                                                        
+                                                </td>
+                                                     <td>
+
+                                                    <apex:outputText value="{!srtList.SRT_Title__c}"/>
+                                                </td>
+                                                <td>
+                                                    <!--109744:apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',false, true)}"-->
+                                                         <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',false, true)}">
+                                                        <apex:outputText value="{!srtList.SRT_Quantity__c}" style="width:50px;" rendered="{!IF(diagind = false, true, false) }" id="quan1"/> 
+                                                    </apex:outputPanel>
+                                                    <apex:outputText value="{!srtList.SRT_Quantity__c}" style="width:50px;"  rendered="{!IF(diagind = true, true, false)}" id="quan2"/>
+                                                </td>
+                                                    <!--<td rowspan="{!compList.srtCount}" bgcolor="#f2f2f2" style="font-weight:normal;">{!repList.accRepTime}</td>-->
+                                                
+                                                <apex:outputPanel rendered="{!IF(srtList.Type__c == 'Repair Access',true,false)}">
+                                                   <td><apex:outputText value="{!srtList.SRT_Time__c*srtList.SRT_Quantity__c}"/></td>
+                                                    <!--td style="font-weight:normal;background-color:f2f2f2;">{!repList.accRepTime}</td-->
+                                                <!--td rowspan="{!compList.srtCount}" style="font-weight:normal;background-color:f2f2f2;">{!repList.accRepTime}</td-->
+                                                </apex:outputPanel>
+                                                
+                                                
+                                                <!--<apex:outputPanel rendered="{!IF(srtList.Type__c != 'Repair Access',true,false)}">
+                                                  <td></td>
+                                                </apex:outputPanel>
+                                              
+                                                
+                                                <apex:outputPanel rendered="{!IF(srtList.Type__c == 'Repair Access',true,false)}">
+                                                <td></td>
+                                                </apex:outputPanel>-->
+                                                 
+                                                 <!--td rowspan="{!compList.srtCount}" bgcolor="#f2f2f2" style="font-weight:normal;">{!repList.accRepTime}</td-->
+                                                
+                                                <apex:outputPanel rendered="{!IF(srtList.Type__c != 'Repair Access',true,false)}">
+                                                <td><apex:outputText value="{!srtList.Repair_Time__c}"/> <!--KAL{!$Label.css_minutes}(<apex:outputText value="{!srtList.SRT_Decimal_Time__c}"/>)--> </td>
+                                                </apex:outputPanel>
+                                                
+                                                
+                                                
+                                                
+                                                
+                                               
+                                           <td>
+                                                    <apex:outputText value="{!srtList.Access_Code__c}"/> 
+                                               
+                                            </td>
+                                                
+                                                <td>
+                                                     <apex:outputPanel rendered="{!IF(srtList.SRT_Warrantable__c!= null && srtList.SRT_Warrantable__c!= '' ,true, false)}">
+                                                    <apex:outputText value="{!srtList.SRT_Warrantable__c }" id="warRepairSRTOne" html-placeholder="100"/>
+                                                    </apex:outputPanel>
+                                                     <apex:outputPanel rendered="{!IF(srtList.SRT_Warrantable__c!= null && srtList.SRT_Warrantable__c!= '' ,false, true)}">
+                                                    <apex:outputText value="{!compList.percentagewarranty }" id="warRepairSRTTwo"  html-placeholder="100"/>
+                                                    </apex:outputPanel>
+                                                         </td>
+                                                
+                                                <apex:outputPanel rendered="{!IF(srtList.Type__c != 'Repair Access',true,false)}">
+                                                <td>      
+                                                 <apex:outputpanel rendered="{!IF(srtList.FailCode__c!= '' && srtList.FailCode__c!=null && srtList.FailCode__c!='Select One',true,false)}">
+                                         
+                                                  <apex:outputText value="{!srtList.FailCode__c}"/>
+                                                  </apex:outputPanel>   
+                                                </td>
+                                                </apex:outputPanel>
+                                                 <apex:outputPanel rendered="{!IF(srtList.Type__c == 'Repair Access',true,false)}">
+                                                <td> </td>
+                                                </apex:outputPanel>
+                                                <td>
+                                                    <apex:outputpanel rendered="{!IF(srtList.Account_Code__c!= '' && srtList.Account_Code__c!=null && srtList.Account_Code__c!='Select One',true,false)}">
+
+                                                     <apex:outputText value="{!srtList.Account_Code__c}"/>
+                                                      </apex:outputPanel>  
+                                                </td>
+                                                
+                                                
+                                                <td>
+                                                    <apex:outputText value="{!srtList.Assignment__c}"></apex:outputText>
+                                                </td>
+                                                <td align="center" width="20%">
+                                                    <apex:outputText value="{!srtList.Response_Message__c}"/>
+                                                </td>
+                                                <!--  <td align="center" width="20%">
+</td>-->
+                                                <td style="text-align:center;min-width:180px;"><apex:inputTextarea value="{!srtList.SRT_Notes__c}" onkeyup="textCounter(this,'counter',140);" style="resize:none" readonly="true"/></td>
+
+                                                <apex:variable var="rCount" value="{!rCount + 1}"/> 
+                                                <apex:variable var="compSRTCount" value="{!compSRTCount + 1}"/>  
+                                            </tr>
+                                        </apex:repeat>
+                                    </apex:repeat>
+
+                                </apex:repeat>
+
+                                <!--- Additional REPAIR SRT -->
+
+                                <apex:repeat value="{!additionalRepListWrap}" var="Rep" id="repa" >
+
+                                    <!--  <tr>
+<td colspan="14">
+<p style="font-weight: bold;font-size: 14px;text-align: center;margin-bottom:0px">Additional SRT</p>
+</td>
+</tr>  -->
+                                    <apex:repeat value="{!Rep.compSRT}" var="addtionalComp">
+                                        <!-- <apex:repeat value="{!addtionalComp.compList}" var="additionalCompList">-->
+                                        <apex:variable value="{!0}" var="rCount"/>  
+                                        <apex:variable value="{!0}" var="addiCount"/>                                                                       
+
+                                        <!--<apex:repeat value="{!addtionalComp.srtRepWrap}" var="addiRepList">-->
+                                        <apex:repeat value="{!addtionalComp.additionalSRT}" var="addiListCount">
+                                            <apex:variable var="addiCount" value="{!addiCount + 1}"/>  
+                                        </apex:repeat>                                        
+                                        <apex:repeat value="{!addtionalComp.additionalSRT}" var="additionalList">
+                                            <tr>
+                                                <td></td>
+                                                <td></td>
+                                                <apex:outputPanel rendered="{!IF(rCount==0,true, false)}">
+                                                    
+                                                    <td rowspan = "{!addiCount}"> 
+                                                        <!--<div><apex:outputText value="{!addtionalComp.compId}"></apex:outputText></div> --->
+                                                        <div><apex:outputText value="{!addtionalComp.compName}"></apex:outputText></div>
+                                                    </td>
+                                                         
+                                                </apex:outputPanel>
+                                <!--fixed alignment issue as per defect GSSC-568,-By RAJESH 05th Feb 2020                -->
+                                               <td align="center"> 
+                                                <!--sivaganesh added below code for story GSSC--293-->
+                                                <apex:outputPanel rendered="{!IF(additionalList.Type__c != 'Access',true,false)}">
+                                                <!--<td align="center"> -->
+                                                    <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',false, true)}"><!----65797------>
+                                                        <apex:inputCheckbox value="{!additionalList.isPerformed__c}" selected="true" rendered="{!IF(diagind = false, true, false) }" styleClass="repCheckbox" disabled="true">
+                                                           
+                                                        </apex:inputCheckbox>
+                                                    </apex:outputPanel>
+                                                    <!----65797------>     <apex:outputField value="{!additionalList.isPerformed__c}"  rendered="{!IF(OR(diagind = true,SRTstatus = 'Closed'), true, false)}" />
+                                                <!--</td>-->
+                                                </apex:outputPanel>
+                                                <apex:outputPanel rendered="{!IF(additionalList.Type__c == 'Access',true,false)}"><!--kalpana story#121938-->
+                                                <!--<td align="center">-->
+                                                    <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',false, true)}">
+                                                        <apex:inputCheckbox value="{!additionalList.SRT_AccessiblityCheck__c}" selected="true" rendered="{!IF(diagind = false, true, false) }" id="inputId3" styleClass="repCheckbox">
+                                                           
+                                                        </apex:inputCheckbox>
+                                                    </apex:outputPanel>
+                                                    <apex:outputField value="{!additionalList.SRT_AccessiblityCheck__c}"  rendered="{!IF(OR(diagind = true,SRTstatus = 'Closed'), true, false)}" />
+                                                <!--</td>-->
+                                                </apex:outputPanel></td>
+                                                <!--<td></td>-->
+                                                
+                                                <td align="center" bgcolor="#f2f2f2">
+                                                    <apex:outputText value="{!additionalList.SRT_ID__c}"/>
+                                                </td>
+                                                <!---97302----start-->
+                                                <td>
+                                                    <apex:outputText value="{!additionalList.SRT_Title__c}"/>
+                                                </td>
+                                                <!---97302----start-->
+                                               
+                                            
+                                                <td>
+                                                    <apex:outputText value="{!additionalList.SRT_Quantity__c}"/>
+                                                </td>
+                                                
+                                                <!--177452 Rupesh Story Rremove Access SRT Time Column-->
+                                                <apex:outputPanel rendered="{!IF(additionalList.Type__c == 'Access',true,false)}"><!--kalpana 121938-->
+                                                     <td><apex:outputText value="{!additionalList.SRT_Time__c}"/></td>
+                                                </apex:outputPanel>
+                                                
+                                                <!--<apex:outputPanel rendered="{!IF(additionalList.Type__c != 'Access',true,false)}">
+                                                <td></td>
+                                                </apex:outputPanel>-->
+                                                
+                                                <apex:outputPanel rendered="{!IF(additionalList.Type__c != 'Access',true,false)}">
+                                                <td>
+                                                    <apex:outputText value="{!additionalList.Additional_SRT_Calculated__c}"/><!--KAL{!$Label.css_minutes}(<apex:outputText value="{!additionalList.SRT_Decimal_Time__c}"/>)-->
+                                                </td>
+                                                </apex:outputPanel>
+                                                
+                                                <!--<apex:outputPanel rendered="{!IF(additionalList.Type__c == 'Access',true,false)}">
+                                                    <td></td>
+                                                </apex:outputPanel>-->
+                                                
+                                                
+                                               
+                                                <td>
+                                                    <apex:outputText value="{!Rep.AccessCode}"/>
+                                                </td>
+                                        
+                                               <td>
+                                                    <apex:outputPanel rendered="{!IF(additionalList.SRT_Warrantable__c!= null && additionalList.SRT_Warrantable__c!= '' ,true, false)}">
+                                                    <apex:outputText value="{!additionalList.SRT_Warrantable__c }" html-placeholder="100" id="warRepairSRTThree"/>
+                                                    </apex:outputPanel>
+                                                     <apex:outputPanel rendered="{!IF(additionalList.SRT_Warrantable__c!= null && additionalList.SRT_Warrantable__c!= '' ,false, true)}">
+                                                    <apex:outputText value="{!addtionalComp.percentagewarranty }" html-placeholder="100" id="warRepairSRTFour"/>
+                                                    </apex:outputPanel>
+                                                </td>
+                                                <td>
+                                                 <apex:outputpanel rendered="{!IF(additionalList.FailCode__c!= '' && additionalList.FailCode__c!=null && additionalList.FailCode__c!='Select One',true,false)}">
+
+                                                <apex:outputText value="{!additionalList.FailCode__c}"/> 
+                                                </apex:outputPanel>        
+                                                </td>
+                                                <td>
+                                                   <apex:outputpanel rendered="{!IF(additionalList.Account_Code__c!= '' && additionalList.Account_Code__c!=null && additionalList.Account_Code__c!='Select One',true,false)}">
+
+                                                     <apex:outputText value="{!additionalList.Account_Code__c}"/>  
+                                                      </apex:outputPanel>  
+                                                </td>
+                                                
+                                                <!--<td>
+<apex:inputCheckbox value="{!additionalList.isPerformed__c}" selected="true" />
+
+</td>-->                                
+                              <!--Someone missed to add Assignment__c so we are getting alignment issue it got fixed as per defect GSSC-568,-By RAJESH 05th Feb 2020-->
+                                                 <td>
+                                                    <apex:outputText value="{!additionalList.Assignment__c}"></apex:outputText>
+                                                </td>
+                                                <td>
+                                                    <apex:outputText value="{!additionalList.SRT_Status_Message__c}"/>
+                                                </td>
+                                                <!--Commented the below Notes and covered using inputText as per defect GSSC-568,-By RAJESH 05th Feb 2020-->
+                                        
+                                                <!--<td>-->
+                                                <!--    <apex:outputText value="{!additionalList.SRT_Notes__c}"/>-->
+                                                <!--</td>-->
+                                                <td style="text-align:center;min-width:180px;"><apex:inputTextarea value="{!additionalList.SRT_Notes__c}" onkeyup="textCounter(this,'counter',140);" style="resize:none" readonly="true"/></td>
+                                            </tr>
+                                            <apex:variable var="rCount" value="{!rCount + 1}"/> 
+                                        </apex:repeat>
+                                        <!--  </apex:repeat>-->
+                                        <!-- </apex:repeat>-->
+                                    </apex:repeat>
+
+                                </apex:repeat>
+                                <!-- End Additional Repair SRT-->
+                            </table>
+                        </apex:outputPanel>
+                        
+                        <!--Total Repair Access 177452 Rupesh Story-->
+                        <!--<div class ="row" style="margin-top:10px">
+                            <div class="col-sm-12">
+                                <span><b>{!$Label.css_Total_Repair_Access}</b></span>
+                                <apex:outputPanel id="repAccTime">
+                                <div> {!totalDecimalTimeAccRep} </div>
+                                </apex:outputPanel>    
+                                
+                            </div>
+                        </div>-->
+                        
+                        
+                      <!--  <div class ="row" style="margin-top:10px">
+                            <div class="col-sm-12">      
+
+                                <span><b>{!$Label.CSS_Total_Repair}</b></span> 
+                                <apex:outputPanel id="repTime">
+                                    <div> {!totalDecimalTimeRep} </div>
+                                   
+                                </apex:outputPanel>
+                            </div>    
+                        </div>-->
+
+                        <!-- save , reset start --->
+
+                        <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',false, true)}"><!----65797------>
+                            <div class="row" style="margin-top:10px">
+                                <div class="col-sm-offset-4 col-sm-6 col-xs-12">
+                                    <!-- <input class="CMI-primary-button" style="padding: 0px 50px" type="button" value="Save"/>-->
+                                    
+                                    <!-- <input class="btn-intake btn-intake-footer m-btn-width" style="padding: 4px 50px;margin-top:-2px" type="button" value="Cancel"/>-->
+                                </div>
+                            </div>
+                        </apex:outputPanel>
+                    </div>
+ 
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    </div>
+</apex:outputPanel>
+</apex:component>

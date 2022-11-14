@@ -1,0 +1,167 @@
+<apex:page controller="disco.Ctl_TB_CustomizeFormTemplateProperties" showHeader="false" sidebar="false" standardStylesheets="false" >
+<head>
+	<title>Customize Form Template Properties</title>
+	<apex:includeScript value="{!URLFOR($Resource.disco__jquery_3_6_0, 'jquery.min.js')}"/>
+	<apex:includeScript value="{!URLFOR($Resource.disco__colorpolyfill, 'colorpolyfill/spectrum.js')}" />
+	<apex:styleSheet value="{!$Resource.disco__templateBuilderStyles}"/>
+	<apex:styleSheet value="{!URLFOR($Resource.disco__colorpolyfill, 'colorpolyfill/spectrum.css')}" />
+	
+	
+	<style>
+		#formTemplateOptions {
+			padding-top:170px;
+			text-align:center;
+		}
+		#formTemplateOptions ul {
+			height:75px;
+			width:500px;
+			margin:0 auto;
+		}
+		#formTemplateOptions ul li {
+			height:30px;
+		}
+
+		.hiddenButton {
+			display:none;
+		}
+		
+		h3 {
+			display:block;
+			margin-top:40px;
+		}
+
+		/* overrides */
+		#topContent {
+			height:150px;
+		}
+
+		.sp-replacer{
+			float:left;
+			margin-left:10px;
+		}
+
+		label{
+			font-weight: bold;
+			display: inline-block;
+			text-align: right;
+			width:150px;
+			float:left;
+		}
+
+		input{
+			text-align: left;
+			display: inline-block;
+			float:left;
+			width:190px;
+			margin-left:10px;
+		}
+		input[type="color"]{
+			width:50px;
+		}
+
+		li{
+			list-style: none;
+			margin-top: 10px;
+		}
+	</style>
+	
+	<script>
+		// on document load
+		$(document).ready(function() {	
+			$('#saveExit').click(function(e) {
+
+				if ($("[id$='uploadLogo']")[0].files.length > 0) {
+					//validate file attachment is not > 500k
+					var uploadFileSize = $("[id$='uploadLogo']")[0].files[0].size;
+					if (uploadFileSize > 1024 * 1024 * .5) {
+						alert('File uploads must be less than 500k in size. Your file is: '+(Math.round(uploadFileSize/1024)) + 'k');
+					}
+					else {
+						updateFormTemplateAF($('#bgColorChoice').val());
+					}
+				}
+				else {
+					updateFormTemplateAF($('#bgColorChoice').val());
+				}
+
+				e.preventDefault();
+			});
+			
+			$('#back').click(function(e) {
+				window.top.location='/apex/TB_DiscoveryRuleGroups?templateId={!thisFormTemplate.id}';
+				e.preventDefault();
+			});
+		});
+		
+		// called after form template is updated to fire command button to save logo, other form template options (not color) and redirect
+		function clickButton() {
+			$("[id$='otherSave']").click();
+		}
+	</script>
+</head>
+<body>
+<apex:pageMessages />
+	<apex:form id="thisFormTemplate">
+		<!-- <apex:actionRegion >
+			<apex:actionFunction name="updateFormTemplateAF" action="{!updateFormTemplateColor}" rerender="nothing" onComplete="clickButton();">
+				 <apex:param id="color" name="color" value="" /> 
+			</apex:actionFunction>
+		</apex:actionRegion> -->
+		
+		<apex:pageMessages />
+
+		<apex:outputPanel rendered="{!thisFormTemplate.disco__Status__c!='Drafting'}">
+			You cannot modify a Form Template that is not in Drafting Stage.
+		</apex:outputPanel>
+		
+		<apex:outputPanel rendered="{!thisFormTemplate.disco__Status__c=='Drafting'}">
+			<div id="topContent">	
+				<div class="builderPageIntro">
+					<h2 id="formTemplateName">{!thisFormTemplate.name}</h2>
+					<button type="button" id="back"  class="btn backBtn">Back</button>
+					<button type="button"  class="btn cancelBtn" onClick="window.top.location='/{!thisFormTemplate.id}';">Cancel</button>
+					<button type="button" id="saveExit"  class="btn saveBtn">Save &amp; Exit</button>
+					<apex:commandButton styleClass="hiddenButton" action="{!saveAndExit}" id="otherSave" value="Other Save"/>		
+				</div>
+				
+				<!-- progress indicator -->
+				<div class="steps">
+				     <a>Build Form Template</a>
+				    <a> Create Simple Discovery Rules</a>
+				    <a> Create Discovery Rules</a>
+				    <a> Create Discovery Rule Groups</a>
+				    <a class="current"> Configure Form Template Options</a>
+				</div>
+							
+			</div>
+			<div id="formTemplateOptions">
+				<h2>Configure Form Template Options </h2>	
+				<ul>
+					<li>
+						<label>Form Template Background Color:</label>
+						<input type="color" id="bgColorChoice" value="{!thisFormTemplate.color__c}"/>
+					</li>			
+					<!-- <li>
+						<apex:outputPanel rendered="{!logo.Id!=null}">
+							<label>Replace Existing Logo:</label>
+						</apex:outputPanel>
+						<apex:outputPanel rendered="{!logo.Id==null}">
+							<label>Add Logo:</label>
+						</apex:outputPanel>
+						<apex:inputFile value="{!logo.body}" filename="{!logo.name}" id="uploadLogo" accept="image/*"/>
+					</li> -->
+				</ul>
+
+				<!-- <apex:outputPanel rendered="{!logo.Id!=null}">
+					
+					<apex:image value="{!URLFOR($Action.Attachment.Download, logo.Id)}"/> -->
+					<!-- <apex:outputLink value="{!URLFOR($Action.Attachment.Download, logo.Id)}" target="_blank">
+				    	{!logo.name} 
+					</apex:outputLink>&nbsp; -->
+					<!-- <apex:commandLink style="vertical-align:top;cursor:pointer;" action="{!deleteLogo}" value="[Remove X]"/>
+				</apex:outputPanel> -->
+			</div>
+		</apex:outputPanel>
+	</apex:form>
+</body>
+</apex:page>

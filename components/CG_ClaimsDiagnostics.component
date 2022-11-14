@@ -1,0 +1,1171 @@
+<apex:component controller="CG_CL_ClaimsSRTDiagController" allowDML="true">
+    <!--  <apex:attribute name="JoId" description="Job Order ID" required="true" type="ID"  />-->
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js" />
+    <apex:attribute name="RedirectPage1" type="string" description="Page Name"/>
+    <apex:attribute name="diagind" type="boolean" description="DSID Indicator" />
+    <apex:attribute name="SRTstatus" type="string" description="SRTstatus"/> 
+    <apex:attribute name="claimId" type="Id" description="Getting Claim Id" required="true" assignTo="{!CID}"/>
+    <apex:attribute name="MPSNCheckbox" description="Getting psn check box value" type="boolean"/>
+    <apex:attribute name="isCata" description="Catastrophic" required="true" type="Boolean" assignTo="{!isCatastrophic}" />
+    <apex:attribute name="IsDealerClaim" description="IfDealerClaim" type="boolean"/>
+    <apex:attribute name="IsPenalty" description="Penaltytobapplied" type="boolean" assignTo="{!PenaltyExists}" />
+
+    <apex:includeScript value="https://code.jquery.com/ui/1.12.1/jquery-ui.js" />
+
+    <style>
+        @media (min-width: 750px) and (max-width: 1149px){
+
+            table.cmi_jobplan-table{
+                width:10% !important;
+                display:inline;
+            }
+        }
+        
+        .tooltip {
+          position: relative;
+          display: inline-block;
+          opacity: 2;
+          cursor:pointer;
+          color: #007c7c;
+          text-decoration:underline;
+        }
+        
+        .tooltip .tooltiptext {
+          visibility: hidden;
+          width: 120px;
+          background-color: #fff;
+          color: #000000;
+          text-align: center;
+          border-width: 1px;
+          border-style: solid;
+          border-color: #000000;
+          padding: 3px 0;
+          position: absolute;
+          z-index: 1;
+          bottom: 125%;
+          left: 50%;
+          margin-left: 20px;
+          opacity: 1;
+          transition: opacity 0.3s;
+          font-weight: normal;
+        }
+        
+        .tooltip .tooltiptext::after {
+          content: "";
+          position: absolute;
+          top: 100%;
+          left: 50%;
+        }
+        
+        .tooltip:hover .tooltiptext {
+          visibility: visible;
+          opacity: 1;
+        }
+        
+    </style>
+
+    <script>
+        function filteredSRTScrollbar(){
+            var trLength1= $(".SRTTable tbody tr").length; 
+            var totalHeight1 = 0; 
+
+            for(i=0;i<trLength1;i++){
+                totalHeight1 =$('.SRTTable tbody tr').eq(i).height()+totalHeight1;
+                if(i == 9){
+                    $(".SRTTable tbody").height(totalHeight1).css('overflow-y','scroll');
+                    console.log("trLength1" + ' ' + trLength1);
+                    console.log("totalHeight1" + ' ' + totalHeight1);
+                }
+
+                if(trLength1<10){
+                    $(".SRTTable tbody, .SRTTable thead").css('display','table-row-group');
+                    $(".SRTTable tbody td").css('width','10%');
+                }
+
+            }
+        }
+
+        function addSRTScrollbar(){
+            var trLengthaddSRT= $(".addSRTTable tbody tr").length; 
+            var totalHeightaddSRT = 0; 
+            for(i=0;i<trLengthaddSRT;i++){
+                totalHeightaddSRT =$('.addSRTTable tbody tr').eq(i).height()+totalHeightaddSRT;
+                if(i == 9){
+                    $(".addSRTTable tbody").height(totalHeightaddSRT).css('overflow-y','scroll');
+                    console.log("trLengthaddSRT" + ' ' + trLengthaddSRT);
+                    console.log("totalHeightaddSRT" + ' ' + totalHeightaddSRT);
+                }
+
+                if(trLengthaddSRT<10){
+                    $(".addSRTTable tbody, .addSRTTable thead").css('display','table-row-group');
+                    $(".addSRTTable tbody td").css('width','10%');
+                }
+
+            }
+        }
+
+        function CallTwoScrollbarFunctions(){
+            //  alert('calling CallTwoScrollbarFunctions');
+            filteredSRTScrollbar();
+            addSRTScrollbar();
+        } 
+        $(document).ready(function(){
+            //var elem = $('input[type="checkbox"]');
+            //alert('loading');
+            /* $('.reqpercheck').click(function() {
+//alert('Insideloading');
+                $(this).closest('td').append('<img src="/img/loading.gif" id="spinner" style="margin-left:10px;position:absolute;"/>');
+
+            });*/
+
+
+
+        });
+        //Commented below as part of the defect # 191741
+        /*function getpercReqJS(thisObj,srtID){
+            $(thisObj).closest('td').append('<img src="/img/loading.gif" id="spinner" style="margin-left:10px;position:absolute;"/>');
+            //alert(thisObj.value);
+            //alert(srtID);
+            getpercReq(thisObj.value,srtID);
+        }*/
+        function removeSpinner(){
+            $("#spinner").remove();
+
+
+        }
+//<!--Added blockSpecialCharactersOnQuantity function below for block the special characters on quantity as per defect GSSC-633,-BY RAJESH 20th Feb 2020-->
+        function blockSpecialCharactersOnQuantity(e,compId){
+            if((e.which > 47 && e.which <=57) || e.which == 9 || e.which == 11 ||  e.which == 0 || e.which == 8) 
+            {
+            } 
+            else 
+            {
+                return false;
+            }        
+        }
+
+
+        function qtyPressRepairSRT(e,compId){
+            // var technicianTimeVal= document.getElementById(compId.id).value;
+            // alert(e.which);
+            if((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46 || e.which == 110 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105))
+            {
+
+            } 
+            else 
+            {
+                return false;
+            }        
+        }
+        //Added below method as part of the defect # 191741
+        function onChangePerReq(compId){
+            var v = document.getElementById('{!$Component.hiddenText}');
+            v.value = compId.value;
+        }
+
+    </script>
+
+
+    <script type="text/javascript">
+
+        /*function qtyPressRepairSRT(e,compId){
+            // var technicianTimeVal= document.getElementById(compId.id).value;
+            if((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46 || e.which == 110 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105))
+            {
+
+            } 
+            else 
+            {
+                return false;
+            }        
+        }*/
+
+        function qtyPressDiag(e,compId){
+            var technicianTimeVal= document.getElementById(compId.id).value;
+            if(((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105)) || ((e.which == 190 || e.which == 110) && !(technicianTimeVal.includes('.'))))
+            {
+
+            } 
+            else 
+            {
+                return false;
+            }     
+        }
+
+        function validateMaxValDiag(compId,srtID){
+
+            var CoveredVal= document.getElementById(compId.id).value;
+            var mpsnValue = '{!MPSNCheckbox}';
+            var Penalty = '{!isPenalty}';
+            //alert('SRTId:'+srtID);
+            //alert('CoveredVal:'+CoveredVal);
+            //alert('mpsnValue:'+mpsnValue);
+            //if(mpsnValue == 'true' && (srtID == '00-901-00' || srtID == '00-902-00' || srtID == '00-904-00') ) { //below condition as per story 155910
+            if(Penalty == 'false' && mpsnValue == 'true' && (srtID == '00-901-00' || srtID == '00-902-00' || srtID == '00-904-00')) {
+                if(CoveredVal > 50) { 
+                    document.getElementById(compId.id).value=50;   
+                }
+            }
+            // }else {
+            //  return false;
+            // getpercReq(CoveredVal,srtID);
+            // if(CoveredVal > 100) {
+            // document.getElementById(compId.id).value=100;   
+            //}
+        }
+
+
+        function validateTTMLExpenseTotalDiag(compId) {
+            //alert('****claimedhours****'+compId.value);
+            var TTMLExpenseTotal= document.getElementById(compId.id).value;
+            var TTMLExpenseTotalLength=document.getElementById(compId.id).value.length;
+            //alert(TTMLExpenseTotalLength);
+            var TTMLExpenseTotalSplit = [];
+
+            if(TTMLExpenseTotal.includes('.')){
+                TTMLExpenseTotalSplit = TTMLExpenseTotal.split(".")
+                var declength = TTMLExpenseTotalSplit[1].length;
+                console.log("declength" + '' + declength);
+                if(declength > 2) {                    
+                    var newStr = TTMLExpenseTotal.substring(0, TTMLExpenseTotalLength-1);
+                    console.log("TTMLExpenseTotalLength" + '' + TTMLExpenseTotalLength);
+                    console.log("newStr" + '' + newStr);
+                    document.getElementById(compId.id).value = newStr;
+                    return false;
+                }
+            }           
+            else {
+                //alert(TTMLExpenseTotalLength);
+                if( TTMLExpenseTotalLength ==9 ){
+                    var newStr1 = TTMLExpenseTotal.substring(0, TTMLExpenseTotalLength-1);
+                    console.log('newStr1' + ' ' + newStr1);
+                    var newStr2 = newStr1/100;
+                    console.log('newStr2' + ' ' + newStr2);
+                    //alert(newStr2);
+                    document.getElementById(compId.id).value = newStr2;
+                }
+
+                if(TTMLExpenseTotalLength == 8 && !TTMLExpenseTotal.includes('.')){
+                    var result = Number(document.getElementById(compId.id).value)/100;
+                    document.getElementById(compId.id).value=result;
+                }
+
+                if(TTMLExpenseTotalLength == 4 && !TTMLExpenseTotal.includes('.')){
+                    var result = Number(document.getElementById(compId.id).value)/10;
+                    document.getElementById(compId.id).value=result;
+                }
+
+            }
+        }
+
+        function accWin(url){
+            window.open( url, "myWindow", "status = 1,  height = 800, width = 600,scrollbars=yes,resizable=1");
+        }
+
+        function srtEdit(url,title,w){
+            var left = (screen.width/2)-(w/2);
+            window.open(url, title, 'status = 1 scrollbars=yes, resizable=1, copyhistory=no, width='+w+', height=800,left='+left);
+            CallTwoScrollbarFunctions();
+        } 
+
+        function validateNumFlexSRTTime(e,compId){
+            console.log('****e**'+e.which);
+            if((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46)
+            {
+
+            }
+            else 
+            {
+                return false;
+            }        
+        }
+        function validateFlexSrt(compId){
+            console.log('****'+document.getElementById(compId.id).value);
+            var technicianTime= document.getElementById(compId.id).value;
+            var techTimelength=document.getElementById(compId.id).value.length;
+            var techTimesplit = [];
+
+            console.log('**Timelength'+techTimelength);
+            console.log('technicianTime'+technicianTime);
+            if(technicianTime.includes('.')){
+                techTimesplit = technicianTime.split(".");
+                var declength = techTimesplit[1].length;
+                console.log('insideIfdeclength'+declength);
+                if(declength > 1){
+                    console.log('insidedeclength');
+                    var newStr = technicianTime.substring(0, technicianTime.length-1);
+                    console.log('newStr');
+                    document.getElementById(compId.id).value = newStr;
+                    return false;    
+                }
+            }
+            else {
+                console.log('insideElse');
+                if(techTimelength == 4)
+                {
+                    console.log('insideElse1');
+                    var newStr1 = technicianTime.substring(0, technicianTime.length-1);
+                    var newStr2 = newStr1/10;
+                    document.getElementById(compId.id).value = newStr2;
+                }
+            }
+            console.log('***value***'+ document.getElementById(compId.id).value);
+            if(techTimelength == 3 && !technicianTime.includes('.')){
+                console.log('insideElse22***'+document.getElementById(compId.id).value);
+                var result = Number(document.getElementById(compId.id).value)/10;
+                document.getElementById(compId.id).value=result;
+            }
+        } 
+
+    </script>
+
+    <script type="text/javascript">
+        function srtEdit(url,title,w){
+            var left = (screen.width/2)-(w/2);
+            window.open(url, title, 'status = 1 scrollbars=yes, resizable=1, copyhistory=no, width='+w+', height=800,left='+left);
+            CallTwoScrollbarFunctions();
+        } 
+    </script>
+
+    <script>
+        /* GSSC -20 Begin */
+        /* Campaign Section */
+        function ClaimsSRTNotesPopupDiag(stepId){
+            console.log('stepId ' + stepId);
+            ClaimsSRTNotesDiagWS(stepId);
+        }
+
+        function afterWScallSRTNotesClaimsDiag(){
+            $('#ClaimsSRTNotesDiagPopup').modal('show');
+            $('.opacityDisplayPopupDiag').css('display','none');
+        }
+        /* GSSC -20 End */
+        
+        function hideopacityDisplayPopupDiag(){
+          $('.opacityDisplayPopupDiag').css('display','inline-block');
+        }
+    </script>
+
+
+    <style>
+
+        .cmi-sortUpIcon{
+            background: url("{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/CMI-WebIcon-Sprite.png')}") no-repeat -10px -654px rgba(0, 0, 0, 0);
+            display: inline-block;
+            width: 24px;
+            height: 21px;
+
+        }
+
+        .cmi-sortDownIcon{
+            background: url("{!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/CMI-WebIcon-Sprite.png')}") no-repeat -10px -593px rgba(0, 0, 0, 0);
+            display: inline-block;
+            width: 24px;
+            height: 21px;
+
+        }
+
+        #accordion1-body-3 a {
+            font-weight:normal !important;
+        }
+
+        .cmi-accessibility-checklist-icon {
+            background: url({!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/CSS_TND_Icon.png')}) no-repeat scroll -205px -616px rgba(0, 0, 0, 0);
+        display: inline-block;
+        height: 50px;
+        width: 50px;
+        position: relative;
+        }
+
+        .cmi-accessibility-checklist-disabled-icon {
+            background: url({!URLFOR($Resource.CSS_Standard_UI, '/Cummins_New1_UI/Cummins_New1_UI/assets/img/CSS_TND_Icon.png')}) no-repeat scroll -80px -616px rgba(0, 0, 0, 0);
+        display: inline-block;
+        height: 50px;
+        width: 50px;
+        position: relative;
+        }
+        .cmi_jobplan-table th,.cmi_jobplan-table td{
+            text-align: center;
+        }
+
+        /*.cmi_jobplan-table tr:nth-of-type(even){
+        background:#f2f2f2;
+        }
+        .cmi_jobplan-table tr:nth-of-type(odd){
+        background:#ffffff;
+        } */
+
+        .cmi_adminmodalpopupdesktop tr:nth-of-type(even){
+            background:#f2f2f2;
+        }
+
+        .cmi_adminmodalpopupdesktop tr:nth-of-type(odd){
+            background:#ffffff;
+        }
+
+        .cmi_srtaccordian-table-xs {
+            border-top: 2px solid #000000;
+            border-bottom: 2px solid #999;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .cmi_srt-accordian-table{
+            background-color:#f2f2f2;
+        }
+        
+        .showRedBorder{
+            border: 2px solid red !important;
+        }
+
+    </style>
+
+    <!-- Diagnostic accordian starts -->
+
+    <div class="panel-group cmi_generic-accordion" id="expandAllAccordion">
+        <!-- Added below input hidden as part of the defect # 191741-->          
+        <!-- story GSSC-20 Begin -->
+        <apex:actionFunction name="ClaimsSRTNotesDiagWS" action="{!callClaimsAccessStepDetailsDiag}" reRender="reRenderClaimsNotesDiagWS">
+            <apex:param name="idStepClaimsDiag" value="" assignTo="{!lineItemStepIdClaimsDiag}"/>
+        </apex:actionFunction>
+        <!-- story GSSC-20 End -->
+        <apex:inputhidden value="{!selCoveredVal}" id="hiddenText"/>
+        <div class="panel panel-default">
+            <div class="panel-heading active" id="accordion1-heading-3">
+                <h4 class="panel-title" data-toggle="collapse" data-parent="#accordion1-heading-3" data-target="#diagnostic-accordian" aria-expanded="true" >
+                    <a class="accordion-toggle" >
+                        <span class="glyphicon glyphicon-plus"></span>
+                        <div class="cmi_accordion-title">{!$Label.CSS_Claims_Diag}</div>
+                    </a>
+                </h4>
+            </div>
+
+            <div id="diagnostic-accordian" class="panel-collapse collapse" aria-expanded="true">
+                <div class="panel-body" id="accordion1-body-3">
+
+                    <div class="hidden-xs">
+
+                        <div class="row">
+                            <br/><!-- commented below as part of 101 SOQL optimization since this is not used anywhere -->
+                            <!-- commented below as part of the defect # 191741 and converted actionfunction to actionsupport -->
+                            <!--apex:actionFunction name="getpercReq"  action="{!SRTPercReq}" onComplete="removeSpinner();"  rerender="ReqPnl"> <!--status="percReqIdDiag"-->
+                            <!--apex:param name="CoveredValue" value="" assignTo="{!selCoveredVal}" />
+<apex:param name="SRTIDVal" value="" assignTo="{!selSRTID}" />
+</apex:actionFunction-->
+                            <!-- <apex:actionFunction name="refreshpnl" rerender="ReqPnl"/>-->
+
+                            <div style="float: right;margin-top:-10px;margin-right:18px;">
+                <!--Added isClaimReadOnly__C && isServiceJobReadOnly__c condition as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->                            
+                                <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c !=true ),true,false)}">
+                                     <apex:outputPanel rendered="{!IF(isCata == false || IsDealerClaim == false || Contains($UserRole.Name,'Factory'),true,false)}">
+                                    <apex:outputPanel id="SRTPage" rendered="{!IF(SRTstatus = 'Closed',false, true)}">
+                                        <apex:outputpanel rendered="{!IF(checklaborrate == true && isDiagRepSRTCovered == true,true,false)}">
+
+                                            <div style="float: right;margin-top: -10px;margin-right:5px;">
+                                                <i class="CMI-edit-icon"></i>
+                                                <!--<apex:commandLink value="{!$Label.css_Edit}" action="{!getDiagnosisSRTs}" reRender="newEditPopUp"/>-->
+                                                <a onclick="srtEdit('/apex/CG_ClaimsSRTEditPopUp?ClaimsId={!CID}&type=AdditionalDiag&pgName=ClaimsSRTs','srtPopup',900)" href="" target="_blank"  onmouseover="" style="cursor: pointer;">{!$Label.css_Edit}</a><!--Kalpana:Added as per stroy#121938,118127-->
+                                            </div><br/>
+                                        </apex:outputpanel>
+
+                                        <apex:outputpanel rendered="{!IF(checklaborrate == false || isDiagRepSRTCovered == false,true,false)}">
+                                            <div style="float: right;margin-top: -10px;margin-right:5px;">
+                                                <i class="CMI-edit-icon"></i>         
+                                                <font color="#007c7c">{!$Label.css_Edit}</font>
+                                            </div><br/>   
+                                        </apex:outputpanel>
+
+                                    </apex:outputPanel>  
+
+
+                                    <u><a id ="diguncheck_id" href="#/" onclick="digunCheckCam()" Class="text-decoration: none;">{!$Label.CSS_Uncheck_All}</a></u>&nbsp;&nbsp;
+                                    <u><a id ="digcheck_id" href="#/" onclick="digcheckCam()" Class="text-decoration: none;">{!$Label.CSS_Check_All}</a></u>&nbsp;&nbsp;
+                                </apex:outputPanel>  
+                                </apex:outputPanel> 
+                 <!--END-- as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->                 
+                            </div>
+
+                            <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+                                <apex:outputPanel id="diagTable">
+                                    <table class="mytable table table-bordered table-striped cmi_jobplan-table" width="100%" cellpadding="0" cellspacing="0">
+
+                                        <apex:outputPanel >
+                                            <thead>
+                                                <tr>
+                                                    <!--<th>{!$Label.css_Select}</th>-->
+                                                    <th>{!$Label.CSS_Fault_Code_Symptom}/{!$Label.CSS_Solution}{!$Label.CSS_Fail_Code}-{!$Label.CG_FailureName}</th>
+                                                    <th >{!$Label.CSS_Account_Code}</th>
+                                                    <!--sivaganesh coomented below code for story GSSC-293-->
+                                                    <!--<th>
+                                                        <apex:outputPanel rendered="{!IF(isCata == false || IsDealerClaim == false || Contains($UserRole.Name,'Factory'),true,false)}">
+                                                            <apex:commandLink styleClass="cmi-sortUpIcon"  action="{!changeUpOrder}" />&nbsp;<br/>
+                                                            <apex:commandLink styleClass="cmi-sortDownIcon" action="{!changeDownOrder}"/>
+                                                        </apex:outputPanel>
+
+                                                        <apex:outputPanel rendered="{!IF(isCata == true && IsDealerClaim == true && !Contains($UserRole.Name,'Factory'),true,false)}">
+                                                            <apex:outputLabel styleClass="cmi-sortUpIcon"/>&nbsp;<br/>
+                                                            <apex:outputLabel styleClass="cmi-sortDownIcon"/>
+                                                        </apex:outputPanel>
+                                                    </th>-->
+                                                    <th>{!$Label.css_Select}</th>
+                                                    <th>{!$Label.css_SRT_Code}</th>
+                                                    <th>{!$Label.css_SRT_Description}</th>
+                                                    <th>{!$Label.css_Access_Code}</th>
+                                                    <th>{!$Label.css_SRT_Time}</th>
+                                                    <th>{!$Label.css_Quantity}</th>
+                                                    <th >{!$Label.css_Percent_Requested}</th> 
+                                                    <th >{!$Label.CSS_Claimed_Hours}</th>
+                                                </tr>
+                                            </thead> 
+                                           
+                                            <apex:repeat value="{!diagListWrap}" var="diag" id="dia" >
+                                                <!-- <apex:outputPanel rendered="{!IF(diag.IsPopUpSRT != true,true,false)}"> -->
+                                                <tr>
+                                                    <!--sivaganesh commented below code for story GSSC-293-->
+                                                    <!--<td>
+                                                        <!--Added isClaimReadOnly__C && isServiceJobReadOnly__c condition as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->  
+                                                        <!--<apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c ==true ),true,false)}">
+                                                             <apex:inputCheckbox value="{!diag.srtRec.srtCheckBox}" styleClass="digURCheckbox" disabled="true"/>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c !=true ),true,false)}">
+                                                              <apex:outputPanel rendered="{!IF( (diag.srtRec.srtType != 'Diag Access' && diag.srtRec.srtType != 'Access') ,true,false)}">
+                                                            <!--<apex:outputPanel rendered="{!IF(isCata == false || IsDealerClaim == false || Contains($UserRole.Name,'Factory'),true,false)}">--> <!-- as per GSSC-58, added srtID null check-->
+                                                            <!--<apex:outputPanel rendered="{!IF((isCata == false || IsDealerClaim == false || Contains($UserRole.Name,'Factory')) && (diag.srtRec.srtID != null && diag.srtRec.srtID != '') ,true,false)}">
+                                                                    <apex:inputCheckbox value="{!diag.srtRec.srtCheckBox}" styleClass="digURCheckbox">
+                                                                    <apex:actionSupport event="onchange" action="{!getdiagnosisTime}" rerender="rTime,opClaimedHrs"/>
+                                                                </apex:inputCheckbox>
+                                                            </apex:outputPanel>
+
+                                                            <!--<apex:outputPanel rendered="{!IF(isCata == true && IsDealerClaim == true && !Contains($UserRole.Name,'Factory'),true,false)}"> -->    <!-- as per GSSC-58, added srtID null check--> 
+                                                                <!--<apex:outputPanel rendered="{!IF((isCata == true && IsDealerClaim == true && !Contains($UserRole.Name,'Factory')) || (diag.srtRec.srtID == null || diag.srtRec.srtID == ''),true,false)}"> 
+                                                                <apex:inputCheckbox value="{!diag.srtRec.srtCheckBox}" styleClass="digURCheckbox" disabled="true">
+                                                                    <apex:actionSupport event="onchange" action="{!getdiagnosisTime}" rerender="rTime,opClaimedHrs"/>
+                                                                </apex:inputCheckbox>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                              <apex:outputPanel rendered="{!IF( (diag.srtRec.srtType == 'Diag Access' || diag.srtRec.srtType == 'Access'),true,false)}">
+                                                            <apex:outputPanel rendered="{!IF((isCata == false || IsDealerClaim == false || Contains($UserRole.Name,'Factory')) && (diag.srtRec.srtID != null && diag.srtRec.srtID != ''),true,false)}">
+                                                                <apex:inputCheckbox value="{!diag.srtRec.accessSrtCheckBox}" styleClass="digURCheckbox">
+                                                                    <apex:actionSupport event="onchange" action="{!getdiagnosisTime}" rerender="totalDiagAccTime,opClaimedHrs"/>
+                                                                </apex:inputCheckbox>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF((isCata == true && IsDealerClaim == true && !Contains($UserRole.Name,'Factory')) || (diag.srtRec.srtID == null || diag.srtRec.srtID == ''),true,false)}">
+                                                                <apex:inputCheckbox value="{!diag.srtRec.accessSrtCheckBox}" styleClass="digURCheckbox" disabled="true">
+                                                                    <apex:actionSupport event="onchange" action="{!getdiagnosisTime}" rerender="totalDiagAccTime,opClaimedHrs"/>
+                                                                </apex:inputCheckbox>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                        
+                                                    </td>-->
+                                                    <!--<td>
+
+
+<!--<td>-->
+
+                                                    <!-- -{!diag.fautCodeName}{!diag.symptomName} - {!diag.solnum} - {!diag.solTitle} {!diag.failcode} --> <!-- - {!dR.compName} KalpanaMay-->
+                                                    <!--  <apex:outputPanel rendered="{!IF(diag.srtRec.failcode != 'Select One',true,false)}">
+<apex:outputText value="{!diag.srtRec.fautCodeName}{!diag.srtRec.symptomName} - {!diag.srtRec.solnum} - {!diag.srtRec.solTitle}"/>
+<br/>
+<apex:outputPanel rendered="{!IF(diag.srtRec.Failure != null,true,false)}">
+<apex:outputText value="{!diag.srtRec.failcode}- {!diag.srtRec.Failure}"/>
+</apex:outputPanel>
+</apex:outputPanel>
+<apex:outputPanel rendered="{!IF(diag.srtRec.failcode == 'Select One',true,false)}">
+<apex:outputText value="{!diag.srtRec.fautCodeName}{!diag.srtRec.symptomName} - {!diag.srtRec.solnum} - {!diag.srtRec.solTitle}"/>
+</apex:outputPanel>-->
+                                                    <!--</td>-
+</apex:outputPanel>
+</td>
+<apex:outputPanel rendered="{!IF(diag.srtRec.solnum == null || diag.srtRec.solnum == '',true,false)}">
+<td>
+<apex:outputPanel rendered="{!IF(diag.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+<apex:outputText value="{!diag.srtRec.failcode}"/>
+</apex:outputPanel>
+<apex:outputPanel rendered="{!IF(diag.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+<b><apex:outputText value="{!diag.srtRec.failcode}"/></b>
+</apex:outputPanel>
+</td>
+</apex:outputPanel>-->
+                                                    <td >      
+                                                        <!-- {!rep.fautCodeName}{!rep.symptomName} - {!rep.solnum} - {!rep.solTitle} {!rep.failcode} - {!rep.componentName} -->
+                                                        <apex:outputPanel rendered="{!IF(diag.srtRec.solnum != null && diag.srtRec.solnum != '',true,false)}"> 
+                                                            <apex:outputPanel rendered="{!IF(diag.srtRec.IsPopUpSRT != true,true,false)}">
+                                                                <!-- <apex:outputText value="{!rep.srtRec.fautCodeName}{!rep.srtRec.symptomName} - {!rep.srtRec.solnum} - {!rep.srtRec.solTitle} {!rep.srtRec.failcode} - {!rep.srtRec.componentName}"/>-->
+                                                                <apex:outputText value="{!diag.srtRec.fautCodeName}{!diag.srtRec.symptomName} - {!diag.srtRec.solnum} - {!diag.srtRec.solTitle}"/><br/> 
+                                                                <apex:outputText value="{!diag.srtRec.failcode} - {!diag.srtRec.Failure}" rendered="{!IF(diag.srtRec.failcode != '' && diag.srtRec.failcode != null,true,false)}"/>
+                                                                <apex:outputText value="{!diag.srtRec.Failure}" rendered="{!IF(diag.srtRec.failcode == '' || diag.srtRec.failcode == null,true,false)}"/>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                        <!--<apex:outputPanel rendered="{!IF(diag.srtRec.solnum == null || diag.srtRec.solnum == '',true,false)}">
+<apex:outputText value="{!diag.srtRec.failcode} - {!diag.srtRec.Failure}"/>
+</apex:outputPanel>-->
+                                                        <apex:outputPanel rendered="{!IF(diag.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}"> <!--&& diag.srtRec.solnum != null && diag.srtRec.solnum != ''-->
+                                                            <b><apex:outputText value="{!diag.srtRec.failcode} - {!diag.srtRec.Failure}"/></b>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && diag.srtRec.solnum == null,true,false)}"><!-- && diag.srtRec.solnum != null && diag.srtRec.solnum != ''-->
+                                                            <apex:outputText value="{!diag.srtRec.failcode} - {!diag.srtRec.Failure}" rendered="{!IF(diag.srtRec.failcode != '' && diag.srtRec.failcode != null,true,false)}"/>
+                                                            <apex:outputText value="{!diag.srtRec.Failure}" rendered="{!IF(diag.srtRec.failcode == '' || diag.srtRec.failcode == null,true,false)}"/>
+                                                        </apex:outputPanel>
+                                                    </td>
+
+                                                    <td>
+                                                        <!-- {!diag.srtRec.accountcode} -- {!diag.srtRec.IsPopUpSRT} -- {!isAutomatedClaim} -->
+                                                        <apex:outputPanel rendered="{!IF(diag.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                            <apex:outputText value="{!diag.srtRec.accountcode}"/>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(diag.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                            <b><apex:outputText value="{!diag.srtRec.accountcode}"/></b>
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                    <!--sivaganesh Commented below code for story GSSC-293-->
+                                                   <!--<td align="center">
+                                                        <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c ==true ),true,false)}">
+                                                               <apex:inputCheckbox value="{!diag.srtRec.selectedRecord}" styleClass="sortChk" disabled="true"/>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c !=true ),true,false)}">    
+                                                            <apex:outputPanel rendered="{!IF(isCata == false || IsDealerClaim == false || Contains($UserRole.Name,'Factory'),true,false)}">
+                                                                    <!-- {!diag.srtRec.sortOrder} -->
+                                                                    <!--<apex:inputCheckbox id="selectAccountRow" value="{!diag.srtRec.selectedRecord}" styleClass="sortChk"/>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(isCata == true && IsDealerClaim == true && !Contains($UserRole.Name,'Factory'),true,false)}">
+                                                                    <!-- {!diag.srtRec.sortOrder} -->
+                                                                    <!--<apex:inputCheckbox id="selectAccountRow1" value="{!diag.srtRec.selectedRecord}" styleClass="sortChk" disabled="true"/>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                     </td>-->
+                                                     <!--sivaganesh added below code for story GSSC-293-->
+                                                      <td>
+                                                        <!--Added isClaimReadOnly__C && isServiceJobReadOnly__c condition as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->  
+                                                        <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c ==true ),true,false)}">
+                                                             <apex:inputCheckbox value="{!diag.srtRec.srtCheckBox}" styleClass="digURCheckbox" disabled="true"/>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c !=true ),true,false)}">
+                                                              <apex:outputPanel rendered="{!IF( (diag.srtRec.srtType != 'Diag Access' && diag.srtRec.srtType != 'Access') ,true,false)}">
+                                                            <!--<apex:outputPanel rendered="{!IF(isCata == false || IsDealerClaim == false || Contains($UserRole.Name,'Factory'),true,false)}">--> <!-- as per GSSC-58, added srtID null check-->
+                                                            <apex:outputPanel rendered="{!IF((isCata == false || IsDealerClaim == false || Contains($UserRole.Name,'Factory')) && (diag.srtRec.srtID != null && diag.srtRec.srtID != '') ,true,false)}">
+                                                                    <apex:inputCheckbox value="{!diag.srtRec.srtCheckBox}" styleClass="digURCheckbox">
+                                                                    <apex:actionSupport event="onchange" action="{!getdiagnosisTime}" rerender="rTime,opClaimedHrs"/>
+                                                                </apex:inputCheckbox>
+                                                            </apex:outputPanel>
+
+                                                            <!--<apex:outputPanel rendered="{!IF(isCata == true && IsDealerClaim == true && !Contains($UserRole.Name,'Factory'),true,false)}"> -->    <!-- as per GSSC-58, added srtID null check--> 
+                                                                <apex:outputPanel rendered="{!IF((isCata == true && IsDealerClaim == true && !Contains($UserRole.Name,'Factory')) || (diag.srtRec.srtID == null || diag.srtRec.srtID == ''),true,false)}"> 
+                                                                <apex:inputCheckbox value="{!diag.srtRec.srtCheckBox}" styleClass="digURCheckbox" disabled="true">
+                                                                    <apex:actionSupport event="onchange" action="{!getdiagnosisTime}" rerender="rTime,opClaimedHrs"/>
+                                                                </apex:inputCheckbox>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                              <apex:outputPanel rendered="{!IF( (diag.srtRec.srtType == 'Diag Access' || diag.srtRec.srtType == 'Access'),true,false)}">
+                                                            <apex:outputPanel rendered="{!IF((isCata == false || IsDealerClaim == false || Contains($UserRole.Name,'Factory')) && (diag.srtRec.srtID != null && diag.srtRec.srtID != ''),true,false)}">
+                                                                <apex:inputCheckbox value="{!diag.srtRec.accessSrtCheckBox}" styleClass="digURCheckbox">
+                                                                    <apex:actionSupport event="onchange" action="{!getdiagnosisTime}" rerender="totalDiagAccTime,opClaimedHrs"/>
+                                                                </apex:inputCheckbox>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF((isCata == true && IsDealerClaim == true && !Contains($UserRole.Name,'Factory')) || (diag.srtRec.srtID == null || diag.srtRec.srtID == ''),true,false)}">
+                                                                <apex:inputCheckbox value="{!diag.srtRec.accessSrtCheckBox}" styleClass="digURCheckbox" disabled="true">
+                                                                    <apex:actionSupport event="onchange" action="{!getdiagnosisTime}" rerender="totalDiagAccTime,opClaimedHrs"/>
+                                                                </apex:inputCheckbox>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                        
+                                                    </td>
+                                                    <td>
+                                                        <apex:outputPanel rendered="{!IF(diag.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                           <!-- <apex:outputText value="{!diag.srtRec.srtID}"/>-->
+                                                           <apex:outputPanel rendered="{!IF(diag.srtRec.srtType == 'Repair',true,false)}">
+                                                               <div class="tooltip" id="srtUsage"><apex:outputText value="{!diag.srtRec.srtID}" styleClass="opacityDisplayPopupDiag"/>
+                                                                 <span class="tooltiptext">{!$Label.CG_PercentUsed}<apex:outputText value=" {!diag.srtRec.srtUsage}"/></span>
+                                                                </div>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(diag.srtRec.srtType != 'Repair',true,false)}">
+                                                               <apex:outputText value=" {!diag.srtRec.srtID}" styleClass="opacityDisplayPopupDiag"/>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(diag.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                            <b><apex:outputText value="{!diag.srtRec.srtID}" styleClass="opacityDisplayPopupDiag"/></b>
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                     <!--  GSSC-20 Begin -->
+                                                    <td>
+                                                        <apex:outputPanel rendered="{!IF(diag.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                            <apex:commandLink value="{!diag.srtRec.srtDescription}" style="text-decoration:underline;" onclick="ClaimsSRTNotesPopupDiag('{!diag.srtRec.stepId}')" status="SpinnigNotesPopupClaimsDiag" reRender="none" oncomplete="afterWScallSRTNotesClaimsDiag()">
+                                                                <span class="cmi_eyeIcon"/>
+                                                            </apex:commandLink> &nbsp;&nbsp;
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(diag.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                            <b>
+                                                                <apex:commandLink value="{!diag.srtRec.srtDescription}" style="text-decoration:underline;" onclick="ClaimsSRTNotesPopupDiag('{!diag.srtRec.stepId}')" status="SpinnigNotesPopupClaimsDiag" reRender="none" oncomplete="afterWScallSRTNotesClaimsDiag()">
+                                                                    <span class="cmi_eyeIcon"/>
+                                                                </apex:commandLink> &nbsp;&nbsp;
+                                                            </b>
+                                                        </apex:outputPanel>
+
+                                                        <apex:actionStatus id="SpinnigNotesPopupClaimsDiag">
+                                                            <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                                            <apex:facet name="stop"></apex:facet>
+                                                        </apex:actionStatus>
+
+                                                        <div class="modal fade" id="ClaimsSRTNotesDiagPopup" role="dialog" data-backdrop="static" data-keyboard="false">
+                                                            <div class="modal-dialog modal-md">
+                                                                <div class="modal-content" style="text-align:left">
+                                                                    <div class="modal-header">
+                                                                        <apex:commandButton styleClass="cross_butten" html-data-dismiss="modal" onclick="hideopacityDisplayPopupDiag()" action="{!ClaimsDiagNotesPopupOk}" rerender="reRenderClaimsNotesDiagWS" value="."/>
+                                                                        <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_cummins_service_system}</h4>
+                                                                    </div>
+                                                                    <div class="modal-body" style="height:150px;overflow-y:scroll">
+                                                                        <apex:outputPanel id="reRenderClaimsNotesDiagWS">
+                                                                            <apex:outputText style="font-size:14px" escape="false" value="{!StepDescriptionDiag}"> </apex:outputText>
+                                                                        </apex:outputPanel>
+                                                                    </div>
+                                                                    <div class="modal-footer" style="border-top:1px solid #D2D2D2;padding:5px;">
+                                                                        <div style="text-align:center">
+                                                                            <apex:commandButton styleClass="btn-intake btn-intake-footer m-btn-width" html-data-dismiss="modal" onclick="hideopacityDisplayPopupDiag()" style="padding:4px 10px;" action="{!ClaimsDiagNotesPopupOk}" rerender="reRenderClaimsNotesDiagWS" value="Ok"></apex:commandButton>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <!--  Story GSSC-20  End-->
+
+                                                    </td>
+
+
+                                                 <td >
+                                                    <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c ==true ),true,false)}">
+                                                        <apex:outputText value="{!diag.srtRec.AccessCode}"/>
+                                                    </apex:outputPanel> 
+                                                    <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c !=true),true,false)}"> 
+                                                       <!--GSSC-237-->
+                                                         <apex:outputPanel rendered="{!IF(diag.srtRec.flexFlag != true,true,false)}">
+                                                            <apex:selectList value="{!diag.srtRec.AccessCode}" size="1" disabled="{!IF(isCata == true && IsDealerClaim == true && !Contains($UserRole.Name,'Factory'),true,false)}" style="{!IF((diag.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+                                                                <apex:selectOptions value="{!if((diag.srtRec.sId!=null && diag.srtRec.sId!=''),mapaccesscode[diag.srtRec.sId],'')}"></apex:selectOptions> 
+                                                            </apex:selectList>
+                                                         </apex:outputPanel> 
+                                                         <apex:outputPanel rendered="{!IF(diag.srtRec.flexFlag == true,true,false)}">
+                                                              <apex:outputText value="{!diag.srtRec.AccessCode}"/>
+                                                         </apex:outputPanel>   
+                                                      <!--GSSC-237--> 
+                                                    </apex:outputPanel> 
+                                                        <!--Story172627:Commented for code optimization
+<apex:outputPanel rendered="{!IF(isCata == false || IsDealerClaim == false || Contains($UserRole.Name,'Factory'),true,false)}">     
+<apex:selectList value="{!diag.srtRec.AccessCode}" size="1" disabled="false" style="{!IF((diag.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+<apex:selectOptions value="{!mapaccesscode[diag.srtRec.sId]}"></apex:selectOptions> 
+</apex:selectList>
+</apex:outputPanel> 
+
+<apex:outputPanel rendered="{!IF(isCata == true && IsDealerClaim == true && !Contains($UserRole.Name,'Factory'),true,false)}">
+<apex:selectList value="{!diag.srtRec.AccessCode}" size="1" disabled="true" style="{!IF((diag.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+<apex:selectOptions value="{!mapaccesscode[diag.srtRec.sId]}"></apex:selectOptions> 
+</apex:selectList>
+</apex:outputPanel> 
+End-->
+                                                        <!-- 
+<apex:outputPanel rendered="{!IF(isCata == false || IsDealerClaim == false || Contains($UserRole.Name,'Factory'),true,false)}">     
+<apex:selectList value="{!diag.srtRec.AccessCode}" size="1" disabled="false" style="{!IF((diag.srtRec.accessCodeFlag==true),'width:50px;border: 2px solid red !important','')}" >-->
+
+                                                        <!--Added code for displaying the AccessCodeSaved as per defect #152763,-By RAJESH 3rd July 2018-->                                       
+                                                        <!-- <apex:selectOption itemvalue="{!diag.srtRec.AccessCodeSaved}" itemLabel="{!diag.srtRec.AccessCodeSaved}"></apex:selectOption>-->
+                                                        <!--End-->                                   
+                                                        <!--   <apex:selectOption itemvalue="R" itemLabel="R"></apex:selectOption>
+</apex:selectList>
+</apex:outputPanel> -->
+
+
+                                                        <!--  
+
+<apex:outputPanel rendered="{!IF(isCata == true && IsDealerClaim == true && !Contains($UserRole.Name,'Factory'),true,false)}">
+<apex:selectList value="{!diag.srtRec.AccessCode}" size="1" disabled="true" style="{!IF((diag.srtRec.accessCodeFlag==true),'width:50px;border: 2px solid red !important','')}" >-->
+
+                                                        <!--Added code for displaying the AccessCodeSaved as per defect #152763,-By RAJESH 3rd July 2018-->                                       
+                                                        <!--<apex:selectOption itemvalue="{!diag.srtRec.AccessCodeSaved}" itemLabel="{!diag.srtRec.AccessCodeSaved}"></apex:selectOption>-->
+                                                        <!--End-->                                   
+                                                        <!--  <apex:selectOption itemvalue="R" itemLabel="R"></apex:selectOption>
+</apex:selectList>
+</apex:outputPanel>--> 
+
+                                                    </td>
+                                                    <!-- -->
+
+
+                                                    <apex:outputPanel rendered="{!IF( (diag.srtRec.srtType != 'Diag Access' && diag.srtRec.srtType != 'Access') ,true,false)}">
+                                                        <td>
+                                                            <apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && diag.srtRec.flexFlag != true,true,false)}">
+                                                                <apex:outputText value="{!diag.srtRec.srtTime}"/>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && diag.srtRec.flexFlag == true,true,false)}">
+                                                                <apex:inputText value="{!diag.srtRec.srtTime}" style="width:50px;" onkeypress="return validateNumFlexSRTTime(event,this)" styleClass="{!IF(diag.srtRec.flexFlag == true && diag.srtRec.srtTime == 0.0 && diag.srtRec.srtCheckBox == true,'showRedBorder','')}" maxlength="4" onkeyup="validateFlexSrt(this)" html-placeholder="0.0" id="srtTimeId"/>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) && diag.srtRec.flexFlag != true,true,false)}">
+                                                                <b><apex:outputText value="{!diag.srtRec.srtTime}"/></b>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) && diag.srtRec.flexFlag == true,true,false)}">
+                                                                <b><apex:inputText value="{!diag.srtRec.srtTime}" style="width:50px;" onkeypress="return validateNumFlexSRTTime(event,this)" styleClass="{!IF(diag.srtRec.flexFlag == true && diag.srtRec.srtTime == 0.0 && diag.srtRec.srtCheckBox == true,'showRedBorder','')}" maxlength="4" onkeyup="validateFlexSrt(this)" html-placeholder="0.0" id="srtTimeId1"/></b>
+                                                            </apex:outputPanel>
+                                                        </td>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF( (diag.srtRec.srtType == 'Diag Access' || diag.srtRec.srtType == 'Access') ,true,false)}">
+                                                        <td>
+                                                            <apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && diag.srtRec.flexFlag != true,true,false)}">
+                                                                <apex:outputText value="{!diag.srtRec.srtAccessTime}"/>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && diag.srtRec.flexFlag == true,true,false)}">
+                                                                <apex:inputText value="{!diag.srtRec.srtAccessTime}" style="width:50px;" onkeypress="return validateNumFlexSRTTime(event,this)" styleClass="{!IF(diag.srtRec.flexFlag == true && diag.srtRec.srtAccessTime == 0.0 && diag.srtRec.accessSrtCheckBox == true,'showRedBorder','')}" maxlength="4" onkeyup="validateFlexSrt(this)" html-placeholder="0.0" id="srtAccTimeId"/>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) && diag.srtRec.flexFlag != true,true,false)}">
+                                                                <b><apex:outputText value="{!diag.srtRec.srtAccessTime}"/></b>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) && diag.srtRec.flexFlag == true,true,false)}">
+                                                                <b><apex:inputText value="{!diag.srtRec.srtAccessTime}"  style="width:50px;" onkeypress="return validateNumFlexSRTTime(event,this)" styleClass="{!IF(diag.srtRec.flexFlag == true && diag.srtRec.srtAccessTime == 0.0 && diag.srtRec.accessSrtCheckBox == true,'showRedBorder','')}" maxlength="4" onkeyup="validateFlexSrt(this)" html-placeholder="0.0" id="srtAccTimeId1"/></b>
+                                                            </apex:outputPanel>
+                                                        </td>
+                                                    </apex:outputPanel>
+                                                    <td>
+                                                        <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c ==true ),true,false)}">
+                                                             <b><apex:outputText value="{!diag.srtRec.quantity}"  /></b>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c !=true ),true,false)}">
+                                                             <apex:outputPanel rendered="{!IF(isCata == false || IsDealerClaim == false || Contains($UserRole.Name,'Factory'),true,false)}">     
+                                                            <!--apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && diag.srtRec.srtID != '00-10S-00' && diag.srtRec.srtID != '00-904-00' && diag.srtRec.srtID != '00-901-00' && diag.srtRec.srtID != '00-902-00' && diag.srtRec.srtID != '00-724-00' && diag.srtRec.srtID != '00-400-00' && diag.srtRec.srtID != '00-401-00' && diag.srtRec.srtID != '00-404-00',true,false)}"-->
+                                                            <apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && diag.srtRec.flexFlag == false && NOT(CONTAINS(diag.srtRec.srtID,'00-901') || diag.srtRec.srtID = '00-10S-00' || CONTAINS(diag.srtRec.srtID,'00-902')|| CONTAINS(diag.srtRec.srtID,'00-904')),true,false)}"><!-- GSSC - 24 changes, added flex flag condition--> 
+                              <!--Added onkeypress="return blockSpecialCharactersOnQuantity(event,this)" function below for block the special characters on quantity as per defect GSSC-633,-BY RAJESH 20th Feb 2020-->
+                                                                <apex:InputText value="{!diag.srtRec.quantity}" id="qtyDiag" maxlength="4" onkeyup="MpsnCounterDiag(this,'{!diag.srtRec.srtID}')" onkeydown="return qtyPressRepairSRT(event,this)" style="width:50px;"  onkeypress="return blockSpecialCharactersOnQuantity(event,this)"/>
+                                                            </apex:outputPanel>
+                                                            <!-- <apex:outputPanel rendered="{!IF(diag.srtRec.IsPopUpSRT == true,true,false)}"> -->
+                                                            <!--apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) || diag.srtRec.srtID == '00-10S-00' || diag.srtRec.srtID == '00-904-00' || diag.srtRec.srtID == '00-901-00' || diag.srtRec.srtID == '00-902-00' || diag.srtRec.srtID == '00-724-00' || diag.srtRec.srtID == '00-400-00' || diag.srtRec.srtID == '00-401-00' || diag.srtRec.srtID == '00-404-00' ,true,false)}"-->
+                                                            <apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) || diag.srtRec.flexFlag == true || (CONTAINS(diag.srtRec.srtID,'00-901') || diag.srtRec.srtID = '00-10S-00' || CONTAINS(diag.srtRec.srtID,'00-902')|| CONTAINS(diag.srtRec.srtID,'00-904')) ,true,false)}"><!-- GSSC - 24 changes, added flex flag condition--> 
+                                                                <b><apex:outputText value="{!diag.srtRec.quantity}"  /></b>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                             <apex:outputPanel rendered="{!IF(isCata == true && IsDealerClaim == true && !Contains($UserRole.Name,'Factory'),true,false)}">
+                                                            <!--apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && diag.srtRec.srtID != '00-10S-00' && diag.srtRec.srtID != '00-904-00' && diag.srtRec.srtID != '00-901-00' && diag.srtRec.srtID != '00-902-00' && diag.srtRec.srtID != '00-724-00' && diag.srtRec.srtID != '00-400-00' && diag.srtRec.srtID != '00-401-00' && diag.srtRec.srtID != '00-404-00',true,false)}"-->
+                                                            <apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && NOT(CONTAINS(diag.srtRec.srtID,'00-901') || diag.srtRec.srtID = '00-10S-00' || CONTAINS(diag.srtRec.srtID,'00-902')|| CONTAINS(diag.srtRec.srtID,'00-904')),true,false)}">
+                                                                <apex:outputText value="{!diag.srtRec.quantity}" />
+                                                            </apex:outputPanel>
+                                                            <!-- <apex:outputPanel rendered="{!IF(diag.srtRec.IsPopUpSRT == true,true,false)}"> -->
+                                                            <!--apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) || diag.srtRec.srtID == '00-10S-00' || diag.srtRec.srtID == '00-904-00' || diag.srtRec.srtID == '00-901-00' || diag.srtRec.srtID == '00-902-00' || diag.srtRec.srtID == '00-724-00' || diag.srtRec.srtID == '00-400-00' || diag.srtRec.srtID == '00-401-00' || diag.srtRec.srtID == '00-404-00',true,false)}"-->
+                                                            <apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) || (CONTAINS(diag.srtRec.srtID,'00-901') || diag.srtRec.srtID = '00-10S-00' || CONTAINS(diag.srtRec.srtID,'00-902')|| CONTAINS(diag.srtRec.srtID,'00-904')) ,true,false)}">
+                                                                <b><apex:outputText value="{!diag.srtRec.quantity}"  /></b>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                    </td>
+
+                                                    <td>
+                                                        <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c ==true ),true,false)}">
+                                                             <apex:outputText value="{!diag.srtRec.srtWarrantable}"/>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c !=true ),true,false)}">
+                                                                <apex:outputPanel id="ReqPnl" rendered="{!IF(isCata == false || IsDealerClaim == false || Contains($UserRole.Name,'Factory'),true,false)}">     
+                                                                    <!--apex:InputText value="{!diag.srtRec.srtWarrantable}" id="wartyDiag" maxlength="3" onkeyup="validateMaxValDiag(this,'{!diag.srtRec.srtID}');" onkeypress="return srtquanlenRep(event,this)" onchange="getpercReqJS(this,'{!diag.srtRec.srtID}');" styleClass="reqpercheck" style="{!IF((diag.srtRec.percentReqFlag==true),'width:50px;border: 2px solid red !important','width:50px;')}" -->
+                                                                    <!-- Added onchange event in below line as part of the defect # 191741-->
+                                                                    <apex:InputText value="{!diag.srtRec.srtWarrantable}" id="wartyDiag" maxlength="3" onchange="onChangePerReq(this);" onkeyup="validateMaxValDiag(this,'{!diag.srtRec.srtID}');" onkeypress="return srtquanlenRep(event,this)" style="{!IF((diag.srtRec.percentReqFlag==true),'width:50px;border: 2px solid red !important','width:50px;')}"  >
+                                                                        <!-- Enabled and fixed below action support as part of the defect # 191741-->
+                                                                        <apex:actionSupport event="onblur" action="{!SRTPercReq}" status="percReqIdDiag" rerender="ReqPnl" onComplete="removeSpinner();" immediate="false"> 
+                                                                            <apex:param name="SRTIDVal" value="{!diag.srtRec.srtID}" assignTo="{!selSRTID}" />
+                                                                        </apex:actionSupport>
+                                                                    </apex:InputText>
+        
+                                                                    <!--<apex:outputText rendered="{!SavingFlag}">-->
+        
+                                                                    <apex:actionStatus startText="requesting..." id="percReqIdDiag">
+                                                                        <apex:facet name="start">Saving... <img src="/img/loading.gif"
+                                                                                                                /></apex:facet>
+                                                                        <apex:facet name="stop"></apex:facet>
+                                                                    </apex:actionStatus>
+                                                                    <!-- </apex:outputText>-->
+                                                                </apex:outputPanel>
+        
+        
+                                                                <apex:outputPanel id="srtwar" rendered="{!IF(isCata == true && IsDealerClaim == true && !Contains($UserRole.Name,'Factory'),true,false)}">
+                                                                    <apex:outputText value="{!diag.srtRec.srtWarrantable}" id="wartyDiag3"  style="{!IF((diag.srtRec.percentReqFlag==true),'border: 2px solid red !important','')}" />
+                                                                </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                    </td>
+                        <!--END-- as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->  
+
+                                                    <td>
+                                                        <!--<apex:InputText value="{!srtlist.srtRec.Claimed_Hours__c}" maxlength="5" style="width:50px;" id="diagClHoursLength" onkeyup="validateTTMLExpenseTotalDiag(this)" onkeypress="return qtyPressDiag(event,this)"/>-->
+                                                        <!--<apex:outputText value="{!srtlist.srtRec.Claimed_Hours__c}"/>-->
+                                                        <apex:outputPanel id="opClaimedHrs">
+
+
+                                                            <apex:outputPanel rendered="{!IF(diag.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+
+                                                                <apex:outputPanel rendered="{!IF((diag.srtRec.srtType != 'Diag Access' && diag.srtRec.srtType != 'Access'),true,false)}">
+
+                                                                    <apex:outputPanel rendered="{!IF(diag.srtRec.srtCheckBox == true,true,false)}">
+                                                                        <apex:outputText value="{!diag.srtRec.ClaimedHrs}"/>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(diag.srtRec.srtCheckBox == false,true,false)}">
+
+                                                                    </apex:outputPanel>
+
+                                                                </apex:outputPanel>
+
+                                                                <apex:outputPanel rendered="{!IF((diag.srtRec.srtType == 'Diag Access' || diag.srtRec.srtType == 'Access'),true,false)}">
+
+                                                                    <apex:outputPanel rendered="{!IF(diag.srtRec.accessSrtCheckBox == true,true,false)}">
+                                                                        <b><apex:outputText value="{!diag.srtRec.ClaimedHrs}"/></b>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(diag.srtRec.accessSrtCheckBox == false,true,false)}">
+
+                                                                    </apex:outputPanel>
+                                                                </apex:outputPanel>
+
+                                                                <!--<apex:outputText value="{!diag.srtRec.ClaimedHrs}"/>-->
+                                                            </apex:outputPanel>
+
+                                                            <apex:outputPanel rendered="{!IF((diag.srtRec.IsPopUpSRT == true && isAutomatedClaim == true),true,false)}">
+
+                                                                <apex:outputPanel rendered="{!IF((diag.srtRec.srtType != 'Diag Access' && diag.srtRec.srtType != 'Access'),true,false)}">
+
+                                                                    <apex:outputPanel rendered="{!IF(diag.srtRec.srtCheckBox == true,true,false)}">
+                                                                        <b><apex:outputText value="{!diag.srtRec.ClaimedHrs}"/></b>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(diag.srtRec.srtCheckBox == false,true,false)}">
+
+                                                                    </apex:outputPanel>
+
+                                                                </apex:outputPanel>
+
+                                                                <apex:outputPanel rendered="{!IF((diag.srtRec.srtType == 'Diag Access' || diag.srtRec.srtType == 'Access'),true,false)}">
+
+                                                                    <apex:outputPanel rendered="{!IF(diag.srtRec.accessSrtCheckBox == true,true,false)}">
+                                                                        <b><apex:outputText value="{!diag.srtRec.ClaimedHrs}"/></b>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(diag.srtRec.accessSrtCheckBox == false,true,false)}">
+
+                                                                    </apex:outputPanel>
+                                                                </apex:outputPanel>
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                    </td>
+                                                </tr>
+                                                <!-- </apex:outputPanel> -->
+
+
+
+                                            </apex:repeat>
+
+                                        </apex:outputPanel>
+                                    </table>
+
+                                </apex:outputPanel>
+
+                                <div class ="row" style="margin-top:10px">
+                                    <div class="col-sm-12">      
+
+                                        <span><b>{!$Label.css_Total_DIAGNOSTIC}</b></span> 
+                                        <apex:outputPanel id="rTime">
+                                            <div>  {!totalDecimalTimediag} </div>
+                                        </apex:outputPanel>
+                                    </div>    
+                                </div>
+                                <apex:outputPanel rendered="{!IF(SRTstatus = 'Closed',false, true)}"><!----65797------>
+                                    <div class="row" style="margin-top:10px">
+                                        <div class="col-sm-offset-4 col-sm-6 col-xs-12">
+                                            <!--  <input class="CMI-primary-button" style="padding: 0px 50px"  type="button" value="Save"/>
+<input class="btn-intake btn-intake-footer m-btn-width" style="padding: 4px 50px;margin-top:-2px" type="button" value="Cancel"/> -->
+                                            <apex:outputPanel rendered="{!IF(isCata == false || IsDealerClaim == false || Contains($UserRole.Name,'Factory'),true,false)}"> 
+                                                <apex:commandButton value="{!$Label.css_save_btn}" action="{!saveDiagData}" styleClass="saveButton" rerender="" oncomplete="return false;"/>&nbsp;&nbsp;
+                                            </apex:outputPanel> 
+                                            <apex:outputPanel rendered="{!IF(isCata == true && IsDealerClaim == true && !Contains($UserRole.Name,'Factory'),true,false)}"> 
+                                                <apex:commandButton value="{!$Label.css_save_btn}" action="{!saveDiagData}"  styleClass="cmi_lighttealbutton" rerender="" oncomplete="return false;"/>&nbsp;&nbsp;
+                                            </apex:outputPanel>
+                                            <apex:commandButton value="{!$Label.css_Reset}" onclick="this.form.reset();   return false;" styleClass="cancelButton" rerender="dia"/>
+                                        </div>
+                                    </div>
+                                </apex:outputPanel>
+                            </div>
+                        </div> 
+                    </div>  <!-- diagnostic desktop end -->
+                </div>
+            </div>
+        </div> 
+
+        <!-- Diagnostic accordian end -->
+
+
+    </div>
+
+    <script type="text/javascript">
+
+        function MpsnCounterDiag(input,SRTCode){
+            try{ 
+                console.log('SRTCode ' + SRTCode);
+                var enteredText = parseInt(input.value);
+                var psncount =  parseInt('{!claimsRecList[0].Total_PSN_Count__c}');
+                console.log('enteredText Rep' + enteredText);
+                console.log('psncount Rep' + psncount);
+                var arraySRTCode = ['00-400-00','00-401-00','00-404-00','00-724-00'];
+
+                var length = arraySRTCode.length;
+                for (var i = 0; i < length; i++) {
+                    if (arraySRTCode[i] == SRTCode){
+                        console.log('success');
+                        if(enteredText >= psncount){
+                            document.getElementById(input.id).value = psncount;
+                        }
+                    }
+                }
+            }
+            catch(err){
+                console.log('exception>>' + err.message)
+            }
+        }
+
+
+        function DiagAdditionalSaveButton()
+        {  
+            document.getElementById('DiagAdditionalSave').disabled=true;
+        }
+        function RepAdditionalSaveButton()
+        {  
+            document.getElementById('testtest').disabled=true;
+        }
+        function calDiagLen(){
+            // alert("dialog");
+            console.log('inside diag mthod');
+            var x = document.getElementById("{!$Component.srchDiagText}").value;
+            console.log('x-->'+x);
+            var y = x.length;
+            console.log('y-->'+y);
+            if(y < 2){
+                //alert('false return');
+                // $("#bt1").removeClass("tealButton");
+                return false;
+            }
+            srchDiagCode();
+            console.log('true return');
+            return true;
+        }
+        function calRepLen(){
+            console.log('inside rep mthod');
+            var x = document.getElementById("{!$Component.srchRepTxt}").value;
+            console.log('x-->'+x);
+            var y = x.length;
+            console.log('y-->'+y);
+            if(y < 2){
+                console.log('false return');
+                // $("#bt1").removeClass("tealButton");
+                return false;
+            }
+            srchRepCode();
+            console.log('true return');
+            return true;
+        }
+
+    </script>
+    <script type="text/javascript">
+        $(function(){
+            $('#link_id').click(function(){
+                console.debug('inside the method true');
+                //$('input:checkbox').attr('checked', 'checked');
+                //console.log($('input:checkbox[id^="reppages:jobplanfrm:j_id959:j_id960:rep:0:j_id1057:0:j_id1059:0:inputId"]'));
+                //$('input:checkbox').prop("checked", true);
+                console.debug($('.repCheckbox'));
+                $('.repCheckbox').each(function() {
+                    $(this).prop("checked", true);
+                });
+
+                console.debug('inside the method true 1');
+                return false;
+            });
+            $('#removelink_id').click(function(){
+                console.debug('inside the method false');
+                //$('input[type="checkbox"]').removeAttr('checked');
+                $('.repCheckbox').each(function() {
+                    $(this).removeAttr('checked');
+                });
+                console.debug('inside the method false');
+                return false;
+            });   
+        });
+
+
+    </script>
+
+    <script type="text/javascript">
+
+
+        function textCounter(field,field2,maxlimit)
+        {
+            var countfield = document.getElementById(field2);
+            if ( field.value.length > maxlimit ) 
+            {
+                field.value = field.value.substring( 0, maxlimit );
+                return false;
+            } else 
+            {
+                countfield.value = maxlimit - field.value.length;
+            }
+        }
+        function validateRepairSRT(compId){
+            var WarrTime= document.getElementById(compId.id).value;
+            if(WarrTime > 100) {
+                document.getElementById(compId.id).value=100;   
+            }
+        }
+
+        function srtreqlen(e,compId){
+            if((e.which > 47 && e.which <=57))
+            {
+            } 
+            else 
+            {
+                return false;
+            }        
+        }
+
+        function srtquanlenRep(e,compId){
+            if((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46 || e.which == 110 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105))
+            {
+
+            } 
+            else 
+            {
+                return false;
+            }      
+        }
+
+        function qtyPressURP(e,compId){
+            var technicianTimeVal= document.getElementById(compId.id).value;
+            if((e.which > 47 && e.which <=57) || e.which == 8)
+            {
+
+            } 
+            else 
+            {
+                return false;
+            } 
+        }
+
+        function digcheckCam(){
+            //alert('Inside dig check');
+            $('.digURCheckbox').each(function() {
+                $(this).prop("checked", true);
+            });
+            return false;
+
+        }
+
+        function digunCheckCam(){
+            //alert('Inside dig uncheck');
+            $('.digURCheckbox').each(function() {
+                $(this).removeAttr('checked');
+            });
+            return false;
+        }
+
+
+
+        //function(chk){
+        $('.sortChk').on('change', function() {
+            $('.sortChk').not(this).prop('checked', false);  
+        });
+        //}
+
+    </script>
+</apex:component>

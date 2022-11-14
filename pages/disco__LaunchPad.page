@@ -1,0 +1,529 @@
+<apex:page showHeader="false" sidebar="false" standardStylesheets="false" showQuickActionVfHeader="false" standardController="disco__LaunchPad__c" extensions="disco.Ctl_LaunchPad" applyHtmlTag="false" applyBodyTag="false" action="{!ensureLaunchPad}">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">  
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+		<title>LaunchPad!</title>
+		<apex:includeScript value="{!URLFOR($Resource.disco__jquery_3_6_0, 'jquery.min.js')}"/>
+		<apex:includeScript value="{!URLFOR($Resource.disco__jquery_ui_1_12_1, 'jquery-ui.min.js')}"/>
+		<apex:includeScript value="{!$Resource.disco__fabric_js}"/>
+		<apex:includeScript value="{!$Resource.disco__launchpadJS}"/>
+		<!-- <script src="https://localhost:9008/launchPadBuilder/dist/bundle.js"></script> -->
+		<script>
+			var ns = '{!JSENCODE(namespace)}';
+			var sfEnv = {};
+			sfEnv.orgId = '{!$Organization.Id}';
+			sfEnv.lpPrefix = '{!objectPrefix}';
+			sfEnv.isLightningExp = '{!JSENCODE($User.UITheme)}' === 'Theme4d';
+			sfEnv.VFR = {};
+			sfEnv.VFR.uploadImage = '{!JSENCODE($RemoteAction.Ctl_LaunchPad.uploadImage)}';
+			sfEnv.VFR.saveLaunchPad = '{!JSENCODE($RemoteAction.Ctl_LaunchPad.saveLaunchPad)}';
+			sfEnv.launchPad = '{!JSENCODE(launchPadJSON)}' !== '' ? JSON.parse('{!JSENCODE(launchPadJSON)}') : {};
+			if(!sfEnv.launchPad.filteredLookups) {
+				sfEnv.launchPad.filteredLookups = [];
+			}
+			sfEnv.templateList = '{!JSENCODE(templateListJSON)}' !== '' ? JSON.parse('{!JSENCODE(templateListJSON)}') : {};
+			sfEnv.objectName2LookupFields = '{!JSENCODE(objectName2LookupFieldsJSON)}' !== '' ? JSON.parse('{!JSENCODE(objectName2LookupFieldsJSON)}') : {};
+			sfEnv.imageGallery = '{!JSENCODE(galleryPhotosJSON)}' !== '' ? JSON.parse('{!JSENCODE(galleryPhotosJSON)}') : [];
+			sfEnv.SLDS_PATH = '{!JSENCODE($Resource.SLDS250)}';
+		</script>
+		<apex:styleSheet value="{!URLFOR($Resource.disco__SLDS250, 'assets/styles/salesforce-lightning-design-system-vf.min.css')}" />
+		<style>
+
+			body {
+				position: absolute;
+				top: 0;
+				right: 0;
+				bottom: 0;
+				left: 0;
+			}
+
+			.slds-page-header {
+				position: relative;
+			}
+
+			.slds-page-header .page-name {
+				font-weight: 700;
+			}
+
+			.slds-page-header .lp-name {
+				display: inline-block;
+				width: calc(100% - 558px);
+				max-width: calc(100% - 558px);
+			}
+
+			.slds-page-header .lp-name #lp-name-input {
+				line-height: 1.25em;
+			}
+
+			.lp-name #lp-name-input.slds-input {
+				background-color: #f3f2f2;
+				border-color: #f3f2f2;
+			}
+
+			.lp-name #lp-name-input:focus {
+				background-color: #fff;
+				border-color: rgb(221, 219, 218);
+			}
+
+			.lp-name #lp-name-input.slds-input.slds-has-error {
+				border-color: #c23934;
+			}
+
+			.slds-page-header .slds-button-group {
+				position: absolute;
+				right: 0;
+				top: 0;
+			}
+
+			.canvas-col {
+				text-align: center;
+			}
+
+			.canvas-container,
+			#image-gallery {
+				margin: auto;
+				padding: 0;
+				background: #fff;
+				background-clip: border-box;
+			}
+
+			.canvas-wrapper,
+			#image-gallery {
+				background-clip: border-box;
+				border: 1px solid #dddbda;
+			}
+
+			.canvas-wrapper {
+				text-align: center;
+				box-shadow: 0 2px 2px 0 rgba(0,0,0,.1);
+				overflow: auto;
+				-ms-overflow-style:none;
+			}
+
+			.canvas-container {
+				border-width: 0;
+				overflow: auto;
+			}
+
+			#image-gallery {
+				box-shadow: inset -2px -2px 2px rgba(0,0,0,.1);
+				max-height: 400px;
+				overflow-y: scroll;
+				border-radius: .25rem;
+			}
+
+			.gallery-image {
+				width: calc(50% - 16px);
+				display: inline-block;
+			}
+
+			#tab-scoped-1 button {
+				width: 100%;
+			}
+
+			ul.ui-autocomplete { /* borrowed from SLDS */
+				background-color: #fff;
+				margin-top: 0.125rem;
+				margin-bottom: 0.125rem;
+				border: 1px solid #dddbda;
+				border-radius: 0.25rem;
+				padding: 0.25rem 0;
+				font-size: 0.75rem;
+				box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.16);
+				min-width: auto;
+				max-width: calc(33% - 52px);
+				width: calc(33% - 52px);
+				max-height: 50%;
+				overflow-y: hidden;
+			}
+
+			ul.ui-autocomplete .ui-menu-item { /* borrowed from SLDS */
+				padding: 0.25rem 0.75rem;
+				display: flex;
+				align-items: flex-start;
+				background-color: #fff;
+			}
+
+			ul.ui-autocomplete .ui-menu-item:hover { /* borrowed from SLDS */
+				background-color: #ddd;
+			}
+
+			/* overrides for jquery UI tooltip */
+			.ui-tooltip {
+				padding: 8px;
+				position: absolute;
+				z-index: 99999;
+				max-width: 300px;
+				-webkit-box-shadow: 0 0 5px #aaa;
+				box-shadow: 0 0 5px #aaa;
+				font: 100% / 1.5 "Salesforce Sans", Arial, sans-serif;
+				background-color: white;
+			}
+
+			.slds-scope input[type="color"] {
+				padding: 0;
+			}
+
+			.slds-notify.slds-notify_alert .err-msg {
+			    padding-left: 6px;
+			}
+
+			#savingStatus .slds-spinner_large {
+				margin: 12px auto;
+			}
+
+			.canvas-column {
+				position: relative;
+			}
+
+			.canvas-column .canvas-loading {
+				padding: 201px calc(50% - 74px);
+				position: absolute;
+				z-index: 1000;
+				font-size: 22px;
+				font-weight: bold;
+				border-radius: 4px;
+				margin: 24px;
+			}
+
+			.missing-filter-wrapper {
+				display: inline-block;
+				width: 14px;
+				height: 14px;
+			}
+			.lookup-equals-wrapper {
+				display: inline-block;
+			}
+
+			span.ui-helper-hidden-accessible {
+				display: none;
+			}
+
+			.slds-scope ul.slds-path__nav {
+				margin-right: 0;
+			}
+
+			.slds-scope li.slds-path__item:first-child {
+    			border-radius: 1rem 0 0 0;
+    		}
+
+    		.slds-scope li.slds-path__item:last-child {
+    			border-radius: 0 1rem 0 0;
+    		}
+
+    		.slds-scope .slds-modal__container {
+    			width: 100%;
+    			max-width: 36rem;
+    			max-height: 700px;
+    		}
+
+    		.touch-area-controls.slds-card {
+    			background-color: #f4f6f9
+    		}
+
+    		#msg-modal {
+    			z-index: 11111;
+				position: fixed;
+				width: 100%;
+			}
+
+			.slds-scope #msg-modal .slds-modal__container.modal-wide {
+				max-width: 50rem;
+			}
+
+			.js-lookup-equals-container {
+				display: inline-block;
+				width: 200px;
+			}
+
+			/* Fix SLDS styling */
+			.slds-scope .slds-tabs_scoped .slds-path__nav .slds-is-complete + .slds-path__item::before {
+				background-color: #4bca81;
+			}
+
+			.slds-scope .slds-tabs_scoped .slds-path__nav .slds-is-complete:hover  + .slds-path__item.slds-is-active::before,
+			.slds-scope .slds-tabs_scoped .slds-path__nav .slds-is-complete:hover  + .slds-path__item.slds-is-complete::before,
+			.slds-scope .slds-tabs_scoped .slds-path__nav .slds-is-complete:hover  + .slds-path__item.slds-is-incomplete::before {
+				background-color: #04844b;
+			}
+
+			.slds-scope .slds-path__nav .slds-is-current.slds-is-complete.slds-is-active + .slds-path__item::before {
+				background-color: #0070d2;
+			}
+			
+			.slds-scope .slds-path__nav .slds-is-current.slds-is-complete.slds-is-active:hover + .slds-path__item::before {
+				background-color:#005fb2;
+			}
+
+			/* Fix IE */
+			input[type=range]::-ms-track {			    
+			    /*remove bg colour from the track, we'll use ms-fill-lower and ms-fill-upper instead */
+			    background: transparent;
+			    
+			    /*leave room for the larger thumb to overflow with a transparent border */
+			    border-color: transparent;
+			    border-width: 6px 0;
+
+			    /*remove default tick marks*/
+			    color: transparent;
+			}
+			input[type=range]::-ms-fill-lower {
+			    background: #ecebea;
+			    border-radius: 10px;
+			}
+			input[type=range]::-ms-fill-upper {
+			    background: #ecebea;
+			    border-radius: 10px;
+			}
+			input[type=range]::-ms-thumb {
+			    border: none;
+			    height: 16px;
+			    width: 16px;
+			    border-radius: 50%;
+			    background: #0070d2;
+			}
+			input[type=range]:focus::-ms-fill-lower {
+			    background: #ecebea;
+			}
+			input[type=range]:focus::-ms-fill-upper {
+			    background: #ecebea;
+			}
+
+			input#uploadImage {
+				width: calc(100% - 84px);
+			}
+
+		</style>
+	</head>
+	<body class="slds-scope">
+	<apex:outputPanel rendered="{!yourekaDisabled}">
+		<c:YourekaDisabled messageText="{!yourekaDisabledMessage}"/>
+	</apex:outputPanel>
+	<apex:outputPanel rendered="{!NOT(yourekaDisabled)}">
+		<header class="slds-page-header">
+			<span class="slds-text-heading_large page-name">LaunchPad: </span>
+			<span class="lp-name slds-text-heading_large slds-input-has-icon slds-input-has-icon_left">
+				<input id="lp-name-input" class="slds-input" value="" type="text" placeholder="Create a name for your LaunchPad" maxlength="80"/>
+				<input id="lp-id-input" type="hidden"/>
+				<button class="slds-button slds-button_icon slds-input__icon slds-input__icon_left edit-lp-name" title="Edit">
+			      	<svg class="slds-button__icon slds-icon-text-light" aria-hidden="true">
+			        	<use xlink:href="{!JSENCODE($Resource.SLDS250) + '/assets/icons/utility-sprite/svg/symbols.svg#edit'}" xmlns:xlink="http://www.w3.org/1999/xlink" />
+			      	</svg>
+			      	<span class="slds-assistive-text">Edit</span>
+			    </button>
+			</span>
+			<div class="slds-button-group slds-p-vertical_medium slds-p-horizontal_large slds-m-top_xxx-small" role="group">
+				<div class="slds-form-element__control slds-select_container">
+		      		<select id="lp-status-input" class="slds-select">
+		      			<option value="Drafting">Drafting</option>
+		      			<option value="In Use">Published</option>
+		      			<option value="Inactive">Inactive</option>
+		      		</select>
+	      		</div>
+				<button class="slds-button slds-button_neutral close-btn">Close</button>
+				<button class="slds-button slds-button_neutral save-btn">Quick Save</button>
+				<button class="slds-button slds-button_brand save-close-btn">Save &amp; Close</button>
+			</div>
+		</header>
+		<div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error js-launchpad-error slds-hide" role="alert">
+			<span class="slds-assistive-text">error</span>
+			<span class="slds-icon_container slds-icon-utility-error slds-m-right_x-small" title="Description of icon when needed">
+			    <svg class="slds-icon slds-icon_x-small" aria-hidden="true">
+			    	<use xlink:href="{!JSENCODE($Resource.SLDS250) + '/assets/icons/utility-sprite/svg/symbols.svg#error'}"></use>
+			    </svg>
+			</span>
+			<h2>
+				<span class="err-msg js-err-msg missing-temps slds-hide">The Touch Areas below require templates.</span>
+				<span class="err-msg js-err-msg missing-name slds-hide">The LaunchPad requires a name before it can be saved.</span>
+				<span class="err-msg js-err-msg missing-objects slds-hide">The LaunchPad requires at least one Touch Area before it can be saved.</span>
+				<span class="err-msg js-err-msg objects-overlap slds-hide">The Touch Areas below cannot overlap.</span>
+				<span class="err-msg js-err-msg offscreen-objects slds-hide">The Touch Areas below cannot be partially off the LaunchPad.</span>
+			</h2>
+		</div>
+		<main class="slds-grid">
+		  	<div class="slds-col slds-size_2-of-3 canvas-column js-canvas-column">
+		  		<div class="canvas-loading js-canvas-loading">
+				    Loading...
+				</div>
+		  		<div class="canvas-wrapper slds-m-around_large slds-text-align_right">
+		    		<canvas id="canvas" width="760" height="434"></canvas>
+		    	</div>
+		  	</div>
+		  	<div class="slds-col control-panel slds-size_1-of-3 slds-p-top_large slds-p-right_large">
+		  		<div class="slds-tabs_scoped">
+			      	<ul class="slds-path__nav js-tabs" role="listbox" aria-orientation="horizontal">
+			        	<li class="slds-path__item slds-is-current slds-is-active" tabindex="0" role="presentation">
+			          		<a class="slds-path__link" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-scoped-0" id="tab-scoped-0__item">Image</a>
+			        	</li>
+			        	<li class="slds-path__item slds-is-incomplete" tabindex="1" role="presentation">
+			          		<a class="slds-path__link" role="tab" tabindex="1" aria-selected="false" aria-controls="tab-scoped-1" id="tab-scoped-1__item">Touch Areas</a>
+			        	</li>
+			        	<li class="slds-path__item slds-is-incomplete" tabindex="2" role="presentation">
+			          		<a class="slds-path__link" role="tab" tabindex="2" aria-selected="true" aria-controls="tab-scoped-2" id="tab-scoped-2__item">Lookups</a>
+			        	</li>
+			      	</ul>
+			      	<div id="tab-scoped-0" class="slds-tabs_scoped__content js-tab-content slds-show" role="tabpanel" aria-labelledby="tab-scoped-0__item">
+					    <span class="slds-form-element">
+							<!-- upload -->
+							<label for="uploadImage" class="slds-form-element__label">Upload a new image to the gallery</label>
+							<div class="slds-form-element__control">
+								<input type="file" id="uploadImage" name="uploadImage" accept="image/*"/>
+								<button type="button" id="uploadImageBtn" class="slds-button slds-button_small slds-button_neutral">
+									<span>Upload</span>
+									<span id="uploading-image-spinner" class="slds-hide">
+										<span class="slds-spinner_container">
+											<div class="slds-spinner_brand slds-spinner slds-spinner_small" aria-hidden="false" role="alert">
+												<div class="slds-spinner__dot-a"></div>
+												<div class="slds-spinner__dot-b"></div>
+											</div>
+										</span>
+									</span>
+								</button>
+							</div>
+							<hr/>
+							<!-- image gallery -->
+							<label for="imageGallery" class="slds-form-element__label">IMAGE GALLERY</label>
+							<div class="slds-form-element__control" id="image-gallery">
+							</div>
+						</span>
+			      	</div>
+			      	<div id="tab-scoped-1" class="slds-tabs_scoped__content js-tab-content slds-hide" role="tabpanel" aria-labelledby="tab-scoped-1__item">
+			    		<div class="slds-grid slds-gutters slds-m-bottom_medium">
+						    <div class="slds-col slds-size_1-of-2 slds-form-element">
+						    	<div class="slds-form-element__control slds-slider">
+						    		<button id="add-toucharea" class="slds-button slds-button_neutral slds-m-bottom_medium">Add New Touch Area</button>
+						    	</div>
+						    </div>
+						    <div class="slds-col slds-size_1-of-2 slds-form-element">
+						    	<div class="slds-form-element__control slds-slider">
+						    		<button id="select-all" class="slds-button slds-button_neutral slds-m-bottom_medium">Show All Touch Areas</button>
+						    	</div>
+						    </div>
+						</div>
+			    		<fieldset>
+			    			<legend class="slds-form-element__legend slds-form-element__label slds-text-title_caps">Selected Touch Area</legend>
+			    			<div class="js-no-touch-area-selected">
+			    				Click the add button above or a touch area to the left.
+			    			</div>
+				      		<div class="touch-area-controls js-touch-area-controls slds-card slds-p-around_small slds-hide">
+				      			<label for="template-name">Template</label>
+					      		<div class="slds-form-element__control">
+						    		<input id="template-name" class="slds-input" type="text"/>
+						    		<input id="template-id" type="hidden"/>
+						    	</div>
+					      		<div class="slds-form-element__control slds-m-vertical_medium">
+						    		<label for="area-text">Area Text</label>
+						    		<input id="area-text" class="slds-input" type="text"/>
+						    	</div>
+						    	<div class="slds-grid slds-gutters">
+  									<div class="slds-col slds-size_1-of-2 slds-form-element slds-m-vertical_medium">
+										<label>Font Color</label>
+									    <input class="slds-input touch-area-font-color" type="color"/>
+									</div>
+									<div class="slds-col slds-size_1-of-2 slds-form-element slds-m-vertical_medium">
+							    		<label>Font Size</label>
+							    		<div class="slds-form-element__control slds-slider">
+						    				<input class="slds-slider__range touch-area-font-size" type="range" min="8" max="108" value="18" step="2" />
+							    		</div>
+								    </div>
+								</div>
+						    	<div class="slds-grid slds-gutters">
+  									<div class="slds-col slds-size_1-of-2 slds-form-element slds-m-vertical_medium">
+										<label>Background Color</label>
+									    <input class="slds-input touch-area-color" type="color"/>
+									</div>
+									<div class="slds-col slds-size_1-of-2 slds-form-element slds-m-vertical_medium">
+								    	<label>Background Transparency</label>
+								    	<div class="slds-form-element__control slds-slider">
+							    			<input class="slds-slider__range touch-area-opacity" type="range" min="0" max="100" value="50" step="1" />
+								    	</div>
+								    </div>
+								</div>
+								<div class="slds-grid slds-gutters">
+								    <div class="slds-col slds-size_1-of-2 slds-form-element slds-m-vertical_medium">
+										<label>Border Color</label>
+									    <input class="slds-input touch-area-border-color" type="color"/>
+									</div>
+									<div class="slds-col slds-size_1-of-2 slds-form-element slds-m-vertical_medium">
+								    	<label>Border Transparency</label>
+								    	<div class="slds-form-element__control slds-slider">
+							    			<input class="slds-slider__range touch-area-border-opacity" type="range" min="0" max="100" value="100" step="1" />
+								    	</div>
+								    </div>
+								</div>
+								<div class="slds-grid slds-gutters">
+								    <div class="slds-col slds-size_1-of-2 slds-form-element slds-m-vertical_medium">
+								    	<div class="slds-form-element__control slds-slider">
+							    			<button id="remove-toucharea" class="slds-button slds-button_neutral slds-m-bottom_medium">Remove Touch Area</button>
+								    	</div>
+								    </div>
+								    <div class="slds-col slds-size_1-of-2 slds-form-element slds-m-vertical_medium">
+								    	<div class="slds-form-element__control slds-slider">
+							    			<button id="clone-toucharea" class="slds-button slds-button_neutral slds-m-bottom_medium">Clone Touch Area</button>
+								    	</div>
+								    </div>
+								</div>
+							</div>
+					    </fieldset>
+			      	</div>
+			      	<div id="tab-scoped-2" class="slds-tabs_scoped__content js-tab-content slds-hide" role="tabpanel" aria-labelledby="tab-scoped-2__item">
+				      	<fieldset class="lookups-container slds-form-element slds-form_compound">
+						    <div class="slds-form-element__control slds-m-bottom_large">
+						    	<p class="slds-form-element__static slds-text-longform"><b>Global Lookups</b> reduce the number of times the end user needs to specify a related record. For example, if many of your Templates share an Account, making Account a Global Lookup will only require it to be selected once.
+						        </p>
+						        <p class="slds-form-element__static slds-text-longform"><b>Filtered Lookups</b> only allow records to be selected that match the defined filter criteria.
+						        </p>
+						    </div>
+						    <button type="button" id="manage-lookups-btn" class="slds-button slds-button_brand">Manage Lookups</button>
+				      	</fieldset>
+			      	</div>
+			    </div>
+			</div>
+		  	<!-- Saving Modal -->
+			<div id="savingStatus" class="slds-modal slds-fade-in-open slds-hide" aria-hidden="false" role="dialog">
+				<div class="slds-modal__container">
+					<div class="slds-modal__content slds-p-around_medium">
+						<div class="slds-spinner_large OR-spinner-align_center slds-m-top_large">
+				          <img src="{!JSENCODE($Resource.SLDS250) + '/assets/images/spinners/slds_spinner_brand.gif'}" alt="Saving..." />
+				        </div>
+				        <h3 class="saveText js-modal-title slds-text-heading_medium slds-m-top_large slds-text-align_center slds-m-bottom_large">Saving...</h3>
+					</div>
+				</div>
+			</div>
+			<!-- msg modal -->
+            <div id="msg-modal" class="js-modal-content slds-hide">
+                <div class="slds-modal__container OR-modal-margin">
+                    <div class="modal-header slds-modal__header">
+                        <h3 class="js-modal-title slds-text-heading_small OR-modal-heading"></h3>
+                    </div>
+                    <!-- error alert -->
+                	<div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error js-modal-error slds-hide" role="alert">
+						<span class="slds-icon_container slds-icon-utility-error slds-m-right_x-small" title="Description of icon when needed">
+						    <svg class="slds-icon slds-icon_x-small" aria-hidden="true">
+						    	<use xlink:href="{!JSENCODE($Resource.SLDS250) + '/assets/icons/utility-sprite/svg/symbols.svg#error'}"></use>
+						    </svg>
+						</span>
+						<h2>
+							<span class="err-msg js-err-msg">Please complete all required fields for filtered options.</span>
+						</h2>
+					</div>
+					<!-- content -->
+                    <div class="slds-modal__content slds-p-around_medium js-msg-text"></div>
+                    <div class="slds-modal__footer">
+                        <div class="slds-x-small-buttons_horizontal slds-grid slds-grid_align-end">
+                        	<button class="slds-button slds-button_neutral slds-hide" id="cancel-modal" type="button">
+                                Cancel
+                            </button>
+                            <button class="slds-button slds-button_neutral slds-button_brand" id="confirm-modal" type="button">
+                                Ok
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+			<div class="js-page-backdrop slds-backdrop slds-backdrop_closed"></div>
+		</main>
+	</apex:outputPanel>
+	</body>
+	</html>
+</apex:page>

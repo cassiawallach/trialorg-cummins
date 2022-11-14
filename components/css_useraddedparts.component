@@ -1,0 +1,138 @@
+<apex:component controller="CSS_UserAddedPartsController" allowDML="true">
+<apex:attribute name="jobId" type="String" description="JobId" assignTo="{!pgId}"></apex:attribute>
+<apex:attribute name="jobOrdNumb" type="string" description="jobNumber" assignTo="{!serviceJobNumber}"></apex:attribute>
+<apex:attribute name="dealerUser" type="Boolean" description="dealer" ></apex:attribute>
+    <apex:attribute name="pgName" type="String" description="PageName" ></apex:attribute>
+    <!-- job plan parts ui -->
+    <style>
+
+          .cmi_userreqParts thead th, .cmi_userreqParts tbody td {
+          width:6%;
+          text-align:center;
+          }
+        
+        
+    </style>
+    
+     <script>
+       function checkURP(){
+          $('.URCheckbox').each(function() {
+                 $(this).prop("checked", true);
+            });
+           return false;
+            
+        }
+        
+        function unCheckURP(){
+             $('.URCheckbox').each(function() {
+                $(this).removeAttr('checked');
+            });
+            return false;
+        } 
+    </script>
+    
+<div class="panel-group cmi_generic-accordion" > 
+        <div class="panel panel-default">
+            <div class="panel-heading " id="accordion1-heading-4">
+       <h4 class="panel-title" data-toggle="collapse" data-parent="#accordion1-heading-4" data-target="#campaign-accordian1" aria-expanded="true" onclick="PartsAction(); return false;">
+                     <a class="accordion-toggle" >
+                     <span class="glyphicon glyphicon-plus"></span>
+                    <div class="cmi_accordion-title"><b>User Requested Parts</b></div>
+                     </a>
+                 </h4>
+             </div>
+          </div>
+    <apex:actionFunction name="PartsAction" action="{!getUserAddedParts}" rerender="srtparts" status="callPartsStatus" /> 
+        <div id="campaign-accordian1" class="panel-collapse collapse" aria-expanded="true" style="margin-top:10px">
+            <apex:actionStatus startText="requesting..." id="callPartsStatus">
+                                       <apex:facet name="start">Loading... <img src="/img/loading.gif" /></apex:facet>
+                                       <apex:facet name="stop"></apex:facet>
+                                </apex:actionStatus>
+    <apex:outputPanel id="srtparts">        
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-sm-12" style="padding-top:20px;"> 
+                    <div class="hidden-xs">
+                        <div class="row cmi_jobplan-table">
+                            <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+                                 <div style="float:right;" >
+                                     <apex:outputText rendered="{!IF(pgName != 'ReadOnly',true,false)}"> <!--GSSC-442, added rendred condition for REadOnly Page-->
+                                    <i class="pencil-tealIcon"></i>            
+                                     </apex:outputText>
+                                         <apex:commandLink value="{!$Label.css_Edit}" html-data-target="#customPartsJobPopUp" html-data-toggle="modal" html-data-backdrop="static" html-data-keyboard="false"  onComplete="return false;"  id="edituseraddedpartspop" rendered="{!IF(pgName != 'ReadOnly',true,false)}"/> <!--GSSC-442, added rendred condition for REadOnly Page-->
+                                     
+                                </div>
+                                <!--venkat GSSC 52
+                                <apex:outputPanel rendered="{!IF(DealerTypeFlag == false,true,false)}">
+                               <u><a href="#/" onclick="unCheckURP()">{!$Label.CSS_Uncheck_All}</a></u>&nbsp;&nbsp;
+                                <u><a href="#/" onclick="checkURP()">{!$Label.CSS_Check_All}</a></u>&nbsp;&nbsp;
+                                </apex:outputpanel>-->
+                                 <table class="mytable table table-bordered table-striped cmi_userreqParts"  width="100%" border="0" cellpadding="0" cellspacing="0">
+                                   <thead>
+                                    <tr height="54">
+                                       <!--<th>{!$Label.CSS_Select}</th>--><!--venkat GSSC 52-->
+                                        <th>{!$Label.CSS_Qty}</th>
+                                        <th>{!$Label.CSS_Part_Number}</th>
+                                        <apex:outputtext rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c == false,true,false)}">
+                                        <th>OEM ({!$Label.CSS_Product_Code})</th>
+                                        </apex:outputtext>
+                                        <!--<th>{!$Label.CSS_Part_Name}</th> -->
+                                        <th>{!$Label.css_Part_Description}</th>
+                                        <th >{!$Label.CSS_Return_to_Factory}</th> 
+                                        <th >{!$Label.CSS_Covered}</th> 
+                                        <th >{!$Label.CSS_Fail_Code}</th> 
+                                        <th >{!$Label.CSS_Account_Code}</th> 
+                                        <th >{!$Label.CSS_Replacement_Repair_Reason}</th>
+                                        <th>{!$Label.css_Notes}</th>
+                                    </tr>
+                                    </thead>
+                                    <apex:repeat value="{!existPartList}" var="partscomp">
+                                        <tr >
+                                          <!--  <td ><apex:inputField value="{!partscomp.selected_part__c}" styleClass="URCheckbox"/></td>--><!--venkat GSSC 52-->
+                                            <td ><span><apex:outputtext value="{!partscomp.Quantity__c}"/></span></td>
+                                            <td ><span><apex:outputText value="{!partscomp.Service_partnumber__c}" html-max-length="15"/></span></td>
+                                            <apex:outputtext rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c == false,true,false)}">
+                                            <td><span><apex:outputtext value="{!partscomp.OEM__c}"/></span></td>
+                                            </apex:outputtext>
+                                            <td > 
+                                                <!--<apex:inputField value="{!partscomp.Part_Name__c}" onchange="savecheckbox()"/> -->
+                                                <apex:outputtext value="{!partscomp.Part_Name__c}"/>
+                                            </td>
+                                            <td ><apex:outputtext value="{!partscomp.ReturnToFactory__c}"/></td>
+                                            <td ><apex:outputtext value="{!partscomp.Covered__c}"/></td>
+                                            <td ><apex:outputtext value="{!partscomp.Fail_Code__c}"/></td>
+                                            <td ><apex:outputtext value="{!partscomp.Account_Code__c}"/></td>
+                                            <td ><apex:outputtext value="{!partscomp.Replacement_Reason__c}"/></td>
+                                            <td ><!--<apex:inputField value="{!partscomp.Notes__c }" onchange="savecheckbox()"/>-->
+                                      <apex:outputtext value="{!partscomp.Notes__c}"/>
+                                    
+                                    </td> 
+                                        </tr>
+                                    </apex:repeat>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-offset-5 col-sm-2" style="margin-top:10px;">
+                        <!--apex:commandLink action="{!saveParts}" value="{!$Label.css_save_btn}" styleclass="btn-intake btn-intake-footer m-btn-width"/-->
+                        <apex:commandLink action="{!saveUserAddedParts}" value="{!$Label.css_save_btn}" styleClass="saveButton" rendered="{!IF(pgName != 'ReadOnly',true,false)}"/> <!--GSSC-442, added rendred condition for REadOnly Page-->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </apex:outputPanel>
+    
+    <apex:outputPanel rendered="{!IF(pgName != 'ReadOnly' && pgName != 'ReviewJob',true,false)}"> <!--GSSC-442-->
+        <div style="margin-top:10px"> 
+            <apex:outputPanel id="customPartsPanelId">
+            <c:CSS_GSQPartsJobPlan jobId="{!jobId}" serviceJobNum="{!jobOrdNumb}" dealerUser="{!dealerUser}"/>
+            </apex:outputPanel>
+        </div>
+    </apex:outputPanel> 
+    <!-- job plan parts ui end -->
+    
+        </div>
+    </div>
+        
+    
+</apex:component>

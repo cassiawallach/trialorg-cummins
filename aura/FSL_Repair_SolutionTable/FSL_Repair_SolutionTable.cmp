@@ -1,0 +1,173 @@
+<!-- 
+Name:FSL_Repair_SolutionTable
+Copyright © 2019  Cummins
+======================================================
+======================================================
+Purpose:                                                            
+ 
+This component is to populate table in Repair - Solution tab to display FaultCodes/Symptoms
+========================================================================================================
+========================================================================================================
+History                                                            
+                                                          
+VERSION     AUTHOR                     DATE                                   
+1.0     Rajashekar Nallapati          6/20/2019 
+ -->
+<aura:component implements="flexipage:availableForRecordHome,force:hasRecordId" 
+                controller="FSL_CL_GETSOLUTIONS" access="global" >
+    <aura:attribute name="wrapperList" type="object"/>
+    <aura:attribute name="recordId" type="string"/> 
+    <aura:attribute name="selectedRecordId" type="String"/>
+    <aura:attribute name="faultId" type="String"/>
+    <aura:attribute name="defSol"  type="String" />
+    <!-- <c:fsl_repairdisplaysolution activeSections="{!v.defSol}"/> -->
+    <aura:handler name="init" value="{!this}" action="{!c.fetchDetails}"/>
+    
+    <div id="table-wrapper">
+      <div class="slds-table--header-fixed_container">
+            <div class="slds-scrollable_y" style="max-height: 300px;" >
+                  <table class="slds-table slds-table_bordered slds-table--header-fixed slds-table_cell-buffer " >
+               	 <thead>
+                    <tr class="slds-text-title--caps">
+                        <th scope="col">
+                            <div class="slds-truncate slds-cell-fixed padd" title="Diagnose">{!$Label.c.css_Diagnose}</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate slds-cell-fixed padd" title="Position">{!$Label.c.FSL_Position}</div>
+                        </th> 
+                        <!--image header start -->
+                        <th scope="col">
+                            <div class="slds-truncate slds-cell-fixed padd" title="Solution img">{!$Label.c.FSL_Sol_Icon}</div>
+                        </th> 
+                        <!--image header end -->
+                        <th scope="col">
+                            <div class="slds-truncate slds-cell-fixed padd" title="Solutions">{!$Label.c.css_Solutions}</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate slds-cell-fixed padd" title="Repair img">{!$Label.c.FSL_Sol_Icon}</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate slds-cell-fixed padd" title="Repairs Made">{!$Label.c.css_Repairs_Made}</div>
+                        </th>
+                        <th scope="col">
+                           <div class="slds-truncate slds-cell-fixed padd" title="SRTs">{!$Label.c.CSS_SRTs}</div>
+                        </th>
+                    </tr>
+                </thead>
+                <!--table body start, 
+        Iterate wrapperList as a <tr>
+        -->
+                <tbody>
+                    <aura:iteration items="{!v.wrapperList}" var="wl">
+                        <tr>
+                            <th scope="row">
+                                <div class="slds-truncate" title="{!wl.FCdesc}">
+                                    <a target="_blank" href="" data-id="{!wl.recid}" onclick = "{!c.getSolutions}">{!wl.name}</a> <!-- modified by Sriprada -->                
+                                    
+                                </div>
+                            </th>
+                            
+                            <th scope="row-sm">
+                                <div class="slds-truncate" title="Solution Position"></div><br/>
+                                <aura:iteration items="{!wl.solList}" var="w">
+                                    <div><b>{!w.FSL_Solution_Position__c}</b><br/><br/></div>  
+                                </aura:iteration>  
+                            </th>
+                            <!--image start -->
+                            <th scope="row-sm">
+                                <div class="slds-truncate" title="Solution Img">
+                                    <aura:iteration items="{!wl.solList}" var="w">
+                                        <aura:if isTrue="{!w.Diagnostic_Response__c == 'Most likely the solution. Repair recommended.'}">                                 
+                                            <img src="{!$Resource.passed_png}" width="20" height="20" alt="img"/><br/><br/>
+                                        </aura:if>
+                                        <aura:if isTrue="{!w.Diagnostic_Response__c == 'Not the solution. Continue troubleshooting.'}">                                 
+                                            <img src="{!$Resource.not_passed_png}" width="20" height="20"/><br/><br/>
+                                        </aura:if>
+                                        <aura:if isTrue="{!w.Diagnostic_Response__c == 'Could not perform the solution verification'}">                                 
+                                            <img src="{!$Resource.not_answered_png}" width="20" height="20"/><br/><br/>
+                                        </aura:if>
+                                        
+                                    </aura:iteration> 
+                                </div>
+                            </th> 
+                            <!--image end -->
+                            <th scope="row">
+                                <div class="incr">
+                                    <div class="slds-truncate" title="{!wl.solCount}">{!wl.solCount} </div>
+                                    <div class="slds-truncate">
+                                        <aura:iteration items="{!wl.solList}" var="w">
+                                            <aura:if isTrue="{!NOT(w.FSL_Service_Job__r.Service_Order_Extension__r.FSL_ABRFlag__c)}"><!-- Added by Prasanna to remove the displaying Solution ID for FTR Event - for ROAD -474 -->
+                   								<div><b>{!w.Name}</b></div> 
+                                            </aura:if>                   							
+                                          
+                                            <div class="slds-truncate" title="{!w.Solution_Title__c}">{!w.Solution_Title__c}</div> 
+                                        </aura:iteration>  
+                                    </div>
+                                </div>   
+                            </th>
+                            <!-- Repair image start -->
+                            <th scope="row-sm">
+                                <div class="slds-truncate" title="Solution Img">
+                                    <aura:iteration items="{!wl.solList}" var="w">
+                                        <aura:if isTrue="{!w.Repair_Response__c != null}">
+                                        <aura:if isTrue="{!w.Repair_Response__c == 'Repair Successful.'}">                                 
+                                            <img src="{!$Resource.passed_png}" width="20" height="20" alt="img"/><br/><br/>
+                                        </aura:if>
+                                        <aura:if isTrue="{!w.Repair_Response__c == 'Repair Successful with additional parts/procedures.'}">                                 
+                                            <img src="{!$Resource.passedplus}" width="20" height="20"/><br/><br/>
+                                        </aura:if>
+                                        <aura:if isTrue="{!w.Repair_Response__c =='Repair performed but didnot resolve the root cause.'}">                                 
+                                            <img src="{!$Resource.not_passed_png}" width="20" height="20"/><br/><br/>
+                                        </aura:if>
+                                        <aura:if isTrue="{!w.Repair_Response__c =='Repair not performed.'}">                                 
+                                            <img src="{!$Resource.not_answered_png}" width="20" height="20"/><br/><br/>
+                                        </aura:if>
+                                             <aura:set attribute="else">
+                                                    <br/><br/>
+                                                    </aura:set>
+                                             </aura:if>
+                                    </aura:iteration> 
+                                </div>
+                            </th> 
+                            <!--Repair image end -->
+                            <th scope="row">
+                                <div class="incr">
+                                        <aura:iteration items="{!wl.solList}" var="w">
+                                            <aura:if isTrue="{!w.Diagnostic_Response__c == 'Most likely the solution. Repair recommended.'}">
+                                                <div class="slds-truncate" title="{!w.Repair_Response__c}">{!w.Repair_Response__c}</div> 
+                                                <br/>
+                                               <aura:if isTrue="{!w.Repair_Response__c == null}">
+                                                    <a  onclick="{!c.editComp}" 
+                                                       name="{!wl.name}" 
+                                                       aura:id="EditLink"
+                                                       data-value="{!w.Id}">Perform repair</a><br/><br/>
+                                                    
+                                                </aura:if>
+                                                <aura:set attribute="else">
+                                                    <br/><br/>
+                                                    </aura:set>
+                                            </aura:if>
+                                        </aura:iteration>  
+                                    </div>
+                               </th>
+                            <th scope="col">
+                                <div class="slds-truncate" title="{! Diagnosis- wl.digTime+' - '+Repair- wl.repairTime}">
+                                    <label>
+                                        Diagnosis : {!wl.digTime} <br/>
+                                        Repair    : {!wl.repairTime}
+                                    </label>
+                                    
+                                </div>
+                            </th>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+                <!-- </div>  -->
+            </table>
+             </div>            
+        </div>
+    </div>
+    <!--<div class="slds-hide"  aura:id="hidediv">
+        <c:fsl_repairdisplaysolution aura:id="dissol"></c:fsl_repairdisplaysolution>
+    </div>-->
+</aura:component>

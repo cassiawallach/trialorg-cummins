@@ -1,0 +1,104 @@
+<apex:page id="ApproveClaimsFormPage" standardController="CSS_WS_Warranty__c" Extensions="CSS_WS_ControllerApproveClaims">
+    <apex:pageMessages id="showmsg"/>
+    <apex:form id="approveFormClaims">
+        <apex:pageBlock >
+            <apex:pageBlockSection id="DR" columns="2">
+                <apex:selectList id="serviceProviderDR" value="{!DistributorSel}" label="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Service_Provider_DR__c.Label}" size="1" style="width: 350px !important;" onChange="rerenderDealers_JS();" disabled="{!distributorsDisable}">
+                    <apex:selectOptions value="{!distributorsSelectList}"/>                    
+                </apex:selectList>
+                <apex:inputField id="allPaymentDate" value="{!CSS_WS_Warranty__c.CSS_WS_DLR_Payment_Date__c}" style="width: 169px !important;">
+                    <apex:actionSupport event="onchange" rerender="showmsg"/>
+                </apex:inputField>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection id="dealer" columns="2">
+                <apex:selectList id="serviceProviderDealer" value="{!DealerSel}" label="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Service_Provider_Dealer__c.Label}" size="1" style="width: 350px !important;">
+                    <apex:selectOptions value="{!dealersSelectList}"/>
+                    <apex:actionSupport event="onchange" action="{!getClaimsList}" rerender="tableClaims, table, ClaimsSection, listClaims, selectBox, applyButton, allCreditNumber, allPaymentDate, showmsg"/>
+                </apex:selectList>
+                <apex:inputField id="allCreditNumber" value="{!CSS_WS_Warranty__c.CSS_WS_DLR_Credit_Number__c}">
+                    <apex:actionSupport event="onchange" rerender="showmsg"/>
+                </apex:inputField>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection id="selectall" columns="2">
+                <apex:inputText id="comcfilter" value="{!ComcValue}" label="COMC">
+                    <apex:actionSupport event="onchange" action="{!getClaimsList}" rerender="tableClaims, table, ClaimsSection, listClaims, selectBox, applyButton, allCreditNumber, allPaymentDate, showmsg"/>
+                </apex:inputText>
+                <apex:inputCheckbox id="selectAll" value="{!SelectAll}" label="{!$Label.CSS_WS_Statement_E004}">
+                    <apex:actionSupport event="onchange" action="{!enableDisabledButtonApplyAll}" rerender="buttons, updateAllButton, ClaimsSection, selectedClaim, showmsg"/>
+                </apex:inputCheckbox>
+            </apex:pageBlockSection>
+            
+            <apex:pageBlockSection columns="1" id="ClaimsSection">
+                <apex:pageBlockTable value="{!ClaimsLists}" var="claim" id="tableClaims" >
+                    <apex:column headerValue="Row" style="text-align:center !important; width: 25px !important;">
+                        <apex:outputText value="{!claim.Index}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.Name.Label}" style="text-align:center !important; width: 100px !important;">
+                        <apex:outputText value="{!claim.ClaimNumber}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Policy_Flag__c.Label}" style="text-align:center !important; width: 50px !important;">
+                        <apex:outputText value="{!claim.PolicyFlag}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Service_Provider_Dealer__c.Label}" style="text-align:center !important; width: 150px !important;">
+                        <apex:outputText value="{!claim.DealerName}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Customer_Name_Internal__c.Label}" style="text-align:center !important; width: 50px !important;">
+                        <apex:outputText value="{!claim.CustomerName}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_Claim_Status__c.Label}" style="text-align:center !important; width: 180px !important;">
+                        <apex:outputText value="{!claim.Claim.CSS_WS_Claim_Status__c}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_COMC__c.Label}" style="text-align:center !important; width: 180px !important;">
+                        <apex:outputText value="{!claim.COMC}"/>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_DLR_Payment_Date__c.Label}" style="text-align:center !important; width: 180px !important;">
+                        <apex:inputField id="dlrPaymentDate" value="{!claim.Claim.CSS_WS_DLR_Payment_Date__c}">
+                            <apex:actionSupport event="onchange" action="{!enableDisabledButtons}" rerender="dealer, tableClaims, updateButton, updateAllButton">
+                                <apex:param name="claimToUpdate" value="{!claim.Index}" assignTo="{!claimToUpdate}"/> 
+                            </apex:actionSupport>
+                        </apex:inputField>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$ObjectType.CSS_WS_Warranty__c.fields.CSS_WS_DLR_Credit_Number__c.Label}" style="text-align:center !important; width: 180px !important;">
+                        <apex:inputField id="dlrCreditNumber" value="{!claim.Claim.CSS_WS_DLR_Credit_Number__c}">
+                            <apex:actionSupport event="onchange" action="{!enableDisabledButtons}" rerender="dealer, tableClaims, updateButton, updateAllButton">
+                                <apex:param name="claimToUpdate" value="{!claim.Index}" assignTo="{!claimToUpdate}"/> 
+                            </apex:actionSupport>
+                        </apex:inputField>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$Label.CSS_WS_Global_E008}" style="text-align:center !important; width: 180px !important;">
+                        <apex:commandButton id="updateButton" action="{!updateSelectedClaim}" value="{!$Label.CSS_WS_Global_E008}" rerender="dealer, tableClaims, ClaimsSection, updateAllButton" disabled="{!!claim.UpdateClaim}">
+                            <apex:param name="claimToUpdate" value="{!claim.Index}" assignTo="{!claimToUpdate}"/> 
+                        </apex:commandButton>
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!$Label.CSS_WS_Statement_E005}" style="text-align:center !important; width: 30px !important;">
+                        <apex:inputCheckbox id="selectedClaim" value="{!claim.ChangeValueClaim}">
+                            <apex:actionSupport event="onclick" action="{!CheckSelected}" rerender="applyButton, selectall, selectAll, showmsg"/>
+                        </apex:inputCheckbox>
+                    </apex:column>
+                </apex:pageBlockTable>
+            </apex:pageBlockSection>
+            
+            <!----------------------------------- Area Functions Header ----------------------------------->
+            <apex:actionFunction action="{!updateClaimsList}" name="rerenderDealers_JS" rerender="dealer, tableClaims, ClaimsSection, table, listClaims"/>
+            <!----------------------------------- Area Functions Header ----------------------------------->
+            
+            <apex:pageBlockButtons id="buttons">
+                <apex:commandButton id="exitButton" action="{!exitClaimsUpdate}" value="{!$Label.CSS_WS_Global_E007}"/>
+                <apex:commandButton id="updateAllButton" action="{!updateAllSelectedClaims}" value="{!$Label.CSS_WS_Global_E009}" rerender="dealer, tableClaims, ClaimsSection, updateAllButton, showmsg"/>
+                <apex:commandButton id="applyButton" action="{!updateClaimsListValues}" value="{!$Label.CSS_WS_Global_E010}" rerender="dealer, tableClaims, ClaimsSection, applyButton, updateAllButton, allCreditNumber, allPaymentDate, showmsg"/>
+            </apex:pageBlockButtons>  
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

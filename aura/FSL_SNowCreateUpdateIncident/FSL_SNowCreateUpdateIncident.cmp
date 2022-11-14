@@ -1,0 +1,190 @@
+<aura:component implements="flexipage:availableForRecordHome,force:hasRecordId,force:lightningQuickAction,lightning:availableForFlowScreens" controller="FSL_SendServiceOrderToServiceNow" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <!-- Added new attribute for hiding attachment button by CSM DEV TEAM-->
+    <aura:attribute name="incidentnoCheck" type="boolean" default="false"/>
+    <aura:attribute name="displayIncOpt" type="boolean" default="true"/>
+    <aura:attribute name="displayIncCreateOpt" type="boolean" default="false"/>
+    <aura:attribute name="displayRecordForm" type="boolean" default="false"/>
+    <aura:attribute name="displayIncidentRec" type="boolean" default="false"/>
+    <aura:attribute name="IncidentIdLst" type="list"/>
+    <aura:attribute name="IncidentId" type="string"/>
+    <aura:attribute name="subject" type="string"/>
+    <aura:attribute name="description" type="string"/>
+    <aura:attribute name="incidentControllerObj" type="FSL_SendServiceOrderToServiceNow"/>
+    <aura:attribute name="CaseList" type="List" />  
+    <aura:attribute name="incActionType" type="boolean" default="true"/>
+    <aura:attribute name="Selectoption" type="List" default="[
+                                                             {'label': 'Service Now Ticket', 'value': 'Service Now Ticket'},
+                                                             {'label': 'QSOL Helpdesk WO', 'value': 'QSOL Helpdesk WO'}
+                                                             ]"/>
+    
+    <aura:attribute name="IncidentOptions" type="List" default="[
+                                                                {'label': 'Create New Incident', 'value': 'Create'},
+                                                                {'label': 'Update Existing Incident', 'value': 'Update'},
+                                                                {'label': 'Fetch Status from Service Now','value':'fetchStatusFromSNow'}
+                                                                ]"/>
+    <aura:attribute name="incidentOptionsValue" type="String" default=""/>
+    <aura:attribute name="incRecToUpdate" type="List" />
+    <aura:attribute name="showAttachementOption" type="boolean" default="false"/>
+    <aura:attribute name="loaded" type="boolean" default="false"/>
+    <aura:attribute name="isFileAttached" type="boolean" default="false"/>
+    <aura:attribute name="isFileUpload" type="boolean" default="false"/>
+    <aura:attribute name="fileName" type="String" default="No File Selected.." />
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="selectAttachmentOption" type="List" default="[
+                                                                       {'label': 'Yes','value': 'Yes'},
+                                                                       {'label': 'No', 'value': 'No'}
+                                                                       ]"/>
+    <aura:attribute type="Incident[]" name="incidentToUpdate"/>
+    <aura:attribute name="mycolumns" type="List"/>
+    <aura:if isTrue="{!v.loaded }">
+        <lightning:spinner variant="brand" alternativeText="Loading"/>
+    </aura:if>
+    <aura:if isTrue="{!v.displayIncOpt}">
+        <lightning:radioGroup aura:id="incidentCreateUpdate"
+                              label="What do you want to do?"
+                              options="{! v.IncidentOptions }"
+                              onchange="{! c.handleChange }"
+                              value="{!v.incidentOptionsValue}"
+                              required="true" />
+
+    </aura:if><br/>
+    
+    <aura:if isTrue="{!v.displayIncCreateOpt}">
+        <lightning:radioGroup aura:id="createIncidentoptions"
+                              label="What kind of Incident do you want to create?"
+                              options="{!v.Selectoption }"
+                              onchange="{! c.createIncident }"
+                              required="true" /><br/>
+      <lightning:button variant="brand" label="Cancel" onclick="{!c.oncancel}"/>
+    </aura:if>
+    <aura:if isTrue="{!v.displayRecordForm}">
+        <div class="slds-grid slds-wrap">
+            
+            <lightning:recordEditForm objectApiName="Incident"
+                                      aura:id="IncidentForm"
+                                      recordId="{!v.IncidentId}"
+                                      onsubmit="{!c.handleOnSubmit}"
+                                      onsuccess="{!c.handleOnSuccess}"
+                                      >
+                <lightning:messages />
+                <div class="slds-grid slds-wrap">
+                    <div class="slds-col slds-size_1-of-1">
+                    </div><br></br>
+                    <div class="slds-col slds-size_1-of-2">
+                        
+                        <lightning:inputField fieldName="Category"/>
+                        
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        
+                        <lightning:inputField fieldName="SubCategory"/>
+                        
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <lightning:inputField fieldName="CSM_Ticket_Config_Item__c" required="true"/>
+                        
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <lightning:inputField fieldName="Impact"/>
+                        
+                    </div>
+                    
+                    <div class="slds-col slds-size_1-of-2">
+                        <lightning:inputField fieldName="Urgency"/>
+                     </div>
+                    
+                    <div class="slds-col slds-size_1-of-1">
+                        <lightning:inputField fieldName="Service_Request__c" value="{!v.recordId}" disabled="true"/>
+                        
+                    </div>
+                    <div class="slds-col slds-size_1-of-1">
+                        <lightning:inputField fieldName="Subject" value="{!v.subject}" />
+                        
+                    </div>
+                    <div class="slds-col slds-size_1-of-1">
+                        <lightning:inputField fieldName="Description" value="{!v.description}" required="true"/>
+                        
+                    </div>
+                    <div class="slds-col slds-size_1-of-1">
+                        <lightning:inputField fieldName="CSM_Ticket_Work_Notes__c" required="false"/>
+                        
+                    </div>	
+                    
+                    <!--<div class="slds-col slds-size_1-of-2">
+                                  <lightning:inputField fieldName="CSM_SNow_Incident_Number__c"/>
+                                    
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning:inputField fieldName="CSM_SNow_IncidentSysID__c"/>
+                                   
+                                </div>-->
+                </div>
+                <!--lightning-button class="slds-m-top_small" type="submit" label="Update">
+                            </lightning-button>-->
+                <!--added New-->
+                <footer class="slds-card__footer">
+                    <lightning:button variant="brand" label="Cancel" onclick="{!c.oncancel}"/>
+                    <lightning:button aura:id="saveIncident" variant="brand" label="Save" type="submit"/>
+                    <!-- existing -->
+                    <!--Added New-->
+                    <!--aura:if isTrue="{!v.incidentnoCheck}">
+                                <lightning:button aura:id="sendAttachment" variant="brand" label="SendAttachments" onclick="{! c.handleOnSuccess }" />   
+                            </aura:if-->
+                </footer>
+            </lightning:recordEditForm>
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.showAttachementOption}">
+        <!--p>Incident Succesfully Created </p><br/-->
+        <lightning:radioGroup aura:id="createIncidentoptions"
+                              label="Do you want to send any attachements?"
+                              options="{!v.selectAttachmentOption }"
+                              onchange="{!c.uploadAttachements}"
+                              required="true" />
+        <aura:if isTrue="{!v.isFileUpload}">
+            <lightning:fileUpload aura:id="fuploader" label=""
+                                  name="file"
+                                  multiple="false"
+                                  accept="{!v.filetype}"
+                                  recordId="{!v.recordId}"
+                                  onuploadfinished="{!c.handleUploadFinished}" /> <br/>
+            <lightning:button aura:id="sendAttachment" variant="brand" label="SendAttachments" onclick="{! c.handleOnSuccess }" disabled="{!!v.isFileAttached}"/>
+        </aura:if>
+    </aura:if>
+    <aura:if isTrue="{!v.displayIncidentRec}">
+        <lightning:combobox name="incidentsToUpdate" label="Incident" placeholder="Select Incident To Update" options="{! v.incRecToUpdate }" onchange="{! c.handleIncUpd }"/>
+        <br/>
+         <lightning:button variant="brand" label="Cancel" onclick="{!c.oncancel}"/>
+    </aura:if>
+    <aura:if isTrue="{!v.isModalOpen}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModel }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_small slds-hyphenate">Synch With Service Now</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p><b>Do You Want To Sync Incident With External System Data?</b>
+                    </p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.closeModel }"/>
+                    <lightning:button variant="brand"
+                                      label="OK"
+                                      title="OK"
+                                      onclick="{!c.onSubmit}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    <!-- this is part of Missing component-->
+</aura:component>

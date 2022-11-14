@@ -1,0 +1,1182 @@
+<!--
+Name:  IAM_NewAccountRegistration
+Copyright © 2020  Cummins
+=============================================================
+=============================================================
+Purpose:                                                            
+This is test class for IAM_NewAccountRegistration class.
+This class is used for register the new account. and this class is creates the Account, Contact, Account provisoing and Contact provsioning records
+for users. Based on application settings in App mapping object, we have given the access to users. And we are using this class in New Account and
+Existing account registration. In new registration flow, we are creating all the records and sending to approval if approval needed on application.
+In Existing account registration, we are not creating the Account, Just provding the access to contact and sending to approval. After registration is completed
+then we are redirecting to confirmation page.                          
+=============================================================
+=============================================================
+History                                                            
+-------                                                            
+VERSION  AUTHOR                   DATE                  DETAIL                                
+1.0 -    Keerthy Gurumurthy     23/04/2018        INITIAL DEVELOPMENT 
+1.1 -    Sushma Rajput          08/13/2020        Changes for INC0365700,INC0303446
+1.2 -    Karthik Golakaram      09/02/2020        Changes for Reclaim Changes.
+1.3 -    Nishant Verma          02/10/2020        Changes for fluidwtach.
+1.4 -    Shubhangi Sardar       12/03/2020        Added NPBU Diagnostic Expration
+1.5 -    Karthik Raj Golakaram  04/15/2021        Added changes to skip trigger execution for Guidan Mobile application
+1.6 -    Suresh Rathod			04/18/2022		  Added changes for Guidanz Service Portal Enhancements
+-->
+<apex:page showHeader="false"
+           cache="false"
+           standardController="Account"
+           language="{!$CurrentPage.parameters.lang}"
+           standardStylesheets="false"
+           extensions="IAM_NewAccountRegistration" >
+      
+    <c:CS_Header />
+    <style>
+        @media (max-width:824px) and (min-width:811px) {
+            #responsiveCheckbox {
+                    display: flex !important;
+            }
+        }
+         @media (max-width:569px) and (min-width:567px){
+        #register{
+            margin-left: 17px;
+        }
+        #responsiveTerm{
+            padding-left: 0px!important;
+        }
+     }
+    @-moz-document url-prefix(){
+        @media (max-width:376px) and (min-width:359px){
+            .container{
+                margin-left: 10px !important;
+            }
+            #containerSection{
+                margin-left: 25px !important;
+            } 
+      }
+      @media (max-width:801px) and (min-width:799px){
+            .container{
+                width:752px!important;
+            }
+      }
+    }
+    </style>
+    <div id="main_content" class="fluid-container">
+        <!--Issue#443 - status loader when any action performed on page ---->
+        <c:IAM_statusLoader />
+        <div id="contact-form" class="container" style="margin-top: 4%;margin-bottom: 5%;">
+            <div id="responsiveHeader" style=" padding-left: 15px;">
+                <H1 style="border-bottom:2px solid lightgrey; margin-left: 0px;">
+                    <STRONG>
+                        <span style="font-family:proxima-nova,sans-serif !important" >
+                            {!$Label.IAM_Registration_Label}
+                        </span>
+                    </STRONG>
+                </H1>
+            </div>
+            <div Style = "font-size:12px;" class="required-text">
+                <span>&#42;</span>
+                {!$Label.IAM_Required_Label}
+            </div>
+                  
+            <!-- fix for issue#387 error message was not displaying -->
+            <apex:outputPanel id="pageErrorMsg" > 
+                <apex:outputPanel rendered="{!errordiv}" > 
+                    <!-- @Suresh -Guidanz Service Portal Enhancement - removed height attribute from below div as it was set as Height: 50px which was restricting error box height-->
+                    <div class="message1"  role="alert" id="errorMsg12" 
+                         style="background-color: #FDEDED;border: 2px solid #D02323;color: black; width: 95%;" >                
+                        <table border="0" cellpadding="0" cellspacing="0" class="messageTable" style="">
+                            <tbody>
+                                <tr valign="top">
+                                    <td>
+                                        <span class="CMI-text-icons" 
+                                              style="font-size: 30px;color: red;display: flex;">2</span>
+                                    </td>                   
+                                    <td class="messageCell" style="width:100%">
+                                        <div  class="messageText" style="font-size:14px;">                                        
+                                            <apex:pagemessages id="messages" /><br/>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </apex:outputPanel>
+            </apex:outputPanel>
+                        
+            <!-- Begin Company Information Section -->
+            <apex:form id="theForm">
+                
+                <apex:outputPanel id="Duplicate" style="margin:2%;">
+                <!--<apex:form style="padding-top: 20px !important; margin:0px !important;">-->
+                    <apex:pageBlock rendered="{!hasDuplicateResult}">
+                        <div>
+                            <span >
+                                <label class=" control-label"
+                                       style="font-size:16px;padding-left: 25px;padding-top:10px;margin-left: 45px;margin-top: 10px;">
+                                    {!$Label.IAM_Duplicate_Records_Found}
+                                </label>
+                            </span>
+                        </div>
+                        <apex:pageBlockTable value="{!duplicateRecords}" var="item" 
+                            styleClass="table-bordered table-striped table-hover table-condensed table-responsive"
+                            style="width:90%; margin-top:2%;margin-left:6%" >
+                            <apex:column style="padding:5px;" width="40%">
+                                <apex:facet name="header" >
+                                    <apex:outputtext >
+                                        {!$Label.IAM_Name_Label}
+                                    </apex:outputtext>
+                                </apex:facet> 
+                                <apex:outputField value="{!item['Name']}" />
+                            </apex:column>
+                            <apex:column style="padding:5px;text-align: center;" width="10%">
+                                <apex:facet name="header">
+                                    <apex:outputtext style="background-color:black;">
+                                        {!$Label.IAM_Customer_Code}
+                                    </apex:outputtext>
+                                </apex:facet>
+                                <apex:outputField value="{!item['IAM_Service_Provider_Code__c']}"/>
+                            </apex:column>
+                            <apex:column style="padding:5px" width="40%">
+                                <apex:facet name="header">
+                                    <apex:outputtext style="background-color:black;">
+                                        {!$Label.IAM_Address}
+                                    </apex:outputtext>
+                                </apex:facet>
+                                <apex:outputField value="{!item['CMI_Billing_Address__c']}"/>
+                            </apex:column>
+                            <apex:column style="padding:5px;text-align: center;" width="10%">
+                                <apex:facet name="header">
+                                    <apex:outputtext style="background-color:black;">
+                                        {!$Label.IAM_Action}
+                                    </apex:outputtext>
+                                </apex:facet>
+                                <apex:commandButton value="{!$Label.IAM_Select}" StyleClass="tdActBtn"  
+                                    onclick="ChooseAccount('{!item.id}'); return false;"  />
+                            </apex:column>
+                        </apex:pageBlockTable>
+                        <div>
+                            <span >
+                                <label class=" control-label"
+                                       style="font-size:16px;padding-left:18px;padding-top:10px;margin-left: 50px;margin-top: 20px;">
+                                    {!$Label.IAM_Dup_Edit_1} 
+                                
+                                <apex:commandLink action="{!showAddress}"
+                                                  reRender="addresDetails,EdqAddress,chkdisplayDisplay,btnpannel,Duplicate,mainDiv,pageErrorMsg"
+                                                  oncomplete="displayButton(false, false)"
+                                                  status="status">
+                                    {!$Label.IAM_Dup_Edit_2} 
+                                </apex:commandLink>
+                                {!$Label.IAM_Dup_Edit_3} 
+                                </label>
+                            </span>
+                        </div>
+                    </apex:pageBlock>
+                </apex:outputPanel>
+                
+                <div class="contact-form-left-wrap ">
+                    <apex:outputpanel id="mainDiv"
+                         StyleClass="contact-form-left col-xs-12 col-sm-12 col-md-12 col-lg-12;"
+                         style="border:0px; ">
+                        <!--uncommenting the account type select radio box test -->
+                        <apex:pageBlock rendered="{!!hasDuplicateResult}">
+                            <apex:outputPanel id="marketplaceQue" rendered="{!isMarketPlaceApp}">
+                                <apex:outputPanel >
+                                    <div class="col-sm-12 form-group form-group-sm">
+                                        <label class="col-sm-3 control-label" for="sm" styleclass="bold">
+                                            {!$Label.IAM_Marketplace_Question_1}
+                                        </label>
+                                        <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                            &#42;
+                                        </span>  
+                                        <div class="col-sm-4" >
+                                            <div >
+                                                <apex:selectRadio styleClass="radioOpt"  value="{!isRepairEngine}" >
+                                                    <apex:selectOptions value="{!answers}"  />
+                                                    <apex:actionSupport event="onchange"
+                                                                        reRender="marketplaceQue"
+                                                                        action="{!fetchAnswerOne}"
+                                                                        status="status"/>                                                                            
+                                                </apex:selectRadio>
+                                            </div>
+                                        </div>                     
+                                    </div>
+                                </apex:outputPanel>
+                                <apex:outputPanel rendered="{!IF(isRepairEngine == 'Yes', true, false)}">
+                                    <div class="col-sm-12 form-group form-group-sm">
+                                        <label class="col-sm-3 control-label" for="sm" styleclass="bold">
+                                            {!$Label.IAM_Marketplace_Question_2}
+                                        </label>
+                                        <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                            &#42;
+                                        </span>  
+                                        <div class="col-sm-4" >
+                                            <div >
+                                                <apex:selectRadio styleClass="radioOpt"  value="{!isOwnVehicle}" >
+                                                    <apex:selectOptions value="{!answers}"  />
+                                                    <apex:actionSupport event="onchange"
+                                                                        reRender="marketplaceQue"
+                                                                        action="{!fetchAnswerTwo}"
+                                                                        status="status"/>                                                                            
+                                                </apex:selectRadio>
+                                            </div>
+                                        </div>                     
+                                    </div>
+                                </apex:outputPanel> 
+                            </apex:outputPanel>
+                            
+                            <apex:outputPanel id="acc_type">
+                                <apex:outputText rendered="{!acctypeRadio}">
+                                    <div class="col-sm-12 form-group form-group-sm">
+                                        <label class="col-sm-3 control-label" for="sm" styleclass="bold">
+                                            {!$Label.IAM_Account_Type_Label}
+                                        </label>
+                                        <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                            &#42;
+                                        </span>  
+                                        <div class="col-sm-4" >
+                                            <div >
+                                                <apex:selectRadio styleClass="radioOpt"  value="{!Typeis}" >
+                                                    <apex:selectOptions value="{!items}"  />
+                                                    <apex:actionSupport event="onchange"
+                                                                        reRender="cmp_sec, cmp_sec_one"
+                                                                        action="{!selectOnClick}"
+                                                                        status="status"/>
+                                                    <span style="float:right; padding-right: 36px">
+                                                        <img src="{!URLFOR($Resource.Cmi_helptexticon)}" 
+                                                             title="{!$Label.IAM_Register_Your_Company}" 
+                                                             width="20"
+                                                             height="20"/>
+                                                    </span>                          
+                                                </apex:selectRadio>
+                                            </div>
+                                        </div>                     
+                                    </div> 
+                                </apex:outputText> 
+                            </apex:outputPanel> 
+
+                            <!-- This output panel displays ERP Customer Code for Guidanz Service Portal application -->
+                            <apex:outputPanel id="guiERPAccNumber">
+                                <!--<apex:outputText rendered="{!!is_ind_user}"> -->
+                                <apex:outputText rendered="{!IF(app.Name == $Label.IAM_AppName_GuidanzServicePortal, true, false)}">
+                                    <div class="col-sm-12 form-group form-group-sm">
+                                        <label class="col-sm-3 control-label"  for="sm">
+                                            {!$Label.IAM_ERP_Customer_Code}
+                                            <i class='fas fa-info-circle' 
+                                               style='color:gray' title='{!$Label.IAM_ERP_CustomerCode_Info}'></i>
+                                        </label>                                   
+                                        <span class="col-sm-1 required"
+                                              style="width:2%; padding-left: 5px; top: 2px;">
+                                            &#42;
+                                        </span>
+                                        <div class="col-sm-4 responsiveInput" style="padding-right: 5px;">
+                                            <apex:inputtext styleclass="form-control req_field companyName responsiveLargeInput"
+                                                            id="guiERPCode"  
+                                                            html-data-fnameis="{!$Label.IAM_ERP_Customer_Code}" 
+                                                            value="{!erpCustomerCode}"
+                                                            html-placeholder="{!$Label.IAM_ERP_Customer_Code}"
+                                                            onblur="validate_req_fileds(false,this,true)"
+                                                            disabled="{!IF(NULL != acc.Name && isReadonlyAcc,true,false)}"/>
+                                            <apex:outputText value="{!errorAccountName}"
+                                                             styleClass="errorMsg"
+                                                             rendered="{!errorAccountName!=null}"
+                                                             style="color:#cc0000;" />
+                                        </div>
+                                    </div>   
+                                </apex:outputText>
+                            </apex:outputPanel>
+                            <!-- End og Guidanz Service Portal ERP Account Number addition change-->
+                            
+                            <apex:outputPanel id="contactDetails">
+                                <div class="col-sm-12 form-group form-group-sm">
+                                    <label class="col-sm-3 control-label"   for="sm">
+                                        {!$Label.IAM_Email_Label}
+                                    </label>
+                                    <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                        &#42;
+                                    </span>
+                                    <div class="col-sm-4" style="padding-right: 5px;">
+                                        <apex:inputtext onblur="validate_req_fileds(false,this,true)"
+                                            styleclass="form-control req_field borderblack ContactEmail responsiveLargeInput" 
+                                            html-data-fnameis="{!$Label.IAM_BusinessEmail_HTML_ID_Label}"
+                                            id="ContactEmail"
+                                            html-placeholder="abc@example.com"
+                                            maxlength="80"
+                                            title="{!$Label.IAM_Enter_Company_Email}"
+                                            value="{!newCon.Email}"
+                                            disabled="{!IF(NULL != newCon.Email && isReadonlyAcc,true,false)}"/>
+                                        <div id="errorContactEmail"
+                                            class="errorMsg" 
+                                            style="display:none;color:red;" >
+                                            <strong> </strong>
+                                            {!$Label.IAM_Valid_Email_Error_Label}.
+                                        </div>
+                                        <apex:outputText value="{!errorContat}"
+                                            styleClass="errorMsg"
+                                            rendered="{!errorContat!=null}"
+                                            style="color:#cc0000;" />
+                                    </div>
+                                  <!--  <div style="height: 40px"> 
+                                    </div> -->
+                                </div>     
+                               
+                                <div class="col-sm-12 form-group form-group-sm">
+                                    <label class="col-sm-3 control-label"   for="sm">
+                                        {!$Label.IAM_First_Name}
+                                    </label>
+                                    <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                        &#42;
+                                    </span>
+                                    <div class="col-sm-4 responsiveInput" style="padding-right: 5px;">
+                                        <apex:inputtext onblur="validate_req_fileds(false,this,true)" 
+                                            styleclass="form-control req_field borderblack responsiveLargeInput" 
+                                            id="fname" 
+                                            html-data-fnameis="{!$Label.IAM_First_Name}" 
+                                            value="{!newCon.FirstName}" 
+                                            maxlength="40" 
+                                            html-placeholder="{!$Label.IAM_First_Name}"
+                                            disabled="{!IF(NULL != newCon.FirstName && isReadonlyAcc,true,false)}"/>
+                                        <apex:outputText value="{!errorContactFirstName}"
+                                            styleClass="errorMsg"
+                                            rendered="{!errorContactFirstName!=null}"
+                                            style="color:#cc0000;" />
+                                    </div>
+                                </div>       
+                                <div class="col-sm-12 form-group form-group-sm">
+                                    <label class="col-sm-3 control-label" for="sm">
+                                        {!$Label.IAM_Last_Name_Label}
+                                    </label>
+                                    <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                        &#42;
+                                    </span>
+                                    <div class="col-sm-4" style="padding-right: 5px;">
+                                        <apex:inputtext styleclass="form-control req_field borderblack responsiveLargeInput" 
+                                            onblur="validate_req_fileds(false,this,true)" 
+                                            html-data-fnameis="{!$Label.IAM_Last_Name_Label}" 
+                                            id="lname"
+                                            value="{!newCon.LastName}"  
+                                            maxlength="80" 
+                                            html-placeholder="{!$Label.IAM_Last_Name_Label}" 
+                                            disabled="{!IF(NULL != newCon.LastName && isReadonlyAcc,true,false)}"/>
+                                        <apex:outputText value="{!errorContactLastName}"
+                                            styleClass="errorMsg"
+                                            rendered="{!errorContactLastName!=null}"
+                                            style="color:#cc0000;" />
+                                    </div>
+                                </div>
+                                
+                                <apex:outputPanel id="cmp_sec_one">
+                                    <apex:outputText rendered="{!!is_ind_user}">
+                                        <div class="col-sm-12 form-group form-group-sm">
+                                            <label class="col-sm-3 control-label"  for="sm">
+                                                {!$Label.IAM_Company_Name}
+                                            </label>
+                                            <span class="col-sm-1 required"
+                                                  style="width:2%; padding-left: 5px; top: 2px;">
+                                                &#42;
+                                            </span>
+                                            <div class="col-sm-4 responsiveInput" style="padding-right: 5px;">
+                                                <apex:inputtext styleclass="form-control req_field companyName responsiveLargeInput"
+                                                    id="companyname"  
+                                                    html-data-fnameis="{!$Label.IAM_Legal_Entity_Name_Field_ID_Label}" 
+                                                    value="{!acc.Name }"
+                                                    html-placeholder="{!$Label.IAM_Legal_Entity_Name_Field_ID_Label}"
+                                                    onblur="validate_req_fileds(false,this,true)"
+                                                    disabled="{!IF(NULL != acc.Name && isReadonlyAcc,true,false)}"/>
+                                                <apex:outputText value="{!errorAccountName}"
+                                                    styleClass="errorMsg"
+                                                    rendered="{!errorAccountName!=null}"
+                                                    style="color:#cc0000;" />
+                                            </div>
+                                        </div>   
+                                    </apex:outputText>
+                                </apex:outputPanel>
+                                
+                                 <!-- Occupation list -->
+            
+            <apex:outputPanel id="thePowerSpc" rendered="{!isPowrspc}">
+                <div class="col-sm-12 form-group form-group-sm" id="psshow" >
+                    <label class="col-sm-3 control-label"   for="sm">
+                        Occupation
+                    </label>
+                    <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                        &#42;
+                    </span>
+                    <div class="col-sm-2" style="padding-right: 5px;">
+                        <apex:selectList styleClass="form-control req_field responsiveCountry "
+                                         value="{!occupationlist}"
+                                         html-data-fnameis="{!$Label.IAM_Reason_For_Requesting}"
+                                         id="reasonId1"
+                                         multiselect="false"
+                                         size="1"
+                                         onblur="validate_req_fileds(false,this,true)"  >  
+                            
+                            <apex:selectOptions value="{!occpList}" />                                           
+                        </apex:selectList>  
+                        
+                        <apex:outputText value="{!erroroccupationlist}"
+                                         styleClass="errorMsg"
+                                         rendered="{!erroroccupationlist!=null}"
+                                         style="color:#cc0000;" />
+                    </div>
+                </div> 
+            </apex:outputPanel>
+            <!-- Occupation list end -->  
+                                
+                                <div class="col-sm-12 form-group form-group-sm">
+                                    <label class="col-sm-3 control-label" for="sm">
+                                        {!$Label.IAM_Phone_Number_Label}
+                                    </label>
+                                    <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                        &#42;
+                                    </span>
+                                    <div class="col-sm-2" style="padding-right: 5px;">
+                                        <apex:inputtext id="phone"
+                                            onblur="validate_req_fileds(false,this,true)" 
+                                            html-data-fnameis="{!$Label.IAM_Phone_Number_Label}"
+                                            styleclass="form-control req_field borderblack responsiveInput"
+                                            html-placeholder="{!$Label.IAM_Phone_Number_Label}"
+                                            maxlength="40"
+                                            value="{!newCon.phone}"
+                                            disabled="{!IF(NULL != newCon.phone && isReadonlyAcc,true,false)}"/>
+                                            <apex:outputText value="{!errorContactPhone}"
+                                                styleClass="errorMsg"
+                                                rendered="{!errorContactPhone!=null}" style="color:#cc0000;" />
+                                    </div>
+                                </div>
+                            </apex:outputPanel>
+                            
+                            <apex:outputPanel id="addresDetails">
+                                <apex:outputText rendered="{!!EDQpop}">
+                                    <div class="col-sm-12 form-group form-group-sm">
+                                        <label class="col-sm-3 control-label" for="sm">
+                                            {!$Label.IAM_Address_Line_1_Label}
+                                            <apex:outputText rendered="{!IF(app.Name == $Label.IAM_AppName_GuidanzServicePortal, true, false)}">
+                                              <i class='fas fa-info-circle' 
+                                               style='color:gray' title='{!$Label.IAM_Address_Info}'></i>  
+                                            </apex:outputText>
+                                        </label>
+                                        <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                            &#42;
+                                        </span>
+                                        <div class="col-sm-4" style="padding-right: 5px;">
+                                            <apex:inputtext onblur="validate_req_fileds(false,this,true)"
+                                                html-data-fnameis="{!$Label.IAM_Address_HTML_ID_Label}" 
+                                                styleclass="form-control req_field responsiveLargeInput"
+                                                id="city1"
+                                                maxlength="250"
+                                                value="{!acc.BillingStreet}"
+                                                html-placeholder="{!$Label.IAM_Street_Address}"
+                                                disabled="{!IF(NULL != acc.BillingStreet && isReadonlyAcc,true,false)}"/>
+                                            <apex:outputText value="{!errorAddress}"
+                                                styleClass="errorMsg"
+                                                rendered="{!errorAddress!=null}"
+                                                style="color:#cc0000;" />
+                                        </div>
+                                    </div>     
+                                    <div class="col-sm-12 form-group form-group-sm">
+                                        <label class="col-sm-3 control-label"   for="sm">
+                                            {!$Label.IAM_Address_Line_2_Label}
+                                        </label>
+                                        <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                        </span>
+                                        <div class="col-sm-4" style="padding-right: 5px;">
+                                            <apex:inputtext styleclass="form-control responsiveLargeInput"
+                                                id="line2"
+                                                maxlength="250"
+                                                value="{!acc.CMI_Address2__c}"
+                                                html-placeholder="{!$Label.IAM_Street_Address}"
+                                                disabled="{!IF(NULL != acc.CMI_Address2__c && isReadonlyAcc,true,false)}" />
+                                        </div>
+                                    </div>  
+                                    <div class="col-sm-12 form-group form-group-sm">
+                                        <label class="col-sm-3 control-label"   for="sm">
+                                            {!$Label.IAM_Country}
+                                        </label>
+                                        <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                            &#42;
+                                        </span>
+                                        <div class="col-sm-3" style="padding-right: 5px;">
+                                            <apex:inputfield styleClass="form-control borderblack req_field responsiveCountry"
+                                                id="country2" 
+                                                html-data-fnameis="{!$Label.IAM_Country}" 
+                                                onchange="validate_req_fileds(false,this,true)"
+                                                value="{!acc.BillingCountryCode}"
+                                                html-placeholder="{!$Label.IAM_Country}" >
+                                            </apex:inputfield>
+                                        </div>
+                                    </div>     
+                                    <div class="col-sm-12 form-group form-group-sm">
+                                        <label class="col-sm-3 control-label" for="sm">
+                                            {!$Label.IAM_State}
+                                            <apex:outputText rendered="{!IF(app.Name == $Label.IAM_AppName_GuidanzServicePortal, true, false)}">
+                                              <i class='fas fa-info-circle' 
+                                               style='color:gray' title='{!$Label.IAM_Address_Info}'></i>  
+                                            </apex:outputText>
+                                        </label>
+                                        <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                            &#42;
+                                        </span>
+                                        <div class="col-sm-2" style="padding-right: 5px;">
+                                            <apex:inputfield styleclass="form-control req_field responsiveInput" id="state1"
+                                                html-data-fnameis="{!$Label.IAM_State}"
+                                                onchange="validate_req_fileds(false,this,true)"
+                                                value="{!acc.BillingStateCode}" >
+                                            </apex:inputfield>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-12 form-group form-group-sm">
+                                        <label class="col-sm-3 control-label" for="sm">
+                                            {!$Label.IAM_City}
+                                        </label>
+                                        <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                            &#42;
+                                        </span>
+                                        <div class="col-sm-2" style="padding-right: 5px;">
+                                            <apex:inputtext onblur="validate_req_fileds(false,this,true)"
+                                                styleclass="form-control req_field responsiveInput" 
+                                                html-data-fnameis="{!$Label.IAM_City}" 
+                                                id="city2" maxlength="50"
+                                                value="{!acc.BillingCity}"
+                                                html-placeholder="{!$Label.IAM_City}"
+                                                disabled="{!IF(NULL != acc.BillingCity && isReadonlyAcc,true,false)}" />
+                                            <apex:outputText value="{!errorCity}"
+                                                styleClass="errorMsg"
+                                                rendered="{!errorCity!=null}"
+                                                style="color:#cc0000;" />
+                                        </div>
+                                    </div>     
+                                    <div class="col-sm-12 form-group form-group-sm">
+                                        <label class="col-sm-3 control-label"   for="sm">
+                                            {!$Label.IAM_ZipCode}
+                                        </label>
+                                        <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                        </span>
+                                        <div class="col-sm-2" style="padding-right: 5px;">
+                                            <apex:inputtext styleclass="form-control responsiveInput"
+                                                id="city5"
+                                                html-data-fnameis="{!$Label.IAM_ZipCode}" 
+                                                maxlength="50"  
+                                                value="{!acc.BillingPostalCode}"
+                                                html-placeholder="{!$Label.IAM_ZipCode}"
+                                                disabled="{!IF(NULL != acc.BillingPostalCode && isReadonlyAcc,true,false)}" />
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- RSW section start -->
+                                    <apex:outputPanel id="theRSW" rendered="{!isRSWsection}"> 
+                                        <apex:actionFunction action="{!EDQAddress}"
+                                            name="calltoClearmethods"
+                                            rerender="errorAddcode1Mesg" /> 
+                                        <div class="col-sm-12 form-group form-group-sm">
+                                            <label class="col-sm-3 control-label" for="sm">
+                                                {!$Label.IAM_Preferred_Service_Provider}
+                                            </label>
+                                            <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                                &#42;
+                                            </span>
+                                            <div class="col-sm-2" style="padding-right: 5px;">  
+                                                <apex:inputtext styleclass="form-control req_field borderblack"
+                                                    id="prefercodeId" 
+                                                    html-data-fnameis="{!$Label.IAM_Preferred_Service_Code}"
+                                                    onblur="validate_req_fileds(false,this,true)"
+                                                    maxlength="10"
+                                                    value="{!rswPreferCode}"
+                                                    html-placeholder="{!$Label.IAM_Preferred_Service_Code}"  />                                       
+                                                <apex:outputText value="{!errorPrefercode}"
+                                                    styleClass="errorMsg"
+                                                    rendered="{!errorPrefercode!=null}"
+                                                    style="color:#cc0000;" />
+                                            </div>
+                                        </div>
+                                            
+                                        <div class="col-sm-12 form-group form-group-sm" id="ASP1">
+                                            <label class="col-sm-3 control-label"   for="sm">
+                                                {!$Label.IAM_Additional_Service_Provider}
+                                            </label>
+                                            <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                            </span>
+                                            <div class="col-sm-2" style="padding-right: 5px;">
+                                                <apex:inputtext styleclass="form-control"
+                                                    id="additinalCode"
+                                                    html-data-fnameis="{!$Label.IAM_Additional_Service_Provider} 1"
+                                                    maxlength="10"
+                                                    value="{!rswAdditionalCode}"
+                                                    html-placeholder="{!$Label.IAM_Additional_Service_Provider} 1"
+                                                    onmouseout="additional_serProvider(this.id, 'lblValue1', 2)" />                                                                          
+                                                <apex:outputText value="{!errorAddcode1}"
+                                                    styleClass="errorMsg"
+                                                    id="errorAddcode1Mesg"
+                                                    rendered="{!errorAddcode1!=null}"
+                                                    style="color:#cc0000;" />                                        
+                                            </div>
+                                            <span id="lblValue1" style="cursor: pointer;" onclick="show('ASP2', this.id)"/>
+                                        </div>                          
+                                        
+                                        <div class="col-sm-12 form-group form-group-sm" id="ASP2"
+                                             style="{!IF(rswAdditionalCode1 == '', 'display:none;', 'display:block;')}">
+                                            <label class="col-sm-3 control-label"   for="sm">
+                                            </label>
+                                            <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                            </span>
+                                            <div class="col-sm-2" style="padding-right: 5px;">
+                                                <apex:inputtext styleclass="form-control"
+                                                    id="additinalCode1"
+                                                    html-data-fnameis="{!$Label.IAM_Additional_Service_Provider} 2" 
+                                                    maxlength="10" 
+                                                    value="{!rswAdditionalCode1}"
+                                                    html-placeholder="{!$Label.IAM_Additional_Service_Provider} 2"
+                                                    onmouseout="additional_serProvider(this.id, 'lblValue2', 3)" />                                                                             
+                                                <apex:outputText value="{!errorAddcode2}"
+                                                    styleClass="errorMsg"
+                                                    rendered="{!errorAddcode2!=null}"
+                                                    style="color:#cc0000;" />
+                                            </div>
+                                            <span id="lblValue2"
+                                                onclick="show('ASP3', this.id)" style="cursor: pointer;"/> 
+                                        </div>
+                                            
+                                        <div class="col-sm-12 form-group form-group-sm" id="ASP3"
+                                             style="{!IF(rswAdditionalCode2 == '', 'display:none;', 'display:block;')}">
+                                            <label class="col-sm-3 control-label"   for="sm">
+                                            </label>
+                                            <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                            </span>
+                                            <div class="col-sm-2" style="padding-right: 5px;">
+                                                <apex:inputtext styleclass="form-control"
+                                                    id="additinalCode2"
+                                                    html-data-fnameis="{!$Label.IAM_Additional_Service_Provider} 3"
+                                                    maxlength="10"
+                                                    value="{!rswAdditionalCode2}"
+                                                    html-placeholder="{!$Label.IAM_Additional_Service_Provider} 3"
+                                                    onmouseout="additional_serProvider(this.id, 'lblValue3', 4)"/>
+                                                                                     
+                                                <apex:outputText value="{!errorAddcode3}"
+                                                    styleClass="errorMsg"
+                                                    rendered="{!errorAddcode3!=null}"
+                                                    style="color:#cc0000;" />
+                                            </div>
+                                            <span id="lblValue3" onclick="show('ASP4', this.id)" style="cursor: pointer;"/>  
+                                        </div>
+                                            
+                                        <div class="col-sm-12 form-group form-group-sm" id="ASP4"
+                                             style="{!IF(rswAdditionalCode3 == '', 'display:none;', 'display:block;')}">
+                                            <label class="col-sm-3 control-label"   for="sm">
+                                            </label>
+                                            <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                            </span>
+                                            <div class="col-sm-2" style="padding-right: 5px;">
+                                                <apex:inputtext styleclass="form-control"
+                                                    id="additinalCode3"
+                                                    html-data-fnameis="{!$Label.IAM_Additional_Service_Provider} 4"
+                                                    maxlength="10"
+                                                    value="{!rswAdditionalCode3}"
+                                                    html-placeholder="{!$Label.IAM_Additional_Service_Provider} 4"
+                                                    onmouseout="additional_serProvider(this.id, 'lblValue4', 5)" />
+                                                                                       
+                                                <apex:outputText value="{!errorAddcode4}"
+                                                    styleClass="errorMsg"
+                                                    rendered="{!errorAddcode4!=null}" style="color:#cc0000;" />
+                                            </div>
+                                            <span id="lblValue4" onclick="show('ASP5', this.id)" style="cursor: pointer;"/>
+                                        </div>
+                                        
+                                        <div class="col-sm-12 form-group form-group-sm" id="ASP5"
+                                             style="{!IF(rswAdditionalCode4 == '', 'display:none;', 'display:block;')}">
+                                            <label class="col-sm-3 control-label"   for="sm">
+                                            </label>
+                                            <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                            </span>
+                                            <div class="col-sm-2" style="padding-right: 5px;">
+                                                <apex:inputtext styleclass="form-control"
+                                                    id="additinalCode4" 
+                                                    html-data-fnameis="{!$Label.IAM_Additional_Service_Provider} 5" 
+                                                    maxlength="10" 
+                                                    value="{!rswAdditionalCode4}"
+                                                    html-placeholder="{!$Label.IAM_Additional_Service_Provider} 5" />                                       
+                                                <apex:outputText value="{!errorAddcode5}"
+                                                    styleClass="errorMsg"
+                                                    rendered="{!errorAddcode5!=null}"
+                                                    style="color:#cc0000;" />
+                                            </div>
+                                        </div> 
+                                            
+                                        <div class="col-sm-12 form-group form-group-sm">
+                                            <label class="col-sm-3 control-label"   for="sm">
+                                                {!$Label.IAM_Reason_For_Requesting}
+                                            </label>
+                                            <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                                &#42;
+                                            </span>
+                                            <div class="col-sm-2" style="padding-right: 5px;">
+                                                <apex:selectList styleClass="accountchange form-control req_field"
+                                                    value="{!rswReason}"
+                                                    html-data-fnameis="{!$Label.IAM_Reason_For_Requesting}"
+                                                    id="reasonId"
+                                                    multiselect="false"
+                                                    size="1"
+                                                    onblur="validate_req_fileds(false,this,true)"  >
+                                                    <apex:actionSupport event="onchange" reRender="otherReasonId" />
+                                                    <apex:selectOptions value="{!reasonsList}" />                                           
+                                                </apex:selectList>                                     
+                                                <apex:outputText value="{!errorRswReason}"
+                                                    styleClass="errorMsg"
+                                                    rendered="{!errorRswReason!=null}"
+                                                    style="color:#cc0000;" />
+                                            </div>
+                                        </div>   
+                                            
+                                        <apex:outputPanel id="otherReasonId" >
+                                            <apex:outputPanel id="otherReasonId1"
+                                                rendered="{!IF(rswReason == 'Other', true, false)}">
+                                                <div class="col-sm-12 form-group form-group-sm">
+                                                    <label class="col-sm-3 control-label" for="sm">
+                                                        {!$Label.IAM_Other_Reason}
+                                                    </label>
+                                                    <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                                        &#42;
+                                                    </span>
+                                                    <div class="col-sm-2" style="padding-right: 5px;">
+                                                        <apex:inputtext styleclass="form-control req_field borderblack"
+                                                            id="otherReason" 
+                                                            html-data-fnameis="{!$Label.IAM_Other_Reason}" 
+                                                            onblur="validate_req_fileds(false,this,true)"
+                                                            maxlength="200" 
+                                                            value="{!rswOtherReason}"
+                                                            html-placeholder="{!$Label.IAM_Other_Reason}" />
+                                                        <apex:outputText value="{!errorPostalcode}"
+                                                            styleClass="errorMsg"
+                                                            rendered="{!errorPostalcode!=null}" style="color:#cc0000;" />
+                                                    </div>
+                                                </div>
+                                            </apex:outputPanel>
+                                        </apex:outputPanel> 
+                                    </apex:outputPanel> 
+                                    <!-- RSW section End -->  
+                                                              
+                                    <apex:outputPanel id="cmp_sec">
+                                        <!--  <apex:outputText rendered="{!!is_ind_user}">    -->
+                                        <apex:outputText rendered="{!!isAccTypeShow}">
+                                            <div class="col-sm-12 form-group form-group-sm">
+                                                <label class="col-sm-3 control-label"   for="sm">
+                                                    {!$Label.IAM_Primary_Market_Segment_Label}
+                                                </label>
+                                                <span class="col-sm-1 required"
+                                                      style="width:2%;  padding-left: 5px; top: 2px;">
+                                                    &#42;
+                                                </span>
+                                                <div class="col-sm-2" style="padding-right: 5px;">
+                                                    <apex:inputfield styleclass="form-control req_field input-sm"
+                                                        id="marketsegment"  html-data-fnameis="{!$Label.IAM_Primary_Market_Segment_Label}"
+                                                        value="{!acc.IAM_Primary_Market_Segment__c}" 
+                                                        onblur="validate_req_fileds(false,this,true)"/>
+                                                    <apex:outputText value="{!errormarket}"
+                                                        styleClass="errorMsg"
+                                                        rendered="{!errormarket!=null}"
+                                                        style="color:#cc0000;" />
+                                                </div>
+                                                <div >
+                                                    <img style="margin-left: 15px"
+                                                        src="{!URLFOR($Resource.Cmi_helptexticon)}"
+                                                        title="{!$Label.IAM_Market_Or_Application_Area}"
+                                                        width="20"
+                                                        height="20"   />
+                                                </div>
+                                            </div>
+                                        </apex:outputText>
+            
+                                        <!--<apex:outputText rendered="{!!is_ind_user}">
+                                            <div class="col-sm-12 form-group form-group-sm">
+                                                <label class="col-sm-3 control-label"  for="sm">
+                                                    {!$Label.IAM_Company_Name}
+                                                </label>
+                                                <span class="col-sm-1 required"
+                                                      style="width:2%; padding-left: 5px; top: 2px;">
+                                                    &#42;
+                                                </span>
+                                                <div class="col-sm-6" style="padding-right: 5px;">
+                                                    <apex:inputtext styleclass="form-control req_field companyName"
+                                                        id="companyname"  
+                                                        html-data-fnameis="{!$Label.IAM_Legal_Entity_Name_Field_ID_Label}" 
+                                                        value="{!acc.Name }"
+                                                        html-placeholder="{!$Label.IAM_Legal_Entity_Name_Field_ID_Label}"
+                                                        onblur="validate_req_fileds(false,this,true)"
+                                                        disabled="{!IF(NULL != acc.Name && isReadonlyAcc,true,false)}"/>
+                                                    <apex:outputText value="{!errorAccountName}"
+                                                        styleClass="errorMsg"
+                                                        rendered="{!errorAccountName!=null}"
+                                                        style="color:#cc0000;" />
+                                                </div>
+                                            </div>   
+                                        </apex:outputText> -->
+                                    </apex:outputPanel>
+                                    
+                                    <apex:outputPanel id="theForm1"> 
+                                        <apex:outputText rendered="{!!isAccTypeShow}">
+                                            <div class="col-sm-12 form-group form-group-sm">
+                                                <label class="col-sm-3 control-label"   for="sm">
+                                                    {!$Label.IAM_Telematics_Service_Provider_Label}
+                                                </label>
+                                                <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                                    &#42;
+                                                </span>
+                                                <div class="col-sm-4" >
+                                                    <apex:inputfield style="height: auto !important;border: 1px solid #ccc;"
+                                                        id="tsp"
+                                                        html-data-fnameis="{!$Label.IAM_Telematics_Service_Provider_Label}" 
+                                                        value="{!acc.CMI_Telematics_Service_Provider__c}" 
+                                                        styleClass="tsp">
+                                                        <apex:actionSupport event="onchange" reRender="theForm1" />
+                                                    </apex:inputField>
+                                                    <span class="errSpan"></span>
+                                                    <!--<apex:outputPanel styleClass="form-control form-group" 
+                                                        style="background-color:#eee;max-width: 813px;width:{!(LEN(acc.CMI_Telematics_Service_Provider__c) +1)*7}px;height:auto">
+                                                        {!acc.CMI_Telematics_Service_Provider__c}
+                                                    </apex:outputPanel>-->
+                                                    <apex:outputPanel > 
+                                                        <div class="col-sm-4 col-md-4 col-lg-12" id="OtherTSPpanel"
+                                                            style="float: left;padding-top:20px;display:none;">
+                                                            <span class="required" >*</span>
+                                                            <apex:inputtextarea styleclass="details-input col-xs-12 col-sm-12 col-md-6 col-lg-12 resetActive "
+                                                                style="width: 237px; margin: -5.53125px 0px 0px 4.14063px; height: 50px; border: 1px solid #ccc;margin-left: 3%; margin-top: -4%;"
+                                                                id="othertsp" 
+                                                                html-placeholder="{!$Label.IAM_Address_Phone_If_Available}" 
+                                                                value="{!acc.CMI_Other_TSP__c}"
+                                                                rows="2" 
+                                                                required="{acc.CMI_Telematics_Service_Provider__c== 'Other TSP'}"
+                                                                disabled="{!IF(NULL != acc.CMI_Other_TSP__c && isReadonlyAcc,true,false)}"  />
+                                                            <div class="col-sm-4 col-md-4 col-lg-12"   style="float: left;">
+                                                                <apex:outputText style="height:auto !important; color:red;" 
+                                                                    html-data-fnameis="{!$Label.IAM_Other_TSP}"
+                                                                    value="{!errorothertsp}"
+                                                                    styleClass="errorMsg"
+                                                                    rendered="{!errorothertsp!=null}"  />
+                                                            </div>
+                                                        </div> 
+                                                    </apex:outputPanel>                                               
+                                                </div> 
+                                            </div>
+                                        </apex:outputText>      
+                                    </apex:outputPanel>
+                                    <apex:outputPanel id="theForm2">
+                                        <apex:outputText rendered="{!!isAccTypeShow}">                                
+                                            <div class="col-sm-12 form-group form-group-sm">
+                                                <label class="col-sm-3 control-label" for="sm">
+                                                    {!$Label.IAM_Cummins_Contact_First_Name_Label}
+                                                </label>
+                                                <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                                </span>
+                                                <div class="col-sm-4" style="padding-right: 5px;">
+                                                    <apex:inputtext styleclass="form-control "
+                                                        html-data-fnameis="{!$Label.IAM_Cummins_Contact_First_Name_Label}"
+                                                        id="ccfname"
+                                                        maxlength="50"
+                                                        value="{!acc.CMI_Cummins_Support_First_Name__c}" 
+                                                        html-placeholder="{!$Label.IAM_Cummins_Contact_First_Name_Label}"
+                                                        disabled="{!IF(NULL != acc.CMI_Cummins_Support_First_Name__c && isReadonlyAcc,true,false)}"/>
+                                                    <apex:outputText value="{!errorccfname}"
+                                                        styleClass="errorMsg"
+                                                        rendered="{!errorccfname!=null}"
+                                                        style="color:#cc0000;" />
+                                                </div>
+                                            </div>    
+                                         
+                                            <div class="col-sm-12 form-group form-group-sm">
+                                                <label class="col-sm-3 control-label"   for="sm">
+                                                    {!$Label.IAM_Cummins_Contact_Last_Name_Label}
+                                                </label>
+                                                <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                                </span>
+                                                <div class="col-sm-4" style="padding-right: 5px;">
+                                                    <apex:inputtext styleclass="form-control "
+                                                        html-data-fnameis="{!$Label.IAM_Cummins_Contact_Last_Name_Label}"
+                                                        id="cclname"
+                                                        value="{!acc.CMI_Cummins_Support_Last_Name__c}"
+                                                        html-placeholder="{!$Label.IAM_Cummins_Contact_Last_Name_Label}"
+                                                        disabled="{!IF(NULL != acc.CMI_Cummins_Support_Last_Name__c && isReadonlyAcc,true,false)}" />
+                                                    <apex:outputText value="{!errorcclname}"
+                                                        styleClass="errorMsg"
+                                                        rendered="{!errorcclname!=null}"
+                                                        style="color:#cc0000;" />
+                                                </div>
+                                            </div>    
+                                        
+                                            <div class="col-sm-12 form-group form-group-sm">
+                                                <label class="col-sm-3 control-label" for="sm">
+                                                    {!$Label.IAM_Cummins_Contact_Email_Label}
+                                                </label>
+                                                <span class="col-sm-1 required" style="width:2%; padding-left: 5px; top: 2px;">
+                                                </span>
+                                                <div class="col-sm-4" style="padding-right: 5px;">
+                                                    <apex:inputtext styleclass="form-control " 
+                                                        html-data-fnameis="{!$Label.IAM_Cummins_Contact_Email_Label}"
+                                                        id="ccemail"
+                                                        value="{!acc.CMI_Cummins_Support_Email__c}"
+                                                        html-placeholder="{!$Label.IAM_Cummins_Contact_Email_Label}"
+                                                        disabled="{!IF(NULL != acc.CMI_Cummins_Support_Email__c && isReadonlyAcc,true,false)}"/>
+                                                </div>
+                                            </div>
+                                        </apex:outputText>   
+                                    </apex:outputPanel> 
+                                </apex:outputText>   
+                            </apex:outputPanel>
+                        </apex:pageBlock>
+                    </apex:outputpanel>   
+                    <!--Code for EDQ pop up-->
+                    <div style="clear:both">
+                    </div>
+                    <div style="display: flex; justify-content: center" class="responsiveTable">
+                        <apex:outputPanel id="EdqAddress">
+                            <apex:pageBlock rendered="{!EDQpop}">   
+                                <div id="responsiveTabContent" style="margin-top: 10px; width: 700px;" >
+                                    <div> 
+                                        <div id="responsiveTableHeader" style="background-color: black; height: 30px; padding-left: 10px; padding-top: 5px">
+                                            <span style="color: white; font-size: 15px;">
+                                                {!$Label.IAM_Matching_Address_Heading_Label}:
+                                            </span>
+                                        </div>                                       
+                                        <div style="border: 1px solid darkgray;">                                       
+                                            <apex:pageBlockTable value="{!acc}"
+                                                var="var" style="width:100%;" >                                       
+                                                <apex:column style="padding: 10px; width: 50%" id="responsiveTabWidth" >                    
+                                                    <input type="radio" name="edqAddress"
+                                                        value="Standard Address" >
+                                                        <apex:actionsupport event="onclick"
+                                                            action="{!EDQAddressSelectcon}"
+                                                            reRender="none">
+                                                            <apex:param name="formParam"
+                                                                        value="false"
+                                                                        assignTo="{!isEdqAddress}" />
+                                                        </apex:actionSupport>      
+                                                    </input>
+                                                    <label style="font-size:13px" >
+                                                        {!$Label.IAM_Standard_Address_Label}
+                                                    </label>
+                                                    <apex:commandLink action="{!showAddress}"
+                                                        reRender="addresDetails,EdqAddress,chkdisplayDisplay,btnpannel"
+                                                        oncomplete="displayButton(false, false)"
+                                                        status="status">
+                                                        <span class="CMI-text-icons" style="  color: teal;  font-size: 28px;" >
+                                                            n
+                                                        </span>
+                                                    </apex:commandLink>
+                                                    <!--<apex:commandLink onclick="showAddr();">
+                                                        <span class="CMI-text-icons" style="  color: teal;  font-size: 28px;" >
+                                                            n
+                                                        </span>
+                                                    </apex:commandLink> -->  
+                                                    <br/>             
+                                                    <apex:outputText style="padding-left: 5px;"
+                                                                     value="{!EDQStreetS}" />,
+                                                    <apex:outputText style="padding-left: 5px;"
+                                                                     value="{!EDQStreet2S}" /> <br/>
+                                                    <apex:outputText style="padding-left: 5px;"
+                                                                     value="{!EDQCityS}"/> <br/>
+                                                    <apex:outputPanel rendered="{!IF(EDQStateS == 'NULL', false, true)}">
+                                                        <apex:outputText style="padding-left: 5px;"
+                                                                         value="{!EDQStateS}"/> <br/>
+                                                    </apex:outputPanel>
+                                                    <apex:outputText style="padding-left: 5px;"
+                                                                     value="{!EDQCountryS}"/><br/>
+                                                    <apex:outputText style="padding-left: 5px;"
+                                                                     value="{!EDQzipS}"/>                         
+                                                </apex:column> 
+                                            
+                                                <apex:column style="background-color: #f6f6f6; padding: 10px;"> 
+                                                    <input type="radio" id="responsiveRadio"
+                                                        name="edqAddress"
+                                                        value="Recommended Address"
+                                                        checked="true"> 
+                                                        <label style="font-size:13px">
+                                                            {!$Label.IAM_Recommended_Address}
+                                                        </label>
+                                                        <apex:actionsupport event="onclick"
+                                                            action="{!EDQAddressSelectcon}"
+                                                            reRender="none">
+                                                            <apex:param name="edqParam"
+                                                                value="true" assignTo="{!isEdqAddress}" />
+                                                        </apex:actionSupport>
+                                                    </input>
+                                                    <br/>
+                                                    <apex:outputText style="padding-left: 5px;"
+                                                                     value="{!EDQStreetR}"/>,
+                                                    <apex:outputText style="padding-left: 5px;"
+                                                                     value="{!EDQStreet2R}" /><br/>
+                                                    <apex:outputText style="padding-left: 5px;"
+                                                                     value="{!EDQCityR}"/> <br/>
+                                                    <apex:outputPanel rendered="{!IF(EDQStateR == '', false, true)}">
+                                                        <apex:outputText style="padding-left: 5px;"
+                                                                         value="{!EDQStateR}"/> <br/>
+                                                    </apex:outputPanel>
+                                                    <apex:outputText style="padding-left: 5px;"
+                                                                     value="{!EDQCountryR}" /><br/>
+                                                    <apex:outputText style="padding-left: 5px;"
+                                                                     value="{!EDQzipR}"/> <br/>
+                                                </apex:column>                                        
+                                            </apex:pageBlockTable> 
+                                        </div>                               
+                                    </div>   
+                                </div>
+                            </apex:pageBlock>
+                        </apex:outputPanel>
+                    </div>
+                    <apex:outputPanel id="chkdisplayDisplay">
+                        <apex:outputPanel rendered="{!OR(EDQpop,byPassEDQ)}">
+                        <div class="col-sm-12 form-group form-group-sm"
+                            id="termscheckbox"
+                            style="padding-top: 20px;" >
+                            <label class="col-sm-3 control-label" for="sm">
+                            </label>
+                            <span class="col-sm-1 required" style="width:2%;">
+                            </span>  
+                            <div id="responsiveCheckbox" class="col-xs-12 col-sm-6">
+                                <div class="col-xs-1 col-sm-1 " style="width:1%;margin-right: 10px;">
+                                    <!--Issue - #186 - Changed function on click event-->
+                                    <input type="checkbox"
+                                        class="req_field_checkBox"
+                                        html-data-fname='{!$Label.IAM_I_Agree_Cummins_HTML_ID_Label}'
+                                        id="termCondition"
+                                        onclick="validateCheck('false');"/> 
+                                </div>
+                                <div class="col-xs-10 col-sm-11 col-md-11 col-lg-11" id="responsiveTerm" style="top:4px;">  
+                                    <label class="control-label" id="responsiveTnc" style="text-align: left;">
+                                        {!$Label.IAM_I_Agree_Cummins_Label}
+                                        <a href="{!$Label.IAM_Terms_conditions}" target="_new">
+                                            {!$Label.IAM_terms}
+                                        </a>
+                                        {!$Label.IAM_Privacy_Policy_Text_1}
+                                        <a href="{!$Label.IAM_Privacy_Policy_Link}" target="_new">
+                                            {!$Label.IAM_Privacy_Policy_Text_2}
+                                        </a>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                             
+                        <div class="col-sm-12 form-group form-group-sm"
+                             style="margin-left: 26%;"
+                             id ="captcha" >
+                            <apex:outputPanel styleClass="responsiveCode" layout="block" id="code" >
+                                <apex:outputText value="{!char1}" styleClass="blackChar"/>
+                                <apex:outputText value="{!char2}" styleClass="redChar"/>
+                                <apex:outputText value="{!char3}" styleClass="blackChar"/>
+                                <apex:outputText value="{!char4}" styleClass="redChar"/>
+                                <apex:outputText value="{!char5}" styleClass="blackChar"/>
+                                <apex:outputText value="{!char6}" styleClass="redChar"/>
+                            </apex:outputPanel>
+                            <apex:inputText style="border: 1px solid #ccc;"  id="captchvalue" value="{!input}"/>
+                               <apex:commandButton value="{!$Label.IAM_Refresh}"
+                                                    style="margin-left: 10px;"
+                                                    rerender="code,captcha"/>
+                            <br/>
+                            <apex:outputPanel id="resultCaptch"
+                                              style="font-size:12px;color: red;">
+                                {!result}
+                            </apex:outputPanel>                   
+                        </div>                         
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+                                                                                                                                          
+                    <!--in progress of call EDQ web service after account insertion ------>
+                    <!-- TO DO - Need to remove style="margin-top: 12px;" when capcha will be enabled -->
+                    <div class="contact-form-bottom-buttons col-xs-12 col-sm-12 col-md-12 col-lg-12 complete_section">
+                        <label class="col-sm-3 col-md-3  col-xs-0 col-lg-3 control-label" for="sm">
+                        </label>
+                        <div class="col-sm-8 col-md-7  col-xs-6 col-lg-5 custom-box"
+                             style="display: flex;">
+                            <apex:outputPanel id="btnpannel">
+                                <div id="continue">
+                                    <input type="button"
+                                           class="btn btn-sm CMI-btn-teal"
+                                           style="margin-right: 10px;color: white; padding: 6px;font-size: 14px;"
+                                           id="btnContinue"
+                                           value="{!$Label.IAM_Continue_Button_Label}"
+                                           onclick="validate_req_fileds(true,this,true);"  />
+                                </div>
+                                <div id="register" >
+                                    <!--Issue - #186 - Changed function on click event-->
+                                    <input type="button" 
+                                           class="btn btn-sm CMI-btn-teal"
+                                           style="margin-right: 10px;color: white;padding: 6px;font-size: 14px;"
+                                           id="btnRegister"
+                                           value="{!$Label.IAM_Register_Button_Label}"
+                                           onclick="validate_req_fileds(true,this,false);"/>
+                                </div>
+                            </apex:outputPanel>
+                            <div>
+                                <div id="resetId" >
+                                    <input type="button" 
+                                           class="btn btn-sm button-cancel--CMI"
+                                           style="background-color: #0f4f77 !important;margin-right: 10px;color: white;padding: 6px;font-size: 14px;"
+                                           id="btnReset"
+                                           value="{!$Label.IAM_Reset_Button}"
+                                           onclick="resetPage();"/>
+                                </div>
+                            </div>   
+                        </div>
+                    </div>   
+                </div>
+                <apex:actionFunction name="resetPage"
+                                     action="{!BusinessTabreset}"/>
+                <apex:actionFunction name="ChooseAccount"
+                    action="{!dupAccountSelection}"
+                    reRender="Duplicate,cmp_sec,cmp_sec_one,addresDetails,EdqAddress,btnDisplay,pageErrorMsg"
+                    status="status">
+                    <apex:param name="accountID" value=""/>
+                </apex:actionFunction>
+                <!-- Solution - ISSUE #443, #506 - rerendered pageErrorMsg and theForm -->
+                <apex:actionFunction action="{!EDQAddress}"
+                    name="CallWebService_EDQ"
+                    reRender="addresDetails,EdqAddress,chkdisplayDisplay,btnpannel,pageErrorMsg,theForm"
+                    status="status"
+                    oncomplete="displayButton({!OR(EDQpop, byPassEDQ)}, false);"/>                                          
+                <!-- fix for issue#387 error message was not displaying -->
+                <apex:actionFunction action="{!send}"
+                    name="register_ContUser"
+                    rerender="resultCaptch,captchResult,pageErrorMsg,Duplicate,mainDiv,EdqAddress,chkdisplayDisplay"
+                    status="status"
+                    oncomplete="displayButton({!OR(EDQpop, byPassEDQ)}, true, {!errordiv})"/>
+            </apex:form>
+        </div>
+    </div>            
+    <c:CS_Footer />
+    <!-- End - Imported UX Std template for Footer -->
+
+<script src="//code.jquery.com/jquery-3.6.0.js"/>
+<!--<script src="js/jquery-1.9.1.min.js" type="text/javascript"/>-->
+
+<script type="text/javascript">
+    window.$Label = window.$Label || {};
+    $Label.missing = "{!$Label.IAM_Missing_Label}";
+    $Label.invalidEmail = "{!$Label.IAM_Invalid_Email_Error_Label}";
+    $Label.termCondtion = "{!$Label.IAM_Terms_And_Conditions}";
+    $Label.getAdditionalSP = "{!$Label.IAM_Get_Additional_Service_Provider}";
+    $Label.invalidEmailDomain = "{!$Label.IAM_Email_Invalid_Domain}";
+    $Label.restrictedCompNames = "{!$Label.IAM_Registration_Comapny_Name_Validation}";
+    $Label.noneOption = "{!$Label.IAM_None_Option}";
+    $Label.telematicSP = "{!$Label.IAM_Telematics_Service_Provider_Label}";
+    $Label.applicationName = "{!$Label.IAM_AppName_ConnectedSolutions}";
+    var appName = "{!appName}";
+    
+    $('document').ready(function(){        
+        /* Solution - ISSUE #443 */
+        console.log('#### doc ready edqvalue - ', {!EDQpop});
+        displayButton({!OR(EDQpop, byPassEDQ)}, false);
+        //D-2826,2827 - fix for tab button 
+        $("input").keydown(function (e) {
+            if (e.which == 9){
+                var center = $(window).height()/2;
+                var top = $(this).offset().top ;
+                if (top > center){
+                    $(window).scrollTop(top-center);
+                }
+            }
+        });
+        $("html, body").animate({ scrollTop: 0 }, "slow");
+    });
+
+</script>
+<apex:includeScript value="{!$Resource.FontIcons}"/>
+<apex:includeScript value="{!URLFOR($Resource.IAM_Resources, 'js/iam_registration.js')}"/>
+<link rel="stylesheet" href="{!URLFOR($Resource.IAM_Resources, 'css/iam_registration.css')}"/>
+</apex:page>

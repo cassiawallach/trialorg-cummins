@@ -1,0 +1,2318 @@
+<!--*********************************************************************************************************************************************************************************
+History                                                            
+-------                                                            
+VERSION  AUTHOR            DATE              DETAIL                                
+1.0 -             
+1.1 -   Ronnie           10/19/2021    Chnages added as part of MP-326 to add ids to 3rd Party Account name,Customer BMS Number,IAM Customer Number for 3rd Party Billing scenario 
+1.2 -   Ronnie           11/01/2021    Chnages added as part of MP-133 to add Subscription Length 
+1.3 -   Ronnie           12/03/2021    Chnages added as part of MP-372 to display subscription Length only for subscription based products. 
+1.4 -   Charlynn		 22/07/2022	   Changes added as part of LL-21 to display Number of Bundles
+************************************************************************************************************************************************************************************** -->
+<!-- Updated on 2nd March 2021-->
+<apex:page sidebar="false" controller="OSM_SW_OrderDetailView_Ctrl" showHeader="false" standardStylesheets="false" applyHtmlTag="false"  >
+<!--MAR-884 Code Start -->
+<style>
+.btn {
+    background-color: teal;
+    font-size: 12px;
+}
+.btn:hover { background-color: teal; }
+.btn-info:active:hover, .btn-info.active:hover, .open>.dropdown-toggle.btn-info:hover, .btn-info:active:focus, .btn-info.active:focus, .open>.dropdown-toggle.btn-info:focus, .btn-info:active.focus, .btn-info.active.focus, .open>.dropdown-toggle.btn-info.focus {
+        color: #fff;
+        background-color: teal;
+        border-color: teal;
+        outline-color: teal;
+        }
+.btn-info:focus, .btn-info.focus{
+        background-color: teal;
+        outline-color: teal;
+        }
+        
+        .btn-info:active, .btn-info.active, .open>.dropdown-toggle.btn-info {
+        color: #fff;
+        background-color: teal;
+        border-color: teal;
+        outline-color: teal;
+        }
+        .required-field::after {
+    content: "*";
+    color: red;
+}
+</style>        
+<!--MAR-884 Code End -->
+
+<script type="text/javascript">
+         jQuery(function($){
+                CCRZ.uiProperties.OrderDetailView.desktop.tmpl = 'OrderDetails-View-Desktop-New';
+        CCRZ.uiProperties.OrderDetailView.partial.addressDisplay = '#AddressDisplay-New'; 
+        CCRZ.uiProperties.OrderDetailView.partial.includedDisplay = '#OMS-Cart-IncludedItems'; 
+    });
+       
+
+</script> 
+<script id="OrderDetails-View-Desktop-New" type="text/template">
+   <div class="cc_order_details">
+    {{#if this.isConfirmation}}
+     <div class="panel panel-default cc_panel cc_order_confirmation">
+      <div class="panel-heading cc_heading">
+       <h3 class="panel-title cc_title">{{pageLabelMap 'OrderConfirmation_Title'}}</h3>
+      </div>
+      <div class="panel-body cc_body">
+       <p class="cc_order_confirmation_date">
+        {{pageLabelMap 'OrderConfirmation_PlacedOrder' this.name this.orderDate}}
+       </p>
+       {{#unless this.userIsGuest}}
+       <p class="cc_order_confirmation_status">
+        <span class="cc_order_status_info">{{pageLabelMap 'OrderConfirmation_StatusInfo'}}&#160;</span>
+        <span class="cc_order_history"><a href="#" class="orderHistory cc_order_history">{{pageLabelMap 'OrderConfirmation_OrderHistory'}}</a>.</span>
+       </p>
+       {{/unless}}
+       <p class="cc_order_confirmation_guidingtext1">
+        {{pageLabelMap 'OrderConfirmation_GuidingText'}}
+       </p>
+       <p class="cc_order_confirmation_guidingtext2">
+        {{pageLabelMap 'OrderConfirmation_GuidingText2'}}
+       </p>
+       <div class="cc_order_confirmation_payments">
+        {{#each this.payments}}
+         {{#ifEquals paymentMethod "PO Number"}}
+          <p class="cc_order_confirmation_payment">{{pageLabelMap 'CheckOut_POGuidingText'}}</p>
+         {{/ifEquals}}
+        {{/each}}
+       </div>
+      </div>
+     </div>
+    {{else}}
+     <div class="panel panel-default cc_panel cc_order_information" style="margin-bottom:0px">
+      <div class="panel-heading cc_heading">
+       <h3 class="panel-title cc_title">{{pageLabelMap 'OrderInformation'}}</h3>
+      </div>
+        <div class="panel-body cc_body" style="padding-top:1%">
+            <div class="cc_order_information_number" style="padding-bottom:5px">
+                    <span class="col-2 cc_order_number" style="padding-left:0px; text-align:right; font-weight:bold; padding-right:10px">{{pageLabelMap 'OrderView_OrderNumber'}}&nbsp;&#58;</span>
+                    <span class="cc_order_name">{{this.name}}</span>
+                {{#ifDisplay 'OD.DsplExtOrderNumber'}}
+                    <span class="col-2 cc_order_ext_number" style="padding-left:0px; text-align:right; font-weight:bold; padding-right:10px">{{pageLabelMap 'ExternalOrderID'}}&nbsp;&#58;</span>
+                    <span class="cc_order_ext_id">{{this.externalOrderId}}</span>
+                {{/ifDisplay}}
+            </div>
+            <div class="cc_order_information_date" style="padding-bottom:5px">
+                <span class="col-2 cc_order_date_label" style="text-align:right; font-weight:bold; padding-right:10px">{{pageLabelMap 'MyOrdersInc_OrderDate'}}&nbsp;&#58;</span>
+                <span class="cc_order_date">{{date this.orderDate}}</span>
+            </div>
+            <div class="cc_order_information_status" style="padding-bottom:5px">
+                <span class="col-2 cc_order_status_label" style="text-align:right; font-weight:bold; padding-right:10px">{{pageLabelMap 'MyOrdersInc_Status'}}&nbsp;&#58;</span>
+                <span class="cc_order_status">{{pageLabelMap this.status}}</span>
+            </div>
+            
+       {{#if this.isthirdpartypayment}}
+            <div class="cc_order_information_status" style="padding-bottom:5px">
+                <span class="col-2 cc_order_status_label" style="text-align:right; font-weight:bold; padding-right:10px"> 3rd Party Billing&nbsp;&#58;</span>
+                <span class="cc_order_status">Yes</span>
+            </div> 
+             {{else}} 
+             <div class="cc_order_information_status" style="padding-bottom:5px">
+                <span class="col-2 cc_order_status_label" style="text-align:right; font-weight:bold; padding-right:10px"> 3rd Party Billing&nbsp;&#58;</span>
+                <span class="cc_order_status">No</span>
+            </div>
+            {{/if}}
+              
+       {{#ifEquals this.status "Cancelled"}}
+       <div class="cc_order_information_status" id="CancelTransaction_Id" style="display:none;padding-bottom:5px" >
+        <span class="col-2 cc_order_status_label" style="text-align:right; font-weight:bold; padding-right:10px">{{pageLabelMap 'MyOrdersInc_CancelTransaction_Id'}}&nbsp;&#58;</span>
+        <span class="cc_order_status" id="cancelTransanctionId" ></span>
+       </div>
+       <div class="cc_order_information_status" id="RefundStatus" style="display:nonel;padding-bottom:5px" >
+        <span class="col-2 cc_order_status_label" style="text-align:right; font-weight:bold; padding-right:10px">{{pageLabelMap 'MyOrdersInc_RefundStatus'}}&nbsp;&#58;</span>
+        <span class="cc_refund_status" id="refundStatusId" ></span>
+       </div>
+       {{else}}
+       <div class="cc_order_information_status" id="Transaction_Id" style="display:none;padding-bottom:5px" >
+        <span class="col-2 cc_order_status_label" style="text-align:right; font-weight:bold; padding-right:10px">{{pageLabelMap 'MyOrdersInc_Transaction_Id'}}&nbsp;&#58;</span>
+        <span class="cc_order_status" id="transanctionId" ></span>
+       </div>
+       {{/ifEquals}}
+       
+       <p class="pull-left" style="margin-bottom:0px">
+        <a href="#" class="orderHistory cc_order_history">{{pageLabelMap 'OrderConfirmation_OrderHistory'}}</a>
+       </p>
+      </div>
+     </div>
+    {{/if}}
+    <!-- changes of MAR-1251 :width from 85 to 95%   -->
+    <div class="well cc_well cc_order_information" style="width:95%; padding-top:0px; padding-bottom:0px">
+     <h4 class="cc_order_information_title" style="display:none">{{pageLabelMap 'CheckOut_GeneralInformation'}}</h4>
+      <div class="row">
+       <div class="col-xs-12 col-md-3">
+        <h5 class="cc_buyer_information">{{pageLabelMap 'CheckOut_BuyerInformation'}}</h5>
+        
+        {{#if this.isOnBehalf}}
+          <div class="col-xs-11"> 
+           <div style="width: 41%; float: left;">
+               Purchased By :
+            </div>
+           <div style="width: 59%; float: right;">
+                <div id="purchased_by" class="cc_buyer_accountname">{{this.OSMSWPurchaseBy}}</div>
+                <div class="cc_buyer_firstname">{{this.purchasedByFollowedText}}</div>
+                <div class="cc_buyer_phone"></div>
+                <div class="cc_buyer_email"></div>
+           </div>
+         </div>
+         <div class="col-xs-12"> 
+           <div >
+               On Behalf of :
+            </div>
+           <div  >
+            <div id="on_behalf_of" class="cc_buyer_accountname">{{this.orderContactAccountName}}</div>
+            <div class="cc_buyer_firstname">{{this.contactR.sfdcName}}</div>
+            <div class="cc_buyer_phone">{{this.contactR.phone}}</div>
+            <div class="cc_buyer_email">{{this.contactR.email}}</div>
+         </div>
+         </div>   
+        {{else}}
+          {{#ifEquals this.purchasedByUserType 'Distributor Admin'}}
+                  <p class="cc_buyer">
+                    <div class="cc_buyer_accountname">{{this.accountR.sfdcName}}</div>
+                    <div class="cc_buyer_firstname">{{this.contactR.sfdcName}}</div>
+                    <div class="cc_buyer_email">{{this.contactR.email}}</div>
+                 </p>
+             {{else}}
+               
+                 <p class="cc_buyer">
+                    <div class="cc_buyer_accountname">{{this.accountR.sfdcName}}</div>
+                    <div class="cc_buyer_firstname">{{this.buyerFirstName}} {{this.buyerLastName}}</div>
+                    <div class="cc_buyer_phone">{{this.buyerPhone}}</div>
+                    <div class="cc_buyer_email">{{this.buyerEmail}}</div>
+                 </p>
+             {{/ifEquals}}
+         {{/if}}
+                 
+       </div>
+       
+       <div class="col-xs-12 col-md-3">
+        <h5 class="cc_billing_address_label">{{pageLabelMap 'CheckOut_BillingAddress'}}</h5>
+        {{#if isthirdpartypayment}}
+             <!--MP-326 CODE START-->
+            <span id="third_party_customer_name">
+                {{thirdpartycustname}}
+            </span>
+            <br>
+            Customer BMS number: <span id="third_party_customer_number">{{thirdpartycustnum}}</span>
+            <br>
+            IAM Customer number: <span id="third_party_IAM_Number">{{thirdpartyIAMNO}}</span>            
+            <!--MP-326 CODE END-->
+        {{/if}}
+        <p class="cc_billing">
+         <span class="cc_billing_address">{{> addressDisplay this.billingAddress}}</span>
+        </p>
+         <!--MAR-1775, MP-330 Code Start -->   
+         <h5 class="cc_payment_information">{{pageLabelMap 'CheckOut_PaymentInformationLeg'}}</h5>
+         <p class="cc_payment">         
+             <span class="cc_payment_information_transaction_payments">{{getPaymentMethod this}}</span>
+         </p>
+         <h5 class="cc_payment_information">{{pageLabelMap 'MyInvoices_CardNumber'}}</h5>
+         <p class="cc_payment">
+             <span class="cc_payment_information_transaction_payments">{{getCardNumber this}}</span>
+         </p>
+             <!--MAR-1775, MP-330 Code End -->
+        <p class="cc_payment" style="display:none">
+         {{#each this.payments}}
+          {{#ifEquals paymentMeth "Credit Card"}}
+           <span class="cc_payment_information_cc_type">{{cardType}}&#160;</span>
+           <span class="cc_payment_information_cc_number_label">{{pageLabelMap 'CheckOut_CCCardNumber'}}&nbsp;&#58;&#160;</span>
+           <span class="cc_payment_information_cc_number">************{{cardNumber}}</span>
+           <span class="cc_payment_information_cc_expdate_label">{{pageLabelMap 'CheckOut_CCExpDate'}}&nbsp;&#58;&#160;</span>
+           <span class="cc_payment_information_cc_expdate">{{expMonth}}/{{expYear}}</span>
+          {{else}}
+           <span class="cc_payment_information_payment_method_label">{{pageLabelMap paymentMeth}}&nbsp;&#58;&#160;</span>
+           <span class="cc_payment_information_payment_method">{{accountNumber}}</span>
+          {{/ifEquals}}
+         {{/each}}
+          {{#each this.transactionPayments}}
+           <span class="cc_payment_information_transaction_payments">{{pageLabelMapMultiString 'PaymentDisplay_' this.accountType this.accountType this.accountNumber this.subAccountNumber (pageLabelMapMultiString 'PaymentType_' this.paymentType) (pageLabelMapMultiString 'PaymentExpMonth_' this.expirationMonth) (pageLabelMap this.expirationYear)}}</span>
+          {{/each}}
+        </p>
+       </div>
+       <div class="col-xs-12 col-md-3">
+        <h5 class="cc_shipping_address_label">{{pageLabelMap 'CheckOut_ShippingAddress'}}</h5>
+        <p class="cc_shipping">
+         <span class="cc_shipping_address">{{> addressDisplay this.shippingAddress}}</span>
+        </p>
+       </div>
+       {{#if this.ccSouthPlain}}
+           <div class="col-xs-12 col-md-3">
+            <h5 class="cc_shipping_address_label">{{pageLabelMap 'SouthernPlain_BillFrom'}}</h5>
+
+              <span class="cc_shipping_address">{{pageLabelMap 'InvoicePayToAddressSP'}}</span>  <!--Added by Swetha label -->
+              
+           </div>
+       {{/if}}
+       <div class="col-xs-12 col-md-4">
+        {{#if this.OSMSWCouponApplied}}
+         <h5 class="cc_coupon_label">{{pageLabelMap 'CartInc_AppliedCoupon'}}</h5>
+         <p class="cc_coupon_section">
+            <span>
+          <!-- <span class="cc_coupon">{{this.couponName}} -->
+            {{#each this.orderItems}}
+                <span>{{couponR.couponCode}} &nbsp;</span>
+            {{/each}}
+          </span>
+         </p>
+        {{/if}}
+       </div>
+      </div>
+     </div>
+      {{#ifNotEquals this.accountR.CSSDistributorCode '02930'}}
+      {{#ifNotEquals this.accountR.CSSDistributorCode '03520'}}
+      {{#ifNotEquals this.accountR.CSSDistributorCode '02860'}}
+      {{#ifNotEquals this.accountR.CSSDistributorCode '02680'}}
+      {{#ifNotEquals this.accountR.CSSDistributorCode '02850'}}
+      {{#ifNotEquals this.accountR.CSSDistributorCode '02466'}}
+      {{#ifNotEquals this.accountR.CSSDistributorCode '04959'}}
+      {{#ifNotEquals this.accountR.billingCountry 'United States'}}
+       <div id="GOMSPriceMsg"  style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;width:85%;">                                  
+             <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; Prices shown here are for illustration purposes only. Please refer to the Global Order Management System (GOMS) and your local ERP to view accurate pricing and invoices.
+       </div>
+      {{/ifNotEquals}}
+      {{/ifNotEquals}}
+      {{/ifNotEquals}}
+      {{/ifNotEquals}}
+      {{/ifNotEquals}}
+      {{/ifNotEquals}} 
+      {{/ifNotEquals}}
+      {{/ifNotEquals}}
+    
+     {{> orderItemsDesktop}}
+     <div class="cc_totals_section" >
+      {{> totalsSection}}
+     </div>
+     {{#if this.shipments}}
+      <table class="shopping_cart orderShipments cc_order_shipments_table">
+       <tr class="cc_tr">
+        <th class="cc_th_tracking_url">&#160;</th>
+        <th class="cc_th_date">{{pageLabelMap 'OrderShipment_ShipmentDate'}}</th>
+        <th class="cc_th_carrier">{{pageLabelMap 'OrderShipment_Carrier'}}</th>
+        <th class="cc_th_method">{{pageLabelMap 'OrderShipment_ShipmentMethod'}}</th>
+        <th class="cc_th_tracking_num">{{pageLabelMap 'OrderShipment_TrackingNumber'}}</th>
+        <th class="cc_th_deliver_date">{{pageLabelMap 'OrderShipment_DeliveryDate'}}</th>
+       </tr>
+       {{#each this.shipments}}
+        <tr class="cc_tr_values {{sfid}}">
+         <td class="cc_td_tracking_url"><a target="shiptracking" href="{{{trackingUrl}}}">{{pageLabelMap 'OrderShipment_Track'}}</a></td>
+         <td class="cc_td_date">{{shipmentDateStr}}</td>
+         <td class="cc_td_carrier">{{carrier}}</td>
+         <td class="cc_td_method">{{shippingMethod}}</td>
+         <td class="cc_td_tracking_num">{{trackingNo}}</td>
+         <td class="cc_td_deliver_date">{{deliveryDateStr}}</td>
+        </tr>
+        {{#each this.items}}
+         <tr class="cc_tr_details">
+          <td />
+          <td colspan="5" class="cc_td_detail_line {{sfid}}">
+           <span class="cc_sku_label">{{pageLabelMap 'CartInc_SKU'}}</span>&#58;&#160;<span class="cc_sku_value">{{sku}}</span>, <span class="cc_qty_label">{{pageLabelMap 'CartInc_Qty'}}</span>&nbsp;&#58;&#160;<span >{{quantity}}</span>
+          </td>
+         </tr>
+        {{/each}}
+       {{/each}}
+      </table>
+     {{/if}}
+    </div>
+   </div>
+  <!-- MAR-884 Code Start -->
+   <div class="modal fade cc_modal cc_myaccount_orders_modal" id="cancelMod" tabindex="-1" role="dialog" aria-labelledby="CancelMod">
+    <div class="modal-dialog" role="document">
+     <div class="modal-content cc_modal_content">
+      <div class="modal-body cc_modal_body">
+        <p class="cc_cancel_prompt">Are you sure you want to perform a Cancel?</p>
+      </div>
+      <div class="modal-footer">
+       <input type="button" id="hideModelOnCancel" class="closeModal" data-dismiss="modal"  value="No"/>
+       <input type="button" id="modalCancelOrder"  value="Yes"/> <!--onclick=" return processCancelOrder(this)"-->
+      </div>
+     </div>
+    </div>
+   </div>
+   
+    <div class="modal fade cc_modal cc_myaccount_orders_modal" id="cancelMod2" tabindex="-1" role="dialog" aria-labelledby="CancelMod">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content cc_modal_content" style="border-radius:1px;border:1px black;">
+                <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                    <h4 class="modal-title">Cancel Order</h4>
+                </div>
+                <div class="modal-body cc_modal_body" >
+                    <h4 class="modal-title cc_cancel_prompt">Are you sure you want to perform a Cancel?</h4>
+                </div>
+                <div class="modal-footer">
+                    <input type="button" class="closeModal btn btn-default cc_add_coupon" id="hideModelOnCancel2" data-dismiss="modal" value="No" style="background-color: #0f4f77;" />
+                    <input type="button" id="modalCancelOrder1" style="float:left;" value="Yes" class="btn btn-default CMI-DA-Packages"/>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade cc_modal cc_myaccount_orders_modal" id="cancelModForComment" tabindex="-1" role="dialog" aria-labelledby="CancelMod">
+    <div class="modal-dialog" role="document">
+     <div class="modal-content cc_modal_content" style="border-radius:1px;border:1px black;">
+            <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                <h4 class="modal-title">Cancellation reasons</h4>
+            </div>
+            <div class="modal-body cc_modal_body" >
+                    <table>
+                        <tr>
+                            <td style="width: 150px;" >
+                                <label class="required-field" id="cancleResionLabel" for="reason">Please select a Reason: </label>
+                            </td>
+                            <td>
+                                <select name="reason" id="cancleResion">
+                                  <option value="--None--">--None--</option>
+                                  <option value="Wrong product ordered">Wrong product ordered</option>
+                                  <option value="Person not authorized to place order">Person not authorized to place order</option>
+                                  <option value="Duplicate order">Duplicate order</option>
+                                  <option value="Person no longer at location">Person no longer at location</option>
+                                  <option value="Other">Other</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <br/>
+                                <label for="reason" id="cancelCommentlabel" >Cancellation Comments: </label>
+                            </td>
+                            <td>
+                                <br/>
+                                <textarea rows="3" cols="40" id="cancelComment" name="comment" placeholder="Please enter additional comments here" />
+                            </td>
+                        </tr>
+                    </table>
+                    
+            </div>
+      <div class="modal-footer">
+       <input type="button" id="hideModelOnCancelComment" class="closeModal btn btn-default cc_add_coupon" data-dismiss="modal" style="background-color: #0f4f77;" value="No"/>
+       <input type="button" id="submitOnComment"  value="Yes" style="float:left;" class="btn btn-default CMI-DA-Packages"/> 
+      </div>
+     </div>
+    </div>
+   </div>
+
+    <div class="modal fade cc_modal cc_myaccount_orders_modal" id="userProvisionedMod" tabindex="-1" role="dialog" aria-labelledby="CancelMod">
+    <div class="modal-dialog" role="document">
+     <div class="modal-content cc_modal_content" style="border-radius:1px;border:1px black;">
+      <div class="modal-body cc_modal_body">
+        <p class="cc_cancel_prompt">{{pageLabelMap 'MyOrdersInc_DeProvision'}}</p>
+      
+          <div class="userProvisionedData"> </div>
+         </div>
+      <div class="modal-footer">
+       <input type="button" id="hideUserProvisionedMod" class="closeModal" data-dismiss="modal"  value="Close"/>
+      </div>
+     </div>
+    </div>
+   </div>
+    <div class="modal fade cc_modal cc_myaccount_orders_modal" id="userProvisionedMod1" tabindex="-1" role="dialog" aria-labelledby="CancelMod">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content cc_modal_content" style="border-radius:1px;border:1px black;">
+                <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                    <h4 class="modal-title cc_modal_title" id="deProvisionLabel">Cancel Order</h4>
+                </div>
+                <div class="modal-body cc_modal_body">
+                    <div class="userProvisionedData"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="hideUserProvisionedMod1" class="btn btn-secondary" style="background-color: #0f4f77;" >{{pageLabelMap 'MyOrdersInc_Close'}}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+   
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="border-radius:1px;border:1px black;">
+                <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                    <h4 class="modal-title">{{pageLabelMap 'MyOrdersInc_RefundConfirm'}}</h4>
+                </div>
+                <div class="modal-body" id="RefundConfirmMsgId"></div>
+                <div class="modal-footer">
+                    <input type="button" class="closeModal btn btn-default cc_add_coupon" style="background-color: #0f4f77;" id="clickToRefresh" data-dismiss="modal" value="{{pageLabelMap 'MyOrdersInc_Close'}}" />
+                </div>
+            </div>
+        </div>
+    </div>  
+
+    <div class="modal fade" id="cancelMod4" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="border-radius:1px;border:1px black;">
+                <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                    <h4 class="modal-title cc_modal_title" id="exampleModalLabel">Select Items</h4>
+                </div>
+                <div class="modal-body" > <h4 class="modal-title cc_cancel_prompt">{!$Label.OSM_Cancel_OrderItems_message}</h4>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="hideOKOnPopup" class="btn btn-secondary closeModal" data-dismiss="modal" style="background-color: #0f4f77;float:left;" >OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div class="modal fade" id="showAddOnPopup" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="border-radius:1px;border:1px black;">
+                <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                    <h4 class="modal-title cc_modal_title" id="exampleModalLabel">Cancel Order</h4>
+                </div>
+                <div class="modal-body" > <h4 class="modal-title cc_cancel_prompt">You have existing orders with active add-on kits. Please cancel all add-on kits first before canceling the Guidanz Service base package</h4>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="hideAddOnPopup" class="btn btn-secondary" style="background-color: #0f4f77;" >{{pageLabelMap 'MyOrdersInc_Close'}}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+<div class="modal fade cc_modal cc_myaccount_orders_modal" id="cancelMod1" tabindex="-1" role="dialog" aria-labelledby="CancelMod">
+    <div class="modal-dialog" role="document">
+     <div class="modal-content cc_modal_content" style="border-radius:1px;border:1px black;">
+      <div class="modal-body cc_modal_body">
+        <p class="cc_cancel_prompt" id="showMsg"></p>
+      </div>
+      <div class="modal-footer">
+       <input type="button" class="closeModal" id="hideModelOnCancel1" data-dismiss="modal"  style="background-color: #0f4f77;" value="Ok"/>
+      </div>
+     </div>
+    </div>
+   </div>
+<!-- MAR-884 Code End --> 
+  </script>
+
+        <script id="OrderItems-Desktop" type="text/template">
+    <div class="panel panel-default cc_panel cc_order_item_list">
+    <!--  changes of MAR-1251 :width from 85 to 95%  -->
+        <div class="row CMI-Cart-table-header" style="width:95%">
+            <div class="col-md-5" style="width:32%;"> <!-- LL-21 reduced width from 36% -> 32% -->
+                 <div class="col-md-3" style="text-align:right; padding-left:50%">  
+                  <B>Product</B>    
+                </div>
+            </div>
+            <div class="col-md-6" style="width:46%;padding-right: 0%;">
+                <div class="col-md-2" style="text-align:left;padding-left:0px;width: 16%;padding-right:0px;margin-left: -2.5%;">
+                    <B>{{pageLabelMap 'CartInc_BillingFrequency'}}</B>
+                </div>
+                <!-- MP-133 Code Start -->    
+                <div class="col-md-2" style="text-align:left;padding-left:0px;width: 16%;padding-right:0px;"> <!-- LL-21 Reduced width from 20% to 18% -->
+                    <!--<B>{{pageLabelMap 'SubscriptionLength'}}</B> -->
+                    <B>{{pageLabelMap 'Subscription'}}<br/>{{pageLabelMap 'End date'}}</B><!-- Mp_430 Code Added -->   
+                </div>
+                <!-- MP-133 Code Stop -->
+                <!-- LL-21 Code Start - column heading for Number of Bundles-->
+                <div class="col-md-1" style="padding-left:0px;text-align:left;width: 9%"> 
+                    <B>{{pageLabelMap 'CartInc_NumberOfBundles'}}</B>
+                    </div>
+                    <!-- LL-21 Code End -->
+                    <div class="col-md-1" style="text-align:left;width: 8%"> <!-- LL-21 added width: 8% -->
+                    <B>{{pageLabelMap 'CartInc_Qty'}}</B>
+                </div>
+                <div class="col-md-2" style="text-align:right">
+                    <B>{{pageLabelMap 'CartInc_Price'}}</B>
+                </div>
+                <div class="col-md-2" style="text-align:left;">
+                    <B>{{pageLabelMap 'MyOrdersInc_Total'}}</B>
+                </div>
+                <!--MAR-884 Code Start-->
+                <!--{{#if {!OnlyforCC}}}-->
+                    <div class="col-md-2" style="text-align:left; width: 15%" id="showPartialCancel">
+                        <B>{{pageLabelMap 'MyOrdersDetail_Status'}}</B>
+                    </div>
+               <!-- {{/if}}-->
+            </div>
+                     
+            <!-- Start: changes for MAR-1241  -->
+            <div class="col-md-1" style="text-align:right;width:9%;">
+                <B>Cancelled By</B>
+            </div>
+            <!-- End: changes for MAR-1241  -->
+            
+            {{#if {!showPartialCancel}}}
+                <div class="col-md-1" style="text-align:center;width:12%;" id="showPartialCancel">
+                    <B>{{pageLabelMap 'ProductToCancel'}}</B>
+                    <span style="cursor: default;display:inline-block;" title="Please refer to Terms and Conditions for individual product cancellation policies" style="border:1px solid" >&#128712;</span>
+                    <!-- @Vishnu LL91 All Checkbox-->
+                    {{#if canShowCancel}}
+                    <B>OR Select All</B>
+                        <input style="margin-top: 0px;vertical-align: middle;" class="inputBoxforcancelAll" id="inputBoxforcancelAll" type="checkbox" name="inputBoxforcancelAll"></input>
+                    {{/if}}
+                </div>
+            {{/if}}
+            <!--MAR-884 Code End-->
+            
+        </div>
+        
+    {{#each this.orderItems}}
+     <div class="panel-body {{this.itemID}} row cc_body">
+      {{#ifNotEquals this.itemType 'Coupon'}}
+       <div class="col-md-2" style="max-width: 12%;">
+       <!-- Upgrade Issue - Solved -->
+       {{#if this.this.OSMSWProductLinkR}}
+           {{#contains this.mockProduct.name 'Add-on'}}
+           {{else}}
+             {{productLink this.OSMSWProductLinkR  'cc_order_prod_link' image=(displayImage this.mediaWrapper 'orderDetail img-responsive' alt=this.mockProduct.name dataId=this.mockProduct.sku)}} 
+            {{/contains}}
+
+        {{else}}
+       {{#contains this.mockProduct.name 'Add-on'}}
+           {{else}}
+             {{productLink this.OSMSWProductLinkR  'cc_order_prod_link' image=(displayImage this.mediaWrapper 'orderDetail img-responsive' alt=this.mockProduct.name dataId=this.mockProduct.sku)}} 
+            {{/contains}}
+        {{/if}}
+       </div>
+       <div class="col-md-3" style="padding-right:0px;width: 15.5%;margin-left: 2%; margin-right:1%"> <!-- LL-21 margin-right from 3% to 1% -->
+        
+        <p class="cc_item_title">
+        {{#if this.this.OSMSWProductLinkR}}
+             {{#ifEquals this.pricingType 'external'}}
+              {{#if this.extName}}
+              <!-- Upgrade Issue - Solved-->
+               {{productLink this.OSMSWProductLinkR  'cc_prod_link' text=(displayProductName  this.mockProduct.name )}}
+              {{else}}
+               {{#if this.itemLabel}}
+               <!-- Upgrade Issue - Solved -->
+                {{productLink this.OSMSWProductLinkR  'cc_prod_link' text=(displayProductName  this.mockProduct.name )}}
+               {{else}}
+               <!-- Upgrade Issue - Solved -->
+                {{productLink this.OSMSWProductLinkR  'cc_prod_link' text=(displayProductName  this.mockProduct.namee )}}
+               {{/if}}
+              {{/if}}
+             {{else}}
+              {{#if this.itemLabel}}
+              <!-- Upgrade Issue - Solved -->
+               {{productLink this.OSMSWProductLinkR  'cc_prod_link' text=(displayProductName  this.mockProduct.name )}}
+              {{else}}
+              <!-- Upgrade Issue - Solved -->
+               {{productLink this.OSMSWProductLinkR  'cc_prod_link' text=(displayProductName  this.mockProduct.name )}}
+              {{/if}}
+             {{/ifEquals}}
+        {{else}}
+            {{#ifEquals this.pricingType 'external'}}
+              {{#if this.extName}}
+              <!-- Upgrade Issue - Solved-->
+               {{productLink this.displayProductR  'cc_prod_link' text=(displayProductName  this.mockProduct.name )}}
+              {{else}}
+               {{#if this.itemLabel}}
+               <!-- Upgrade Issue - Solved -->
+                {{productLink this.displayProductR  'cc_prod_link' text=(displayProductName  this.mockProduct.name )}}
+               {{else}}
+               <!-- Upgrade Issue - Solved -->
+                {{productLink this.displayProductR  'cc_prod_link' text=(displayProductName  this.mockProduct.name )}}
+               {{/if}}
+              {{/if}}
+             {{else}}
+              {{#if this.itemLabel}}
+              <!-- Upgrade Issue - Solved -->
+               {{productLink this.displayProductR  'cc_prod_link' text=(displayProductName  this.mockProduct.name )}}
+              {{else}}
+              <!-- Upgrade Issue - Solved -->
+               {{productLink this.displayProductR  'cc_prod_link' text=(displayProductName  this.mockProduct.name )}}
+              {{/if}}
+             {{/ifEquals}}
+        {{/if}}
+         
+         
+        </p>
+        <p>
+            {{#if this.isRenew}}
+                <span style="font-style:italic;">{{pageLabelMap 'MyOrdersInc_RenewedUntil'}} {{date this.OSMRenewSubscriptionEndDate}}</span>
+            {{/if}}
+        </p>
+        <p class="cc_subscription_product_desc" style="text-align: justify;">
+          {{unescape this.mockProduct.shortDesc}}
+         </p>
+          {{#if this.minorLines }}
+          {{#ifNotEquals pricingType "attrGroup" }}
+          {{#ifNotEquals this.mockProduct.groupName 'FluidWatch'}}
+           <p class="cc_included_items">
+            <a href="#included_items{{this.itemID}}" id="includedItemsLink" data-toggle="modal" data-id="{{this.itemID}}"> <span class="icon-ViewBound">&nbsp;{{pageLabelMap 'CheckOut_IncludedItems'}}</a>
+           </p>
+           {{> includedDisplay}}
+          {{/ifNotEquals}}
+          {{/ifNotEquals}}
+         {{/if}}
+               
+        
+        
+        {{#if this.OMSProduct}}
+            
+            {{#ifEquals this.orderR.orderStatus 'Order Submitted'}}
+            {{#ifEquals this.orderLineStatus 'Order Submitted'}}
+            {{#ifNotEquals this.isCancelPending true}}
+            {{#ifNotEquals this.revocationStatus 'Revoke Initiated'}}
+            {{#ifNotEquals this.revocationStatus 'Revoked'}}
+                {{#if this.basicKeyLst}}
+                
+                    <p class="cc_subscription_product_desc" style="text-align: justify;">
+                        <div class="cc_order_information_status" style="padding-bottom:5px;width: 150%;font-weight:bold;font-size: 16px;">
+                            {{pageLabelMap 'MyOrdersInc_BasicActivationKey'}}&nbsp;&#58;
+                            {{#each this.basicKeyLst}}
+                                    <div style="font-size: 13px;font-weight: 400;">{{this}}</div>
+                                {{/each}}
+                            <!--span class="cc_order_status">  
+                            <select id="basic_key" name="title" style="width:47%">
+                            <option value="{{this}}" >{{this}}</option>
+                            </select-->        
+                                    
+                                    
+                            </span>
+                        </div>
+                    </p>
+                    
+                {{/if}}
+                {{#if this.licenseInfoLst}}
+                    
+                        <p class="cc_subscription_product_desc" style="text-align: justify;">
+                            <div class="cc_order_information_status" style="padding-bottom:5px;width: 150%;font-weight:bold;font-size: 16px;">
+                                {{pageLabelMap 'MyOrdersInc_ActivationKey'}}&nbsp;&#58;
+                                {{#each this.licenseInfoLst}}
+                                    <div style="font-size: 13px;font-weight: 400;">{{this.key}}</div>
+                                {{/each}}
+                                <!--span class="cc_order_status">    
+                                 <select id="functional_key" name="title" style="width:47%">
+                                   <option value="{{this.key}}" >{{this.key}}</option>
+                                </select>
+                                </span-->
+
+                                {{#if this.values}}
+
+                                   <!-- <div>
+                                        {{pageLabelMap 'MyOrdersInc_ToolInstanceKey'}}&nbsp;&#58;
+                                        <select id="title" name="title" style="width:40%">
+                                            {{#each this.values}}
+                                            <option value="{{this}}" >{{this}}</option>
+                                            {{/each}}
+                                        </select>
+                                    </div>-->
+
+                                {{/if}}
+                            </div>
+                        </p>
+
+                        
+                    
+                {{/if}}
+            {{/ifNotEquals}}
+            {{/ifNotEquals}}
+            {{/ifNotEquals}}
+            {{/ifEquals}}
+            {{/ifEquals}}
+        {{/if}}
+        {{#ifEquals this.orderR.orderStatus 'Order Submitted'}}
+            {{#if this.revocationStatus}}
+                {{#ifEquals this.revocationStatus 'Revoke Initiated'}}
+                    <p class="cc_subscription_product_desc" style="text-align: justify;">
+                    Status: Revocation- Pending
+                    </p>
+                {{/ifEquals}}
+                
+                {{#ifEquals this.revocationStatus 'Revoked'}}
+                    <p class="cc_subscription_product_desc" style="text-align: justify;">
+                    Status: Revoked
+                    </p>
+                {{/ifEquals}}
+                
+            {{/if}}
+        {{/ifEquals}}
+         
+       </div>
+       
+       
+       <div class="col-md-7" style="padding-left:0px; margin-left:2.1%;width:61%;">
+        <div class="price cc_price" style="width:98%">
+          <!-- MP-133 Code Start -->
+          <div class="col-md-2" style="text-align:left;width:10%;"> <!-- LL-21 Reduced width from 12% to 10% -->
+                                               
+                
+                                  
+         {{#ifEquals this.mockProduct.groupName 'DA'}}
+                                                                                    
+               <span>{{this.billingFrequency}}</span>
+          
+          {{else}}
+           <span > <span />
+              
+              
+                          
+                    
+             
+          {{/ifEquals}}
+          </div>
+         <!-- MP-372 Code Start-->  
+        <div class="col-md-2" style="text-align:left;width:10%;padding-left: 0px;padding-right: 0px;"> <!-- Reduced width from 16% to 10%, added padding-left & padding-right 0px -->
+           {{#ifNotEquals this.mockProduct.groupName 'FluidWatch' }}
+             {{#ifEquals this.displayName '99 Year'}}
+               <!-- MP-430 Code Start-->
+             {{else}}
+              {{#ifEquals this.isRenew false}}
+                {{#if this.subscriptionEndDate}}
+                   {{#ifEquals this.OSMSWIswithoutCoterm false}}
+                          {{dateconvert this.subscriptionEndDate}}
+        			{{else}}
+                         {{reqdate this.requestDate this.displayName}}  
+        		   {{/ifEquals}}
+        		     {{else}}
+                         {{reqdate this.requestDate this.displayName}}  
+                    {{/if}} 
+                    {{else}}
+                     {{dateconvert this.OSMRenewSubscriptionEndDate}} 
+                    {{/ifEquals}}
+                    
+                    <!-- MP-430 Code End-->
+             {{/ifEquals}} 
+           {{/ifNotEquals}}
+             <!--MP-372 Code End-->
+             {{#if this.OSMSWCouponApplied}} 
+                            <div style="margin-top: 20%; width: 200%;"> <b> {{this.couponR.couponCode}}</b> applied 
+                            </div>
+             {{/if}} 
+         </div>
+          <!-- MP-133 Code End -->
+         <!-- LL-21 Code Start - Show the number of bundles -->
+		 <div class="col-md-2 numberofBundles" style="text-align:left;padding-right: 0px; width: 8%;">
+            <span class="numberofBundles">{{this.numberofBundles}}</span>
+           </div>      
+          <!-- LL-21 Code End -->
+         
+         {{#ifNotEquals this.itemType 'Coupon'}}
+          <div class="col-md-1 cc_order_quantity" style="padding-left: 15px;padding-right:0px;text-align:left;"> <!-- LL-21 padding-left from 20px to 15px; -->
+           <span class="cc_quantity">{{this.originalQuantity}}</span>
+          </div>
+         {{/ifNotEquals}}
+
+         {{#ifNotEquals this.itemType 'Coupon'}}
+          <div class="col-md-2" style="text-align:left;padding-left: 16px; width: 11%;"> <!-- LL-21 width from 12% to 11% -->
+
+           <span class="cc_price">{{{price this.price ../currencyCode}}}</span>
+           
+                                                                                                                                                                                                                         
+                                  
+                     
+                         
+           {{#if this.absoluteDiscount}}
+            {{#ifGreater this.absoluteDiscount 0}}
+             <span class="col-md-2 cc_price_label" style="text-align:right; padding-left:10px; padding-right:5px">{{pageLabelMap 'Checkout_YouSave'}}&nbsp;&#58;&#160;</span>
+             <span class="cc_price">{{{price this.absoluteDiscount ../currencyCode}}}</span>
+            {{/ifGreater}}
+            {{#ifLessThan this.absoluteDiscount 0}}
+             <span class="col-md-2 cc_price_label" style="text-align:right; padding-left:10px; padding-right:5px">{{pageLabelMap 'CartInc_Surcharge'}}&nbsp;&#58;&#160;</span>
+             <span class="cc_price">{{{priceAbs this.absoluteDiscount ../currencyCode}}}</span>
+            {{/ifLessThan}}
+           {{/if}}
+          </div>
+         {{/ifNotEquals}}
+
+         
+        <!-- <div class="col-md-2" style="text-align:right;width: 17.0%;">
+         <span></span>
+         </div>-->
+         
+         <div class="col-md-2 cc_item_total" style="text-align:left;width: 11.5%;padding-left: 0px;">
+          <!-- <span class="cc_total">{{{price this.SubAmount ../currencyCode}}}</span> -->
+          
+          {{#if this.OSMSWCouponApplied}}
+              <span class="cc_total">{{{price this.originalPricewithoutDiscount ../currencyCode}}}</span>
+              <br />
+              <span class="cc_total" style="color:red;">
+                  <div style="margin-top: 25%;">-{{{price this.discountedAmount ../currencyCode}}} </div>
+              </span>
+          {{else}}
+            <span class="cc_total">{{{price this.SubAmount ../currencyCode}}}</span>
+          {{/if}}
+         </div>
+         <!-- MAR-884 Code Start-->
+         <!--{{#if {!OnlyforCC}}}-->
+             <div class="col-md-2 cc_item_total" style="width: 10%;padding-left: 0px;" id="showPartialCancel">
+                 <span id="order_status" class="cc_item_total">
+                    {{#ifEquals this.isCancelPending true}}
+                         {{#ifEquals this.orderLineStatus 'Order Submitted'}}
+                             Cancellation Pending
+                         {{else}}
+                             {{this.orderLineStatus}}
+                         {{/ifEquals}}
+                    {{else}}
+                         {{this.orderLineStatus}}
+                    {{/ifEquals}}
+                 </span>
+            </div>
+        <!--{{/if}}-->
+        
+        <!-- Start: changes for MAR-1241  -->
+        <div class="col-xs-6 col-md-1" style="width:18%;padding-left: 6%;"><span>{{this.cancelledBy}}</span>
+            {{#ifEquals this.orderLineStatus 'Cancelled'}}
+                {{#ifEquals this.OSMSWCancelByUserType 'Support Admin'}}
+                    <span>Cummins Care</span>
+                {{/ifEquals}}
+                {{#ifEquals this.OSMSWCancelByUserType 'Sales Admin'}}
+                    <span>Account Executive</span>
+                {{/ifEquals}}
+                {{#ifEquals this.OSMSWCancelByUserType 'Sales User'}}
+                    <span>Account Executive</span>
+                {{/ifEquals}}
+                {{#ifEquals this.OSMSWCancelByUserType 'Distributor Admin'}}
+                    {{#if this.OSMSWDistributorAccountName}}
+                        <span>{{this.OSMSWDistributorAccountName}}</span>
+                    {{/if}}
+                {{/ifEquals}}
+            {{/ifEquals}}
+        
+        </div>
+        <!-- End: changes for MAR-1241  -->
+         <!-- MAR-1873 Added if and else condition(canShowCancel) -->
+        {{#if {!showPartialCancel}}}
+        <div class="col-xs-6 col-md-1" style="width:9%;text-align:right" id="showPartialCancel">
+         {{#ifNotEquals this.revocationStatus 'Revoked'}}
+            {{#ifNotEquals this.isCancelPending true}}
+                 {{#ifEquals this.orderLineStatus 'Order Submitted'}}
+                     {{#if {!showCheckbox}}}
+                         <input class="inputBoxforcancel" id="inputChkCancel" type="checkbox" name="CancelCheck" value="{{this.itemID}}"></input>
+                     {{else}}
+                         <input class="inputBoxforcancel" type="checkbox" name="CancelCheck" disabled="disabled"></input>
+                     {{/if}}
+                 {{else}}
+                 <input class="inputBoxforcancel" type="checkbox" name="CancelCheck" disabled="disabled"></input>
+                {{/ifEquals}}
+            {{/ifNotEquals}}
+        {{/ifNotEquals}}    
+         </div>
+         {{/if}}
+         <!-- MAR-884 Code End -->
+         
+         {{#if sellerName}}
+          <p class="cc_seller">
+           <span class="col-md-2 cc_soldby_label" style="text-align:right; padding-left:10px; padding-right:5px">{{pageLabelMap 'Prod_SoldBy'}}&nbsp;&#58;&#160;</span>
+           <span class="cc_soldby">{{sellerName}}</span>
+          </p>
+         {{/if}}
+
+         {{#if this.isSubscription}}
+          <p class="cc_subscription_summary">
+           {{subscriptionSummary 'Order_Subscription_' this.subscriptionFrequency mockProduct.sku itemTotal}}
+          </p>
+          <p class="cc_subscription_next_date">
+           {{pageLabelMap 'Order_Subscription_Next_Payment'}} {{this.nextSubscriptionDateStr}}
+          </p>
+          {{#if this.isLimitedSubscription}}
+           <p class="cc_subscription_summary">
+            {{pageLabelMap 'Order_Subscription_End_Date'}} {{this.subscriptionEndDateStr}}
+           </p>
+          {{/if}}
+         {{/if}}
+         {{#each minorLines}}
+          {{#if this.isSubscription}}
+           <p class="cc_subscription_summary">
+            {{subscriptionSummary 'Order_Subscription_' this.subscriptionFrequency mockProduct.sku itemTotal}}
+           </p>
+           <p class="cc_subscription_next_date">
+            {{pageLabelMap 'Order_Subscription_Next_Payment'}} {{this.nextSubscriptionDateStr}}
+           </p>
+           {{#if this.isLimitedSubscription}}
+            <p class="cc_subscription_end_date">
+             {{pageLabelMap 'Order_Subscription_End_Date'}} {{this.subscriptionEndDateStr}}
+            </p>
+           {{/if}}
+          {{/if}}
+         {{/each}}
+        
+         {{#ifEquals pricingType "attrGroup" }}
+          <p class="cc_cart_attribute_items">
+           <a href="#order_attribute_items{{this.itemID}}" id="orderAttributeItemsLink" data-toggle="modal" data-id="{{this.itemID}}">{{pageLabelMap 'CheckOut_AttributeItems'}}</a>
+          </p>
+          {{> orderAttributesDisplay}}
+         {{/ifEquals}}
+        </div>
+       </div>
+      {{/ifNotEquals}}
+      {{#ifEquals this.itemType 'Coupon'}}
+       <p class="item_title coupon_title">
+        {{{this.mockProduct.name}}}
+       </p>
+      {{/ifEquals}}
+     </div>
+     
+        
+     <hr style="width: 95%; float: left;" />
+      
+            
+     
+     
+    {{/each}}
+     
+    
+   </div>
+      
+     {{#if activationKeyErrorMessage}}
+          <div style="width: 95%;height: 100%;margin-bottom: 10px;">
+              <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+               <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span>
+               &nbsp;  Please note : Due to technical issues marketplace cannot generate your activation key at this time and it will be emailed to you as soon as the issue is resolved.
+                <br> &nbsp; &nbsp; &nbsp; &nbsp;Thank you for your patience.
+          </div>
+          </div>
+     {{/if}}
+     
+  </script>
+  
+  <script id="TotalSection" type="text/template">
+  <div class="total cc_total" style="margin-left: 5%;">
+    {{#ifGreater this.calculatedTotalDiscount "0.00"}}
+     <div class="col-md-8" style="text-align:right;padding-top:3px;">
+                <span class=" cc_tax_label" style="float: left; margin-left: 69.9%;">{{pageLabelMap 'CartInc_OriginalPrice'}}&nbsp;&#58;</span>
+        <span id="original_price" class="cc_tax" style="float: right;">{{price this.originalOrderSubtotal this.currencyCode}}</span>
+    </div>
+     
+       <div class="col-md-8" style="text-align:right;padding-top:3px;">
+            <span class=" cc_tax_label" style="float: left; margin-left: 69.9%;">{{pageLabelMap 'CartInc_TotalDiscount'}}&nbsp;&#58;</span>
+            <span id="total_discount" class="cc_tax" style="float: right;"><font color="red">-{{price this.calculatedTotalDiscount this.currencyCode}}</font></span>
+        </div>
+     {{/ifGreater}}
+    <div class="col-md-8" style="text-align:right;padding-top:3px;">
+                <span class=" cc_tax_label" style="float: left; margin-left: 69.9%;">{{pageLabelMap 'CartInc_Subtotal'}}&nbsp;&#58;</span>
+        <span id="subtotal" class="cc_tax" style="float: right;">{{price this.subTotal this.currencyCode}}</span>
+    </div>
+     <div class="col-md-8" style="text-align:right;padding-top:3px;">
+        <span class=" cc_tax_label" style="float: left; margin-left: 69.9%;">{{pageLabelMap 'OSM_TotalTax'}}&nbsp;&#58;</span>
+         {{#if this.tax}}
+              <span id="tax" class="cc_tax" style="float: right;">{{price this.tax this.currencyCode}} </span>
+         {{else}}
+            <span id="tax" class="cc_tax" style="float: right;">{{price 0.0 this.currencyCode}} </span>
+         {{/if}}
+     </div>
+
+   {{#ifDisplay 'OR.ShowTotalSurcharge' }}
+    {{#if this.surchargeAmount }}
+     <p class="cc_surcharge">
+      <span class="col-md-3 cc_surcharge_label" style="text-align:right; padding-right:5px">{{pageLabelMap 'CartInc_Surcharge'}}&nbsp;&#58;</span>
+      <span id="surcharge_amount" class="cc_surcharge_amount">{{price this.surchargeAmount this.currencyCode}}</span>
+     </p>
+    {{/if}}
+   {{/ifDisplay}}
+   <div class="cc_grand_total col-md-8" style="margin-bottom:15px;padding-top:3px;font-weight:800;">
+      <span class="cc_total_label" style="padding-left: 66.6%;">{{pageLabelMap 'CartInc_GrandTotal'}}&nbsp;&#58;</span>
+      <span id="grand_total" class="cc_total_amount" style="float: right;">{{sum this.subTotal this.tax this.shippingCharge this.adjustment this.surchargeAmount this.currencyCode}}</span>
+   </div>
+  </div>
+  <!-- MAR-884 Code Start-->
+ {{#if showPartialCancel}}
+  {{#if canShowCancel}}
+  <button type="button" class="btn btn-info" id="processToCancel" disabled="true" style="(display:{!if(isCancelShow, 'block','none')});margin-left: 19%;">Cancel</button>   
+  {{/if}}
+  {{/if}}
+  <!-- MAR-884 Code End-->
+ </script>
+ 
+ <script id="AddressDisplay-New" type="text/template">
+  <div class="address_selection_display">
+   {{#ifDisplay 'SO.DsplAddrName'}}
+    {{#if this.firstName }}
+     <p class="cc_addr_name">
+      <span class="cc_firstname">{{this.firstName}}&#160;</span>
+      {{#if this.lastName }}
+       <span class="cc_lastname">{{this.lastName}}</span>
+      {{/if}}
+     </p>
+    {{else}}
+     {{#if this.lastName }}
+      <p class="cc_addr_name">
+       <span class="cc_lastname">{{this.lastName}}</span>
+      </p>
+     {{/if}}
+    {{/if}}
+
+   {{/ifDisplay}}
+   {{#ifDisplay 'SO.DsplAddrCompany'}}
+    {{#if this.companyName}}
+     <p class="cc_addr_company">{{this.companyName}}</p>
+    {{/if}}
+   {{/ifDisplay}}
+   {{#if this.address1}}
+    <span class="addr_line1 cc_addr_line">{{this.address1}}</span><br/>
+   {{else}}
+    {{#if this.addressFirstline}}
+     <span class="addr_line1 cc_addr_line">{{this.addressFirstline}}</span><br/>
+    {{/if}}
+   {{/if}}
+
+   {{#if this.address2}}
+    <span class="addr_line2 cc_addr_line">{{this.address2}}</span><br/>
+   {{else}}
+    {{#if this.addressSecondline}}
+     <span class="addr_line1 cc_addr_line">{{this.addressSecondline}}</span><br/>
+    {{/if}}
+   {{/if}}
+
+   {{#if this.address3}}
+    <span class="addr_line3 cc_addr_line">{{this.address3}}</span><br/>
+   {{else}}
+    {{#if this.addressThirdline}}
+     <span class="addr_line1 cc_addr_line">{{this.addressThirdline}}</span><br/>
+    {{/if}}
+   {{/if}}
+   <span class="cc_addr_city">{{this.city}}</span>
+   {{#if this.state}}
+    <span class="cc_addr_state">&#44;&#160;{{this.state}}</span>
+   {{else}}
+    {{#if this.stateCode}}
+     <span class="cc_addr_state">&#44;&#160;{{this.stateCode}}</span>
+    {{else}}
+     {{#if this.stateISOCode}}
+      <span class="cc_addr_state">&#44;&#160;{{this.stateISOCode}}</span>
+     {{/if}}
+    {{/if}}
+   {{/if}}
+   <span class="cc_addr_postal">&#160;{{this.postalCode}}</span><br/>
+   <span class="cc_addr_country">{{this.country}}</span>
+  </div>
+ </script>
+ 
+ <script id="OMS-Cart-IncludedItems" type="text/template">
+<div id="included_items{{this.itemID}}" class="modal fade cc_modal cc_cart_included_items_modal" tabindex="-1" role="dialog" aria-hidden="true">
+ <div class="modal-dialog" role="document">
+  <div class="modal-content cc_modal_content">
+   <div class="modal-header" style="color: white;background-color: black;font-weight: bold;">
+    <!--<button type="button" class="close cc_close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&#215;</span></button>-->
+    {{#ifEquals this.pricingType 'external'}}
+     {{#if extName}}
+        {{this.extName}}&#58;&#160;{{pageLabelMap 'CheckOut_IncludedItems'}}
+     {{else}}
+        {{this.mockProduct.name}}&#58;&#160;{{pageLabelMap 'CheckOut_IncludedItems'}}
+     {{/if}}
+    {{else}}
+        {{this.mockProduct.name}}&#58;&#160;{{pageLabelMap 'CheckOut_IncludedItems'}}
+    {{/ifEquals}}
+   </div>
+   <div class="modal-body cc_modal-body">
+    <div class="table-responsive">
+     <table class="cart_figures table cc_table cc_included_items">
+      <thead class="cc_table_header">
+       <th class="cc_name"></th>
+       <th class="cc_qty">{{pageLabelMap 'Qty'}}</th>
+       {{#ifEquals this.mockProduct.ProductType 'Dynamic Kit'}}
+        <th class="cc_total">{{pageLabelMap 'CartInc_Total'}}</th>
+       {{/ifEquals}}
+       {{#ifEquals this.mockProduct.ProductType 'Kit'}}
+        <th class="cc_total">{{pageLabelMap 'CartInc_Total'}}</th>
+       {{/ifEquals}}
+      </thead>
+      <tbody>
+      {{#each this.minorLines}}
+       <tr>
+        <td class="cc_name">
+        {{#ifEquals this.pricingType 'external'}}
+         <span class="cc_value cc_name">
+         {{#if extName}}
+          {{this.extName}}
+         {{else}}
+          {{this.mockProduct.name}}
+         {{/if}}
+         </span><br/>
+        <!-- MAR-630 Commented Code start
+         <span class="cc_value cc_sku">
+         {{#if extSKU}}
+          {{this.extSKU}}
+         {{else}}
+          {{this.mockProduct.sku}}
+         {{/if}}
+         </span>
+         //MAR-630 Commented Code start -->
+        {{else}}
+         <span class="cc_value cc_name">{{this.mockProduct.name}}</span><br/><span class="cc_value cc_sku">{{this.mockProduct.sku}}</span>
+        {{/ifEquals}}
+        {{#contains this.pricingModifierTypes 'tiered'}}
+         {{#ifNotEquals this.parentProductType 'Bundle'}}
+          <div class="cc_prt_tool_tip_div cc_prt_tool_tip_div_ct" data-toggle="tooltip" title="{{pageLabelMap 'ProductPricingTiers_VolumeHover'}}">
+           <span class="cc_prt_tool_tip_text cc_prt_tool_tip_text_ct">{{pageLabelMap 'ProductPricingTiers_VolumePricingApplied'}}</span>
+          </div>
+         {{/ifNotEquals}}
+        {{/contains}}
+        </td>
+        {{#ifGreater this.quantity 9998}}
+        <td class="cc_qty">{{pageLabelMap 'MyOrdersInc_Unlimited'}} {{#contains this.mockProduct.name 'insite'}}licenses{{else}}users{{/contains}}</td>
+        {{else}}
+          <td class="cc_qty">{{this.quantity}} {{#contains this.mockProduct.name 'insite'}}licenses{{else}}users{{/contains}}</td>
+
+        {{/ifGreater}}
+        {{#ifEquals ../mockProduct.ProductType 'Dynamic Kit'}}
+         <td class="cc_total"><span class="price cc_totalPrice">{{price this.itemTotal}}</span></td>
+        {{/ifEquals}}
+        {{#ifEquals ../mockProduct.ProductType 'Kit'}}
+         <td class="cc_total"><span class="price cc_totalPrice">{{price this.itemTotal}}</span></td>
+        {{/ifEquals}}
+       </tr>
+      {{/each}}
+      </tbody>
+     </table>
+    </div>
+   </div>
+    <div class="modal-footer">
+        <button type="button" class=" cc_close btn btn-default btn-sm cc_checkout_btn" data-dismiss="modal" aria-label="Close">Close</button>
+      </div>
+  </div>
+ </div>
+</div>
+</script>
+
+ <script>
+ Visualforce.remoting.timeout = 120000; // Set timeout at page level
+ var runOnce = false;
+ var orderCancleReason;
+  var orderCancleComment;
+  
+    //MAR-1775, MP-330 Code Start
+    Handlebars.registerHelper('getPaymentMethod', function(data) {          
+        var accountType = '';
+        data.transactionPayments.forEach(function(item){     
+            if(item.accountType === 'cc') {
+                 //@chanchala LL-68  -Added If-else condition to set the value as N/A - 17/8/2022
+                if(item.amount > 0){
+                       accountType = 'Credit Card';
+                } else {
+                    accountType = 'N/A';
+                }//Changes end here for LL-68         
+            } else {
+                accountType = 'Purchase Order';  
+            }    
+        });
+        return accountType;   
+    });
+    
+    Handlebars.registerHelper('dateconvert', function(milsec) {
+    if(milsec  != "" && milsec != undefined)
+    {
+        var params = Array.prototype.slice.call(arguments, 1);
+        var thisDate = new Date(milsec);
+        var dateToStr = thisDate.toUTCString().split(' ');
+        var datefinal = dateToStr[1] + ' ' + dateToStr[2]+' '+dateToStr[3];
+
+    return datefinal;
+    }
+    else
+        return "";
+
+}); 
+    //code start for Mp_564 by swetha
+Handlebars.registerHelper('reqdate', function(milsec,duration) {
+    if(milsec  != "" && milsec != undefined)
+    {
+         				var reqDate = new Date(milsec);
+                        var year= reqDate.getFullYear();
+                        var month = new Date(reqDate).getMonth();
+   						var day   = new Date(reqDate).getDate();
+   						var datefinal=reqDate;
+       					const split_string = duration.split("");
+        				var term = parseInt(split_string[0]);
+                        if(duration.trim().includes("Year")){
+                              datefinal  = new Date(year + term, month, day);
+                        }else if(duration.trim().includes("Month")){ 
+                            if(month+1 == 1){
+                                if(reqDate.getDate() === 29){
+                                   datefinal.setDate(reqDate.getDate()+ 28); 
+                                }else{
+    							datefinal.setDate(reqDate.getDate()+ 27);
+                                }
+                            }else{
+                                datefinal = new Date(year, month+term, day);
+                            }
+                        }else if(duration.trim().includes("Quarter")){
+                            datefinal  = new Date(year, month+(term*3), day);
+                        }else if(duration.trim().includes("Week")){
+                              datefinal.setDate(reqDate.getDate() + term * 7);   
+                        } 
+        
+        			var datefinalmill = datefinal.getTime();
+					var thisDate = new Date(datefinalmill);
+        			var dateToStr = thisDate.toUTCString().split(' ');
+        			var datefinalconvert = dateToStr[1] + ' ' + dateToStr[2]+' '+dateToStr[3];
+        
+    return datefinalconvert;
+    }
+    else
+        return "";
+
+}); //code ended for Mp_564
+
+    Handlebars.registerHelper('getCardNumber', function(data) {  
+        var accountNumber = '';
+        data.transactionPayments.forEach(function(item){
+            //@chanchala LL-68  -Added If-else condition to set the value as N/A - 17/8/2022
+            if(item.accountType === 'cc' ){
+                if(item.amount > 0){
+                    accountNumber = item.accountNumber;}
+                 else{
+                     accountNumber = 'N/A';}
+            }
+            else{
+                accountNumber = item.accountNumber;}
+            //Changes end here for LL-68   
+            
+        });
+        return accountNumber;   
+    });
+    //MAR-1775, MP-330 Code End
+ Handlebars.registerHelper('date', function(milsec) {
+     console.log('orderdetailview date$$$$==='+milsec);
+    if(milsec  != "" && milsec != undefined)
+    {
+        
+       if(/^[a-zA-Z0-9- ]*$/.test(milsec) == false){
+                console.log('string--if-->> '+milsec);
+                var params = Array.prototype.slice.call(arguments, 1);
+                var thisDate ;
+                if(CCRZ.currentUser != undefined ){
+                    console.log('User Locale '+CCRZ.currentUser.LocaleSidKey);
+                
+                    if(CCRZ.currentUser.LocaleSidKey==='en_AU'){
+                        var splittedValue = milsec.split('/');
+                        thisDate = new Date(splittedValue[2],splittedValue[1]-1,splittedValue[0]);
+                    }else{
+                        thisDate = new Date(milsec);
+                    }
+                }else{
+                    thisDate = new Date(milsec);
+                }
+                console.log('thisDate '+thisDate);
+                var dateToStr = thisDate.toString().split(' ');
+                console.log('UTC Converted date'+dateToStr);
+                var datefinal = dateToStr[2] + ' ' + dateToStr[1]+' '+dateToStr[3];
+                console.log('Datefinal '+datefinal);
+              }else{
+                 console.log('string--else-->> '+milsec);
+                var params = Array.prototype.slice.call(arguments, 1);
+                var thisDate ;
+                if(CCRZ.currentUser != undefined ){
+                    console.log('Current User---->>>'+CCRZ.currentUser);
+                    console.log('User Locale---->>>'+CCRZ.currentUser.LocaleSidKey);
+                    if(CCRZ.currentUser.LocaleSidKey==='en_AU'){
+                        var splittedValue = milsec.split('/');
+                        thisDate = new Date(splittedValue[2],splittedValue[1]-1,splittedValue[0]);
+                    }else{
+                        thisDate = new Date(milsec);
+                    }
+                }else{
+                    thisDate = new Date(milsec);
+                }
+                console.log('thisDate '+thisDate);
+                var dateToStr = thisDate.toUTCString().split(' ');
+                //var dateToStr = thisDate.toString().split(' ');
+                console.log('UTC Converted date'+dateToStr);
+                var datefinal = dateToStr[1] + ' ' + dateToStr[2]+' '+dateToStr[3];
+                //var datefinal = dateToStr[2] + ' ' + dateToStr[1]+' '+dateToStr[3];
+                console.log('Datefinal '+datefinal);
+              }
+
+        return datefinal;
+    }
+    else
+        return "";
+}); 
+    // Below is the polyfill for includes method for IE browser issue
+    if (![].includes) {
+    Array.prototype.includes = function(searchElement /*, fromIndex*/ ) {
+        'use strict';
+        var O = Object(this);
+        var len = parseInt(O.length) || 0;
+        if (len === 0) {
+        return false;
+        }
+        var n = parseInt(arguments[1]) || 0;
+        var k;
+        if (n >= 0) {
+        k = n;
+        } else {
+        k = len + n;
+        if (k < 0) {k = 0;}
+        }
+        var currentElement;
+        while (k < len) {
+        currentElement = O[k];
+        if (searchElement === currentElement ||
+            (searchElement !== searchElement && currentElement !== currentElement)) {
+            return true;
+        }
+        k++;
+        }
+        return false;
+    };
+    }
+
+    var refundmsg1 = '{!($Label.OSM_Refund_Message)}';
+    var refundmsg2 = '{!($Label.OSM_Refund_Message2)}';
+    var finalMsg = '';
+    var wrperForUserEmail;
+    var revokeAPIItemList = '';
+    var cancelAPIItemList = '';
+    var orderId;
+    var orderRes;
+    var orderItemIds=[];
+    // LL-21 Code Start - bridging to get the custom label value
+    window.$Label = window.$Label || {};
+    $Label.OSM_ShowNumberofBundlesValue = '{!($Label.OSM_ShowNumberofBundlesValue)}';
+    // LL-21 Code End
+    jQuery(function($){
+        CCRZ.subsc = _.extend(CCRZ.subsc||{});
+        
+          CCRZ.subsc.OrderInfoDataAction = _.extend(
+                {
+                    className : 'OSM_SW_OrderDetailView_Ctrl',
+                    getOrderInfo : function(callback)
+                    {
+                        this.invokeCtx('getOrderInfo',orderId,
+                        function(response)
+                        {
+                            callback(response);
+                            console.log('Testing getOrderInfo' + JSON.stringify(response));
+                            //LL36 @Vishnu 9th Aug 2022 close orderItems popup on OK
+                            $(document).ready(function(){
+                                $(document).on("click","#hideOKOnPopup",function() {
+                                    $('#cancelMod4').modal('hide');
+                                    const url = new URL(window.location);
+                                    url.searchParams.set('orderCancel', 'NO');
+                                    window.history.pushState({}, '', url);
+                                });
+                            });
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                  
+                },
+                { // method to check the IAM User Provisioned Count
+                    className : 'OSM_SW_OrderDetailView_Ctrl',
+                    checkIAMUserProvisionedCount : function(callback)
+                    {
+                        this.invokeContainerLoadingCtx($('body'),'checkIAMUserProvisionedCount',orderItemIds,
+                        function(response)
+                        {
+                            console.log("==== in method to call checkIAMUserProvisionedCount ====");
+                            callback(response);
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                
+                },
+                { // method to check the IAM User Provisioned Count
+                    className : 'OSM_SW_OrderDetailView_Ctrl',
+                    checkAddOnSubscription : function(callback)
+                    {
+                        this.invokeContainerLoadingCtx($('body'),'checkAddOnSubscription',orderItemIds,
+                        function(response)
+                        {
+                            console.log("==== in method to call checkAddOnSubscription ====");
+                            callback(response);
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                
+                },
+                {
+                    className : 'OSM_SW_OrderDetailView_Ctrl',
+                    getOrderInformation : function(callback)
+                    {
+                        this.invokeContainerLoadingCtx($('body'),'getOrderInformation',orderItemIds,orderCancleReason,orderCancleComment,
+                        function(response)
+                        {
+                            console.log("==== in method to fetch user info from order");
+                            wrperForUserEmail = response;
+                            callback(response);
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                  
+                },
+                {
+                    className : 'OSM_SW_OrderDetailView_Ctrl',
+                    callRevokeAPI : function(callback)
+                    {
+                        this.invokeContainerLoadingCtx($('body'),'callRevokeAPI',revokeAPIItemList,
+                        function(response)
+                        {
+                            console.log("==== in method to call revoke API ====");
+                            callback(response);
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                
+                },
+                {
+                    className : 'OSM_SW_OrderDetailView_Ctrl',
+                    callCancelAPI : function(callback)
+                    {
+                        this.invokeContainerLoadingCtx($('body'),'callCancelAPI',cancelAPIItemList,
+                        function(response)
+                        {
+                            console.log("==== in method to call Calccel API ====");
+                            callback(response);
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                
+                }, 
+                {
+                    className : 'OSM_SW_OrderDetailView_Ctrl',
+                    callCreditMemo : function(callback)
+                    {
+                      
+                        console.log('item listttt>>>'+cancelAPIItemList);
+                           this.invokeContainerLoadingCtx($('body'),'callCreateCreditMemo',orderItemIds,cancelAPIItemList,revokeAPIItemList,
+                            function(response)
+                            {
+                                console.log("==== in method to call Credit Memo cancel ====");
+                                callback(response);
+                            },
+                            {
+                                buffer : false, // this call will be executed by itself
+                                nmsp   : false  // defines that this is a call to a subscriber class
+                            }); 
+                        
+                       
+                    }
+                },
+                {
+                    className : 'OSM_SW_OrderDetailView_Ctrl',
+                    callFSDAPI : function(callback)
+                    {
+                        this.invokeContainerLoadingCtx($('body'),'callFSDAPI',cancelAPIItemList,revokeAPIItemList,
+                        function(response)
+                        {
+                            console.log("==== in method to call FSD ====");
+                            callback(response);
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                
+                },
+                {   // MAR-1665 - added callcreditmemo metod 
+                    className : 'OSM_SW_OrderDetailView_Ctrl',
+                    callRefundRequest : function(callback)
+                    {
+                        this.invokeContainerLoadingCtx($('body'),'callRefundReq',cancelAPIItemList,revokeAPIItemList,
+                        function(response)
+                        {
+                            console.log("==== in method to call Calccel API ====");
+                            callback(response);
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                },
+                CCRZ.RemoteInvocation);
+      
+        
+            CCRZ.pubSub.once('view:OrderDetailView:refresh',function(myOrdersView){
+            CCRZ.orderDetailView.model.attributes.orderItems.isload = false;
+              
+             try{
+            
+             
+             if(CCRZ.orderDetailView.model.attributes.orderItems){
+                    console.log('CCRZ.orderDetailView.model.attributes.orderItems.OSMToolInstanceKey-Inside');
+                    console.log('orderdetail---   '+JSON.stringify(CCRZ.orderDetailView.model.attributes.orderItems)); 
+                    // LL-21 Code Start - getting an array of product names that can display a value in the number of bundles column
+                    const showNumOfBundlesCheck = $Label.OSM_ShowNumberofBundlesValue.toLowerCase().split(',');//["zap-it","zap-it oem","fleetcount","fleet count"];
+                    // LL-21 Code End
+                        for(var ii=0; ii<CCRZ.orderDetailView.model.attributes.orderItems.length;ii++){
+                            // LL-21 Code Start - replaces the number of bundles value for products that are not zap-it or fleet count w/ empty string.
+                            let oi = CCRZ.orderDetailView.model.attributes.orderItems[ii];
+                            let num = oi.numberofBundles;
+                            oi.numberofBundles = "";
+                            if(oi.mockProduct.sfdcName != null) {
+                                let str = oi.mockProduct.sfdcName;
+                            if(showNumOfBundlesCheck.includes(str.toLowerCase())) {
+                                oi.numberofBundles = num;
+                                }
+                            }
+                        // LL-21 Code End
+                    if(CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS != undefined){
+                        
+                        var licenseIno = {};
+                        var licenseTempInofun = {};
+                        var licenseTempInoBasic = {};
+                        var licenseInoFinal = {};
+                        var licenseKeyToId = {};
+                        var mapBasicKeyToFunscKey = {};
+                        var firstBasicKey;
+                        var firstFunctionalKey;
+                        var basicCount = 0;
+                        var functionalCount = 0;
+                        var functionalKeyStop = [];
+                        var basicKeyStop = [];
+                        <!-- debugger; -->
+                        for(var jj = 0; jj < CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS.length ; jj++)
+                        {
+                        
+                            if(CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[jj].parentActivationKey == undefined)
+                            {
+                                
+                                if(CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[jj].type == "Functional")
+                                {
+                                    var key = CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[jj].sfid;
+                                    var value = CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[jj].activationKey;
+                                    licenseKeyToId[key] = licenseKeyToId[key] || [];
+                                    licenseKeyToId[key] = value;
+                                    if(functionalCount == 0)
+                                    {
+                                        firstFunctionalKey = CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[jj];
+                                    }
+                                    functionalCount++;
+                                }
+                                
+                                if(CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[jj].type == "Basic")
+                                {
+                                    var key = CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[jj].sfid;
+                                    var value = CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[jj].activationKey;
+                                    mapBasicKeyToFunscKey[key] = mapBasicKeyToFunscKey[key] || [];
+                                    mapBasicKeyToFunscKey[key] = value;
+                                    
+                                    if(basicCount == 0)
+                                    {
+                                        firstBasicKey = CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[jj];
+                                    }
+                                    basicCount++;
+                                    
+                                }
+                                
+                            }
+                        } 
+                        
+                        
+                        
+                        //logic to get first key and check revoke
+                        
+                        
+                        for(var kk = 0; kk < CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS.length ; kk++)
+                        {
+                            if(CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[kk].parentActivationKey != undefined && CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[kk].status != "New" && CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[kk].type == "Functional")
+                            {
+                                key = CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[kk].parentActivationKey;
+                                value = CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[kk].toolInstanceKey;
+                                licenseTempInofun[key] = licenseTempInofun[key] || [];
+                                licenseTempInofun[key].push(value);
+                            }
+                            
+                            
+                            if(CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[kk].parentActivationKey != undefined && CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[kk].status != "New" && CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[kk].type == "Basic")
+                            {
+                                key = CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[kk].parentActivationKey;
+                                value = CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[kk].toolInstanceKey;
+                                licenseTempInoBasic[key] = licenseTempInoBasic[key] || [];
+                                licenseTempInoBasic[key].push(value);
+                            }
+                            
+                        }
+                        
+                        
+                        console.log('firstFunctionalKey');
+                        console.log(firstFunctionalKey.sfid);
+                        for(var key in licenseTempInofun)
+                        {
+                            console.log('licenseTempInofun:'+key);
+                            if(firstFunctionalKey != undefined && key == firstFunctionalKey.sfid)
+                            {
+                                if(licenseTempInofun[key].length == firstFunctionalKey.CCOrderItemR.quantity)
+                                {
+                                    functionalKeyStop.push(key);
+                                }
+                            }
+                            else{
+                                if(licenseTempInofun[key].length == 1)
+                                {
+                                    functionalKeyStop.push(key);
+                                }
+                            }
+                            
+                        }
+                        
+                        
+                        for(var key in licenseTempInoBasic)
+                        {
+                            if(firstBasicKey != undefined && key == firstBasicKey.sfid)
+                            {
+                                if(licenseTempInoBasic[key].length == firstBasicKey.CCOrderItemR.quantity)
+                                {
+                                    basicKeyStop.push(key);
+                                }
+                            }
+                            else{
+                                if(licenseTempInoBasic[key].length == 1)
+                                {
+                                    basicKeyStop.push(key);
+                                }
+                            }
+                            
+                        }
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        for(var kk = 0; kk < CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS.length ; kk++)
+                        {
+                            if(CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[kk].parentActivationKey != undefined && CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[kk].type == "Functional" && CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[kk].status == "New")
+                            {
+                                key = CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[kk].parentActivationKey;
+                                value = CCRZ.orderDetailView.model.attributes.orderItems[ii].OSMOrederItemLicensesS[kk].toolInstanceKey;
+                                licenseIno[key] = licenseIno[key] || [];
+                                licenseIno[key].push(value);
+                            }
+                           
+                        }
+                        
+                        console.log('licenseIno');
+                        console.log(licenseIno);
+                        console.log('functionalKeyStop %o',functionalKeyStop);
+                        console.log('licenseKeyToId %o',licenseKeyToId);
+                        
+                        var funAddedList = [];
+                        for(var key in licenseIno)
+                        {
+                            if(!functionalKeyStop.includes(key))
+                            {
+                                licenseInoFinal[licenseKeyToId[key]] = licenseInoFinal[licenseKeyToId[key]] || [];
+                                
+                                for(var i = 0 ; i< licenseIno[key].length ; i++)
+                                {
+                                    licenseInoFinal[licenseKeyToId[key]].push(licenseIno[key][i]);
+                                }
+                                
+                                funAddedList.push(key);
+                            }
+                            
+                        }
+                        
+                        for(var key in licenseKeyToId)
+                        {
+                            if(!functionalKeyStop.includes(key) && !funAddedList.includes(key))
+                            {
+                                licenseInoFinal[licenseKeyToId[key]] = licenseInoFinal[licenseKeyToId[key]] || [];
+                            }
+                            console.log('key ' + key);
+                        }
+                        
+                        
+                        console.log('key set ');
+                        console.log(licenseInoFinal);
+                        
+                        
+                        var licenseInfoLst = [];
+                        var basicKeyList = [];
+                        
+                        for(var key in licenseInoFinal)
+                        {
+                            var licenseInfo = new Object();
+                            licenseInfo.key = key;
+                            licenseInfo.values = [];
+                            for(var i = 0 ; i< licenseInoFinal[key].length ; i++)
+                            {
+                                licenseInfo.values.push(licenseInoFinal[key][i]);
+                            }
+                            
+                            licenseInfoLst.push(licenseInfo);
+                        }
+                        
+                        console.log('basicKeyStop %o',basicKeyStop);
+                        // console.log(basicKeyStop);
+                        console.log(mapBasicKeyToFunscKey);
+                        for(var key in mapBasicKeyToFunscKey)
+                        {
+                            if(!basicKeyStop.includes(key))
+                            {
+                                basicKeyList.push(mapBasicKeyToFunscKey[key]);
+                            }
+                        }
+                        console.log("licenseinfo");
+                        console.log(licenseInfoLst);
+                        console.log(basicKeyList);
+                       
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        CCRZ.orderDetailView.model.attributes.orderItems[ii].licenseInfoLst = licenseInfoLst;
+                        CCRZ.orderDetailView.model.attributes.orderItems[ii].basicKeyLst = basicKeyList;
+                        
+                        
+                        
+                        
+                    }
+                }
+             }
+             if(CCRZ.orderDetailView.model.attributes.orderItems.isload = false){
+                    CCRZ.orderDetailView.model.attributes.orderItems.isload = true;
+                }
+                
+                $(function(){
+                    //LL36 @Vishnu 9th Aug 2022 cancel orderItems popup 
+                    if(CCRZ.pagevars.queryParams.orderCancel === 'YES') $('#cancelMod4').modal('show'); 
+                    else $('#cancelMod4').modal('hide');
+                                
+                    $('.inputBoxforcancel').change(function(){
+                        var isChecked = false;
+                        console.log('enter  >>> ');
+                        $(':checkbox:checked').each(function(i){
+                            if('inputBoxforcancelAll' != this.id) isChecked = true; //@Vishnu LL91 All Checkbox 8/26/2022
+                        });
+                        console.log('isChecked >>> '+isChecked);
+                        if(isChecked){
+                            $('#processToCancel').attr('disabled', false);
+                        }else{
+                            $('#processToCancel').attr('disabled', true);
+                            $("input[id=inputBoxforcancelAll]").prop("checked", false);
+                        }
+                    });
+                 });
+             
+            //@Vishnu LL91 All Checkbox 8/26/2022
+            $(function(){
+                $(".inputBoxforcancelAll").click(function() {
+                    var isAllcChecked = $(this).is(":checked");
+                    var chkBoxes = $("input[id=inputChkCancel]");
+                    chkBoxes.prop("checked", isAllcChecked);
+                    if(isAllcChecked){
+                        $('#processToCancel').attr('disabled', false);
+                    }else{
+                        $('#processToCancel').attr('disabled', true);
+                    }
+                }); 
+            });
+             
+             $(function(){
+                  $('#processToCancel').click(function(){
+                    orderItemIds=[];
+                    $(':checkbox:checked').each(function(i){
+                        if($(this).val() != 'on') orderItemIds[i] = $(this).val();  //@Vishnu LL91 All Checkbox 8/26/2022                      
+                    });
+                    
+                   CCRZ.subsc.OrderInfoDataAction.checkAddOnSubscription(function(response5)
+                   {
+                        console.log('on checkAddOnSubscription');
+                        console.log(response5);
+                        
+                        if(response5.data.isShowAddonPopup == true)
+                        {
+                            $("#showAddOnPopup").modal("show");
+                        }
+                        else
+                        {
+                   
+                            CCRZ.subsc.OrderInfoDataAction.checkIAMUserProvisionedCount(function(response)
+                            {
+                                console.log('response %'+response); 
+                                
+                                if(response.success)
+                                {
+                                    if(response.data.canBeCancelledFlag == true)
+                                    {
+                                        
+                                            $("#cancelMod2").modal("show");
+                                            $("#modalCancelOrder1");
+                                            
+                                        
+                                    }
+                                    if(response.data.canBeCancelledFlag == false)
+                                    {
+                                        console.log('on cancel false');
+                                        console.log(response);
+                                        if(response.data.inappFlag)
+                                        {
+                                             $("#cancelMod3").modal("show");
+                                              //$('.modal-backdrop').remove();
+                                             //$("#userProvisionedMod").modal("show");
+                                             
+                                              $('div.userProvisionedData').replaceWith('<div id="provisionCountMsg">You have <strong>'+response.data.remaningUnit+'</strong > units remaining and you are trying to cancel <strong>'+response.data.userCount+'</strong> units. Please unassign the units before cancelling.</div>');
+                                            $("#userProvisionedMod1").modal("show");
+                                        }
+                                        else
+                                        {
+                                            var userProvisionedDataDiv = '';
+                                            var paraMessage = '';
+                                            for(var val in response.data.userProvisionedData)
+                                            { /*
+                                                console.log(val);
+                                                console.log(response.data.userProvisionedData[val]); 
+                                                userProvisionedDataDiv = userProvisionedDataDiv + '<p>' + response.data.userProvisionedData[val] + '</p>';
+                                                */}
+                                            for(jj = 0; jj < response.data.userProvisionedData.length; jj++){
+                                                   console.log(jj);
+                                                console.log(response.data.userProvisionedData[jj]); 
+                                                userProvisionedDataDiv = userProvisionedDataDiv + '<p>' + response.data.userProvisionedData[jj] + '</p>';
+                                           
+                                                }
+                                                
+                                                userProvisionedDataDiv = userProvisionedDataDiv + '<p>' + 'Click <a href='+response.data.assignUserLink+'  target="_blank"  class="link_user" >here</a> to de-provision the users.' + '</p>';
+                                            userProvisionedDataDiv = '<div class="userProvisionedData">' + userProvisionedDataDiv + '</div>';
+                                            console.log('userProvisionedDataDiv'); 
+                                            console.log(userProvisionedDataDiv); 
+                                            $( "div.userProvisionedData" ).replaceWith(userProvisionedDataDiv);
+                                            $("#userProvisionedMod").modal("show");
+              
+                                    }
+                                    } 
+                                }
+                             });
+                            }
+                         });
+                         $('#modalCancelOrder1').off().on('click',function(){
+                            
+                               
+                                $("#cancelMod").modal("hide");
+                                $("#cancelMod2").modal("hide");
+                                $("#cancelModForComment").modal("show");
+                                var inputReason = $("#cancleResion");
+                                inputReason.css("border", "1px solid black");
+                                var inputReasonLabel = $("#cancleResionLabel");
+                                inputReasonLabel.css("color", "black");
+                                var selectReason = document.getElementById('cancleResion');
+                                selectReason.selectedIndex = 0;
+                                var cancelComment = $("#cancelComment");
+                                cancelComment.value = "";
+                                
+                                cancelComment.css("border", "1px solid black");
+                                var cancelCommentlabel = $("#cancelCommentlabel");
+                                cancelCommentlabel.css("color", "black");
+                         });
+                         
+                         $('#submitOnComment').off().on('click',function(){
+                            
+                                var inputReason = $("#cancleResion");
+                                var inputReasonLabel = $("#cancleResionLabel");
+                                var cancelComment = $("#cancelComment");
+                                var cancelCommentlabel = $("#cancelCommentlabel");
+                                
+                                if(inputReason.val() === '--None--')
+                                {
+                                    inputReason.css("border", "1px solid red");
+                                    inputReasonLabel.css("color", "red");
+                                }
+                                else
+                                {
+                                    inputReason.css("border", "1px solid black");
+                                    inputReasonLabel.css("color", "black");
+                                
+                                
+                                    if(inputReason.val() === 'Other' && cancelComment.val() === '')
+                                    {
+                                        cancelCommentlabel.css("color", "red");
+                                        cancelComment.css("border", "1px solid red");
+                                    }
+                                    else
+                                    {
+                                        cancelCommentlabel.css("color", "black");
+                                        cancelComment.css("border", "1px solid black");
+                                        orderCancleReason = inputReason.val();
+                                        orderCancleComment = cancelComment.val();
+                                        $("#cancelModForComment").modal("hide");
+                                        CCRZ.subsc.OrderInfoDataAction.getOrderInformation(function(response)
+                                            {
+                                                revokeAPIItemList= '';
+                                                cancelAPIItemList= '';
+                                                console.log(response);
+                                                if (response.success)
+                                                {
+                                                    finalMsg = '<p>'+refundmsg1+' '+response.data.data.userEmail+'.<p></p>'+refundmsg2+'</p>';
+                                                    
+                                                    revokeAPIItemList = response.data.data.lstForRevoke;
+                                                    cancelAPIItemList = response.data.data.lstForCancel;
+                                                    
+                                                    if(!response.data.data.getOrderisnotCalled) { 
+                                                        if(response.data.data.isRevokeCallNeeded) {
+                                                            CCRZ.subsc.OrderInfoDataAction.callRevokeAPI(function(res1) {   
+                                                                console.log('in revoke API');
+                                                                console.log(res1);
+                                                                console.log('res1.data.RevokeAPISucess    '+res1.data.RevokeAPISucess);
+                                                                if(res1.success && res1.data.RevokeAPISucess){
+                                                                    // do nothing                       
+                                                                }
+                                                                else{
+                                                                    /*var cancelAPIItemListTmp = [];
+                                                                    cancelAPIItemList.forEach((element, index) => {
+                                                                        console.log(element, index);
+                                                                        var isMatch = false;
+                                                                        revokeAPIItemList.forEach((ele, indx) => {
+                                                                            if(element==ele){
+                                                                                isMatch = true;
+                                                                            }
+                                                                        });
+                                                                        if(isMatch == false){
+                                                                            cancelAPIItemListTmp.push(element);
+                                                                        }
+                                                                    });*/
+                                                                    var cancelAPIItemListTmp = [];
+                                                                    var forEach = Array.prototype.forEach;
+                                                                    forEach.call(cancelAPIItemList, function(element){
+                                                                        console.log(element);
+                                                                        var isMatch = false;
+                                                                        forEach.call(revokeAPIItemList, function(ele) {
+                                                                            if(element==ele){
+                                                                                isMatch = true;
+                                                                            }
+                                                                        });
+                                                                        if(isMatch == false){
+                                                                            cancelAPIItemListTmp.push(element);
+                                                                        }
+                                                                    });
+                                                                    cancelAPIItemList = cancelAPIItemListTmp;
+                                                                }
+                                                                console.log('cancelAPIItemList  >>>  '+cancelAPIItemList);
+                                                                console.log('revokeAPIItemList  >>>  '+revokeAPIItemList);
+                                                                if(response.data.data.isCancelCallNeeded && cancelAPIItemList.length > 0)          
+                                                                {
+                                                                    CCRZ.subsc.OrderInfoDataAction.callCancelAPI(function(res2)
+                                                                    {
+                                                                        console.log('in cancel API');
+                                                                        console.log(res2);
+                                                                        /*
+                                                                            res2 = {};
+                                                                            res2.success = true;
+                                                                            res2.data = {};
+                                                                            res2.data.CancelAPISucess = true;
+                                                                            res2.data.data = {};
+                                                                            res2.data.data.true;
+                                                                        */
+                                                                        if(res2.success && res2.data.CancelAPISucess) //&& res1.success && res1.data.RevokeAPISucess
+                                                                        {
+                                                                            console.log('inside cancel is refund>>>'+res2.data.data.isRefundReq);
+                                                                            if(res2.data.data.isRefundReq){
+                                                                                CCRZ.subsc.OrderInfoDataAction.callCreditMemo(function(res4){
+                                                                                   
+                                                                                        CCRZ.subsc.OrderInfoDataAction.callRefundRequest(function(res3){
+                                                                                            
+                                                                                            console.log('res3.data.callFSD>>>>'+res3.data.callFSD);
+                                                                                            if(res3.data.callFSD)
+                                                                                            {
+                                                                                            CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(res5){
+                                                                                            console.log('fsd calling 1>>>');
+                                                                                            });
+                                                                                            }
+                                                                                            $('#exampleModal').modal('show');
+                                                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                            if(errorhtml != null) {
+                                                                                                errorhtml.innerHTML = finalMsg;
+                                                                                            } 
+                                                                                        }); 
+                                                                                   
+                                                                                }); 
+                                                                            }
+                                                                            else{
+                                                                                if(res4.data.callFSD)
+                                                                                 {
+                                                                                        CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(response)
+                                                                                        { 
+                                                                                              console.log('fsd calling from Cancel API condition>>>');
+                                                                                              
+                                                                                                                   
+                                                                                        });
+                                                                                  } 
+                                                                                $('#exampleModal').modal('show');
+                                                                                var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                if(errorhtml != null) {
+                                                                                    errorhtml.innerHTML = finalMsg;
+                                                                                }  
+                                                                            }
+                                                                            
+                                                                             
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                             CCRZ.subsc.OrderInfoDataAction.callCreditMemo(function(res4){
+                                                                                 if(res4.data.callFSD)
+                                                                                 {
+                                                                                        CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(response)
+                                                                                        { 
+                                                                                              console.log('fsd calling non OMS>>>');
+                                                                                              
+                                                                                                                   
+                                                                                        });
+                                                                                  } 
+                                                                                  $('#exampleModal').modal('show');
+                                                                                   var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                   if(errorhtml != null) {
+                                                                                       errorhtml.innerHTML = finalMsg;
+                                                                                   }
+                                                                                           
+                                                                             });    
+                                                                            
+                                                                        }
+                                            
+                                                                    });
+                                                                }
+                                                                else if(res1.success && res1.data.RevokeAPISucess){
+                                                                    CCRZ.subsc.OrderInfoDataAction.callCreditMemo(function(res4){
+                                                                        
+                                                                            CCRZ.subsc.OrderInfoDataAction.callRefundRequest(function(res3){
+                                                                                $('#exampleModal').modal('show');
+                                                                                var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                if(errorhtml != null) {
+                                                                                    errorhtml.innerHTML = finalMsg;
+                                                                                }  
+                                                                                consloe.log('res3.data.callFSD>>>>'+res3.data.callFSD);
+                                                                                if(res3.data.callFSD)
+                                                                                {
+                                                                                CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(res5){
+                                                                                console.log('fsd calling 2>>>');
+                                                                                });
+                                                                                }
+                                                                            });
+                                                                          
+                                                                    });
+                                                                    
+                                                                    
+                                                                             
+                                                                }
+                                                                else {
+                                                                 
+                                                                         CCRZ.subsc.OrderInfoDataAction.callCreditMemo(function(res4){
+                                                                         console.log('credit memo calling for revoke failure>>>');
+                                                                         if(res4.data.callFSD)
+                                                                         {
+                                                                                CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(response)
+                                                                                { 
+                                                                                      console.log('fsd calling non OMS>>>');
+                                                                                      $('#exampleModal').modal('show');
+                                                                                      var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                      if(errorhtml != null) {
+                                                                                        errorhtml.innerHTML = finalMsg;
+                                                                                      }
+                                                                                                           
+                                                                                });
+                                                                          } 
+                                                                          else
+                                                                          {
+                                                                              $('#exampleModal').modal('show');
+                                                                                      var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                      if(errorhtml != null) {
+                                                                                        errorhtml.innerHTML = finalMsg;
+                                                                                      }
+                                                                          }
+                                                                                   
+                                                                     });    
+                                                                  }
+                                    
+                                                            });
+                                                        }
+                                                        else if(response.data.data.isCancelCallNeeded) {
+                                                            CCRZ.subsc.OrderInfoDataAction.callCancelAPI(function(res2) {
+                                                                console.log('in cancel API');
+                                                                console.log(res2);
+                                                                    /*
+                                                                        res2 = {};
+                                                                        res2.success = true;
+                                                                        res2.data = {};
+                                                                        res2.data.CancelAPISucess = true;
+                                                                        res2.data.data = {};
+                                                                        res2.data.data.true;
+                                                                        res2.data.data.isRefundReq = true;
+                                                                    */
+                                                                //console.log(res2.data.CancelAPISuces);
+                                                                console.log(res2.success );
+                                                                console.log(res2.data.data.isRefundReq);
+                                                                debugger;
+                                                                if(res2.success && res2.data.data.isRefundReq){
+                                                                    CCRZ.subsc.OrderInfoDataAction.callCreditMemo(function(res4){
+                                                                        
+                                                                            CCRZ.subsc.OrderInfoDataAction.callRefundRequest(function(res3){
+                                                                                $('#exampleModal').modal('show');
+                                                                                var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                if(errorhtml != null) {
+                                                                                    errorhtml.innerHTML = finalMsg;
+                                                                                }  
+                                                                                console.log('res3.data.callFSD>>>>'+res3.data.callFSD);
+                                                                                if(res3.data.callFSD)
+                                                                                {
+                                                                                CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(res5){
+                                                                                console.log('fsd calling 3>>>');
+                                                                                });
+                                                                                }
+                                                                            });
+                                                                        
+                                                                    });
+                                                                }
+                                                               
+                                                                             
+                                                                else {
+                                                                      CCRZ.subsc.OrderInfoDataAction.callCreditMemo(function(res4){
+                                                                         if(res4.data.callFSD)
+                                                                         {
+                                                                                CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(response)
+                                                                                { 
+                                                                                      console.log('fsd calling non OMS>>>');
+                                                                                      
+                                                                                                           
+                                                                                });
+                                                                          } 
+                                                                          $('#exampleModal').modal('show');
+                                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                             if(errorhtml != null) {
+                                                                                errorhtml.innerHTML = finalMsg;
+                                                                             }
+                                                                     });    
+                                                                }                                    
+                                                            });
+                                                        }
+                                                        /*else {                                                        
+                                                            $('#exampleModal').modal('show');
+                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                            if(errorhtml != null) {
+                                                                errorhtml.innerHTML = finalMsg;
+                                                            }                                                    
+                                                        }*/
+                                                       
+                                                    }
+                                                    else {     
+                                                         CCRZ.subsc.OrderInfoDataAction.callCreditMemo(function(res4){
+                                                             if(res4.data.callFSD)
+                                                             {
+                                                                    CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(response)
+                                                                    { 
+                                                                          console.log('fsd calling non OMS>>>');
+                                                                          
+                                                                                               
+                                                                    });
+                                                              } 
+                                                               $('#exampleModal').modal('show');
+                                                                var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                if(errorhtml != null) {
+                                                                   errorhtml.innerHTML = finalMsg;
+                                                                }        
+                                                         });                                                        
+                                                       
+                                                                                
+                                                    }
+                                                                                                                                               
+                                                }
+                                                else             
+                                                {
+                                                    if(response.data != undefined && response.data.errorMsg != undefined)
+                                                    {
+                                                        $('#cancelMod1').modal('show');
+                                                        var errorhtml = document.getElementById("showMsg");
+                                                        if(errorhtml != null)
+                                                        {
+                                                            errorhtml.innerHTML = response.data.errorMsg;
+                                                        }
+                                                    }
+                                                }
+                                                
+                                            });
+                                    }
+                                }
+                                
+                                       
+                                });
+                            $('#clickToRefresh').click(function(){
+                                $('#exampleModal').modal('hide');
+                                location.reload();
+                            });    
+                            $('#hideUserProvisionedMod').click(function(){
+                                $('#userProvisionedMod').modal('hide');
+                            });
+                            $('#hideUserProvisionedMod1').click(function(){
+                                $('#userProvisionedMod1').modal('hide');
+                            });
+                            $('#hideModelOnCancel').click(function(){
+                                $('#cancelMod').modal('hide');
+                            });
+                            $('#hideModelOnCancel2').click(function(){
+                                $('#cancelMod2').modal('hide');
+                            });
+                            $('#hideModelOnCancel1').click(function(){
+                                $('#cancelMod1').modal('hide');
+                            });
+                            $('#hideAddOnPopup').click(function(){
+                                $('#showAddOnPopup').modal('hide');
+                            });
+                            $('#hideOKOnPopup').click(function(){
+                                $('#cancelMod4').modal('hide'); 
+                            });
+                  });
+                });
+             }catch(ex){
+                console.log(ex);
+             }
+             
+                if(orderRes && orderRes.paymentMeth && orderRes.paymentMeth == "cc"){
+                        if(orderRes.orderStatus=='Cancelled'){
+                          $("#cancelTransanctionId").text(orderRes.cancelTransactionId);
+                          $("#refundStatusId").text(orderRes.refundStatus);
+                          $("#RefundStatus").show();
+                           
+                            if(orderRes.refundStatus=='Refunded'){
+                                $("#CancelTransaction_Id").show();
+                                
+                            }
+                            else{
+                                 $("#CancelTransaction_Id").hide();
+                            }
+                         }
+                        else{
+                            
+                            $("#transanctionId").text(orderRes.transactionId);
+                            $("#Transaction_Id").show();
+                            
+                        }
+                }else{
+                        $("#Transaction_Id").hide();
+                        $("#RefundStatus").hide();
+                        $("#CancelTransaction_Id").hide();
+                        
+                }
+              myOrdersView.render();
+         });
+         
+            CCRZ.subsc.OrderInfoDataAction.getOrderInfo(function(response) {
+                console.log('response 121241 %o',response);
+                if (response.success) {
+                    orderRes = response.data.data;
+                    CCRZ.orderDetailView.model.attributes.canShowCancel = response.data.canShowCancel;
+                    CCRZ.orderDetailView.model.attributes.showPartialCancel = response.data.showPartialCancel;
+                    CCRZ.orderDetailView.model.attributes.activationKeyErrorMessage = response.data.activationKeyErrorMessage;
+                    CCRZ.orderDetailView.model.attributes.orderContactAccountName = response.data.data.accountName;
+                    CCRZ.orderDetailView.model.attributes.billFrom = response.data.data.billFrom;
+                    CCRZ.orderDetailView.model.attributes.ccSouthPlain = response.data.data.ccSouthPlain;
+                    CCRZ.orderDetailView.model.attributes.isCallFSD=response.data.data.isCallFSD;
+                    if(response.data.isthirdpartypayment){
+                           CCRZ.orderDetailView.model.attributes.isthirdpartypayment = true; 
+                           CCRZ.orderDetailView.model.attributes.thirdpartycustname = response.data.thirdpartycustname;
+                           CCRZ.orderDetailView.model.attributes.thirdpartycustnum = response.data.thirdpartycustnum;
+                           CCRZ.orderDetailView.model.attributes.thirdpartyIAMNO = response.data.thirdpartyIAMNO;
+                     }else{
+                           CCRZ.orderDetailView.model.attributes.isthirdpartypayment = false;  
+                     }
+                }
+            });
+             
+         });   
+ </script>
+
+</apex:page>

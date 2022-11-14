@@ -1,0 +1,144 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" 
+                access="global" 
+                controller="FSL_CL_ServiceOrder_LightningPath"> 
+    
+    <aura:attribute name="workOrder" type="WorkOrder"/> 
+    <aura:attribute name="fieldName" Description="API Name of Picklist Value" type="String" />
+    <aura:attribute name="recordId" type="Id" description="Id of record on which this component is hosted." />
+    <aura:attribute name="records" type="object[]" description="Records for Chevron calculated by Apex class" access="private" />  
+    <aura:attribute name="profileName" type="String" />
+    <aura:attribute name="serviceOrderType" type="String" />
+    <aura:attribute name="chevronClick" type="String" />
+    <aura:attribute name="statusBoolean" type="Boolean" default="false"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    <aura:attribute name="isExtendable" type="boolean" default="false"/>
+    <aura:attribute name="profileStageList" type ="String[]"/>
+    
+    <!--added by vinod yelala for status flow-->
+    <aura:attribute name="processStep" type="String"/>
+    <aura:attribute name="stateStep" type="Boolean"/>
+    <aura:attribute name="stateStep1" type="Boolean"/>
+    <aura:attribute name="errorString" type="String" default=""/> 
+    
+    <aura:attribute name="jobStatus" type="String"/>
+    <aura:attribute name="statusValue" type="String"/>
+    <aura:attribute name="subStatusValue" type="String[]"/>
+    <aura:attribute name="isMostLikelySelected" type="String"/>
+    <aura:attribute name="isRepairSelected" type="Boolean"/>
+    <aura:attribute name = "isWorkOrderCreated" type = "Boolean"/>
+    <aura:attribute name = "isTechDispatched" type = "Boolean"/>
+    <!--added by vinod 8/23-->
+    <aura:attribute name="showTnDwithMS" type="Boolean" default="false"/>
+    <!--<aura:attribute name="showTnDwithMSContinue" type="Boolean" default="false"/>-->
+    <aura:attribute name="showTnDwithoutMS" type="Boolean" default="false"/>
+    <aura:attribute name="showIntake" type="Boolean" default="false"/>
+    <aura:attribute name="showIntakeComple" type="Boolean" default="false"/>
+    <aura:attribute name="ErrorMsgforOpenTS" type="Boolean" default="false"/> <!--for CT2-199-->
+    <aura:attribute name="ErrorMsgforInternalWO" type="Boolean" default="false"/><!--for CT2-166-->
+    
+    
+    
+    <!-- INIT Method --> 
+    
+    
+    <aura:handler name="init" value="{!this}" action="{!c.loadChevron}"/> 
+    <aura:handler name="change" value="{!v.temp}" action="{!c.itemsChange}"/> 
+    
+    <lightning:overlayLibrary aura:id="overlayLib"/>
+    
+    <!--Added by Piyush for CT2-199-Start-->
+   <aura:if isTrue="{!v.ErrorMsgforOpenTS}">
+        
+        <!-- Modal/Popup Box starts here-->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate"> {!$Label.c.FSL_JobCummins} </h2>
+                </header>
+                
+                <!--Modal/Popup Box Body Starts here-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                     <!--added by mallika for CT2-166 -start -->
+                    <aura:if isTrue="{!v.ErrorMsgforInternalWO}">
+                        <p> {!$Label.c.FSL_InternalWOClose} </p>
+                        <aura:set attribute="else">
+                            <p> {!$Label.c.FSL_CloseTSpopup} </p>
+                        </aura:set>
+                    </aura:if>  <!--added by mallika for CT2-166 -end -->
+                </div>
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="{!$Label.c.css_Ok}"
+                                      title="{!$Label.c.css_Ok}"
+                                      onclick="{! c.closeErrorModel }"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    <!--Added by Piyush for CT2-199-End-->
+    
+    <div style="width:100%;border:1px solid #fff;border-radius:8px;padding:5px 0px;background-color:#fff;" class="slds-align_absolute-center">
+        <div class="chevron noaction">
+            <aura:iteration items="{!v.records}" var="item" indexVar="i"> 
+                <!--Added by Harsha for path color Higlight on 08/26/2020 -->
+                <a onclick="{!c.navigateToRecord}" name="{#item.cssClass}" 
+                   data-index = "{#item.value}" class="{#item.cssClass}"  
+                   style="{!'width:'+item.width+';pointer-events:'+item.disablePointer}">
+                    <!--+and(v.processStep=='close',item.val != 'close')+'none'-->
+					
+                    <aura:if isTrue="{!and(item.cssClass== 'Inactive',item.isActive==true )}">
+                        {#item.val}
+                    </aura:if>
+                    <aura:if isTrue="{!and(item.cssClass == 'visited',item.isActive==true )}">
+                        {#item.val}
+                        <aura:set attribute="else"> 
+                            {#item.val}
+                        </aura:set> 
+                    </aura:if> 
+                </a>
+            </aura:iteration>
+        </div>
+    </div> 
+    <aura:if isTrue = "{!v.isExtendable}"> 
+        <div style="width:100%;border:1px solid #fff;border-radius:5px;padding:5px 0px;" class="slds-align_absolute-center">
+            <lightning:recordEditForm aura:id="recordViewForm"
+                                      recordId="{!v.recordId}"
+                                      objectApiName="WorkOrder"
+                                      onload="{!c.handleOnLoad}"
+                                      onsuccess="{!c.handleSuccess}">
+                                     
+                
+                <lightning:messages/>
+                
+                <div class="slds-grid">
+                    <div class="slds-col slds-size_1-of-2">
+                        <lightning:inputField disabled="true" fieldName="Status" value="{!v.statusValue}" /> 
+                    </div>
+                    <div class="slds-col slds-size_1-of-2">
+                        <lightning:inputField fieldName="Sub_Status__c" aura:id="subStatusId" onchange = "{!c.handleOnChange}"/> 
+                    </div>
+                </div>
+                <aura:if isTrue="{!v.errorString != ''}">
+                    <!--<div class="slds-text-color_error slds-align_absolute-center" style="font-size: 15px; font-weight:bold">{!v.errorString}</div>-->
+                    <!--7/25/22 started, added by Naga Anusha Devi Malepati for capturing Integration errors Send 4Cs to ERP,NIN-444-->
+                    <div class="slds-text-color_error slds-align_absolute-center" style="font-size: 15px; font-weight:bold">
+                        <aura:unescapedHtml value="{!v.errorString}" /></div>
+                    <!--7/25/22 Ended by Naga Anusha Devi Malepati for capturing Integration errors Send 4Cs to ERP,NIN-444-->
+                    <div class="slds-text-color_error"></div>                 
+                </aura:if>
+                <lightning:button aura:id="submit" variant="brand" type="submit" label="Save"  class="slds-m-top_medium slds-align_absolute-center"/>
+                <!--<lightning:button label="Success" variant="inverse" onclick="{!c.showSuccessToast}" class = "success_cls" />-->
+            </lightning:recordEditForm>	
+        </div>
+    </aura:if>
+    
+    
+    <!--<c:FSL_StatusIntakeConfirmToClose recordId="{!v.recordId}" processStatus="{!v.processStep}" isModalOpen="{!v.showIntake}"/>
+    <c:FSL_StatusTnDJobPlnConfirmToCloseforMS recordId="{!v.recordId}" processStatus="{!v.processStep}" isModalOpen="{!v.showTnDwithMS}"/>
+    <c:FSL_StatusTnDJobPlnConfirmToClose recordId="{!v.recordId}" processStatus="{!v.processStep}" isModalOpen="{!v.showTnDwithoutMS}"/>
+    <c:FSL_StatusTnDJobPlnConfirmToClose recordId="{!v.recordId}" processStatus="{!v.processStep}" isModalOpen="{!showTnDwithoutMS}"/>
+    -->
+</aura:component>

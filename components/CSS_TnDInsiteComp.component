@@ -1,0 +1,264 @@
+<apex:component layout="none" controller="CSS_TnDInsiteComp" allowDML="true">
+    <apex:attribute name="jobOrdId" description="CSS Job Order ID" type="ID" assignTo="{!Ins_JobId}" />
+    <apex:attribute name="jobOrdNumb" description="CSS Job Order Number" type="String" />
+    <apex:attribute name="CustName" description="CSS Job Customer Name" type="String" />
+    <apex:attribute name="TechID" description="CSS Job Technician ID" type="String" />
+    <style>
+        .ESNPopup {
+        background-color: white;
+         border-style: solid;
+        border-width: 2px;
+        left: 20%;
+        padding: 10px;
+        position: absolute;
+        z-index: 9999;
+        
+        height: auto;
+        top: -220px;
+        }
+        .closeButton {
+        float: right;
+        }
+    </style>
+    <script>
+        function launchInsite(){
+            var fldJob = "{!jobOrdNumb}";
+            var fldTechId = "{!TechID}";
+            var fldCust = "{!CustName}";
+            
+            var fldVal1 =  fldJob + '| CUSTNAME:' + fldCust + '| TECHID:' + fldTechId + '| SESNID:'; 
+            var urlVal = 'INSITE: ACTION:GetEngineInformation| CJOD:' + fldVal1;
+            //alert (urlVal)
+            
+            window.top.location.href =urlVal;
+        }
+    </script>
+    <fieldset style="border: 1px solid grey; height:100%;" id="Insitefs">
+        <legend class="fs_legend">INSITE</legend>
+        <apex:outputpanel id="insite1" rendered="{!IF(rJobOrd.INSITE_UpdateTimeStamp__c== null, true, false)}">
+         <!--   <div class="panel"> -->
+            <div class="col-md-12 col-xs-12">
+                <div class="panel-heading"> <b> Work in INSITE </b> </div>
+                <div class="panel-body">
+                    
+                        <div class="col-md-12 col-xs-12">
+                            <p> Pull prioritized fault codes or perform diagnostic tests.</p>
+                            
+                        </div>
+                    
+                    <div class="col-md-12 col-xs-12"> </div>
+                    <div class="row">
+                        <div class="col-md-6 col-xs-12">
+                            <p> You can Launch INSITE now and pull prioritized fault codes. You can also return to INSITE to perform diagnostic tests. </p>
+                            <p> If prompted, input Security Type and ECM Password.</p>
+                        </div>
+                        <div class="col-md-6 " style="border-left: 1px solid #333;">
+                            <p> If you are returning from INSITE, you can now pull prioritized fault codes back into Cummins Service System (CSS) 
+                                and perform diagnostic and repair using EDS.</p>
+                            <p> &nbsp;</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 col-xs-12">&nbsp;</div>
+                        <div class="col-md-6 " style="border-left: 1px solid #333;"> &nbsp;</div>
+                    </div>
+                    <br/>
+                    <div class="row">
+                        <div class="col-md-6 col-xs-12">
+                            <a onclick="launchInsite();"  class="saveButton"> Launch or Return to INSITE </a>
+                        </div>
+                        <div class="col-md-6 col-xs-12" >
+                            <apex:commandLink action="{!pgFCRefresh}" styleclass="saveButton" reRender="insite2" value="Pull in Fault Codes">
+                            <apex:actionSupport event="onclick" action="{!pgFCRefresh}" rerender="popInsiteNc"/>
+                            </apex:commandLink>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </apex:outputpanel>
+        
+        <apex:outputpanel id="insite2" rendered="{!IF(rJobOrd.INSITE_UpdateTimeStamp__c == null, false, true)}"> 
+           <div class="panel">
+                <div class="panel-heading"><b><h2>Fault Codes </h2></b>
+                   <b> Pulled from INSITE: </b>
+                   <apex:outputText value="{!sftdDate}" />
+                </div>
+                <apex:outputpanel id="insite10" rendered="{!IF(faultCodes.size> 0, true, false)}">
+                 <div class="panel-heading"><b><h2> Prioritized Fault Codes </h2></b>
+                </div>
+                <div class="panel-body">
+                    <div class="table-responsive" style="height:350px;">
+                    <table id="faultcode" class="table table-striped" >
+                        <thead style="width:100%;">
+                            <tr width="100%">
+                                <th colspan="2" width="55%">Diagnose</th>
+                                <th width="40%"><font style="color:#B5B3B3;">SRTs</font></th>
+                            </tr>
+                        </thead> 
+                        <tbody style="display:table-footer-group;">
+                            <!-- <apex:variable var="fcCnt" value="{!1}" /> -->
+                            <apex:repeat value="{!faultCodes}" var="fc" id="theRepeat" >
+                                <tr>
+                                    <td width="10%">
+                                        &nbsp; 
+                                        <!-- <b> {!fcCnt} </b> -->
+                                    </td>
+                                    <td width="45%">
+                                        <b> {!fc.FaultCode__c} <br />
+                                        Related Codes:</b> <br/>
+                                        {!fc.RelatedFaultCode__c}
+                                    </td>
+                                    <td width="40%">
+                                        <font style="color:#B5B3B3;">
+                                        <span><b>Estimated Diagnose:</b> <br/>
+                                            00 hours 00 minutes
+                                        </span> </font>
+                                    </td>
+                                    <td width="5%">
+                                        &nbsp; 
+                                    </td>
+                                </tr>
+                                <!-- <apex:variable value="{!fcCnt+1}" var="fcCnt"/> -->
+                            </apex:repeat> 
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+                </apex:outputpanel>
+                <apex:outputpanel id="insite11" rendered="{!IF(UnprioritizedFaultCodes.size> 0, true, false)}">
+                <div class="panel-heading"><b><h2>{!IF(faultCodes.size> 0,'Additional Fault Codes ', '')} </h2></b>
+                </div>
+                <div class="panel-body">
+                    <div class="table-responsive" style="height:350px;">
+                    <table id="faultcode1" class="table table-striped" >
+                        <thead style="width:100%;">
+                            <tr width="100%">
+                                <th colspan="2" width="55%">Diagnose</th>
+                                <th width="40%"><font style="color:#B5B3B3;">SRTs</font></th>
+                            </tr>
+                        </thead> 
+                        <tbody style=" display:table-footer-group;">
+                            <!-- <apex:variable var="fcCnt" value="{!1}" /> -->
+                            <apex:repeat value="{!UnprioritizedFaultCodes}" var="fc1" id="theRepeat1" >
+                                <tr>
+                                    <td width="10%">
+                                        &nbsp; 
+                                        <!-- <b> {!fcCnt} </b> -->
+                                    </td>
+                                    <td width="45%">
+                                        <b> {!fc1.FaultCode__c} <br />
+                                        Related Codes:</b> <br/>
+                                        {!fc1.RelatedFaultCode__c}
+                                    </td>
+                                    <td width="40%">
+                                        <font style="color:#B5B3B3;">
+                                        <span><b>Estimated Diagnose:</b> <br/>
+                                            00 hours 00 minutes
+                                        </span> </font>
+                                    </td>
+                                    <td width="5%">
+                                        &nbsp; 
+                                    </td>
+                                </tr>
+                                <!-- <apex:variable value="{!fcCnt+1}" var="fcCnt"/> -->
+                            </apex:repeat> 
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+                </apex:outputpanel>
+                <br/>
+                <div class="col-md-6 col-xs-12">
+                    <a onclick="launchInsite();"  class="saveButton"> Launch or Return to INSITE </a>
+                </div>
+                <div class="col-md-6 col-xs-12">
+                    <apex:commandLink action="{!pgFCRefresh}" styleclass="saveButton" reRender="insite2" value="Pull in Fault Codes"/>
+                </div>
+            </div>
+        
+        
+            <apex:outputPanel id="InsiteEsnPop">
+                <apex:outputPanel id="popInsiteESN" styleClass="ESNPopup" layout="block" rendered="{!displayINPop}">                  
+                    <table style="width:100%" align="centre" background-color="">
+                        <tr>
+                            <td><font face="Helvetica neue" size="5px">Troubleshooting - Cummins Service System &nbsp;</font>
+                                <apex:commandButton image="{!URLFOR($Resource.CSS_Cross_Button)}" title="Close the popup" action="{!closeINPopup}" styleClass="closeButton" rerender="InsiteEsnPop" />
+                            </td>
+                        </tr>
+                        <tr><td> <hr/></td></tr>
+                        <tr><td>&nbsp;</td></tr>
+                        <tr><td>
+                            The ESN from INSITE does not match the ESN number entered in the job.<br/>
+                            Which ESN do you want to keep?
+                        </td></tr>
+                        <tr><td>&nbsp;</td></tr>
+                        <tr><td>  
+                            <apex:commandLink action="{!pgChInsiteESN}" styleClass="saveButton" rerender="InsiteEsnPop">
+                               <b> {!rJobOrd.ESN_Insite__c} <br/> Use Insite Engine Serial Number </b> <br/>
+                               Replace the current ESN entered in the CSS job with the ESN number entertered
+                               in INSITE. Information in the job that is related to the previous ESN will
+                               be removed.
+                            </apex:commandLink>
+                        </td></tr>
+                        <tr><td>&nbsp;</td></tr>
+                        <tr><td>
+                            <apex:commandLink action="{!pgChJoESN}" styleClass="saveButton" style=" width:100% ;" rerender="InsiteEsnPop" >
+                                <b> {!IF (rJobOrd.ESN__c==null, 'NULL',rJobOrd.ESN__c) } <br/> Use CSS Engine Serial Number </b><br/>
+                                Keep the current ESN value in the CSS job.
+                            </apex:commandLink>
+                        </td></tr>
+                        <tr><td>&nbsp;</td></tr>
+                        <tr><td> <hr/></td></tr>
+                        <tr><td>
+                            <apex:commandButton value="Cancel" action="{!closeINPopup}" styleClass="cancelButton" rerender="InsiteEsnPop" />
+                        </td></tr>
+                    </table>
+                </apex:outputPanel> 
+            </apex:outputPanel>
+        </apex:outputpanel>
+        <apex:outputPanel id="InsiteNcPop">
+            <apex:outputPanel id="popInsiteNc" styleClass="ESNPopup" layout="block" rendered="{!displayINncPop}">
+            <div style="border: 1px solid black;">
+                <div class="row">
+                    <div class="col-md-10 col-xs-10" >
+                  
+                      <b>  <font size="4px"> Troubleshooting - Cummins Service System</font></b>
+                    </div>
+                    <div class="col-md-2 col-xs-2" style="align:right;">
+                        <apex:commandButton image="{!URLFOR($Resource.CSS_Cross_Button)}" title="Close the popup" action="{!closeINncPopup}" styleClass="closeButton" rerender="InsiteNcPop" />
+                    </div>
+                </div>
+                <hr/>
+                <div class="row" >
+                    <div class="col-md-1 col-xs-1" ></div>
+                    <div class="col-md-2 col-xs-2" >
+                        <i class="red-x"> </i>
+                    </div>
+                    <div class="col-md-9 col-xs-9" >
+                        <p><b>In order to pull in prioritized fault codes, you must connect to the INSITE application. </b></p>
+                        <ul>
+                            <li>Connect to the Engine</li>
+                            <li>Click the Launch or Return to INSITE button</li>
+                            <li>When you return to CSS, click the Pull in Fault Codes button</li>
+                        </ul>
+                        
+                    </div>
+                </div>
+                <hr/>
+                <div class="row">
+                    <div class="col-md-5 col-xs-3" >
+                        &nbsp;
+                    </div>
+                    <div class="col-md-7 col-xs-9" style="float:left;">
+                        <apex:commandButton value="OK" action="{!pgCancelClose}" styleClass="saveButton" rerender="InsiteNcPop" />
+                    </div>
+                    
+                </div>
+                <br/>
+            </div>
+            </apex:outputPanel> 
+        </apex:outputPanel>
+    </fieldset>
+</apex:component>

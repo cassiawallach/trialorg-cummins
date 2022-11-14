@@ -1,0 +1,1618 @@
+<!--Updated On 2nd March 2021 -->
+<apex:component controller="OSM_SW_MyOrders_Comp_Ctrl" >
+   
+   <style>
+   .myorderstable tr:nth-child(odd) {
+  background-color: #fafafa;
+}
+.required-field::after {
+    content: "*";
+    color: red;
+}
+   </style>
+   
+<script>
+  CCRZ.uiProperties.myOrdersView.desktop.tmpl = 'MyAccount-MyOrders-Desktop-New';
+    CCRZ.uiProperties.myOrdersView.phone.tmpl = 'MyAccount-MyOrders-Desktop-New'; 
+CCRZ.uiProperties.navigatePaginationView.desktop.tmpl="MyOrders-NavigatePagination-Dektop-New"; 
+       
+</script>
+ 
+<script id="MyAccount-MyOrders-Desktop-New" type="text/template">
+   <div class="panel panel-default cc_panel cc_myaccount_myorders">
+    <div class="panel-heading cc_heading">
+     <h3 class="panel-title cc_title">{{pageLabelMap 'MyAccount_MyOrders'}}</h3>
+    </div>
+    
+     <!-- Juhi Change - Sept 14 : Hiding the Search Section in all My Account Pages -->
+    <div class="panel-body cc_body cc_myaccount_content" style="padding-top:1%; display:none">
+     <div class="messagingSection-orderhistory-Error" role="alert" style="display: none"></div>
+     <div class="messagingSection-orderhistory-Info" role="alert" style="display: none">
+      <button type="button" class="close cc_close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&#215;</span></button>
+     </div>
+     {{#ifDisplay 'srch.ord'}}
+      <form id="searchOrderForm" class="form-inline searchOrderForm cc_search_order_form cc_form-inline">
+       <div class="form-group form-group-sm ">
+        <label for="searchOrderInput" class="sr-only">Search order</label>
+        <input id="searchOrderInput" type="text" class="form-control searchOrderInput input-text cc_search_order_input" name="searchOrderInput" value="{{searchOrder}}" placeholder="{{pageLabelMap 'MyOrdersInc_SearchOrders'}}"/>
+       </div>
+       <div class="form-group form-group-sm">
+        <select name="searchOrderStatus" value="{{searchOrderStatus}}" class="form-control cc_search_order_status">
+         <option value="">{{pageLabelMap 'MyOrdersInc_AllOrderStatus'}}</option>
+         {{#each this.orderStatusOpts}}
+         <option value="{{this.value}}" {{#ifEquals ../searchOrderStatus this.value}} selected {{/ifEquals}}>{{this.label}}</option>
+         {{/each}}
+        </select>
+       </div>
+       <div class="form-group form-group-sm date" style="padding-left:50px">
+        <label for="fromDateStr" class="cc_from_date_str">{{pageLabelMap 'MyOrdersInc_SearchFrom'}}</label>
+        <div class="input-group" id="datetimepickerFrom">
+         <input id="fromDateStr" name="fromDateStr" value="{{this.fromDateStr}}" class="requestedDate fromDate cc_from_date">
+        </div>
+       </div>
+       <div class="form-group form-group-sm date" style="padding-left:20px">
+        <label for="toDateStr" class="cc_to_date_str">{{pageLabelMap 'MyOrdersInc_SearchTo'}}</label>
+        <div class="input-group" id="datetimepickerTo">
+         <input id="toDateStr" class="requestedDate toDate cc_to_date" name="toDateStr" value="{{this.toDateStr}}">
+        </div>
+       </div>
+      </form>
+      <div class="cc_order_search_action" style="padding-top:1%">
+       <input type="button" class="btn btn-default btn-sm searchOrder cc_search_order CMI-btn-teal" value="{{pageLabelMap 'MyOrdersButton_SearchOrders'}}"/>
+       <input type="button" class="btn btn-default btn-sm resetOrder cc_reset_order CMI-btn-blue" value="{{pageLabelMap 'MyOrdersButton_ResetOrders'}}"/>
+      </div>
+     {{/ifDisplay}}
+    </div>
+   </div>
+   <div class="orderPaginationSec" style="width:75%"/>
+  
+  
+   
+   <div class="panel panel-default cc_panel cc_paginator">
+    {{#ifHasPermission 'GOMSUser'}}
+    <p id="GOMSPriceMsg"  style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;width:75%;">                                  
+               <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; Prices shown here are for illustration purposes only. Please refer to the Global Order Management System (GOMS) and your local ERP to view accurate pricing and invoices.
+    </p>
+     {{/ifHasPermission}}
+    <div class="table-responsive">
+    {{#ifHasPermission 'isInternalOrTrainingAccount'}}
+     <table id="orderTable" class="table table-hover shopping_cart cc_table cc_order_search_table myorderstable" style="width:88%">
+      <tr class="cc_table_header_row" style="color:white; background-color:black">
+       <th class="cc_table_header">
+        <span class="cc_table_header_order_number">{{pageLabelMap 'MyOrdersInc_OrderNumber'}}</span>
+       </th>       
+       <th class="cc_table_header">
+        <span class="cc_table_header_order_date">{{pageLabelMap 'MyOrdersInc_OrderDate'}}</span>
+       </th>  
+       <th class="cc_table_header">
+        <span class="cc_table_header_order_amount">{{pageLabelMap 'MyOrdersInc_OrderAmount'}}</span>
+       </th>
+       <th class="cc_table_header" style="text-align:center">
+        <span class="cc_table_header_order_status">{{pageLabelMap 'MyOrdersInc_Status'}}</span>
+       </th>
+       </th>
+       <th class="cc_table_header" style="text-align:center">
+        <span class="cc_table_header_order_status">{{pageLabelMap 'Purchased by'}}</span>
+       </th>
+        {{#ifHasPermission 'isInternalOrTrainingAccount'}}
+            <th class="cc_table_header" style="text-align:center">
+                <span class="cc_table_header_order_status">{{pageLabelMap 'Purchased For'}}</span>
+            </th>
+        {{/ifHasPermission}}
+        
+       
+       
+       {{#ifDisplay 'MO.ShActOnOrd'}} 
+        <th class="cc_table_header" style="text-align:right; padding-right:6%">
+         <span class="cc_table_header_order_actions">{{pageLabelMap 'MyCartsInc_Actions'}}</span>
+        </th>
+       {{/ifDisplay}}
+
+      </tr>
+       
+      {{#each this.orderList}}
+      {{#ifNotEquals status 'Failed'}}
+       <tr class="myAccOrderRows cc_table_row">
+       
+        <td class="cc_table_col" style="width:120px; vertical-align: middle;">
+         <span class="cc_col_order_number"><a href="#" data-id="{{encryptedId}}" class="gotoOrderDetails cc_goto_order_detailss">{{name}}</a></span>
+        </td>
+
+        <td class="cc_table_col" style="width:120px; vertical-align: middle;">
+         <span class="cc_col_order_date"  >{{date1 orderDate}}</span>
+        </td>
+        <td class="cc_table_col"  style="width:80px; text-align:right; vertical-align: middle; padding-right:5%">
+         <span class="cc_col_order_amount">{{price totalAmount currencyIsoCode}}</span>
+        </td>
+        <td class="cc_table_col" style="width:120px; text-align:center; vertical-align: middle;">
+         <span class="cc_col_order_statust">{{pageLabelMap status}}</span>
+        </td>
+                    <td class="cc_table_col" style="width:120px; text-align:center; vertical-align: middle;">
+                <span class="cc_col_order_statust">{{OSMSWPurchaseBy}}</span>
+            </td>
+            
+        {{#ifHasPermission 'isInternalOrTrainingAccount'}}
+            {{#each transactionPaymentsS}}
+            <td class="cc_table_col" style="width:120px; text-align:center; vertical-align: middle;">
+                {{#ifEquals accountType 'po'}}
+                     <span class="cc_col_order_statust">{{accountNumber}}</span>
+                {{/ifEquals}}
+            </td>
+            {{/each}}
+        {{/ifHasPermission}}
+        
+       
+        {{#ifDisplay 'MO.ShActOnOrd'}}
+         <td class="cc_table_col" style="vertical-align: middle; text-align:right; padding-right:5%">
+            {{#ifEquals this.OSMSWIsInterCompanyOrder false}}
+                {{#ifEquals this.status 'Order Submitted'}}
+                  {{#if this.canCancel}}
+                   {{#ifDisplay 'MO.ShCanBt'}}
+                    {{#ifEquals this.accountR.billingCountry 'United States'}}
+                    <input type="button" id="CancelOrder" class="btn btn-default btn-sm cc_col_prompt_cancel" data-id="{{sfid}}"  data-isfsd="{{orderProcessedforFSD}}" data-bundleProductCount1="{{OSMSWBundleProductCount}}" data-mode="Cancel" value="{{pageLabelMap 'Cancel'}}" /> <!-- onclick="cancelOrder(this);"-->
+                    {{else}}
+                    {{#ifHasPermission 'isOnBehalf'}}
+                           <input type="button" id="CancelOrder"  class="btn btn-default btn-sm cc_col_prompt_cancel" data-id="{{sfid}}"  data-isfsd="{{orderProcessedforFSD}}" data-bundleProductCount1="{{OSMSWBundleProductCount}}" data-mode="Cancel" value="{{pageLabelMap 'Cancel'}}" /> <!-- onclick="cancelOrder(this);"-->
+                     {{else}}
+                        {{#ifEquals this.accountR.billingCountry US}}
+                        <input type="button" id="CancelOrder" class="btn btn-default btn-sm cc_col_prompt_cancel" data-id="{{sfid}}"  data-isfsd="{{orderProcessedforFSD}}" data-bundleProductCount1="{{OSMSWBundleProductCount}}" data-mode="Cancel" value="{{pageLabelMap 'Cancel'}}" /> <!-- onclick="cancelOrder(this);"-->
+                        {{else}}
+                        {{#ifHasPermission 'isDistAdmin'}}
+                        <input type="button" id="CancelOrder" class="btn btn-default btn-sm cc_col_prompt_cancel" data-id="{{sfid}}"  data-isfsd="{{orderProcessedforFSD}}" data-bundleProductCount1="{{OSMSWBundleProductCount}}" data-mode="Cancel" value="{{pageLabelMap 'Cancel'}}" /> <!-- onclick="cancelOrder(this);"-->
+                        {{else}}
+                         <input type="button" id="CancelOrder" disabled  class="btn btn-default btn-sm cc_col_prompt_cancel" data-id="{{sfid}}"  data-isfsd="{{orderProcessedforFSD}}" data-bundleProductCount1="{{OSMSWBundleProductCount}}" data-mode="Cancel" value="{{pageLabelMap 'Cancel'}}" /> <!-- onclick="cancelOrder(this);"-->
+                        {{/ifHasPermission}}
+                       
+                        {{/ifEquals}}
+                     {{/ifHasPermission}}
+                    {{/ifEquals}}
+                   {{/ifDisplay}}
+                  {{/if}}
+              {{/ifEquals}}
+          {{/ifEquals}}
+         </td>
+        {{/ifDisplay}}
+         
+       </tr>
+       {{/ifNotEquals}}
+      {{/each}} 
+      
+     </table>
+     {{else}}
+        <table id="orderTable" class="table table-hover shopping_cart cc_table cc_order_search_table myorderstable" style="width:75%">
+      <tr class="cc_table_header_row" style="color:white; background-color:black">
+       <th class="cc_table_header">
+        <span class="cc_table_header_order_number">{{pageLabelMap 'MyOrdersInc_OrderNumber'}}</span>
+       </th>       
+       <th class="cc_table_header">
+        <span class="cc_table_header_order_date">{{pageLabelMap 'MyOrdersInc_OrderDate'}}</span>
+       </th>  
+       <th class="cc_table_header">
+        <span class="cc_table_header_order_amount">{{pageLabelMap 'MyOrdersInc_OrderAmount'}}</span>
+       </th>
+       <th class="cc_table_header" style="text-align:center">
+        <span class="cc_table_header_order_status">{{pageLabelMap 'MyOrdersInc_Status'}}</span>
+       </th>
+       </th>
+       <th class="cc_table_header" style="text-align:center">
+        <span class="cc_table_header_order_status">{{pageLabelMap 'Purchased by'}}</span>
+       </th>
+        {{#ifHasPermission 'isInternalOrTrainingAccount'}}
+            <th class="cc_table_header" style="text-align:center">
+                <span class="cc_table_header_order_status">{{pageLabelMap 'Purchased For'}}</span>
+            </th>
+        {{/ifHasPermission}}
+        
+       
+       
+       {{#ifDisplay 'MO.ShActOnOrd'}} 
+        <th class="cc_table_header" style="text-align:right; padding-right:6%">
+         <span class="cc_table_header_order_actions">{{pageLabelMap 'MyCartsInc_Actions'}}</span>
+        </th>
+       {{/ifDisplay}}
+
+      </tr>
+       
+      {{#each this.orderList}}
+      {{#ifNotEquals status 'Failed'}}
+       <tr class="myAccOrderRows cc_table_row">
+       
+        <td class="cc_table_col" style="width:120px; vertical-align: middle;">
+         <span class="cc_col_order_number"><a href="#" data-id="{{encryptedId}}" class="gotoOrderDetails cc_goto_order_detailss">{{name}}</a></span>
+        </td>
+
+        <td class="cc_table_col" style="width:120px; vertical-align: middle;">
+         <span class="cc_col_order_date"  >{{date1 orderDate}}</span>
+        </td>
+        <td class="cc_table_col"  style="width:80px; text-align:right; vertical-align: middle; padding-right:5%">
+         <span class="cc_col_order_amount">{{price totalAmount currencyIsoCode}}</span>
+        </td>
+        <td class="cc_table_col" style="width:120px; text-align:center; vertical-align: middle;">
+         <span class="cc_col_order_statust">{{pageLabelMap status}}</span>
+        </td>
+                    <td class="cc_table_col" style="width:120px; text-align:center; vertical-align: middle;">
+                <span class="cc_col_order_statust">{{OSMSWPurchaseBy}}</span>
+            </td>
+            
+        {{#ifHasPermission 'isInternalOrTrainingAccount'}}
+            {{#each transactionPaymentsS}}
+            <td class="cc_table_col" style="width:120px; text-align:center; vertical-align: middle;">
+                {{#ifEquals accountType 'po'}}
+                     <span class="cc_col_order_statust">{{accountNumber}}</span>
+                {{/ifEquals}}
+            </td>
+            {{/each}}
+        {{/ifHasPermission}}
+        
+       
+        {{#ifDisplay 'MO.ShActOnOrd'}}
+         <td class="cc_table_col" style="vertical-align: middle; text-align:right; padding-right:5%">
+            {{#ifEquals this.OSMSWIsInterCompanyOrder false}}
+                {{#ifEquals this.status 'Order Submitted'}}
+                  {{#if this.canCancel}}
+                   {{#ifDisplay 'MO.ShCanBt'}}
+                    {{#ifEquals this.accountR.billingCountry 'United States'}}
+                    <input type="button" id="CancelOrder" class="btn btn-default btn-sm cc_col_prompt_cancel" data-id="{{sfid}}"  data-isfsd="{{orderProcessedforFSD}}" data-bundleProductCount1="{{OSMSWBundleProductCount}}" data-mode="Cancel" value="{{pageLabelMap 'Cancel'}}" /> <!-- onclick="cancelOrder(this);"-->
+                    {{else}}
+                    {{#ifHasPermission 'isOnBehalf'}}
+                           <input type="button" id="CancelOrder"  class="btn btn-default btn-sm cc_col_prompt_cancel" data-id="{{sfid}}"  data-isfsd="{{orderProcessedforFSD}}" data-bundleProductCount1="{{OSMSWBundleProductCount}}" data-mode="Cancel" value="{{pageLabelMap 'Cancel'}}" /> <!-- onclick="cancelOrder(this);"-->
+                     {{else}}
+                        {{#ifEquals this.accountR.billingCountry US}}
+                        <input type="button" id="CancelOrder" class="btn btn-default btn-sm cc_col_prompt_cancel" data-id="{{sfid}}"  data-isfsd="{{orderProcessedforFSD}}" data-bundleProductCount1="{{OSMSWBundleProductCount}}" data-mode="Cancel" value="{{pageLabelMap 'Cancel'}}" /> <!-- onclick="cancelOrder(this);"-->
+                        {{else}}
+                        {{#ifHasPermission 'isDistAdmin'}}
+                        <input type="button" id="CancelOrder" class="btn btn-default btn-sm cc_col_prompt_cancel" data-id="{{sfid}}"  data-isfsd="{{orderProcessedforFSD}}" data-bundleProductCount1="{{OSMSWBundleProductCount}}" data-mode="Cancel" value="{{pageLabelMap 'Cancel'}}" /> <!-- onclick="cancelOrder(this);"-->
+                        {{else}}
+                         <input type="button" id="CancelOrder" disabled  class="btn btn-default btn-sm cc_col_prompt_cancel" data-id="{{sfid}}"  data-isfsd="{{orderProcessedforFSD}}" data-bundleProductCount1="{{OSMSWBundleProductCount}}" data-mode="Cancel" value="{{pageLabelMap 'Cancel'}}" /> <!-- onclick="cancelOrder(this);"-->
+                        {{/ifHasPermission}}
+                       
+                        {{/ifEquals}}
+                     {{/ifHasPermission}}
+                    {{/ifEquals}}
+                   {{/ifDisplay}}
+                  {{/if}}
+              {{/ifEquals}}
+          {{/ifEquals}}
+         </td>
+        {{/ifDisplay}}
+         
+       </tr>
+       {{/ifNotEquals}}
+      {{/each}} 
+      
+     </table>
+     {{/ifHasPermission}}
+    </div>
+    <div id="modalSec"></div>
+   </div>
+   
+   <!--MAR-507 Code Start -->
+   <!-- Added billing country clause for Mar-691 -->
+   {{#ifEquals this.accountR.billingCountry 'United States'}}
+   {{#ifHasPermission 'isDistAdmin'}}
+   {{#ifHasPermission 'isOnBehalf'}}
+     <div style="width: 85%;height: 100%;margin-bottom: 10px;">
+        <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42; color: black; font-style:italic;">
+            <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span>
+            &nbsp;{{pageLabelMap 'TaxExemption_Message'}}
+        </div>
+    </div>
+   {{/ifHasPermission}}
+   {{/ifHasPermission}}
+   
+   {{#ifHasPermission 'isSalesAdmin'}}
+   {{#ifHasPermission 'isOnBehalf'}}
+     <div style="width: 85%;height: 100%;margin-bottom: 10px;">
+        <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42; color: black; font-style:italic;">
+            <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span>
+            &nbsp;{{pageLabelMap 'TaxExemption_Message'}}
+        </div>
+    </div>
+   {{/ifHasPermission}}
+   {{/ifHasPermission}}
+    {{else}}
+       {{#ifEquals this.accountR.billingCountry US}}
+           {{#ifHasPermission 'isDistAdmin'}}
+           {{#ifHasPermission 'isOnBehalf'}}
+             <div style="width: 85%;height: 100%;margin-bottom: 10px;">
+                <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42; color: black; font-style:italic;">
+                    <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span>
+                    &nbsp;{{pageLabelMap 'TaxExemption_Message'}}
+                </div>
+            </div>
+           {{/ifHasPermission}}
+           {{/ifHasPermission}}
+            {{#ifHasPermission 'isSalesAdmin'}}
+            {{#ifHasPermission 'isOnBehalf'}}
+                 <div style="width: 85%;height: 100%;margin-bottom: 10px;">
+                    <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42; color: black; font-style:italic;">
+                        <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span>
+                        &nbsp;{{pageLabelMap 'TaxExemption_Message'}}
+                    </div>
+                </div>
+             {{/ifHasPermission}}
+             {{/ifHasPermission}}
+        {{/ifEquals}}
+   {{/ifEquals}}
+   <!--MAR-691 Code End-->
+   <!--MAR-507 Code End-->
+
+ 
+  </script>
+  
+  <script id="MyOrders-NavigatePagination-Dektop-New" type="text/template">
+   <div class="panel panel-default cc_panel cc_paginator" style="margin-bottom:5px">
+    <div class="panel-body cc_body">
+     <div class="row">
+      <div class="col-xs-4" style="margin-top: 5px;">
+       <p class="cc_paginator_legend">
+{{pageLabelMap 'PaginatorItems'}} <strong>{{startItem}} - {{endItem}}</strong> {{pageLabelMap 'PaginatorOf'}} <strong> {{totalRecords}} </strong> {{pageLabelMap 'PaginatorTotal'}}
+       </p>
+      </div>
+      <div class="col-xs-4">
+       <div class="text-center cc_current_page" style="margin-top: 5px;">
+        {{pageLabelMap 'PaginatorPage'}}
+        {{#if hasPrevious}}
+         <a href="#" class="firstAction cc_first_action">{{pageLabelMap 'PaginatorFirst'}}</a>
+         <a href="#" class="previousAction pageAction cc_page_action">{{pageLabelMap 'PaginatorPrevious'}}</a>
+        {{/if}}
+        {{#for startPage endPage 1}}
+         {{#ifEquals this ../currentPage}}
+          {{safeQuote this}}
+         {{else}}
+          <a href="#" class="gotoPage cc_goto_page" data-id="{{safeQuote this}}">{{safeQuote this}}</a>
+         {{/ifEquals}}
+        {{/for}}
+        {{#if hasNext}}
+         <a href="#" class="nextAction pageAction cc_page_action">{{pageLabelMap 'PaginatorNext'}}</a>
+         <a href="#" class="lastAction cc_last_action">{{pageLabelMap 'PaginatorLast'}}</a>
+        {{/if}}
+       </div>
+      </div>
+      <div class="col-xs-4">
+       <div class="form-inline cc_form-inline cc_paginator_form pull-right">
+        <label for="itemsPerPage" class="cc_items_per_page">
+         {{pageLabelMap 'PaginatorShow'}}
+         <select id="itemsPerPage" class="form-control input-sm sizeAction cc_size_action">
+          {{#each this.itemsPerPagePLValues}}
+           <option value="{{safeQuote this}}" {{#ifEquals ../pageSize this}} selected {{/ifEquals}}>{{safeQuote this}}</option>
+          {{/each}}
+         </select>
+         {{pageLabelMap 'PaginatorPerPage'}}
+        </label>
+       </div>
+      </div>
+     </div>
+    </div>
+    
+   </div>
+   
+      
+   <div class="modal fade cc_modal cc_myaccount_orders_modal" id="cancelMod" tabindex="-1" role="dialog" aria-labelledby="CancelMod">
+    <div class="modal-dialog" role="document">
+     <div class="modal-content cc_modal_content" style="border-radius:1px;border:1px black;">
+            <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                <h4 class="modal-title">Cancel Order</h4>
+            </div>
+            <div class="modal-body cc_modal_body" >
+       
+                   <h4 class="modal-title cc_cancel_prompt">Are you sure you want to perform a Cancel?</h4>
+            </div>
+      <div class="modal-footer">
+       <input type="button" id="hideModelOnCancel" class="closeModal btn btn-default cc_add_coupon" data-dismiss="modal" style="background-color: #0f4f77;" value="No"/>
+       <input type="button" id="modalCancelOrder"  value="Yes" style="float:left;" class="btn btn-default CMI-DA-Packages"/> 
+      </div>
+     </div>
+    </div>
+   </div>
+   
+   <div class="modal fade cc_modal cc_myaccount_orders_modal" id="cancelModForComment" tabindex="-1" role="dialog" aria-labelledby="CancelMod">
+    <div class="modal-dialog" role="document">
+     <div class="modal-content cc_modal_content" style="border-radius:1px;border:1px black;">
+            <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                <h4 class="modal-title">Cancellation reasons</h4>
+            </div>
+            <div class="modal-body cc_modal_body" >
+                    <table>
+                        <tr>
+                            <td style="width: 150px;" >
+                                <label class="required-field" id="cancleResionLabel" for="reason">Please select a Reason: </label>
+                            </td>
+                            <td>
+                                <select name="reason" id="cancleResion">
+                                  <option value="--None--">--None--</option>
+                                  <option value="Wrong product ordered">Wrong product ordered</option>
+                                  <option value="Person not authorized to place order">Person not authorized to place order</option>
+                                  <option value="Duplicate order">Duplicate order</option>
+                                  <option value="Person no longer at location">Person no longer at location</option>
+                                  <option value="Other">Other</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <br/>
+                                <label for="reason" id="cancelCommentlabel" >Cancellation Comments: </label>
+                            </td>
+                            <td>
+                                <br/>
+                                <textarea rows="3" cols="40" id="cancelComment" name="comment" placeholder="Please enter additional comments here" />
+                            </td>
+                        </tr>
+                    </table>
+                    
+            </div>
+      <div class="modal-footer">
+       <input type="button" id="hideModelOnCancelComment" class="closeModal btn btn-default cc_add_coupon" data-dismiss="modal" style="background-color: #0f4f77;" value="No"/>
+       <input type="button" id="submitOnComment"  value="Yes" style="float:left;" class="btn btn-default CMI-DA-Packages"/> 
+      </div>
+     </div>
+    </div>
+   </div>
+   
+   <div class="modal fade cc_modal cc_myaccount_orders_modal" id="cancelMod2" tabindex="-1" role="dialog" aria-labelledby="CancelMod">
+    <div class="modal-dialog" role="document">
+     <div class="modal-content cc_modal_content" style="border-radius:1px;border:1px black;">
+       
+      <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                <h4 class="modal-title">Cancel Order</h4>
+            </div>
+            <div class="modal-body cc_modal_body" >
+       
+                   <h4 class="modal-title cc_cancel_prompt">Are you sure you want to perform a Cancel?</h4>
+            </div>
+      <div class="modal-footer">
+       <input type="button" class="closeModal btn btn-default cc_add_coupon" style="background-color: #0f4f77;" id="hideModelOnCancel2" data-dismiss="modal" value="No" />
+       <input type="button" id="modalCancelOrder1"  value="Yes" style="float:left;" class="btn btn-default CMI-DA-Packages"/>
+      </div>
+     </div>
+    </div>
+   </div>
+   
+   
+   
+    <div class="modal fade cc_modal cc_myaccount_orders_modal" id="cancelMod3"  role="dialog" aria-labelledby="CancelMod"   style="position: fixed;margin: auto;">
+    <div class="modal-dialog" role="document">
+     <div class="modal-content cc_modal_content" style="border-radius:1px;border:1px black;">
+          <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                    <h4 class="modal-title cc_modal_title" id="deProvisionLabel">Cancel Order</h4>
+          </div>
+          <div class="modal-body cc_modal_body" >
+                   <div id="provisionCountMsg"></div>
+          </div>
+          <div class="modal-footer">
+           <input type="button" class="closeModal btn btn-default cc_add_coupon" style="background-color: #0f4f77;" id="hideModelOnCancel3" data-dismiss="modal" value="Ok" />
+          </div>
+     </div>
+    </div>
+   </div>
+                                                                                                                                                                                      
+    
+    <div class="modal fade cc_modal cc_myaccount_orders_modal" id="userProvisionedMod" tabindex="-1" role="dialog" aria-labelledby="CancelMod">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content cc_modal_content" style="border-radius:1px;border:1px black;">
+                <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                    <h4 class="modal-title cc_modal_title" id="deProvisionLabel">Cancel Order</h4>
+                </div>
+                <div class="modal-body cc_modal_body">
+                    <p class="cc_cancel_prompt">{{pageLabelMap 'MyOrdersInc_DeProvision'}}</p>
+                    <div class="userProvisionedData"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="hideUserProvisionedMod" class="btn btn-secondary" style="background-color: #0f4f77;" >{{pageLabelMap 'MyOrdersInc_Close'}}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+   
+	<div class="modal fade" id="showAddOnPopup" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="border-radius:1px;border:1px black;">
+                <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                    <h4 class="modal-title cc_modal_title" id="exampleModalLabel">Cancel Order</h4>
+                </div>
+                <div class="modal-body" > <h4 class="modal-title cc_cancel_prompt">You have existing orders with active add-on kits. Please cancel all add-on kits first before canceling the Guidanz Service base package</h4>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="hideAddOnPopup" class="btn btn-secondary" style="background-color: #0f4f77;" >{{pageLabelMap 'MyOrdersInc_Close'}}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+  
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="border-radius:1px;border:1px black;">
+                <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                    <h4 class="modal-title cc_modal_title" id="exampleModalLabel">{{pageLabelMap 'MyOrdersInc_RefundConfirm'}}</h4>
+                </div>
+                <div class="modal-body" id="RefundConfirmMsgId"></div>
+                <div class="modal-footer">
+                    <button type="button" id="clickToRefresh" class="btn btn-secondary" style="background-color: #0f4f77;" >{{pageLabelMap 'MyOrdersInc_Close'}}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div class="modal fade cc_modal cc_myaccount_orders_modal" id="cancelMod1" tabindex="-1" role="dialog" aria-labelledby="CancelMod">
+    <div class="modal-dialog" role="document">
+     <div class="modal-content cc_modal_content" style="border-radius:1px;border:1px black;">
+      <div class="modal-body cc_modal_body">
+        <p class="cc_cancel_prompt" id="showMsg"></p>
+      </div>
+      <div class="modal-footer">
+       <input type="button" class="closeModal" id="hideModelOnCancel1" data-dismiss="modal"  value="Ok"/>
+      </div>
+     </div>
+    </div>
+   </div>
+    
+   
+  </script>
+ 
+ 
+  
+  
+
+<script>
+    Visualforce.remoting.timeout = 120000;
+  var refundmsg1 = '{!($Label.OSM_Refund_Message)}';
+  var refundmsg2 = '{!($Label.OSM_Refund_Message2)}';
+  var finalMsg = '';
+  var isOrderCancleConfirmationShow = false;
+  var orderId;
+  var orderCancleReason;
+  var orderCancleComment;
+  var wrperForUserEmail;
+  var view;
+  var revokeAPIItemList = '';
+  var cancelAPIItemList = '';
+  
+  var userProvisionedData;
+  
+
+    
+   Handlebars.registerHelper('date1', function(milsec) {
+          console.log('order date--->>'+milsec);
+        if(milsec  != "" && milsec != undefined) {
+            if(/^[a-zA-Z0-9- ]*$/.test(milsec) == false){
+                console.log('string--if-->> '+milsec);
+                console.log('User Locale '+CCRZ.currentUser.LocaleSidKey);
+                var params = Array.prototype.slice.call(arguments, 1);
+                var thisDate ;
+                if(CCRZ.currentUser.LocaleSidKey==='en_AU'){
+                    var splittedValue = milsec.split('/');
+                    thisDate = new Date(splittedValue[2],splittedValue[1]-1,splittedValue[0]);
+                }else{
+                    thisDate = new Date(milsec);
+                }
+                console.log('thisDate '+thisDate);
+                var dateToStr = thisDate.toString().split(' ');
+                console.log('UTC Converted date'+dateToStr);
+                var datefinal = dateToStr[2] + ' ' + dateToStr[1]+' '+dateToStr[3];
+                console.log('Datefinal '+datefinal);
+              }else{
+                 console.log('string--else-->> '+milsec);
+                console.log('User Locale '+CCRZ.currentUser.LocaleSidKey);
+                var params = Array.prototype.slice.call(arguments, 1);
+                var thisDate ;
+                if(CCRZ.currentUser.LocaleSidKey==='en_AU'){
+                    var splittedValue = milsec.split('/');
+                    thisDate = new Date(splittedValue[2],splittedValue[1]-1,splittedValue[0]);
+                }else{
+                    thisDate = new Date(milsec);
+                }
+                console.log('thisDate '+thisDate);
+                var dateToStr = thisDate.toUTCString().split(' ');
+                //var dateToStr = thisDate.toString().split(' ');
+                console.log('UTC Converted date'+dateToStr);
+                var datefinal = dateToStr[1] + ' ' + dateToStr[2]+' '+dateToStr[3];
+                //var datefinal = dateToStr[2] + ' ' + dateToStr[1]+' '+dateToStr[3];
+                console.log('Datefinal '+datefinal);
+              }
+        return datefinal;
+        }
+        else{
+            console.log('Date Undefined ');
+            return '-';
+        }
+            
+
+
+    });   
+    
+    
+    
+       
+       jQuery(function($){
+       
+       
+                    CCRZ.pubSub.on('view:myaccountView:refresh', function(orderPaginatorView){
+                
+                    var ViewOrder;
+                    for(var i in orderPaginatorView.subViewArray)
+                    {
+                        if(orderPaginatorView.subViewArray[i] != undefined && orderPaginatorView.subViewArray[i].view != undefined && orderPaginatorView.subViewArray[i].view.viewName != undefined  && orderPaginatorView.subViewArray[i].view.viewName == "myOrdersView")
+                        {
+                            
+                            ViewOrder = orderPaginatorView.subViewArray[i].view;
+                        }
+                    }
+                    
+                        if(ViewOrder != undefined)
+                        {
+                            console.log('GOMSSSSSSS');
+                         CCRZ.subsc.OrderInfoDataAction.checkGOMSUser(function(response)
+                                {
+                                 if(response.success)
+                                    {
+                                     console.log(response.data);
+                                        if(response.data.GOMSUser!=undefined && response.data.GOMSUser=='true')
+                                        {
+                                            //console.log('GOMSUser'+response.data.GOMSUser);
+                                             //$('#GOMSPriceMsg').show();
+                                             //CCRZ.orderPaginatorView.model.GOMSUser=true;
+                                             $("#GOMSPriceMsg").css("display", "block");
+                                        }
+                                    }
+                                });
+								
+								
+								
+					ViewOrder.checkSubscriptionAddon = function(event)
+                            {
+                                var objLink1 = $(event.target);
+                                orderId = objLink1.data("id");
+                                CCRZ.subsc.OrderInfoDataAction.checkAddOnSubscription(function(response)
+                                {
+                                    console.log(response); 
+                                    if(response.success)
+                                    {
+                                        if(response.data.isShowAddonPopup == true)
+                                        {
+                                            $("#showAddOnPopup").modal("show");
+                                        }
+                                        else
+                                        {
+                                            ViewOrder.callCancel(event);
+                                            //alert('going for cancellation');
+                                        }
+                                    }
+                                });
+                            
+                            }
+								
+                                
+                            ViewOrder.callCancel = function(event){
+                                var objLink1 = $(event.target);
+																	   
+                                orderId = objLink1.data("id");
+                                console.log(objLink1.data("bundleProductCount1"));
+                                console.log(objLink1.data("isfsd"));
+        
+                                CCRZ.subsc.OrderInfoDataAction.checkIAMUserProvisionedCount(function(response)
+                                {
+                                    console.log(response); 
+                                    
+                                    if(response.success)
+                                    {
+                                        if(response.data.canBeCancelledFlag == true)
+                                        {
+                                            if(response.data.lineitemsize > 1){   //LL36 @Vishnu 9th Aug 2022 cancel orderItems redirect to OrderDetails 
+                                                window.location.href = '/{!$Label.OSMStoreName}/ccrz__OrderView?o=' + response.data.orderEncryptedId + '&orderCancel=YES'+ getCSRQueryString();
+                                                if(CCRZ.pagevars.portalUserId !='' && "{!$User.Id}" != CCRZ.pagevars.portalUserId){
+                                                    window.location.href='/apex/ccrz__OrderView?o=' + response.data.orderEncryptedId + '&orderCancel=YES'+ getCSRQueryString();
+                                                }
+                                            } else {
+                                                $("#cancelMod2").modal("show");
+                                                $("#modalCancelOrder1").attr('data-id', objLink1.data("id"));
+                                                $("#submitOnComment").attr('data-id', objLink1.data("id"));
+                                                $("#modalCancelOrder1").attr('data-isfsd', objLink1.data("isfsd"));
+                                                $("#submitOnComment").attr('data-isfsd', objLink1.data("isfsd"));
+                                            }
+                                        }
+                                        if(response.data.canBeCancelledFlag == false)
+                                        {
+                                                                                                                                                                     
+                                            if(response.data.inappFlag)
+                                            {
+                                                 $("#cancelMod3").modal("show");
+                                                  //$('.modal-backdrop').remove();
+                                                 //$("#userProvisionedMod").modal("show");
+                                                  $('#provisionCountMsg').replaceWith('<div id="provisionCountMsg">You have <strong>'+response.data.remaningUnit+'</strong > units remaining and you are trying to cancel <strong>'+response.data.userCount+'</strong> units. Please unassign the units before cancelling.</div>');
+                           
+                                            } 
+                                            else
+                                            {
+                                                 
+                                            var userProvisionedDataDiv = '';//'<div class="userProvisionedData">';
+                                            var paraMessage = '';
+                                            for(var val in response.data.userProvisionedData)
+                                            { /*
+                                                console.log(val);
+                                                console.log(response.data.userProvisionedData[val]); 
+                                                userProvisionedDataDiv = userProvisionedDataDiv + '<p>' + response.data.userProvisionedData[val] + '</p>';
+                                                */}
+                                            for(jj = 0; jj < response.data.userProvisionedData.length; jj++){
+                                                   console.log(jj);
+                                                console.log(response.data.userProvisionedData[jj]); 
+                                                userProvisionedDataDiv = userProvisionedDataDiv + '<p>' + response.data.userProvisionedData[jj] + '</p>';
+                                           
+                                                }
+                                                
+                                                userProvisionedDataDiv = userProvisionedDataDiv + '<p>' + 'Click <a href='+response.data.assignUserLink+'  target="_blank"  class="link_user" >here</a> to de-provision the users.' + '</p>';
+                                            userProvisionedDataDiv = '<div class="userProvisionedData">' + userProvisionedDataDiv + '</div>';
+                                            console.log('userProvisionedDataDiv'); 
+                                            console.log(userProvisionedDataDiv); 
+                                            $( "div.userProvisionedData" ).replaceWith(userProvisionedDataDiv);
+                                            $("#userProvisionedMod").modal("show");
+                                        }  
+                                             
+                                        }
+                                    }
+                                 });
+                            }
+                            
+                            
+                            ViewOrder.processForComment = function(event)
+                            {
+                                                      
+                                
+                                                               
+                                                              
+                                
+                                $("#cancelMod").modal("hide");
+                                $("#cancelMod2").modal("hide");
+                                $("#cancelModForComment").modal("show");
+                                var inputReason = $("#cancleResion");
+                                inputReason.css("border", "1px solid black");
+                                var inputReasonLabel = $("#cancleResionLabel");
+                                inputReasonLabel.css("color", "black");
+                                var selectReason = document.getElementById('cancleResion');
+                                selectReason.selectedIndex = 0;
+                                var cancelComment = document.getElementById('cancelComment');
+                                cancelComment.value = "";
+                                
+                                cancelComment.css("border", "1px solid black");
+                                var cancelCommentlabel = $("#cancelCommentlabel");
+                                cancelCommentlabel.css("color", "black");
+                            }
+                            
+                            ViewOrder.processCancelOrder = function(event)
+                            {
+                                
+                                var inputReason = $("#cancleResion");
+                                var inputReasonLabel = $("#cancleResionLabel");
+                                var cancelComment = $("#cancelComment");
+                                var cancelCommentlabel = $("#cancelCommentlabel");
+                                
+                                if(inputReason.val() === '--None--')
+                                {
+                                    inputReason.css("border", "1px solid red");
+                                    inputReasonLabel.css("color", "red");
+                                }
+                                else
+                                {
+                                    inputReason.css("border", "1px solid black");
+                                    inputReasonLabel.css("color", "black");
+                                
+                                
+                                    if(inputReason.val() === 'Other' && cancelComment.val() === '')
+                                    {
+                                        cancelCommentlabel.css("color", "red");
+                                        cancelComment.css("border", "1px solid red");
+                                    }
+                                    else
+                                    {
+                                        cancelCommentlabel.css("color", "black");
+                                        cancelComment.css("border", "1px solid black");
+                                        orderCancleReason = inputReason.val();
+                                        orderCancleComment = cancelComment.val();
+                                        var objLink1 = $(event.target);
+                                        orderId = objLink1.data("id");
+                                        
+                                        //$("#cancelMod").modal("hide");
+                                        //$("#cancelMod2").modal("hide");
+                                        $("#cancelModForComment").modal("hide");
+                                        isOrderCancleConfirmationShow =true;
+                                        console.log('data-id : ' + objLink1.data("id"));
+                                        console.log('data-isfsd : ' + objLink1.data("isfsd"));
+                                        orderId = objLink1.data("id");
+                                        var isCallFSD = objLink1.data("isfsd");
+                                        
+                                        
+                                        CCRZ.subsc.OrderInfoDataAction.getOrderInfo(function(response)
+                                        {
+                                            
+                                            
+                                            revokeAPIItemList= '';
+                                            cancelAPIItemList= '';
+                                            console.log(response);
+                                            console.log("FSD print here");
+                                            console.log(isCallFSD);
+                                            
+                                            if (response.success)
+                                            {
+                                                finalMsg = '<p>'+refundmsg1+' '+response.data.data.userEmail+'.<p></p>'+refundmsg2+'</p>';
+                                                
+                                                revokeAPIItemList = response.data.data.lstForRevoke;
+                                                cancelAPIItemList = response.data.data.lstForCancel;
+                                                if(!response.data.data.getOrderisnotCalled)
+                                                {
+                                                                                                                                                
+                                                                                                                                                                     
+                                                    if(response.data.data.isRevokeCallNeeded)
+                                                    {
+                                                        // do for revoke
+                                                        
+                                                        CCRZ.subsc.OrderInfoDataAction.callRevokeAPI(function(res1)
+                                                        {
+                                                            console.log('in revoke API');
+                                                            console.log(res1);
+                                                            if(response.data.data.isCancelCallNeeded)
+                                                            {
+                                                                CCRZ.subsc.OrderInfoDataAction.callCancelAPI(function(res2)
+                                                                {
+                                                                    console.log('in cancel API');
+                                                                    console.log(res2);
+                                                                    if(res2.success && res2.data.CancelAPISucess && res1.success && res1.data.RevokeAPISucess)
+                                                                    {
+                                                                        /*if(isCallFSD)
+                                                                        {
+                                                                            CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(response)
+                                                                            {
+                                                                                console.log("In FSD Call");
+                                                                                console.log(response);
+                                                                                if (response.success && response.data.FSDRes != undefined && !response.data.FSDRes.exceptionFlag)
+                                                                                {
+                                                                                    $('#exampleModal').modal('show');
+                                                                                    var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                    if(errorhtml != null)
+                                                                                    {
+                                                                                        errorhtml.innerHTML = finalMsg;
+                                                                                    }
+                                                                                }
+                                                                                else
+                                                                                {
+                                                                                    if(CCRZ.myaccountView != undefined && CCRZ.myaccountView.subViewArray != undefined )
+                                                                                    {
+                                                                                        for (var key in CCRZ.myaccountView.subViewArray)
+                                                                                        {
+                                                                                            if(CCRZ.myaccountView.subViewArray[key].title == "My Orders")
+                                                                                            {
+                                                                                                CCRZ.myaccountView.gotoSection(key);
+                                                                                            }
+                                                                                        }
+                                                                                        
+                                                                                    }
+                                                                                }
+                                                                            });
+                                                                        }*/
+                                                                        if(res2.data.data.isRefundReq){
+                                                                        // MAR-1665 - added callcreditmemo metod
+                                                                            CCRZ.subsc.OrderInfoDataAction.callCreditMemo(function(res4){
+                                                                                if(res4.data.callFSD)
+                                                                                {
+                                                                                   CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(response)
+                                                                                   { 
+                                                                                       console.log('fsd calling 1>>>');
+                                                                                       CCRZ.subsc.OrderInfoDataAction.callRefundRequest(function(res3){
+                                                                                        $('#exampleModal').modal('show');
+                                                                                        var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                        if(errorhtml != null) {
+                                                                                            errorhtml.innerHTML = finalMsg;
+                                                                                        }  
+                                                                                    }); 
+                                                                                    });
+                                                                                }
+																				else
+																				{
+																					CCRZ.subsc.OrderInfoDataAction.callRefundRequest(function(res3){
+                                                                                            $('#exampleModal').modal('show');
+                                                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                            if(errorhtml != null) {
+                                                                                                errorhtml.innerHTML = finalMsg;
+                                                                                            }  
+                                                                                        }); 
+																				}
+																				
+                                                                                
+                                                                            });
+                                                                        }
+                                                                        else{
+                                                                            $('#exampleModal').modal('show');
+                                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                            if(errorhtml != null) {
+                                                                                errorhtml.innerHTML = finalMsg;
+                                                                            }  
+                                                                        }
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        //if(res2.data.data.isRefundReq){
+                                                                        // MAR-1665 - added callcreditmemo metod
+                                                                            CCRZ.subsc.OrderInfoDataAction.callCreditMemo(function(res4){
+                                                                                if(res4.data.callFSD)
+                                                                                {
+                                                                                   CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(response)
+                                                                                   { 
+                                                                                       console.log('fsd calling 2>>>');
+                                                                                       CCRZ.subsc.OrderInfoDataAction.callRefundRequest(function(res3){
+                                                                                            $('#exampleModal').modal('show');
+                                                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                            if(errorhtml != null) {
+                                                                                                errorhtml.innerHTML = finalMsg;
+                                                                                            }  
+                                                                                        }); 
+                                                                                   });
+                                                                                }
+																				else
+																				{
+																					CCRZ.subsc.OrderInfoDataAction.callRefundRequest(function(res3){
+                                                                                            $('#exampleModal').modal('show');
+                                                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                            if(errorhtml != null) {
+                                                                                                errorhtml.innerHTML = finalMsg;
+                                                                                            }  
+                                                                                        }); 
+																				}																				
+                                                                                
+                                                                            });
+                                                                        /*}
+                                                                        else{
+                                                                            $('#exampleModal').modal('show');
+                                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                            if(errorhtml != null) {
+                                                                                errorhtml.innerHTML = finalMsg;
+                                                                            }  
+                                                                        }*/
+                                                                    }
+
+                                                                });
+                                                            }
+                                                            else if(res1.success && res1.data.RevokeAPISucess)
+                                                            {
+                                                                /*if(isCallFSD)
+                                                                {
+                                                                    CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(response)
+                                                                    {
+                                                                        console.log("In FSD Call");
+                                                                        console.log(response);
+                                                                        if (response.success && response.data.FSDRes != undefined && !response.data.FSDRes.exceptionFlag)
+                                                                        {
+                                                                            $('#exampleModal').modal('show');
+                                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                            if(errorhtml != null)
+                                                                            {
+                                                                                errorhtml.innerHTML = finalMsg;
+                                                                            }
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            if(CCRZ.myaccountView != undefined && CCRZ.myaccountView.subViewArray != undefined )
+                                                                            {
+                                                                                for (var key in CCRZ.myaccountView.subViewArray)
+                                                                                {
+                                                                                    
+                                                                                    if(CCRZ.myaccountView.subViewArray[key].title == "My Orders")
+                                                                                    {
+                                                                                        CCRZ.myaccountView.gotoSection(key);
+                                                                                    }
+                                                                                }
+                                                                                
+                                                                            }
+                                                                        }
+                                                                    });
+                                                                }*/
+                                                                if(res1.data.data.isRefundReq){ //Mp_657 - Change the variable from res2 to res1
+                                                                // MAR-1665 - added callcreditmemo metod
+                                                                    CCRZ.subsc.OrderInfoDataAction.callCreditMemo(function(res4){
+                                                                       if(res4.data.callFSD)
+                                                                       {
+                                                                           CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(response)
+                                                                           { 
+                                                                            console.log('fsd calling 3>>>');
+                                                                             CCRZ.subsc.OrderInfoDataAction.callRefundRequest(function(res3){
+                                                                                    $('#exampleModal').modal('show');
+                                                                                    var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                    if(errorhtml != null) {
+                                                                                        errorhtml.innerHTML = finalMsg;
+                                                                                    }  
+                                                                                }); 
+                                                                           });
+                                                                        }
+																		else
+																		{
+																			CCRZ.subsc.OrderInfoDataAction.callRefundRequest(function(res3){
+                                                                                            $('#exampleModal').modal('show');
+                                                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                            if(errorhtml != null) {
+                                                                                                errorhtml.innerHTML = finalMsg;
+                                                                                            }  
+                                                                                        }); 
+																		}
+                                                                       
+                                                                    });
+                                                                }
+                                                                else{
+                                                                    $('#exampleModal').modal('show');
+                                                                    var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                    if(errorhtml != null) {
+                                                                        errorhtml.innerHTML = finalMsg;
+                                                                    }  
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                CCRZ.subsc.OrderInfoDataAction.callCreditMemo(function(res4){
+                                                                       if(res4.data.callFSD)
+                                                                       {
+                                                                           CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(response)
+                                                                           { 
+                                                                            console.log('fsd calling 3>>>');
+                                                                             CCRZ.subsc.OrderInfoDataAction.callRefundRequest(function(res3){
+                                                                                    $('#exampleModal').modal('show');
+                                                                                    var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                    if(errorhtml != null) {
+								 
+                                                                                        errorhtml.innerHTML = finalMsg;
+                                                                                    }  
+                                                                                }); 
+                                                                           });
+                                                                        }
+																		else
+																		{
+																			CCRZ.subsc.OrderInfoDataAction.callRefundRequest(function(res3){
+                                                                                            $('#exampleModal').modal('show');
+                                                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                            if(errorhtml != null) {
+                                                                                                errorhtml.innerHTML = finalMsg;
+                                                                                            }  
+                                                                                        }); 
+																		}
+                                                                       
+                                                                    });
+                                                            }
+                                                            
+                                                            
+                                                        });
+                                                        
+                                                        
+                                                    }
+                                                    else if(response.data.data.isCancelCallNeeded)
+                                                    {
+                                                        CCRZ.subsc.OrderInfoDataAction.callCancelAPI(function(res2)
+                                                        {
+                                                            console.log('in cancel API');
+                                                            console.log(res2);
+                                                            debugger;
+                                                            if(res2.success && res2.data.CancelAPISucess )
+                                                            {
+                                                                /*if(isCallFSD)
+                                                                {
+                                                                    CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(response)
+                                                                    {
+                                                                        console.log("In FSD Call");
+                                                                        console.log(response);
+                                                                        if (response.success && response.data.FSDRes != undefined && !response.data.FSDRes.exceptionFlag)
+                                                                        {
+                                                                            $('#exampleModal').modal('show');
+                                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                            if(errorhtml != null)
+                                                                            {
+                                                                                errorhtml.innerHTML = finalMsg;
+                                                                            }
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            if(CCRZ.myaccountView != undefined && CCRZ.myaccountView.subViewArray != undefined )
+                                                                            {
+                                                                                for (var key in CCRZ.myaccountView.subViewArray)
+                                                                                {
+                                                                                    if(CCRZ.myaccountView.subViewArray[key].title == "My Orders")
+                                                                                    {
+                                                                                        CCRZ.myaccountView.gotoSection(key);
+                                                                                    }
+                                                                                }
+                                                                                
+                                                                            }
+                                                                        }
+                                                                    });
+                                                                }*/
+                                                                if(res2.data.data.isRefundReq){
+                                                                    // MAR-1665 - added callcreditmemo metod
+                                                                    CCRZ.subsc.OrderInfoDataAction.callCreditMemo(function(res4){
+                                                                        if(res4.data.callFSD)
+                                                                                {
+                                                                                   CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(response)
+                                                                                   { 
+                                                                                       console.log('fsd calling 4>>>');
+                                                                                        CCRZ.subsc.OrderInfoDataAction.callRefundRequest(function(res3){
+                                                                                            $('#exampleModal').modal('show');
+                                                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                            if(errorhtml != null) {
+                                                                                                errorhtml.innerHTML = finalMsg;
+                                                                                            }  
+                                                                                        }); 
+                                                                                   });
+                                                                                }
+                                                                                else
+                                                                                { 
+                                                                                    CCRZ.subsc.OrderInfoDataAction.callRefundRequest(function(res3){
+                                                                                            $('#exampleModal').modal('show');
+                                                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                            if(errorhtml != null) {
+                                                                                                errorhtml.innerHTML = finalMsg;
+                                                                                            }  
+                                                                                        }); 
+                                                                                    
+                                                                                }                                                                           
+                                                                       
+                                                                    });
+                                                                }
+                                                                else{
+                                                                    $('#exampleModal').modal('show');
+                                                                    var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                    if(errorhtml != null) {
+                                                                        errorhtml.innerHTML = finalMsg;
+                                                                    }  
+                                                                }
+                                                            }
+
+                                                           
+                                                     
+                                                            else
+                                                     
+                                                                     
+                                                         
+                                                                                                                        
+                                                            {
+                                                                                           
+                                                                                      
+                                                                                                                                                                 
+                                                                 
+                                                                                                     
+                                                                                                                                  
+                                                                                         
+                                                                     
+                                                                                                       
+                                                                     
+                                                                 
+                                                                    
+                                                                 
+                                                                                                                                                        
+                                                                     
+                                                                                                                        
+                                                                         
+                                                                            
+                                                                                                                                         
+                                                                             
+                                                                                                                    
+                                                                             
+                                                                         
+                                                                        
+                                                                     
+                                                                 
+                                                               
+                                                         
+                                                                                       
+                                                                                                                            
+                                                                $('#exampleModal').modal('show');
+                                                                var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                if(errorhtml != null)
+                                                                {
+                                                                    errorhtml.innerHTML = finalMsg;
+                                                                }
+                                                                
+                                                            }
+
+                                                        });
+                                                                                                                          
+                                                                                   
+                                                                                               
+                                                               
+                                                         
+                                                    }
+                                                    else
+                                                    {
+                                                       /* if(isCallFSD)
+                                                        {
+                                                            CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(response)
+                                                            {
+                                                                console.log("In FSD Call");
+                                                                console.log(response);
+                                                                if (response.success && response.data.FSDRes != undefined && !response.data.FSDRes.exceptionFlag)
+                                                                {
+                                                                    $('#exampleModal').modal('show');
+                                                                    var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                    if(errorhtml != null)
+                                                                    {
+                                                                        errorhtml.innerHTML = finalMsg;
+                                                                    }
+                                                                }
+                                                                else
+                                                                {
+                                                                    if(CCRZ.myaccountView != undefined && CCRZ.myaccountView.subViewArray != undefined )
+                                                                    {
+                                                                        for (var key in CCRZ.myaccountView.subViewArray)
+                                                                        {
+                                                                            
+                                                                            if(CCRZ.myaccountView.subViewArray[key].title == "My Orders")
+                                                                            {
+                                                                                CCRZ.myaccountView.gotoSection(key);
+                                                                            }
+                                                                        }
+                                                                        
+                                                                    }
+                                                                }
+                                                            });
+                                                        }*/
+                                                                                       
+                                                          CCRZ.subsc.OrderInfoDataAction.callCreditMemo(function(res4){
+                                                                        if(res4.data.callFSD)
+                                                                                {
+                                                                                   CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(response)
+                                                                                   { 
+                                                                                       console.log('fsd calling 4>>>');
+                                                                                        CCRZ.subsc.OrderInfoDataAction.callRefundRequest(function(res3){
+                                                                                            $('#exampleModal').modal('show');
+                                                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                            if(errorhtml != null) {
+                                                                                                errorhtml.innerHTML = finalMsg;
+                                                                                            }  
+                                                                                        }); 
+                                                                                   });
+                                                                                }
+																				else{
+                                                                                    CCRZ.subsc.OrderInfoDataAction.callRefundRequest(function(res3){
+                                                                                            $('#exampleModal').modal('show');
+                                                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                            if(errorhtml != null) {
+                                                                                                errorhtml.innerHTML = finalMsg;
+                                                                                            }  
+                                                                                        }); 
+                                                                                    
+                                                                                
+																				}																				
+                                                                       
+                                                                    });                                                                   
+                                                                 
+                                                       /* else                                                                                            
+                                                        {
+                                                            
+                                                            $('#exampleModal').modal('show');
+                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                            if(errorhtml != null)
+                                                            {
+                                                                errorhtml.innerHTML = finalMsg;
+                                                            }
+                                                        }*/
+                                                      
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                     
+                                                    CCRZ.subsc.OrderInfoDataAction.callCreditMemo(function(res4){
+                                                                        if(res4.data.callFSD)
+                                                                                {
+                                                                                   CCRZ.subsc.OrderInfoDataAction.callFSDAPI(function(response)
+                                                                                   { 
+                                                                                       console.log('fsd calling 4>>>');
+                                                                                        CCRZ.subsc.OrderInfoDataAction.callRefundRequest(function(res3){
+                                                                                            $('#exampleModal').modal('show');
+                                                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                            if(errorhtml != null) {
+													 
+                                                                                                errorhtml.innerHTML = finalMsg;
+                                                                                            }  
+                                                                                        }); 
+                                                                                   });
+                                                                                }
+                                                                                else{
+                                                                                    CCRZ.subsc.OrderInfoDataAction.callRefundRequest(function(res3){
+                                                                                            $('#exampleModal').modal('show');
+                                                                                            var errorhtml = document.getElementById("RefundConfirmMsgId");
+                                                                                            if(errorhtml != null) {
+                                                                                                errorhtml.innerHTML = finalMsg;
+                                                                                            }  
+                                                                                        }); 
+                                                                                    
+                                                                                
+                                                                                }                                                                               
+                                                                       
+                                                                    }); 
+																	
+												   
+                                                }
+                                                                                                                                       
+                                            }
+                                            else
+                                                        
+                                            {
+                                                if(response.data != undefined && response.data.errorMsg != undefined)
+                                                {
+                                                    $('#cancelMod1').modal('show');
+                                                    var errorhtml = document.getElementById("showMsg");
+                                                    if(errorhtml != null)
+                                                    {
+                                                        errorhtml.innerHTML = response.data.errorMsg;
+                                                    }
+                                                }
+                                            }
+                                            
+                                        });
+                                    }
+                                }
+                                
+                                //console.log("her ");
+                                /*
+                                
+                                */
+                                
+                            }
+                            
+                            ViewOrder.refreshMyOrderView = function(event)
+                            {
+                                console.log('on sucess');
+                                $('#exampleModal').modal('hide');
+                                if(CCRZ.myaccountView != undefined && CCRZ.myaccountView.subViewArray != undefined )
+                                {
+                                    for (var key in CCRZ.myaccountView.subViewArray)
+                                    {
+                                        
+                                        if(CCRZ.myaccountView.subViewArray[key].title == "My Orders")
+                                        {
+                                            CCRZ.myaccountView.gotoSection(key);
+                                        }
+                                    }
+                                    
+                                }
+                            }
+                            
+                            ViewOrder.hideUserProvisionedMod = function(event)
+                            {
+                                $('#userProvisionedMod').modal('hide');
+                            }
+                            
+							ViewOrder.hideAddOnPopup = function(event)
+                            {
+                                $('#showAddOnPopup').modal('hide');
+                            }
+                            
+                            ViewOrder.hideModelOnCancel = function(event)
+                            {
+                                $('#cancelMod').modal('hide');
+                            }
+                            
+                            ViewOrder.hideModelOnCancel2 = function(event)
+                            {
+                                $('#cancelMod2').modal('hide');
+                            }
+                                                                          
+                            ViewOrder.hideModelOnCancel3 = function(event)
+                            {
+                                $('#cancelMod3').modal('hide');
+                            } 
+                                                               
+                             
+                            
+                            ViewOrder.hideModelOnCancel1 = function(event)
+                            {
+                                $('#cancelMod1').modal('hide');
+                            }
+                            
+                            
+                        
+                        
+                            //ViewOrder.events['click #CancelOrder'] = 'callCancel';
+							ViewOrder.events['click #CancelOrder'] = 'checkSubscriptionAddon'; 
+                            //ViewOrder.events['click #modalCancelOrder1'] = 'processCancelOrder';
+                            //ViewOrder.events['click #modalCancelOrder'] = 'processCancelOrder';
+                            ViewOrder.events['click #modalCancelOrder1'] = 'processForComment';
+                            ViewOrder.events['click #modalCancelOrder'] = 'processForComment';
+                            
+                            ViewOrder.events['click #submitOnComment'] = 'processCancelOrder';
+                            
+                            ViewOrder.events['click #clickToRefresh'] = 'refreshMyOrderView';
+                            ViewOrder.events['click #hideUserProvisionedMod'] = 'hideUserProvisionedMod';
+							ViewOrder.events['click #hideAddOnPopup'] = 'hideAddOnPopup';
+                            ViewOrder.events['click #hideModelOnCancel'] = 'hideModelOnCancel';
+                            ViewOrder.events['click #hideModelOnCancel2'] = 'hideModelOnCancel2';
+                            ViewOrder.events['click #hideModelOnCancel1'] = 'hideModelOnCancel1';
+                            ViewOrder.events['click #hideModelOnCancel3'] = 'hideModelOnCancel3';                                                                                                     
+                           
+                            ViewOrder.delegateEvents();
+                        }
+                        
+                    
+                        
+                    
+                    
+                    
+                });
+       
+       
+       
+           CCRZ.subsc = _.extend(CCRZ.subsc||{});
+                
+                
+                CCRZ.subsc.OrderInfoDataAction = _.extend(
+                {
+                    className : 'OSM_SW_MyOrders_Comp_Ctrl',
+                    getOrderInfo : function(callback)
+                    {
+                        this.invokeContainerLoadingCtx($('body'),'getOrderInfo',orderId,orderCancleReason,orderCancleComment,
+                        function(response)
+                        {
+                            console.log("==== in method to fetch user info from order");
+                            wrperForUserEmail = response;
+                            callback(response);
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                  
+                },
+                {
+                    className : 'OSM_SW_MyOrders_Comp_Ctrl',
+                    callFSDAPI : function(callback)
+                    {
+                        this.invokeContainerLoadingCtx($('body'),'callFSDAPI',orderId,
+                        function(response)
+                        {
+                            console.log("==== in method to call FSD ====");
+                            callback(response);
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                
+                },
+                
+                {
+                    className : 'OSM_SW_MyOrders_Comp_Ctrl',
+                    callRevokeAPI : function(callback)
+                    {
+                        this.invokeContainerLoadingCtx($('body'),'callRevokeAPI',revokeAPIItemList,
+                        function(response)
+                        {
+                            console.log("==== in method to call revoke API ====");
+                            callback(response);
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                
+                },
+                {
+                    className : 'OSM_SW_MyOrders_Comp_Ctrl',
+                    callCancelAPI : function(callback)
+                    {
+                        this.invokeContainerLoadingCtx($('body'),'callCancelAPI',cancelAPIItemList,
+                        function(response)
+                        {
+                            console.log("==== in method to call callCancelAPI API ====");
+                            callback(response);
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                
+                },
+                {
+                    className : 'OSM_SW_MyOrders_Comp_Ctrl',
+                    callCancelOrder : function(callback)
+                    {
+                        this.invokeContainerLoadingCtx($('body'),'callCancelOrder',orderId,
+                        function(response)
+                        {
+                            console.log("==== in method to call callCancelOrder API ====");
+                            callback(response);
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                
+                },
+                {
+                    className : 'OSM_SW_MyOrders_Comp_Ctrl',
+                    checkGOMSUser : function(callback)
+                    {
+                        this.invokeContainerLoadingCtx($('body'),'checkGOMSUser',orderId,
+                        function(response)
+                        {
+                            console.log("==== in method to call checkGOMSUser ====");
+                            console.log(response)
+                            callback(response);
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                
+                },
+                {
+                    className : 'OSM_SW_MyOrders_Comp_Ctrl',
+                    callRefundRequest : function(callback)
+                    {
+                        this.invokeContainerLoadingCtx($('body'),'callRefundReq',cancelAPIItemList,revokeAPIItemList,
+                        function(response)
+                        {
+                            console.log("==== in method to call callRefundReq API ====");
+                            callback(response);
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                },
+                { // MAR-1665 - added callcreditmemo metod 
+                    className : 'OSM_SW_MyOrders_Comp_Ctrl',
+                    callCreditMemo : function(callback)
+                    {
+                        this.invokeContainerLoadingCtx($('body'),'callCreateCreditMemo',cancelAPIItemList,orderId,
+                        function(response)
+                        {
+                            console.log("==== in method to call Credit Memo ====");
+                            callback(response);
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                },
+                { // method to check the IAM User Provisioned Count
+                    className : 'OSM_SW_MyOrders_Comp_Ctrl',
+                    checkIAMUserProvisionedCount : function(callback)
+                    {
+                        this.invokeContainerLoadingCtx($('body'),'checkIAMUserProvisionedCount',orderId,
+                        function(response)
+                        {
+                            console.log("==== in method to call checkIAMUserProvisionedCount ====");
+                            callback(response);
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                
+                },
+				{ // method to check the IAM User Provisioned Count
+                    className : 'OSM_SW_MyOrders_Comp_Ctrl',
+                    checkAddOnSubscription : function(callback)
+                    {
+                        this.invokeContainerLoadingCtx($('body'),'checkAddOnSubscription',orderId,
+                        function(response)
+                        {
+                            console.log("==== in method to call checkAddOnSubscription ====");
+                            callback(response);
+                        },
+                        {
+                            buffer : false, // this call will be executed by itself
+                            nmsp   : false  // defines that this is a call to a subscriber class
+                        }); 
+                    }
+                
+                },
+                
+                CCRZ.RemoteInvocation);  
+        });  
+                                     
+</script>
+
+</apex:component>

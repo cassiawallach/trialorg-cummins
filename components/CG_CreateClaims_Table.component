@@ -1,0 +1,517 @@
+<apex:component layout="none" controller="CG_CL_CreateClaims_Table" allowdml="true">
+    
+    <c:CSS_SJob_Table_Styles />
+    <c:CSS_SJob_Pagination_Styles />
+    <c:CSS_buttonStyle />
+    <c:CSS_Standard_IntakeStyles /> 
+    <c:CG_CreateClaims_TableScript />
+    
+    <style>
+        a.cmi_lighttealbutton1:hover {
+         color:#fff;
+         background :#33a6cc;
+        }
+         a.cmi_lighttealbutton1 {
+        background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#006666), color-stop(100%,#003635));
+        background: #006666; /* Old browsers */
+        background: -o-linear-gradient(top,  #006666 0%,#003635 100%); /* Opera 11.10+ */
+        background: -ms-linear-gradient(top,  #006666 0%,#003635 100%); /* IE10+ */
+        background: linear-gradient(to bottom,  #006666 0%,#003635 100%); /* W3C */
+         }
+        
+        .calendar {
+            background: url(/resource/1490588295000/CSS_New_UI_APRIL_15th/New_UI_APRIL_15th/New_UI_APRIL_15th/assets/img/CMI-WebIcon-Sprite.png) no-repeat scroll -100px -3109px rgba(0, 0, 0, 0);
+            display: inline-block;
+            height: 21px;
+            margin: -16px -10px 0px 0px;
+            position: relative;
+            width: 22px;
+            zoom: 1.1;
+        }
+        
+        a.claimsTabs:hover {
+         color:#000 !important;
+     }
+         .nav-tabs > li {
+        border-right:0px !important;           
+        }
+        thead th 
+        {
+        width: 8.69%;
+        }
+     /*   h2.claims:after {
+        content: '';
+        display: block;
+        border-bottom: 2px solid #007c7c;
+        margin-bottom: -12px;
+        max-width: 200px;
+        padding-bottom:5px;
+        } */
+        
+        @media(max-width:909px){
+            .claimsPicklist {
+                margin-left:-50px;
+            }        
+        }
+
+        @media (min-width: 1101px) and (max-width:1314px){
+            .claimsPicklist {
+                margin-left:-25px;
+            }        
+        }
+
+        @media (min-width: 910px) and (max-width:1100px){
+            .css_splocation {
+                margin-left:0px;
+            }
+            .claimsPicklist {
+                margin-left:-40px;
+            }
+        }
+        @media (min-width: 1110px) and (max-width:1280px){
+            .css_splocation {
+                margin-left:-14px;
+            }
+        }
+
+        @media (min-width: 1281px) and (max-width:1400px){
+            .css_splocation {
+                margin-left:-10px;
+            }
+        }
+
+        @media (min-width: 1401px){
+            .css_splocation {
+                margin-left:-34px;
+            }
+            .claimsSearchButton {
+                margin-left:-200px;
+            }
+        }
+
+        @media (min-width: 750px)  {          
+            .tabClass {
+                display: block;
+            }  
+            .ui-content {
+                display: none;
+            }      
+        }       
+        @media (min-width: 300px) and (max-width:749px) {
+            .tabClass {
+                display: none;
+            }
+            .ui-content {
+                display: block;
+            }      
+        } 
+
+        .css_disableedt {
+            display:none;
+        }
+
+        .cmi_lighttealbutton1{
+            height: 30px;
+            border-radius: 5px;
+            display: inline-block;
+            padding: 0 10px;
+            color: #ffffff;
+            line-height: 30px;
+            text-align: center;
+            margin-left: 0 auto;
+            background-color: #006666;
+        }
+    </style>
+    
+    <script>
+        
+        
+    
+     function hideAutoClaimBtnOnLoad(){
+         //alert("test");
+         document.getElementById('createAutoClaimDisabled').style.display = 'inline';
+         document.getElementById('createAutoClaimEnabled').style.display = 'none';
+        
+        /* var checked= document.getElementsByName('select');
+         alert("checked" + '' +checked);
+         
+         if(checked==true){
+            checked=false;
+         }*/
+    }
+   
+    /*This function is called when someone click on the radio button having job id.*/
+    /*The below javascript will call the actionfunction with name assignJobID which takes a parameter and passes it to assignTo attribute.*/
+    
+    function passJobIDFn(rdbtnElement){
+       // alert('JobIdR');
+        var JobIdValuee = rdbtnElement.value;
+        //alert(JobIdValuee);  
+        assignJobID(JobIdValuee);
+        
+        //var custNameElem = $(document.getElementById('{!$Component.CreateClaimbtn}'));
+        //alert(custNameElem);
+        //custNameElem.removeClass("cmi_lighttealbutton").addClass("cmi_lighttealbutton1");
+        //$("#cataId").removeClass("cmi_lighttealbutton").addClass("cmi_lighttealbutton1");
+        document.getElementById('createAutoClaimEnabled').style.display = 'inline';
+        document.getElementById('createAutoClaimDisabled').style.display = 'none';
+        //var x = document.getElementById('cataId').style.display = 'none';
+        //alert(x);
+        //document.getElementById('cataId').style.display = 'none';
+        return null;
+        
+    }
+        function disablesave(comonentt){
+           comonentt.disabled=true;
+            createAutoClaim();
+        }
+        
+        function stopDoubleClick(){ 
+            countDown=waitTime+1;
+            if(clickAllowed==true){
+                clickAllowed=false;
+                runCountDown(); 
+                return true;
+            }
+            else{ return false; } 
+        }
+        
+    </script>
+   
+    
+    <apex:form >
+        <apex:actionRegion >
+         <apex:actionFunction name="assignJobID" reRender="none">
+                                <apex:param name="JobID" value="JobID" assignTo="{!selectedJob}"/>
+        </apex:actionFunction>
+      </apex:actionRegion>
+       
+        
+            <div id="ng-accapp"  ng-app="myapp" ng-controller="claimsController" >
+               
+                <apex:outputPanel rendered="{!If(isDealer == false,true,false)}">
+                 <ul class="nav nav-tabs desk-tabs" id="JobDetailTab" style="background-color: #eee;">
+                     <li class="active"><a href="#/" data-toggle="tab" class="claimsTabs" style="color:#000000;"><b>{!$Label.CSS_CreateClaims} </b></a> </li>
+                 <li><a href="/apex/CG_MyClaims" class="claimsTabs"><b>{!$Label.CSS_My_Claims}</b></a></li>
+                 </ul>
+                 </apex:outputPanel>
+                <apex:outputPanel rendered="{!If(isDealer == true,true,false)}">
+               <ul class="nav nav-tabs desk-tabs" id="JobDetailTab" style="background-color: #eee;">
+                     <li class="active"><a href="#/" data-toggle="tab" class="claimsTabs" style="color:#000000;"><b>{!$Label.CSS_CreateClaims} </b></a> </li>
+                 <li><a href="/apex/CG_MyClaims" class="claimsTabs"><b>{!$Label.CSS_My_Claims}</b></a></li>
+                 </ul>
+                </apex:outputPanel> 
+                
+                 
+                 
+              <!--   <ul class="nav nav-tabs desk-tabs" id="JobDetailTab" style="background-color: #eee;">
+                     <li ><a href="/apex/CG_CreateClaims" class="claimsTabs"><b>{!$Label.CSS_CreateClaims} </b></a> </li>
+                    <li class="active"><a href="#/" data-toggle="tab" class="claimsTabs" style="color:#000000;"><b>{!$Label.CSS_My_Claims}</b></a></li>
+                   
+                </ul>-->
+             <div class="CMI-main-container">
+                <h2 class="claims" style="border-bottom: 2px solid #E5E5E5;padding-bottom:10px;"><b>{!$Label.CSS_CreateClaims}</b></h2>
+                <div class="row" style="margin:10px;margin:30px 0px 20px 0px">
+                        <div class="col-sm-3"> </div>
+                        <div class="col-sm-2 cmi-tar">
+                            <b> {!$Label.CSS_Service_Provider_Location} </b>
+                        </div>
+                        <div class="col-sm-3 col-xs-12" >
+                            <select name="UserLocation" data-ng-init="locName='{!defaultLoc}'"  data-ng-model="locName" 
+                                    data-ng-change="SearchClaims(locName)"  data-ng-class="{active: $index == '0'}" size="1" style="height:25px;width:314px;">
+                                <apex:repeat value="{!LocationsName}" var="loc">
+                                    <option selected="{!defaultLoc}" value="{!loc.label}">{!loc.label}</option>
+                                    <!--<option selected="{!defaultLocationCode}" value="{!loc.label}">{!loc.value}</option>-->
+                                     </apex:repeat>
+                            </select>
+                        </div>
+                       <div class="clearfix"></div>
+                    </div>
+
+                    <div class="clearfix"></div>
+            <!--189725 changed style and added margins -->
+                    <div class="row">
+                         <div class="col-sm-3" >  </div>
+                        <div class="col-sm-2 cmi-tar" style="margin:0px 5px;"> <b>{!$Label.CSS_Filter_by_Fields}</b></div>
+                      
+                        <div class="col-sm-2 cmi-tar" style="margin:0px 5px;padding:0px">
+                            <select class="col-sm-12" data-ng-model="option2" data-ng-init ="clearRow('second')" data-ng-options="key as value for (key , value) in fieldValues" data-ng-change="getOptionsField('second')" style="height:25px;padding-left:1px" >
+                            </select>
+                        </div>
+                       
+                        
+                        <!-- Added Code to display Calendar icon  Rajasekhar H for #152377-->
+                     <!-- <div class="col-sm-6"> 
+                            <input type="text" data-ng-model="firstRowInputText" data-ng-show="showHideFirstRowInput"/>
+                            <div class="input-group date" data-ng-model="selectedFirstRowFirstDate" data-provide="datepicker" data-ng-show ="showHideFirstRowFirstDateField">
+                                <input type="text" data-ng-model="selectedFirstRowFirstDate" data-ng-show ="showHideFirstRowFirstDateField" /> 
+                                <span class="input-group-addon" style="display: inline-block; border: 0px; background:none;padding:0px">
+                                    <span class="calendar" style="margin-top:0px;"></span>
+                                </span>
+                            </div>
+                        </div> -->
+                        
+                        <!--End -->
+                         <!--189725 changed style and added margins -->
+                        <div class="col-sm-2" style="margin-top:0px;">
+
+                            <div class="col-sm-3" style="padding:0px;margin:0px">
+                                <input type="text" data-ng-model="secondRowInputText" data-ng-show="showHideSecondRowInput" style="width:220px;margin-left:3px;"/>
+
+                                <div class="input-group date" data-ng-model="selectedFirstRowFirstDate" data-provide="datepicker" data-date-format="{!datebyLocaleValue}" data-ng-show ="showHideFirstRowFirstDateField">
+                                    <input type="text" data-ng-model="selectedFirstRowFirstDate" data-ng-show ="showHideFirstRowFirstDateField" style="width:220px;margin-left:3px;height:25px"/> 
+                                    <span class="input-group-addon" style="display: inline-block; border: 0px; background:none;padding:0px 10px">
+                                        <span class="calendar" style="margin-top:0px;"></span>
+                                    </span>
+                                </div>
+
+                                <select data-ng-model="status2" data-ng-options="option for option in statusValues" data-ng-show="showHide2StatusOptions" style="height:25px;width:220px;margin-left:3px;"> </select>  
+                                <select data-ng-model="substatus2" data-ng-options="option for option in SubStatusValues" data-ng-show="showHide2SubStatusOptions" style="height:25px;width:220px;margin-left:3px;"> </select>  
+
+                            </div>  <!--189725 changed style and added margins -->
+                            <div class="col-sm-2 pull-right ">
+                                <a id="btn-primary" href="#/" style="padding:5px 15px;margin:0px 50px;" ng-click="SearchClaims(locName)">{!$Label.CSS_Search}</a>
+                            </div>
+                            <div class="clearfix"></div>
+
+                        </div>
+                    </div>
+
+                    <div class="clearfix"></div>
+                  
+                <hr style="height:2px;color:#E2E2E2;background-color:#E2E2E2;border:none;"/> <br/>
+                
+               
+                <apex:outputPanel id="opCreateClaim"> 
+                    <div class="col-sm-5 cmi-tar"> 
+                        <span id="createAutoClaimEnabled"> 
+                       <!--<apex:commandLink value="{!$Label.CSS_Create_New_Guidanz_Claim}" id="CreateClaimbtn" styleClass="cmi_lighttealbutton1" onclick="disablesave(this);"    style="height:40px;padding:5px 25px;border:0px ;"/>-->
+                       <apex:commandButton value="{!$Label.CSS_Create_New_Guidanz_Claim}" id="CreateClaimbtn" styleClass="cmi_lighttealbutton1"  onclick="disablesave(this);"    style="height:40px;padding:5px 25px;border:0px ;"/>
+                        
+                        </span>
+                        <span id="createAutoClaimDisabled"> 
+                            <apex:commandLink value="{!$Label.CSS_Create_New_Guidanz_Claim}" id="CreateClaimbtn222" styleClass="cmi_lighttealbutton" style="height:40px;padding:5px 25px;border:0px;"/>
+                        </span>  
+                    </div>
+   
+                </apex:outputPanel>  
+                    <apex:actionFunction name="createAutoClaim" action="{!CreateNeGclaim}" />
+                   <div class="col-sm-4 col-xs-12">
+                    <!--<div class="col-sm-offset-2 col-sm-3"> -->
+                    <!-- <apex:commandButton styleClass="btn-intake btn-intake-footer m-btn-width saveButton" style="padding:5px 30px" value="{!$Label.CSS_Create_New_Claim}"></apex:commandButton>-->
+                    <c:CSS_CreateNewJobComponent buttonName="NewClaim"/> <!--selectedLocname="locName"/> -->
+                </div>
+          
+                <div class="clearfix"></div> <br/><br/>
+                
+                <!-- <div class="col-md-3 col-lg-3 col-xs-12">
+<a id="btn-primary" position="static">{!$Label.CSS_Create_Road_Rescue_Claim}</a>
+</div>
+
+<div class="col-md-3 col-lg-3 col-xs-12" style="margin:-16px 0px 0px -100px;">
+<div style="margin-bottom:-16px;">
+<a href="#"><u>{!$Label.CSS_Upload_Claim}</u><i class="upload-icon" style="float:none;top:14px;margin-left:10px;"></i></a> 
+</div>
+<div>
+<a href="#"><u>{!$Label.CSS_Download_Claims_Template}</u><i class="upload-icon" style="float:none;top:14px;margin-left:10px;"></i></a>
+</div>
+</div>
+
+<div class="clearfix"></div><br/>--->
+                
+                <!-- Hidden Variable for Tabs Search -->                
+                <!-- <input type="hidden" ng-init="search.Status=''" ng-model="search.Status"/>   -->
+                
+                <!-- Tabs Section 
+
+<div class="tabClass">
+<ul class="nav nav-tabs">
+<li ng-repeat="item in menu" ng-class="{active: $index == acttab}">
+<a ng-click="selectItem(item)" href="#{{item.nom}}">{{item.nom}}</a> 
+</li>
+</ul>
+</div>
+
+<!-- Mobile tabs begin  -->
+                <!--
+<div data-role="main" class="ui-content">  
+<div class="dropdown-list">
+<select ng-change="selectItem1(item.nom)" ng-options="item.nom for item in menu" ng-model="itemnom">
+</select>
+</div>
+</div>
+-->
+                <!-- Mobile Tabs end -->
+                    <div class="col-sm-4">
+                        <div ng-show="recCount >=100">
+                        <font face="Helvetica neue" size="3px" style="Color:Red"> 
+                            <b> {!$Label.CSS_JOB_FILTER_MSG} </b>    
+                           </font>
+                        </div>                    
+                        <div ng-show="recCount ==0">
+                        <font face="Helvetica neue" size="3px" style="Color:Red"> 
+                            <b> {!$Label.CSS_JOB_FILTER_NORECS} </b>     
+                            </font>
+                        </div>
+                    </div>
+                
+                <table class="mytable table table-striped table-bordered CMI-HomeTable" ng-table="SJobs">
+                    <thead>
+                        <tr> 
+                            <th class="tblhead">{!$Label.CSS_Select}</th>
+                            <th class="tblhead" ng-click="sort('LastSaved_sort')"><b> {!$ObjectType.CSS_Job_Order__c.fields.LastSaved__c.Label}
+                                  <span class="{{Header[1]}}"></span> 
+                                </b>
+                            </th>
+                            
+                            <th class="tblhead"  ng-click="sort('Customer_Name')">
+                                <b>  {!$ObjectType.CSS_Job_Order__c.fields.Customer_Name__c.Label}
+                                   <span class="{{Header[7]}}"></span>          
+                                </b>
+                            </th>
+                            <th class="tblhead" ng-click="sort('Job_Location')">
+                                <b> {!$ObjectType.CSS_Job_Order__c.fields.JobLocation__c.Label}
+                                    <span class="{{Header[12]}}"></span>          
+                                </b>
+                            </th>
+                            <th class="tblhead" ng-click="sort('name')">
+                                <b> {!$ObjectType.CSS_Job_Order__c.fields.Name.Label}
+                                    <span class="{{Header[2]}}"></span>
+                                </b> 
+                            </th>
+                            
+                            <th class="tblhead" ng-click="sort('Shop_s_Work_Order')">
+                                <b> {!$ObjectType.CSS_Job_Order__c.fields.Shop_Work_Order__c.Label}
+                                    <span class="{{Header[3]}}"></span>
+                                </b> 
+                            </th>
+                            
+                            <th class="tblhead"  ng-click="sort('Unit_Number')">
+                                <b> {!$ObjectType.CSS_Job_Order__c.fields.Unit_Number__c.Label}
+                                    <span class="{{Header[4]}}"></span>
+                                </b>
+                            </th>
+                            
+                            
+                            <th class="tblhead" ng-click="sort('Status')">
+                                <b> {!$ObjectType.CSS_Job_Order__c.fields.Status__c.Label}
+                                    <span class="{{Header[6]}}"></span>
+                                </b> 
+                            </th> 
+                            <th class="tblhead" ng-click="sort('Sub_Status')">
+                                <b> {!$ObjectType.CSS_Job_Order__c.fields.Sub_Status__c.Label}
+                                    <span class="{{Header[0]}}"></span> 
+                                </b> 
+                            </th> 
+                            
+                            <th class="tblhead" ng-click="sort('RecentVisit')">
+                                <b> {!$ObjectType.CSS_Job_Order__c.fields.Repeat_Visit__c.Label}
+                                    <span class="{{Header[8]}}"></span>
+                                </b>
+                            </th>
+                            <th class="tblhead" ng-click="sort('Assigned')">
+                                <b> {!$ObjectType.CSS_Job_Order__c.fields.Assigned_To__c.Label}
+                                    <span class="{{Header[9]}}"></span>
+                                </b>
+                                
+                            </th>
+                            <th class="tblhead" ng-click="sort('Date_In_sort')">
+                                <b> {!$ObjectType.CSS_Job_Order__c.fields.Date_in_Shop__c.Label}
+                                    <span class="{{Header[10]}}"></span>
+                                </b>  
+                            </th>
+                            <th class="tblhead" ng-click="sort('Created_Time_sort')">
+                                <b> {!$ObjectType.CSS_Job_Order__c.fields.Created_Time_Zone__c.Label}
+                                    <span class="{{Header[11]}}"></span>
+                                </b>  
+                            </th> 
+                            
+                            
+                        </tr>
+                    </thead>
+                    <tbody style="height:auto !important;">
+                        <tr ng-repeat="jobOrder in ItemsByPage[currentPage] | filter:search">
+                            <td style="text-align:center;">
+                                <!--When someone selects to radio button on the Create Claims Page then its calls the JavaScript Function-->
+                                <!--This function name is passJobIDFn which will set the job id to selectedJob variable on controller.-->
+                                <input type="radio" id="{{jobOrder.id}}" value="{{jobOrder.id}}" name="select" onclick="passJobIDFn(this);"/>
+                         
+                    </td>
+                <td>{{jobOrder.LastSaved}}
+                    <a ng-class="{'css_disableedt': true}" id="sh" >
+                        {{jobOrder.LastSaved_sort | jsonDate:'yyyy-MM-dd'}}    
+                    </a>
+                </td>  
+                <td>{{jobOrder.Customer_Name}}</td>
+                <!-- Location story -->
+                <td>{{jobOrder.Job_Location}}</td> 
+                <!-- Location story -->
+                <td>
+                    <!--Added below condition as part of story GSSC-447 -->
+                    <span class="underline"> <a ng-href="/apex/CSS_JobPlan?id={{jobOrder.id}}&nto=DET">
+                            {{jobOrder.name}}</a></span> 
+                    
+                      <!--Commented below as part of Story GSSC-447 -->
+                    <!--<span class="underline"> <a ng-class="{'css_disableedt': jobOrder.Status==='Triage & Diagnosis' || jobOrder.Status==='Repair' || jobOrder.Status==='Triage & Diagnosis/Repair'}" ng-href="/apex/CSS_Job_Detail?id={{jobOrder.id}}&nto=DET">
+                        {{jobOrder.name}}</a>
+                        <a ng-class="{'css_disableedt': jobOrder.Status!=='Triage & Diagnosis' && jobOrder.Status!=='Triage & Diagnosis/Repair'}" ng-href="/apex/CSS_JobTnDTs?id={{jobOrder.id}}&nto=DET">        
+                            {{jobOrder.name}}</a>        
+                        <a ng-class="{'css_disableedt': jobOrder.Status!=='Repair'}" ng-href="/apex/CSS_JobRepair?id={{jobOrder.id}}&nto=DET">        
+                            {{jobOrder.name}}</a></span> -->
+                </td>
+                <td>{{jobOrder.Shop_s_Work_Order}}</td>
+                <!---         <td>{{account.DSID}}</td>    ------>
+                <td>{{jobOrder.Unit_Number}}</td>
+                
+                <td>{{jobOrder.Status}}</td>
+                <td>{{jobOrder.Sub_Status}} {{jobOrder.LastUpdateSubStatus}}  
+                    
+                </td>
+                <!--    <td>{{account.Recent_Visit}}</td> -->
+                <td>  <a ng-class="{css_disableedt: jobOrder.Repeat_Visit!==true}" >
+                    <i class="red-flag"></i></a>
+                    <a ng-class="{css_disableedt: jobOrder.RecentVisit!==true}" >
+                        <i class="orange-flag"></i></a>
+                </td> 
+                <td><span ng-class="{'css_disableedt': jobOrder.Assigned===''}" id="t1" >{{jobOrder.Assigned}}<br/></span>
+                    <span ng-class="{'css_disableedt': jobOrder.AssignedTech1===''}" id="t2" >{{jobOrder.AssignedTech1}}<br/></span>
+                    <span ng-class="{'css_disableedt': jobOrder.AssignedTech2===''}" id="t3" >{{jobOrder.AssignedTech2}}<br/></span>
+                    <span ng-class="{'css_disableedt': jobOrder.AssignedTech3===''}" id="t4" >{{jobOrder.AssignedTech3}}<br/></span>
+                    <span ng-class="{'css_disableedt': jobOrder.AssignedTech4===''}" id="t5" >{{jobOrder.AssignedTech4}}<br/></span>
+                    <span ng-class="{'css_disableedt': jobOrder.AssignedTech5===''}" id="t6" >{{jobOrder.AssignedTech5}}<br/></span>
+                    <span ng-class="{'css_disableedt': jobOrder.AssignedTech6===''}" id="t7" >{{jobOrder.AssignedTech6}}<br/></span>
+                    <span ng-class="{'css_disableedt': jobOrder.AssignedTech7===''}" id="t8" >{{jobOrder.AssignedTech7}}<br/></span>
+                    <span ng-class="{'css_disableedt': jobOrder.AssignedTech8===''}" id="t9" >{{jobOrder.AssignedTech8}}<br/></span>
+                    <span ng-class="{'css_disableedt': jobOrder.AssignedTech9===''}" id="t10" >{{jobOrder.AssignedTech9}}<br/></span>
+                    
+                    
+                </td>
+                <td>
+                    
+                    {{jobOrder.Date_In}}
+                    <a ng-class="{'css_disableedt': true}" id="sh" >
+                        {{jobOrder.Date_In_sort | jsonDate:'yyyy-MM-dd'}}      
+                    </a>
+                </td>
+                
+                <td style="min-width: 90px;">
+                    {{jobOrder.Created_Time_Zone}}
+                    <a ng-class="{'css_disableedt': true}" id="sh" >
+                        {{jobOrder.Created_Time_sort | jsonDate:'yyyy-MM-dd'}}     
+                    </a>
+                </td>                          
+            </tr>
+            
+        </tbody>
+    </table>
+    
+    <uib-pagination total-items="filteredList.length" ng-model="currentPage" items-per-page="20" max-size="20" class="pagination-sm" boundary-link-numbers="true" rotate="false" previous-text="<- {!$Label.Css_Previous}" next-text="{!$Label.Css_Next} ->"></uib-pagination>
+    
+    
+</div> 
+
+</div>
+
+</apex:form> 
+
+</apex:component>

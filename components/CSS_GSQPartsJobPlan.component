@@ -1,0 +1,395 @@
+<apex:component controller="CSS_GSQPartsJobPlan" allowDML="true">
+<!--This style class will be showing the border around the Part number-->
+    <style>
+        .cmi_asterisk1
+        {
+            color: #D02323 ;
+        }
+        .showRedBorder
+        {
+            border: 2px solid red !important;
+        } 
+        @media screen and (min-width: 992px) {
+           .modal-lg {
+             width: 1250px; 
+          }
+          
+        }
+        .mytable1>tbody>tr>td, .mytable1>tbody>tr>th, .mytable1>tfoot>tr>td, .mytable1>tfoot>tr>th, .mytable1>thead>tr>td, .mytable1>thead>tr>th {
+          padding: 1px;
+        }
+        .fademargin {
+           margin-top: 50px !important;
+        }
+        #fademarginid {
+           margin-top: 50px !important;
+        }
+        
+          .cmi_lighttealbuttonURP {
+            border-radius: 5px;
+            display: inline-block;
+            padding: 5px 20px;
+            color: #000000;
+            text-align: center;
+            margin-left: 0 auto;
+            background-color: #a8d4d1;
+            pointer-events: none;
+            cursor: default;
+            border:0px;
+        
+        }
+        
+        
+        
+    </style>
+    <apex:attribute name="jobId" type="Id" description="The id of the Job"  assignTo="{!Ins_JobId}"/>
+    <apex:attribute name="serviceJobNum" type="String" description="The id of the Job"  assignTo="{!SerjobNumber}"/>
+    <apex:attribute name="dealerUser" type="Boolean" description="Dealer" assignTo="{!isDealer}"/>
+    <script type="text/javascript">
+        function DisableSaveButton(compId){
+           compId.disabled=true;
+           return false;
+        }
+    </script>
+
+    <script type="text/javascript">
+        function qtyPress(e)
+        {
+
+            if((e.which > 47 && e.which <=57) || e.which == 8)
+            {
+            } 
+            else {
+                return false;
+            }
+
+        }
+        
+        
+        //FOR TAB OFF SHIFT KEY     
+function partnumbertaboff(e,compId)
+        {
+    if((e.which > 47 && e.which <=57 && e.which==9))
+            {
+            } 
+            else 
+            {
+                
+                return false;
+            }        
+        }
+        
+        //Call to Web Service
+        function OnchanagePartNumber(val)
+        {
+            //alert('Part number tab off.'+val);//Just to check if tab off worked.
+            callGPDataService(val);
+            
+        }
+      function displaypop1(e){
+            //document.getElementById("saveButtonId").disabled=false;
+            //alert('oncomplete  eee'+e);
+            if(e == 'true'){
+                //alert('if'+e);
+                return false;  
+            }
+            else{
+                //alert('else'+e);
+                $('#customPartsJobPopUp').modal('hide');
+                return false;
+            }
+        }
+        function validateMaxVal(compId){
+            var CoveredVal= document.getElementById(compId.id).value;
+            if(CoveredVal > 100) {
+                document.getElementById(compId.id).value=100;   
+            }
+        }
+        function callfailcodemethod(value,value1){
+            failcodelogic(value,value1);
+
+        }
+        
+        
+        function resetServFlag(comp){
+            var pn = comp.value;
+            if(pn.length > 0){
+                //alert('Inside IF');
+                // document.getElementById('{!$Component.saveButtonId}').disabled = true;
+                document.getElementById('{!$Component.saveButtonId}').classList.remove("saveButton");
+                document.getElementById('{!$Component.saveButtonId}').classList.add("cmi_lighttealbuttonURP");
+                //resetServiceStatus();
+            }
+            else{
+                //alert('Inside ELSE');
+                document.getElementById('{!$Component.saveButtonId}').disabled = false;
+                //resetServiceStatus();
+            }
+            //resetServiceStatus(); 
+        }
+        //script for getting %coverd when we are chaning Account codes as per #105557 (RAJESH)
+        function callAccountcodemethod1(value,value1,value2){
+            Accountcodelogic1(value,value1,value2);
+        }
+      
+         function qtyPressURP(e,compId){
+            var technicianTimeVal= document.getElementById(compId.id).value;
+            if(((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105)))
+            {
+
+            } 
+            else 
+            {
+                return false;
+            }     
+        }
+
+    
+    function disableUserPartSaveButton(element){
+        element.disabled = true;
+    }
+    
+    
+    </script>
+    
+    
+
+    
+    <!-- <apex:actionFunction name="refreshParts" action="{!getallCustomPartsData}" reRender="modCont" /> -->
+     <apex:actionFunction name="closePopup1" action="{!closePopup1}" reRender="modCont" />
+   <!-- <apex:actionFunction name="closePopup" action="{!closePopup}" reRender="gsqPopUpId"/>-->
+    <apex:actionFunction name="failcodelogic" action="{!onChangeofFailCode}"  rerender="gsqPopUpId"> 
+        <apex:param name="FailCodeval"  value="" assignTo="{!SelectedFailCode}"/>
+        <apex:param name="PartsID"  value="" assignTo="{!SelectedPartID}"/>
+    </apex:actionFunction>
+    <!--Added java script Accountcodelogic1 to account code as per  #105557 (RAJESH)  -->
+    <apex:actionFunction name="Accountcodelogic1" action="{!onChangeofAccountCode}"  rerender="gsqPopUpId"> 
+        <apex:param name="AccountCodeval"  value="" assignTo="{!SelectedAccountCode}"/>
+        <apex:param name="PartsID"  value="" assignTo="{!SelectedPartID}"/>
+        <apex:param name="FailCodeval"  value="" assignTo="{!SelectedFailCode}"/>
+    </apex:actionFunction>
+    
+     
+    
+
+    <apex:outputPanel id="gsqPId" >
+        
+        
+        
+        <div class="modal" id="customPartsJobPopUp" >
+            <div class="modal-dialog modal-lg fademargin" id="fademarginid" style="margin-top: 50px !important;">
+                <div class="modal-content"> 
+                    <apex:outputPanel id="modCont" >  
+                        <div class="modal-header">  
+                            <!--   <apex:commandButton title="Close the popup" action="{!closePopup2}"  styleClass="cross_butten" /> -->
+                            <h4 class="modal-title" style="color: #FFFFFF;">User Requested Parts-Cummins Guidanz</h4>
+                        </div>
+
+                        <div class="modal-body" style="padding:0px;overflow:auto;height:460px;" >
+                            
+
+                            <apex:outputPanel id="gsqPopUpId">
+                                <div class="cmi_modal-body-desktop"> 
+                                    
+                                    <apex:outputLabel style="text-align:center; color: red ; display: block;" value="{!$Label.CSS_Please_add_Part_Name}"  rendered="{!IF(ErrorMessage== true, true, false)}" />
+                                    
+                                    <apex:outputLabel style="text-align:left; color: red ; display: block;" value="{!$Label.CSS_Part_Information_is_currently_not_available_Please_retry_or_contact_Guidanz}"  rendered="{!IF(PartNoValidationError== true, true, false)}" />
+                                    
+                                    <apex:outputPanel rendered="{!IF(dealerUser==true,true,false)}" >
+                                         <apex:outputLabel style="text-align:left; color: red ; display: block;" value="{!$Label.CSS_Part_not_Found}"  rendered="{!IF(PartNotFoundError== true, true, false)}" />
+                                    </apex:outputPanel>
+                                    <apex:outputLabel style="text-align:left; color: red ; display: block;" value="Part Description is required"  rendered="{!IF(DescErrMessage== true, true, false)}" />
+                                    <apex:outputPanel id="covExceedValidationError" rendered="{!IF(errMsgLstNew != null && errMsgLstNew.size > 0, true, false)}">
+                                        <apex:repeat value="{!errMsgLstNew}" var="errMsgs">
+                                            <apex:outputLabel style="text-align:left; color: red ; display: block;" value="{!errMsgs}" />
+                                        </apex:repeat>
+                                    </apex:outputPanel>
+
+                                    <table class="mytable1 table table-striped table-bordered repairParts" border="0" cellpadding="0" cellspacing="0" id="tbCustSRT">
+
+
+                                        <thead>
+                                            <tr bgcolor="#d3d3d3">
+                                                <th style="text-align:center;width:15%;">{!$Label.css_Qty} </th>
+                                                <th style="text-align:center;">{!$Label.CSS_Part_Number}
+                                                <span class="cmi_asterisk" style="float:none;font-size:18px;top:2px;left:4px;">*</span>
+                                                         <apex:outputtext rendered="{!IF(($Setup.css_header_nav__c.RSWButtonEnable__c== false || dealerUser==false),true,false)}">
+                                                               <th>OEM ({!$Label.CSS_Product_Code})</th>
+                                                         </apex:outputtext>
+                                    
+                    
+                                <!--Added as part of story 154235 Rupesh.-->
+
+                                                    <!--apex:outputPanel rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c == true,true,false)}">    
+                                                        <span class="cmi_asterisk" style="float:none;font-size:18px;top:2px;left:4px;">*</span>
+                                                    </apex:outputPanel-->
+                                                </th>
+                                                <!-- <th style="text-align:center;">{!$Label.CSS_Part_Name}-->
+                                               <!--Label name changed  as part of story 159057 -->
+                                               <th style="text-align:center;">{!$Label.css_Part_Description} 
+                                                    <!--Commented as part of story 154235 Rupesh.-->
+                                                
+                                              <!--  <apex:outputPanel rendered="{IF($Setup.css_header_nav__c.RSWButtonEnable__c == false),true,false)}"> -->
+                                                   <apex:outputPanel rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c == false,true,false)}">    
+                                                       <span class="cmi_asterisk" style="float:none;font-size:18px;top:2px;left:4px;">*</span>
+                                                   </apex:outputPanel>
+                                               </th>
+                                                <th style="text-align:center;">{!$Label.CSS_Return_to_Factory}</th> 
+                                                <th style="text-align:center;">{!$Label.CSS_Covered}</th> 
+                                                <th style="text-align:center;">{!$Label.CSS_Fail_Code}</th>
+                                                <th style="text-align:center;">{!$Label.CSS_Account_Code}</th>
+                                                <th style="text-align:center;width:15%;">{!$Label.CSS_Replacement_Repair_Reason}</th> 
+                                                <th style="text-align:center;">{!$Label.css_Notes}</th> 
+                                                <th style="text-align:center;">{!$Label.CSS_Remove}</th>
+                                            </tr>
+                                        </thead> 
+
+                                        <!--apex:actionRegion -->
+                                            <apex:actionFunction name="AccountcodeRefresh" reRender="AccountCodePart" >
+                                            </apex:actionFunction>      
+                                        
+                                        <!--this action function will call the controller function which will call the web service.-->
+                                        <!--<apex:actionFunction name="callGPDataService" action="{!CallGetPartDataService}" reRender="gsqPopUpId">
+                                                <apex:param name="PartNumvalue" value="{}" assignTo="{!selectedpartnumber}"/>                       
+                                        </apex:actionFunction>-->
+                                        <!--<apex:actionFunction name="callGPDataService" action="{!CallGetPartDataService}" reRender="gsqPopUpId">
+                                                <apex:param name="PartNumvalue" value="{}" assignTo="{!selectedpartnumber}"/>                       
+                                        </apex:actionFunction>-->
+
+                                        
+                                            <apex:variable var="rowCnt" value="{!0}" />                 
+                                            <apex:repeat value="{!listpartWrapper}" var="custParts" id="newpopCustomSRT">
+                                                <apex:variable var="trId" value="{!rowCnt+1}" />
+                                                <tr class="hideDisp" id="trId{!custParts.ids}">
+                                                    <td style="text-align:center;"> 
+                                                        <div id="qtyId">
+                                                            <apex:inputText value="{!custParts.quantity}" maxlength="5" onkeypress="return qtyPress(event)" id="quantity" style="width:50px;"/>
+                                                        </div>
+                                                    </td>
+
+                                                    <td style="text-align:center;">
+                                                        <div>
+                                                            <div class="col-sm-10">
+                                                              <!--<apex:Inputtext value="{!custParts.servPartNumber}" onkeypress="return partnumtaboff()" onclick="partdataserv(this.value,'{!custParts.counting}');" maxlength="15" rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c == false,true,false)}"/>-->
+                                                   <!--<apex:Inputtext value="{!custParts.servPartNumber}" onkeypress="return partnumtaboff()" styleClass="{!if(custParts.servPartNumber!=null && custParts.servPartNumber!='' && custParts.partName == null,'showRedBorder','')}" maxlength="15" rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c == true,true,false)}">-->
+                                                   
+                                                    <apex:outputPanel rendered="{!IF(dealerUser==false,true,false)}">
+                                                          <apex:Inputtext value="{!custParts.servPartNumber}" maxlength="15"/>
+                                                    </apex:outputPanel>
+                                                    <apex:outputPanel rendered="{!IF(dealerUser==true ,true,false)}">
+                                                            <!--apex:Inputtext value="{!custParts.servPartNumber}" onkeypress="return partnumtaboff()" styleClass="{!if(custParts.servPartNumber!=null && custParts.servPartNumber!='' && custParts.partName == null,'showRedBorder','')}" maxlength="15"-->
+                                                                <apex:Inputtext value="{!custParts.servPartNumber}" onKeyUp="resetServFlag(this)" styleClass="{!if(custParts.servPartNumber!=null && custParts.servPartNumber!='' && custParts.partName == null,'showRedBorder','')}" maxlength="15">
+                                                                <apex:actionSupport event="onchange" action="{!CallGetPartDataService}" status="callPartNoStatus" rerender="gsqPopUpId" immediate="false">
+                                                                    <apex:param id="selpart1" name="PartsName" value="{!custParts.counting}" assignTo="{!partrownumber}">
+                                                                        </apex:param>
+                                                                    </apex:actionSupport>
+                                                            </apex:Inputtext>
+                                                    </apex:outputPanel>  
+                                                    
+                                                   </div>
+                                                   
+                                                    <div class="col-sm-2">
+                                                    <apex:actionStatus id="callPartNoStatus">
+                                                    <apex:facet name="start"> <img src="/img/loading.gif" /></apex:facet>
+                                                        <apex:facet name="stop"></apex:facet>
+                                                    </apex:actionStatus>
+                                                      </div>
+                                                      </div>
+                                                    </td>
+                                                    
+                                                    <apex:outputtext rendered="{!IF(($Setup.css_header_nav__c.RSWButtonEnable__c== false || dealerUser==false) ,true,false)}">
+                                                    <td style="text-align:center">
+                                                    <apex:Inputtext value="{!custParts.oem}"/>
+                                                    </td>
+                                                    
+                                                    </apex:outputtext>
+                                                    <td style="text-align:center"><apex:inputtext value="{!custParts.partName}"/> </td>
+                                                    <!--The below was changed from input-outputtext as part of 154235 story.--Rupesh-->
+                                                    <apex:outputtext rendered="{!IF(($Setup.css_header_nav__c.RSWButtonEnable__c== false || dealerUser==false) ,true,false)}">
+                                                    <!--<td style="text-align:center"><apex:inputtext value="{!custParts.partName}" disabled="true"/> </td>-->
+                                                    </apex:outputText>
+                                                    <td style="text-align:center;"><apex:outputtext value="{!custParts.returnToFactory}"/> <!-- <apex:Inputtext value="{!custParts.returnToFactory}"/> --> </td>
+                                                    <td style="text-align:center;"><apex:Inputtext value="{!custParts.coveredPercent}" style="width:100px;"  id="ValCovered" maxlength="3" onkeyup="validateMaxVal(this);" onkeydown="return qtyPressURP(event,this)"/></td>
+                                                    <td style="text-align:center;">
+                                                        <!-- STORY 100309-->
+                                                        <!-- <apex:selectList value="{!custParts.failCode}" size="1" style="width:100px;"  onchange="AccountcodeRefresh()" > -->
+                                                        <!--Added style class in below selectList as part of the story GSSC-50 -->
+                                                        <apex:selectList value="{!custParts.failCode}" id="failcodesvalue" size="1" style="width:100px;" onchange="callfailcodemethod(this.value,'{!custParts.counting}');" styleClass="{!IF(custParts.isPartsCovLimitExceedPW == true,'showRedBorder','')}">
+                                                            <apex:selectOptions value="{!failcodeDropDown}" ></apex:selectOptions>
+                                                       </apex:selectList>
+                                                        <!-- END OF STORY 100309--> 
+                                                        <!-- <apex:Inputtext value="{!custParts.failCode}" /-->
+                                                    </td>
+                                                    <!--changes on account code conditions as per  #105557 (RAJESH)  -->
+                                                    
+                                                    <td style="text-align:center;" id="AccountCodePart" >
+                                                        <apex:outputPanel rendered="{!IF(custParts.failCode != 'Select One' && custParts.failCode != '',true,false)}" >
+                                                            <!--Added isPartsCovLimitExceedPW in style class as part of the story GSSC-50 -->
+                                                            <apex:selectList value="{!custParts.accountCode}" size="1" style="width:100px;" styleClass="{!IF(custParts.isPartsCovLimitExceed == true || custParts.isPartsCovLimitExceedPW == true,'showRedBorder','')}" disabled="false" onchange="callAccountcodemethod1(this.value,'{!custParts.counting}','{!custParts.failCode}');" >
+                                                                 <apex:selectOptions value="{!custParts.lstFCAC}"></apex:selectOptions> 
+                                                                <!--apex:selectOptions value="{!AccountCodeDropDown}"></apex:selectOptions --> 
+                                                            </apex:selectList>
+                                                        </apex:outputPanel>
+                                                      <!--  <apex:outputPanel rendered="{!IF(custParts.failCode == 'Select One' || custParts.failCode == '' || custParts.accountCode == 'Select One',true,false)}"> -->
+                                                        <apex:outputPanel rendered="{!IF(custParts.failCode == 'Select One' || custParts.failCode == '',true,false)}">
+                                                            <apex:selectList value="{!custParts.accountCode}" size="1" style="width:100px;"  disabled="true" readonly="false">
+                                                                <apex:selectOption itemValue="Select One" itemLabel="Select One"/>
+                                                            </apex:selectList>
+                                                        </apex:outputPanel>
+                                                        
+                                                        <!--apex:outputpanel rendered="{!IF(custParts.failcode!= 'Select One'  && custParts.accountCode == 'Select One' ,true,false)}">
+                                                    <p>  
+                                                        <apex:selectList value="{!custParts.accountCode}" size="1" style="width:100px;" disabled="false"  onchange="callAccountcodemethod1(this.value,'{!custParts.counting}','{!custParts.failCode}');">
+                                                        <apex:selectOptions value="{!AccountCodeDropDown}"></apex:selectOptions>
+                                                        </apex:selectList> 
+                                                    </p>
+                                                </apex:outputpanel-->
+
+                                                    </td>
+                                                    <!-- <td style="text-align:center;"><apex:Inputtext value="{!custParts.accountCode}"/></td> -->
+                                                    <td style="text-align:center;"><apex:selectList value="{!custParts.replacementReasson}" size="1" >
+                                                        <apex:selectOptions value="{!replacementReasonOptions}"/>
+                                                        </apex:selectList> </td>
+                                                    <td style="text-align:center;"><apex:inputTextarea value="{!custParts.notes}" style="resize:none;border:1px solid #d3d3d3;width:100px" onkeyup="textCounter(this,'counter',140);" rows="1"/></td>
+                                                    <td style="text-align:center;">
+                                                        <apex:commandLink value="{!$Label.CSS_Remove}"  action="{!removingRow}" style="text-decoration:underline;" reRender="modCont">
+                                                            <apex:param name="assignedParts" value="{!custParts.counting}" assignTo="{!assignedParts}"/>  
+                                                        </apex:commandLink>
+                                                    </td>
+                                                </tr>
+                                            </apex:repeat> 
+                                        <!--/apex:actionRegion-->
+                                        <div class="clearfix"></div>
+                                    </table>
+
+                                    <div class="clearfix"></div>
+                                </div>
+                                <div style="float:left;text-decoration:underline;margin-right:-320px;">
+                                    <i class="cmi_add-icon"></i>
+                                    <apex:commandLink value="{!$Label.CSS_Add_10}" action="{!AddRow}" reRender="modCont"/> 
+                                </div>
+                                <div class="modal-footer" style="margin-top:10px;border-top:0px;">
+                                    <div class="col-sm-5"> 
+                                        <apex:commandButton value="{!$Label.css_save_btn}" action="{!saveCustomParts}"   styleClass="saveButton" id="saveButtonId" reRender="modCont" onClick="disableUserPartSaveButton(this);" onComplete="return displaypop1('{!displayPopup2}'); return false;">
+                                        </apex:commandButton>
+                                        <!--<button type="button" class="saveButton" onclick="DisableSaveButton(this);" id="saveButtonId" onClick="saveCustomPartsfun();" ondblclick="saveCustomPartsfun();"  >{!$Label.css_save_btn}</button>  -->
+
+                                    </div>
+                                    <div class="col-sm-2">
+                                    <button type="button" class="cancelButton" data-dismiss="modal" onClick="closePopup1();" >{!$Label.css_Cancel}</button>
+                                    </div>
+
+                                </div>
+                            </apex:outputPanel>
+                        </div>
+
+                    </apex:outputPanel>   
+
+                </div>
+            </div>
+        </div>
+    </apex:outputPanel> 
+
+    <!-----Custom Parts pop up End----->
+
+</apex:component>

@@ -1,0 +1,9 @@
+@isTest
+public class DBU_RequestPaypalWrpr_Test 
+{
+    public static testMethod void getPaypalPayment(){
+        
+        DBU_RequestPaypalWrpr objss = new DBU_RequestPaypalWrpr();
+        DBU_RequestPaypalWrpr.parse('{"id":"PAYID-L7IMYXQ66Y78391NV899893T","intent":"sale","state":"created","payer":{"payment_method":"paypal"},"transactions":[{"amount":{"total":"410.23","currency":"USD","details":{"subtotal":"343.28","tax":"26.95","shipping":"40.00","insurance":"0.00","handling_fee":"0.00","shipping_discount":"0.00"}},"description":"The payment transaction description.","custom":"","invoice_number":"","soft_descriptor":"","payment_options":{"allowed_payment_method":"INSTANT_FUNDING_SOURCE","recurring_flag":false,"skip_fmf":false},"item_list":{"items":[{"name":"Cummins C0147046408 PUMP,FUEL INJECTION","sku":"C0147046408","description":"","price":"303.28","currency":"USD","tax":"0.00","quantity":1},{"name":"Core: Cummins C0147046408 PUMP,FUEL INJECTION","sku":"C0147046408-1","description":"","price":"40.00","currency":"USD","tax":"0.00","quantity":1}],"shipping_address":{"recipient_name":"Dianna Strachan","line1":"1460 N NATIONAL RD","city":"SCOTTSDALE","state":"AZ","postal_code":"85259","country_code":"US","phone":"+9 (999) 999-9999"}},"related_resources":[]}],"note_to_payer":"Contact us for any questions on your order.","create_time":"2020-12-09T13:08:45Z","links":[{"href":"https://api.sandbox.paypal.com/v1/payments/payment/PAYID-L7IMYXQ66Y78391NV899893T","rel":"self","method":"GET"},{"href":"https://www.sandbox.paypal.com/cgi-bin/webscr?cmd=_express-checkout&token=EC-4DK84354U0402992H","rel":"approval_url","method":"REDIRECT"},{"href":"https://api.sandbox.paypal.com/v1/payments/payment/PAYID-L7IMYXQ66Y78391NV899893T/execute","rel":"execute","method":"POST"}]}');
+    }
+}

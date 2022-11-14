@@ -1,0 +1,355 @@
+<apex:page showHeader="true" sidebar="true" standardStylesheets="true" controller="disco.Ctl_FormImport" applyBodyTag="false" docType="html-5.0">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<apex:styleSheet value="{!URLFOR($Resource.disco__SLDS100, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+<head>
+	<apex:includeScript value="{!URLFOR($Resource.disco__jquery_3_6_0, 'jquery.min.js')}"/>
+	<script src="{!$Resource.customModalJS}"></script>
+	<script>
+		var yourekaDisabled = '{!JSENCODE(IF(yourekaDisabled,"true", "false"))}';
+		var isLightningExp = typeof sforce !== 'undefined';
+		var ns = '{!JSENCODE(namespace)}';
+
+		// if youreka is disabled redirect to the get started page
+		if (yourekaDisabled === 'true') {
+			if (isLightningExp) {
+				sforce.one.navigateToURL('/apex/'+ ns +'GetStarted');
+			} else {
+				window.location.href='/apex/'+ns+'GetStarted';
+			}
+		}
+
+
+		function importFormDirectlyJS() {
+			$('.js-upload-button').attr('disabled', true);
+			var $uploadedFile = $("[id$='uploadFile']");
+			var fileVal = $uploadedFile.val();
+
+			if (fileVal !== '') {				
+                $('.importFormDirectlyHiddenSave').click();
+				disableButtons();
+			}
+			else {
+				window.openCustomModal({bodyStringArray:['Please upload a file first.']});
+				$('.js-upload-button').attr('disabled', false);
+			}
+		}
+
+		function cancel() {
+			if (isLightningExp) {
+                sforce.one.navigateToURL('/lightning/page/home');
+			} else {
+				window.location.href = '{!JSENCODE("/")}';
+			}
+		}
+
+		$(document).ready(function() {
+			/* process all transformation messages to apply markdown-style formatting */
+			var errorContent = $('#transformMessages').html();
+			if(errorContent) {
+				var updatedContent = errorContent.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+				updatedContent = updatedContent.replace(/~~(.*?)~~/g, "<i>$1</i>");
+				updatedContent = updatedContent.replace(/\n/g, '<br />');
+				$('#transformMessages').html(updatedContent);
+			}
+			
+			// Add listener to file input button
+			// If file is correct size (less than 5mb), re-enable the upload button
+			// If file is too large, disable, or keep disabled, the upload button
+			$("[id$='uploadFile']").on('change', function(elem){
+				var uploadFile = elem.currentTarget.files[0];
+				var uploadSize = uploadFile ? uploadFile.size : undefined;
+				
+				// No file uploaded if user has a file added, then tries to add a different on, but clicks cancel button
+				if(!uploadFile) {
+					$('.js-upload-button').attr('disabled', true);
+					$('.js-size-error-msg').addClass('slds-hide');
+				} 
+				// Check if file is more than 5mb
+				else if(uploadSize > 5000000) {
+					$('.js-upload-button').attr('disabled', true);
+					$('.js-size-error-msg').removeClass('slds-hide');
+				} 
+				// Valid File uploaded
+				else { 
+					$('.js-upload-button').attr('disabled', false);
+					$('.js-size-error-msg').addClass('slds-hide');
+				}
+			});
+		});
+
+		function disableButtons()
+		{
+			$('.slds-button--brand').prop('disabled',true);
+			$('.slds-button--neutral').prop('disabled',true);
+		}
+
+	</script>
+	<style>
+		.hiddenBtn {
+			display:none;
+		}
+
+		.cancel-btn {
+			float:right;
+		}
+
+		.center-vertical {
+			display:flex;
+			-webkit-align-content: center;
+   			align-content: center;
+		}
+
+		.slds-grid.page-3-btns .btn {
+			min-height: 36px;
+			line-height: 1.66em;
+		}
+
+		/* Adds SLDS style to the button on the file input */
+		input[type="file"]::-webkit-file-upload-button {
+		    position: relative;
+		    display: inline-block;
+		    background: transparent;
+		    background-clip: padding-box;
+		    border-radius: 4px;
+		    color: #0070d2;
+		    font-size: 12px;
+		    line-height: 17px;
+		    text-decoration: none;
+		    -webkit-appearance: none;
+		    white-space: normal;
+		    -webkit-user-select: none;
+		    user-select: none;
+		    transition: color 0.05s linear, background-color 0.05s linear;
+			padding-left: 16px;
+		    padding-right: 16px;
+		    text-align: center;
+		    vertical-align: middle;
+		    border: 1px solid #d8dde6;
+		    background-color: white;
+		    text-transform: none;
+        	margin: 8px 0;
+		}
+		.error-text {
+			color: rgb(194, 57, 52);
+		}
+	</style>
+</head>
+<div class="slds">
+<apex:form id="theForm">
+	<div id="custom-modal-container"/>
+	<apex:pageMessages />
+	<apex:actionFunction action="{!saveLoadedFormPiece}" name="saveFormTemplate" />
+	<!-- / PAGE 1A -->
+	<apex:outputPanel rendered="{!page==0 && authorized}" id="page0">
+		<!-- / PAGE HEADER -->
+		<div class="slds-page-header" role="banner">
+			<div class="slds-grid">
+				<div class="slds-col">
+					<div class="slds-media">
+						<div class="slds-media__figure">
+							<svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon--large">
+								<use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/action-sprite/svg/symbols.svg#description')}"></use>
+							</svg>
+						</div>
+						<div class="slds-media__body">
+							<p class="slds-text-heading--label">Form Template Import</p>
+							<h1 class="slds-text-heading--medium">
+								Upload a JSON file to import (Step 1 of 3)
+							</h1>
+						</div>
+					</div>
+				</div>
+				<div class="slds-col slds-no-flex slds-align-middle">
+					<button type="button" class="slds-button slds-button--neutral cancel-btn" onClick="cancel()">Cancel</button>
+				</div>
+			</div>
+		</div>
+		<div></div>
+
+		<!-- / PAGE CARD -->
+		<div class="slds-p-horizontal--x-large slds-p-top--medium slds-card slds-m-vertical--large">
+			<div class="slds-text-heading--small">
+				Pick your file to import:
+			</div>
+			<div class="slds-m-around--small slds-text-align--center">
+				<apex:outputLabel value="File Upload (.json)"/>
+				<apex:inputFile id="uploadFile" value="{!uploadFile}" styleClass="slds-button slds-button--neutral"/> 
+			</div>
+			<div class="slds-m-around--small slds-text-align--center">
+				<button class="slds-button slds-button--brand slds-m-vertical--x-small js-upload-button" type="button" disabled="true" onClick="importFormDirectlyJS();">Upload JSON file</button>
+				<p class="slds-hide error-text js-size-error-msg ">This file exceeds the 5mb size limit. Please select a smaller file.</p>
+			</div>
+			<div class="slds-m-around--medium slds-text-align--center">
+                <apex:commandButton action="{!parseJSONfromBLOB}" styleClass="hiddenBtn importFormDirectlyHiddenSave" />
+			</div>	
+ 		</div>
+	</apex:outputPanel>
+	
+	<!-- / PAGE 2 New -->
+	<apex:outputPanel rendered="{!page==2  && authorized}" id="page2">
+		<!-- / PAGE HEADER -->
+		<div class="slds-page-header" role="banner">
+			<div class="slds-grid">
+				<div class="slds-col">
+					<div class="slds-media">
+						<div class="slds-media__figure">
+							<svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon--large">
+								<use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/action-sprite/svg/symbols.svg#description')}"></use>
+							</svg>
+						</div>
+						<div class="slds-media__body">
+							<p class="slds-text-heading--label">Form Template Import</p>
+							<h1 class="slds-text-heading--medium">
+								Save Loaded Template (Step 2 of 3)
+							</h1>
+						</div>
+					</div>
+				</div>
+				<div class="slds-col slds-no-flex slds-align-middle">
+					<button type="button" class="slds-button slds-button--neutral cancel-btn" onClick="cancel()">Cancel</button>
+				</div>
+			</div>
+		</div>
+		<div></div>
+
+		<!-- / PAGE CARD -->
+		<div class="slds-p-horizontal--x-large slds-p-top--medium slds-card slds-m-vertical--large">
+			<div class="slds-text-heading--small">
+				Template Sections &amp; Questions
+			</div>
+			<div class="slds-m-around--small">	
+				<div class="slds-grid slds-m-vertical--x-small slds-text-align--right slds-grid--align-center">
+					<div class="slds-m-top--xx-small slds-col--padded slds-form-element__control slds-size--1-of-2 slds-text-heading--label">
+						Form Template Name:
+					</div>
+					<div class="slds-col--padded slds-form-element__control slds-size--1-of-2 slds-text-align--left slds-text-body--regular">
+						<apex:outputLabel value="{!formName}" />
+					</div>
+				</div>
+				<div class="slds-grid slds-m-vertical--x-small slds-text-align--right slds-grid--align-center">
+					<div class="slds-m-top--xx-small slds-col--padded slds-form-element__control slds-size--1-of-2 slds-text-heading--label">
+						Number of Sections:
+					</div>
+					<div class="slds-col--padded slds-form-element__control slds-size--1-of-2 slds-text-align--left slds-text-body--regular">
+						<apex:outputLabel value="{!numFormSections}" />
+					</div>
+				</div>
+				<div class="slds-grid slds-m-vertical--x-small slds-text-align--right slds-grid--align-center">
+					<div class="slds-m-top--xx-small slds-col--padded slds-form-element__control slds-size--1-of-2 slds-text-heading--label">
+						Number of Questions:
+					</div>
+					<div class="slds-col--padded slds-form-element__control slds-size--1-of-2 slds-text-align--left slds-text-body--regular">
+						<apex:outputLabel value="{!numQuestions}"  />
+					</div>
+				</div>
+			</div>
+			<div class="slds-grid slds-m-around--small slds-grid--align-center ">
+				<apex:commandButton value="Save Form Template" styleClass="slds-button slds-button--brand cancel-btn"
+					onclick="disableButtons();saveFormTemplate()" reRender="theForm"/> 
+				<!-- reRender="page0,page1,page2,page3,page4"/> -->
+			</div>
+			<apex:outputLabel rendered="{!showMessages}">
+				<div class="slds-text-heading--small">
+					Some adjustments were made during import
+				</div>
+				<div class="slds-grid slds-m-around--small slds-grid--align-center">	
+					<div id="transformMessages" class="slds-col--padded slds-form-element__control slds-size--1-of-1">
+						<apex:dataList value="{!messages}" var="message">
+							<apex:outputText value="{!message}"/>
+						</apex:dataList>
+					</div>
+				</div>
+			</apex:outputLabel>
+		</div>
+	</apex:outputPanel>
+
+	<!-- / PAGE 3 New -->
+	<apex:outputPanel rendered="{!page==3  && authorized}" id="page3">
+		<!-- / PAGE HEADER -->
+		<div class="slds-page-header" role="banner">
+			<div class="slds-grid">
+				<div class="slds-col">
+					<div class="slds-media">
+						<div class="slds-media__figure">
+							<svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon--large">
+								<use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/action-sprite/svg/symbols.svg#description')}"></use>
+							</svg>
+						</div>
+						<div class="slds-media__body">
+							<p class="slds-text-heading--label">Form Template Import</p>
+							<h1 class="slds-text-heading--medium">
+								Save Discovery Logic (Step 3 of 3)
+							</h1>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div></div>
+		<!-- / PAGE CARD -->
+	
+		<div class="slds-p-horizontal--x-large slds-p-top--medium slds-card slds-m-vertical--large">
+			<div class="slds-text-heading--small">
+				Template Discovery Rules &amp; Discovery Rule Groups
+			</div>
+			<div class="slds-m-around--small">
+				<div class="slds-grid slds-m-vertical--x-small slds-text-align--right slds-grid--align-center">
+					<div class="slds-m-top--xx-small slds-col--padded slds-form-element__control slds-size--1-of-2 slds-text-heading--label">
+						Form Template Name:
+					</div>
+					<div class="slds-col--padded slds-form-element__control slds-size--1-of-2 slds-text-align--left slds-text-body--regular">
+						<apex:outputLabel value="{!formName}" />
+					</div>
+				</div>
+				<div class="slds-grid slds-m-vertical--x-small slds-text-align--right slds-grid--align-center">
+					<div class="slds-m-top--xx-small slds-col--padded slds-form-element__control slds-size--1-of-2 slds-text-heading--label">
+						Number of Discovery Rules:
+					</div>
+					<div class="slds-col--padded slds-form-element__control slds-size--1-of-2 slds-text-align--left slds-text-body--regular">
+						<apex:outputLabel value="{!numDiscoRules}"  />
+					</div>
+				</div>
+				<div class="slds-grid slds-m-vertical--x-small slds-text-align--right slds-grid--align-center">
+					<div class="slds-m-top--xx-small slds-col--padded slds-form-element__control slds-size--1-of-2 slds-text-heading--label">
+						Number of Discovery Rule Groups:
+					</div>
+					<div class="slds-col--padded slds-form-element__control slds-size--1-of-2 slds-text-align--left slds-text-body--regular">
+						<apex:outputLabel value="{!numDiscoRuleGroups}" />
+					</div>
+				</div>
+			</div>
+			<apex:outputPanel rendered="{!anyDiscoLogic}" >
+				<div class="slds-grid slds-m-around--small slds-grid--align-center page-3-btns">
+					<div class="slds-col--padded slds-form-element__control slds-size--1-of-2 slds-text-align--right">
+                        <apex:commandButton styleClass="slds-button  slds-button--brand btn" action="{!saveDiscoveryRulePiece}" value="Save and Finish" 
+							onclick="disableButtons()" reRender="page0"/>
+					</div>
+					<div class="slds-col--padded slds-form-element__control slds-size--1-of-2 slds-text-align--left">
+                        <apex:commandButton styleClass="slds-button slds-button--neutral btn" action="{!goToFormTemplate}" value="Skip Logic and Finish" 
+							onclick="disableButtons()" reRender="page0"/>
+					</div>
+
+				</div>
+			</apex:outputPanel>
+            <apex:outputPanel rendered="{!!anyDiscoLogic}" >
+				<div class="slds-m-around--small  page-3-btns">
+					<div class="slds-col--padded slds-form-element__control slds-size--1-of-2 slds-text-align--right">
+						<apex:commandButton styleClass="slds-button slds-button--brand  btn" action="{!goToFormTemplate}" value="Finish"
+							onclick="disableButtons()" reRender="page0"/>
+					</div>
+				</div>
+			</apex:outputPanel>
+		</div>
+		
+	</apex:outputPanel>
+</apex:form> 
+</div>
+<!-- IE Support for SVGS-->
+<script src="{!URLFOR($Resource.svg4everybody, '/svg4everybody/svg4everybody.min.js')}"></script>
+<script>
+	$(document).ready(function() { 
+		svg4everybody(); // init
+	});
+</script>
+</html>
+</apex:page>

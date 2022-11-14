@@ -1,0 +1,298 @@
+<apex:component controller="CSS_TndRepSymOverviewControl" allowDML="true">
+
+    <!-- 
+Version Author                  Date            Comments
+
+62582   Roopa Gadipudi         08/16/2016      Defect fix Perform repair link alignment 
+-->
+    <style>
+        @media (max-width: 749px) and (min-width: 300px){
+            thead b{
+                top:12px;
+            }}
+    </style>
+    <script>
+
+        function partsacc(iocnId,PartsId){
+            var compPartsId = document.getElementById(PartsId);
+            $(iocnId).toggleClass("cmi_viewmore-icon-open");
+            $(compPartsId).toggleClass("cmi_viewmore-show");
+        }
+
+        function partsaccText(textId,PartsId){
+            var iconTextId=document.getElementById(textId);
+            var compPartsId = document.getElementById(PartsId);
+            $(iconTextId).toggleClass("cmi_viewmore-icon-open");
+            $(compPartsId).toggleClass("cmi_viewmore-show");
+        }
+    </script>
+
+
+    <!-----------------Code for testing End-------------------->
+    <!---<fieldset style="border: 1px solid grey; height:100%;" id="multiSol">--->
+    <!-- Adding Code for #111904 ROD Story -->
+    <apex:OutputPanel rendered="{!IF(workJob.CSS_Channel_Code__c =='664',true,false)}">
+        <div align="center">
+            <font color="red"><b>{!$Label.CSS_CIHR_Error_Message}</b></font>    
+        </div> 
+    </apex:OutputPanel>
+    <!-- Adding Code for #111904 ROD Story -->
+    <apex:outputpanel id="SolnPanel" rendered="{!IF( AllSolnCount>0 ,true,false)}"> 
+        <apex:outputpanel > 
+            <div class="panel">
+                <div class="form-horizontal" role="form"> 
+                    <div class="form-group" style="margin-top:10px">
+                        <div class="col-md-12 col-xs-12">
+                            <table class="mytable table table-striped table-bordered CMI-HomeTable FCTable">
+                                <thead>
+                                    <tr>
+                                        <th class="tblhead" style="width:10%"><b>{!$Label.css_Diagnose}
+                                            </b>
+                                        </th>
+                                         <th class="tblhead" style="width:77%">
+                                            <div class="row">
+                                                <div class="col-sm-offset-2 col-sm-3"><b>{!$Label.CSS_Solution_Position}</b></div>
+                                                <div class="col-sm-offset-1 col-sm-2"><b>{!$Label.css_Solutions}</b></div>
+                                                <div class="col-sm-offset-1 col-sm-2"><b>{!$Label.css_Repairs_Made}</b></div>
+                                            </div>
+                                        </th>
+                                        <th class="tblhead" style="width:0%">
+                                            <b>{!$Label.CSS_Available_SRT_Total}</b>
+                                        </th>
+                                    </tr>
+                                </thead>
+
+                                <tbody> 
+                                    <apex:variable var="fcCnt" value="{!1}" />
+                                    <apex:repeat value="{!qAListWrap}" var="sym" id="theRepeat" >
+
+                                        <!-- <tbody> -->
+                                        <tr>
+                                            <td>                        
+                                                <div>
+                                                    <div class="cmi_td-solution">  
+                                                        <apex:repeat value="{!sym.sSList}" var="symSearchStr" id="theRepeat1" >
+
+                                                            <b>{!symSearchStr.Name}</b>
+                                                            <apex:repeat value="{!sym.searchStrWrap}" var="serAnslist"><br/>
+                                                                {!serAnslist.Answers__c}
+
+                                                            </apex:repeat>
+
+
+                                                            <!----------    User Story #89780 by Krishna at 14-04-2017  ----------------->
+                                                            <!--<td>
+<apex:repeat value="{!VerSolDetails[symSearchStr.Id]}" var="VSols"> 
+<apex:outputpanel rendered="{!IF(VSols.Diagnostic_Response__c == 'Most likely the solution' ,true,IF(VSols.Diagnostic_Response__c == 'Not the solution' ,true,false))}"> 
+<div class="col-sm-5">
+<b>{!VSols.Rank__c}</b> <br/>
+</div> 
+</apex:outputpanel>
+</apex:repeat>
+
+</td>-->
+                                                            <!----------    User Story #89780 by Krishna at 14-04-2017  ----------------->
+                                                            <!----Solutions starts---->
+                                                            <td><div>
+
+                                                                <apex:outputpanel rendered="{!IF(symSearchStr.Number_of_Solutions__c == null || symSearchStr.Number_of_Solutions__c == '' ,false,true)}">
+                                                                    <div style="color:#B5B3B3;text-align:center;margin-bottom:10px;margin-right:160px;">
+                                                                        <span style="font-size: 12px;"> {!symSearchStr.Number_of_Solutions__c} {!$Label.css_Solutions_Found} </span> <br/>
+                                                                    </div>
+                                                                </apex:outputpanel> <br/>
+                                                                <div class="row" style="margin-left:-180px;margin-right:-72px;">
+                                                                    <div class="col-sm-12">
+                                                                        <!-------defect fix 62217/62210 code start---------->
+                                                                        <!-- <apex:variable var="SolCnt" value="{!0}" />  -->
+                                                                        <!-------defect fix 62217/62210 code End---------->
+                                                                        <apex:repeat value="{!VerSolDetails[symSearchStr.Id]}" var="VSols"> 
+                                                                            <apex:outputpanel rendered="{!IF(symSearchStr.Number_of_Solutions__c == null || symSearchStr.Number_of_Solutions__c == '' ,true,false)}">
+                                                                                <div style="color:#B5B3B3;text-align:center;margin-bottom:10px;margin-right:160px;">
+                                                                                    <span style="font-size: 12px;"> 0 {!$Label.css_Solutions_Found}</span> <br/>
+                                                                                </div>
+                                                                            </apex:outputpanel>
+                                                                            <apex:outputpanel rendered="{!IF(symSearchStr.Number_of_Solutions__c == null || symSearchStr.Number_of_Solutions__c == '' ,false,true)}">
+                                                                                <div class="row"> 
+                                                                                    <apex:outputpanel rendered="{!IF(VSols.Diagnostic_Response__c == '' ,false,true)}">
+                                                                                        <div class="col-sm-offset-1 col-sm-1">
+                                                                                            <apex:outputpanel rendered="{!IF(VSols.Solution_Title__c != null,true,false)}">
+                                                                                                <span><b>{!VSols.Rank__c}
+                                                                                                    {!VSols.Nested_Rank__c}
+                                                                                                    </b>  <br/> </span>
+                                                                                            </apex:outputpanel>
+                                                                                        </div>
+                                                                                        <div class="col-sm-offset-2 col-sm-1">
+                                                                                            <i class="cmi-icon {!IF(VSols.Diagnostic_Response__c == 'Most likely the solution', 'icon-correct',
+                                                                                                      IF(VSols.Diagnostic_Response__c == 'Not the solution', 'icon-wrong','icon-qtn'))}"></i>
+                                                                                        </div>
+                                                                                        <div class="col-sm-3">
+                                                                                            <b>{!VSols.Name}</b> <br/>
+                                                                                            <div>{!VSols.Solution_Title__c}</div>
+                                                                                            <apex:outputPanel rendered="{!IF(VSols.CSS_Nested_Solutions__c != null && VSols.CSS_Nested_Solutions__c != '', true,false)}"> 
+                                                                                                (Compound of {!VSols.CSS_Nested_Solutions__r.Name}) <br/> 
+                                                                                            </apex:outputPanel>
+                                                                                        </div>
+
+                                                                                        <div class="col-sm-4">
+                                                                                            <apex:outputpanel rendered="{!IF(symSearchStr.Number_of_Solutions__c == null || symSearchStr.Number_of_Solutions__c == '' ,false,true)}">
+                                                                                                <div class="row">
+                                                                                                    <div class="col-sm-12">
+                                                                                                        <apex:outputpanel > 
+                                                                                                            <div class="col-sm-offset-1 col-sm-2">
+                                                                                                                <i class="{!IF(VSols.Repair_Response__c == 'Repair Successful.', 'cmi-icon icon-solidCorrect',
+                                                                                                                          IF(VSols.Repair_Response__c == 'Repair Successful with additional parts/procedures.', 'cmi-icon icon-correctplus',
+                                                                                                                          IF(VSols.Repair_Response__c == 'Repair not performed.', 'cmi-icon icon-solidQtn',
+                                                                                                                          IF(VSols.Repair_Response__c == 'Repair performed but didnot resolve the root cause.', 'cmi-icon icon-solidWrong',
+                                                                                                                          IF(VSols.Repair_Response__c == 'Repair performed but did not resolve the root cause.', 'cmi-icon icon-solidWrong', NULL)))))}">
+                                                                                                                </i>
+                                                                                                            </div>
+                                                                                                            <div class="col-sm-9">
+                                                                                                                <apex:outputPanel rendered="{!IF(VSols.Repair_Response__c != 'Repair performed but didnot resolve the root cause.', true,false)}">
+                                                                                                                <b>{!VSols.Repair_Response__c}</b>
+                                                                                                                </apex:outputPanel>
+                                                                                                            </div>
+                                                                                                            <div class="col-sm-9">
+                                                                                                                <apex:outputPanel rendered="{!IF(VSols.Repair_Response__c == 'Repair performed but didnot resolve the root cause.', true,false)}">
+
+                                                                                                                    <b>{!$Label.CSS_Repair_performed_but_didnot_resolve_the_root_cause}</b> <br/>
+                                                                                                                </apex:outputPanel>
+                                                                                                            </div>
+                                                                                                            <div class="clearfix"></div>
+                                                                                                        </apex:outputpanel>
+                                                                                                        <div class="row">
+                                                                                                            <div class="col-sm-offset-4 col-sm-8">
+                                                                                                                <apex:outputpanel rendered="{!IF(VSols.Repair_Response__c == '' && VSols.Diagnostic_Response__c  != null,true,false)}">
+
+                                                                                                                    <apex:outputpanel rendered="{!IF(VSols.Diagnostic_Response__c == 'Most likely the solution' && (VSols.CSS_Nested_Solutions__c == '' || VSols.CSS_Nested_Solutions__c == null),true,false)}">  
+                                                                                                                        <a href="/apex/CSS_SymRepairPage?id={!Wid}&symId={!symSearchStr.Id}&rank={!VSols.Rank__c-1}">{!$Label.css_Perform_Repair} </a> 
+                                                                                                                    </apex:outputpanel>
+                                                                                                                    <apex:outputpanel rendered="{!IF((VSols.Diagnostic_Response__c == 'Not the solution' || VSols.Diagnostic_Response__c =='Could not perform the solution verification') && (VSols.CSS_Nested_Solutions__c == '' || VSols.CSS_Nested_Solutions__c == null),true,false)}">  
+                                                                                                                        <a href="/apex/CSS_SymRepairPage?id={!Wid}&symId={!symSearchStr.Id}&rank={!VSols.Rank__c-1}">{!$Label.css_View_Repair} </a> 
+                                                                                                                    </apex:outputpanel>
+                                                                                                                    <apex:outputpanel rendered="{!IF(VSols.Diagnostic_Response__c == 'Most likely the solution' && (VSols.CSS_Nested_Solutions__c != '' && VSols.CSS_Nested_Solutions__c != null),true,false)}"> 
+
+                                                                                                                <a href="/apex/CG_NestedRepairSolPage?Id={!Wid}&fcid={!symSearchStr.Id}&solid={!VSols.CSS_Nested_Solutions__c}&source=Other&Nsolid={!VSols.Id}">{!$Label.css_Perform_Repair} </a> 
+
+                                                                                                                <!----   <a href="/apex/CSS_SymRepairPage?id={!Wid}&symId={!sollist.Id}&rank={!SolCnt}" onclick="Performrepair123();">Perform Repair </a>  --->
+                                                                                                            </apex:outputpanel>
+                                                                                                            <apex:outputpanel rendered="{!IF((VSols.Diagnostic_Response__c == 'Not the solution' || VSols.Diagnostic_Response__c =='Could not perform the solution verification') && (VSols.CSS_Nested_Solutions__c != '' && VSols.CSS_Nested_Solutions__c != null),true,false)}">  
+                                                                                                                <a href="/apex/CG_NestedRepairSolPage?Id={!Wid}&fcid={!symSearchStr.Id}&solid={!VSols.CSS_Nested_Solutions__c}&source=Other&Nsolid={!VSols.Id}">{!$Label.css_View_Repair} </a> 
+                                                                                                                <!---     <a href="/apex/CSS_SymRepairPage?id={!Wid}&symId={!sollist.Id}&rank={!SolCnt}" onclick="Performrepair123();">View Repair </a>--->
+                                                                                                            </apex:outputpanel>
+                                                                                                                </apex:outputpanel>    
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                        <div class="row">
+                                                                                                            <div class="col-sm-offset-1 col-sm-2"></div>
+                                                                                                            <div class="col-sm-9" style="margin-left:60px;">
+                                                                                                                <div class="cmi_viewallsolutions-parts" id="accordion2" style="margin-left: 0px;margin-top: 10px">
+                                                                                                                    <apex:outputpanel rendered="{!IF(VSols.Id== null || VSols.Id == '' ,false,true)}" id="paaaaaa">
+                                                                                                                        <apex:repeat value="{!RepairDetails[VSols.Id]}" var="VComps" >
+                                                                                                                            <apex:outputpanel rendered="{!IF(VComps.Id == null || VComps.Id == '', false, true)}">
+                                                                                                                                <apex:outputpanel rendered="{!IF(PartDetails[VComps.Id][0].Id != null, true, false)}">
+                                                                                                                                    <p>
+                                                                                                                                    <div class="cmi_viewallsolutions-icon-parts"  id="{!VComps.Id}link"  onclick="partsacc(this,'{!VComps.Id}')"></div>
+                                                                                                                                    <!--Prida Added below Code (19/03)-->
+                                                                                                                                    <b><apex:commandLink value="{!VComps.Name}  {!VComps.Action__c}" onclick="partsaccText('{!VComps.Id}link','{!VComps.Id}')" styleclass="solution-text-parts" reRender="op3" oncomplete="return false;"/></b>
+                                                                                                                                    </p>
+                                                                                                                            </apex:outputpanel>
+                                                                                                                            <apex:outputpanel rendered="{!IF(PartDetails[VComps.Id][0].Id == null, true, false)}">
+                                                                                                                                <p><b>{!VComps.Name}  {!VComps.Action__c}</b> </p>
+                                                                                                                            </apex:outputpanel>
+                                                                                                                            </apex:outputpanel>
+                                                                                                                        <div class="cmi_viewallsolutions-body-parts" id="{!VComps.Id}" style="position:relative;margin-top:20px;margin-left: 17px;width: 280%">
+                                                                                                                            <apex:outputpanel rendered="{!IF(VComps.Id == null || VComps.Id == '' , false, true)}" id="op3">
+                                                                                                                                <apex:repeat value="{!PartDetails[VComps.Id]}" var="VParts" >
+
+                                                                                                                                    <apex:outputpanel rendered="{!IF(VParts.Id == null || VParts.Id == '', false, true)}">
+                                                                                                                                        <ul>
+                                                                                                                                            <li>
+                                                                                                                                                {!VParts.Part_Name__c} 
+                                                                                                                                            </li>
+                                                                                                                                        </ul>
+                                                                                                                                    </apex:outputpanel>
+
+
+                                                                                                                                </apex:repeat>
+
+                                                                                                                            </apex:outputpanel>
+                                                                                                                        </div>
+                                                                                                                        </apex:repeat>
+                                                                                                                    </apex:outputpanel>
+
+
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div class="clearfix"></div>
+                                                                                                </div>   
+                                                                                            </apex:outputpanel>
+                                                                                        </div>
+                                                                                    </apex:outputpanel>
+                                                                                </div> 
+                                                                            </apex:outputpanel>
+                                                                        <!-------defect fix 62217/62210 code start---------->
+                                                                        <!--    <apex:variable value="{!SolCnt+1}" var="SolCnt"/>  -->
+                                                                        <!-------defect fix 62217/62210 code end---------->
+                                                                        </apex:repeat>
+                                                                </div> 
+                                                                </div>
+                                                            </div>
+                                                        </td>    
+
+                                                    <td>
+                                                        <apex:outputpanel rendered="{!IF(symSearchStr.Number_of_Solutions__c == null || symSearchStr.Number_of_Solutions__c == '' ,false,true)}">
+                                                            <apex:repeat value="{!DiagSRTDetails[symSearchStr.Id]}" var="DSRT" >
+                                                                <div class="col-sm-offset-2 col-sm-9">
+                                                                    <span style="font-size: 12px;">
+                                                                        <b>{!$Label.css_Diagnosis}: </b><br/>
+                                                                        {!DSRT}
+                                                                    </span>
+                                                                </div>
+                                                            </apex:repeat>
+                                                        </apex:outputpanel>
+                                                        <apex:outputpanel rendered="{!IF(symSearchStr.Number_of_Solutions__c == null || symSearchStr.Number_of_Solutions__c == '' ,false,true)}">
+                                                            <apex:repeat value="{!RepSRTDetails[symSearchStr.Id]}" var="RSRT" >
+                                                                <div class="col-sm-offset-2 col-sm-9"> 
+                                                                    <span style="font-size: 12px;">
+                                                                        <b>{!$Label.css_Repair}: </b><br/>
+                                                                        {!RSRT}
+                                                                    </span>
+                                                                </div>
+                                                            </apex:repeat>
+                                                        </apex:outputpanel>
+
+                                                    </td> 
+                                                    </apex:repeat>
+                                        </div>
+                                        </div> 
+                                </td>
+                            </tr>
+                        <!--  </tbody> -->
+                        <apex:variable value="{!fcCnt+1}" var="fcCnt"/>
+                        </apex:repeat>                                            
+                    </tbody>
+                </table>          
+            </div>
+        </div>
+    </div>  
+
+<!-- mobile table-->
+
+<!-- end of mobile table -->
+
+<br/>            
+</div>
+<br/>
+<br/>    
+
+</apex:outputpanel>
+</apex:outputpanel>
+<div align="center" draggable="false" >
+    <apex:outputLink value="{! '/apex/CSS_JobTnDTs?id=' + Wid}">{!$Label.css_Search_more_symptoms_and_fault_codes_in_Triage_and_Diagnosis}</apex:outputLink>
+</div> 
+<!--</fieldset>--->
+<!--------------------------------New---------------------------------->
+
+</apex:component>

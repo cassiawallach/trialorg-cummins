@@ -1,0 +1,1008 @@
+<!--*********************************************************************************************************************************************************************************
+History                                                            
+-------                                                            
+VERSION  AUTHOR            DATE              DETAIL                                
+1.0 -             
+1.1 -   Ronnie           10/19/2021    Chnages added as part of MP-326 to add ids to 3rd Party Account name,Customer BMS Number,IAM Customer Number for 3rd Party Billing scenario 
+1.2 -   Ronnie           11/01/2021    Chnages added as part of MP-133 to add Subscription Length 
+1.3 -   Ronnie           12/03/2021    Chnages added as part of MP-372 to display Subscription Length value only for subscription based products. 
+1.4 -   Charlynn		 07/22/2022	   Changes added as part of LL-22 to display Number of Bundles
+************************************************************************************************************************************************************************************** -->
+<apex:page sidebar="false" controller="OSM_SW_OrderConfCntrl" showHeader="false" standardStylesheets="false" applyHtmlTag="false" applyBodyTag="false" >
+    <style>
+        .fontitalic{
+            font-style:italic !important;
+        }
+    </style>     
+<script type="text/javascript">
+            jQuery(function($){
+        CCRZ.uiProperties.OrderDetailView.desktop.tmpl = 'OSM_SW_OrderDetails-View-Desktop';
+        CCRZ.uiProperties.OrderDetailView.partial.addressDisplay = '#AddressDisplay-New'; 
+        CCRZ.uiProperties.OrderDetailView.partial.includedDisplay = '#OMS-Cart-IncludedItems';
+                
+        
+    });
+    function SaveShippingAddress() {
+        
+        var remotecall = _.extend(CCRZ.RemoteInvocation,{className:'OSM_SW_OrderConfCntrl'});
+        remotecall.invokeCtx('addShippingAddress',window.location.href,function(response){
+            
+            console.log(response);
+              if (response && response.success){
+                  console.log('Response Data'+response.data.isthirdpartypayment);
+                       if(response.data.isthirdpartypayment){
+                           CCRZ.orderDetailModel.attributes.isthirdpartypayment = true; 
+                           CCRZ.orderDetailModel.attributes.thirdpartycustname = response.data.thirdpartycustname;
+                            CCRZ.orderDetailModel.attributes.thirdpartycustnum = response.data.thirdpartycustnum;
+                            CCRZ.orderDetailModel.attributes.thirdpartyIAMNO = response.data.thirdpartyIAMNO;
+                        }else{
+                            CCRZ.orderDetailModel.attributes.isthirdpartypayment = false;  
+                        }
+              }
+            },{buffer:false,escape:false,nmsp:false});
+    }
+    
+ // Chrome 1 - 79
+var isChrome = !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime);   
+ console.log('Current Browser'+isChrome);
+
+  if (isChrome==true){
+      
+      window.onload=SaveShippingAddress;
+      
+  }
+
+    
+   
+   
+    
+    
+   
+</script> 
+<script id="OMS-Cart-IncludedItems" type="text/template">
+<div id="included_items{{this.itemID}}" class="modal fade cc_modal cc_cart_included_items_modal" tabindex="-1" role="dialog" aria-hidden="true">
+ <div class="modal-dialog" role="document">
+  <div class="modal-content cc_modal_content">
+   <div class="modal-header" style="color: white;background-color: black;font-weight: bold;">
+    <!--<button type="button" class="close cc_close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&#215;</span></button>-->
+    {{#ifEquals this.pricingType 'external'}}
+    
+     {{#if extName}}
+        {{this.extName}}&#58;&#160;{{pageLabelMap 'CheckOut_IncludedItems'}}
+     {{else}}
+        {{this.mockProduct.name}}&#58;&#160;{{pageLabelMap 'CheckOut_IncludedItems'}}
+     {{/if}}
+    {{else}}
+        {{this.mockProduct.name}}&#58;&#160;{{pageLabelMap 'CheckOut_IncludedItems'}}
+    {{/ifEquals}}
+   </div>
+   <div class="modal-body cc_modal-body">
+    <div class="table-responsive">
+     <table class="cart_figures table cc_table cc_included_items">
+      <thead class="cc_table_header">
+       <th class="cc_name"></th>
+       <th class="cc_qty">{{pageLabelMap 'Qty'}}</th>
+       {{#ifEquals this.mockProduct.ProductType 'Dynamic Kit'}}
+        <th class="cc_total">{{pageLabelMap 'CartInc_Total'}}</th>
+       {{/ifEquals}}
+       {{#ifEquals this.mockProduct.ProductType 'Kit'}}
+        <th class="cc_total">{{pageLabelMap 'CartInc_Total'}}</th>
+       {{/ifEquals}}
+      </thead>
+      <tbody>
+      {{#each this.minorLines}}
+       <tr>
+        <td class="cc_name">
+        {{#ifEquals this.pricingType 'external'}}
+         <span class="cc_value cc_name">
+         {{#if extName}}
+          {{this.extName}}
+         {{else}}
+          {{this.mockProduct.name}}
+         {{/if}}
+         </span><br/>
+         <!-- MAR-630 Commented Code start
+         <span class="cc_value cc_sku">
+         {{#if extSKU}}
+          {{this.extSKU}}
+         {{else}}
+          {{this.mockProduct.sku}}
+         {{/if}}
+         </span>
+         //MAR-630 Commented Code start -->
+        {{else}}
+         <span class="cc_value cc_name">{{this.mockProduct.name}}</span><br/><span class="cc_value cc_sku">{{this.mockProduct.sku}}</span>
+        {{/ifEquals}}
+        {{#contains this.pricingModifierTypes 'tiered'}}
+         {{#ifNotEquals this.parentProductType 'Bundle'}}
+          <div class="cc_prt_tool_tip_div cc_prt_tool_tip_div_ct" data-toggle="tooltip" title="{{pageLabelMap 'ProductPricingTiers_VolumeHover'}}">
+           <span class="cc_prt_tool_tip_text cc_prt_tool_tip_text_ct">{{pageLabelMap 'ProductPricingTiers_VolumePricingApplied'}}</span>
+          </div>
+         {{/ifNotEquals}}
+        {{/contains}}
+        </td>
+         
+        {{#ifGreater this.quantity 998}}
+        <td class="cc_qty">{{pageLabelMap 'MyOrdersInc_Unlimited'}} {{#contains this.mockProduct.name 'insite'}}licenses{{else}}users{{/contains}}</td>
+        {{else}}
+          <td class="cc_qty">{{this.quantity}} {{#contains this.mockProduct.name 'insite'}}licenses{{else}}users{{/contains}}</td>
+
+        {{/ifGreater}}
+        {{#ifEquals ../mockProduct.ProductType 'Dynamic Kit'}}
+         <td class="cc_total"><span class="price cc_totalPrice">{{price this.itemTotal}}</span></td>
+        {{/ifEquals}}
+        {{#ifEquals ../mockProduct.ProductType 'Kit'}}
+         <td class="cc_total"><span class="price cc_totalPrice">{{price this.itemTotal}}</span></td>
+        {{/ifEquals}}
+       </tr>
+      {{/each}}
+      </tbody>
+     </table>
+    </div>
+   </div>
+    <div class="modal-footer">
+        <button type="button" class=" cc_close btn btn-default btn-sm cc_checkout_btn" data-dismiss="modal" aria-label="Close">{{pageLabelMap 'MyOrdersInc_Close'}}</button>
+      </div>
+  </div>
+ </div>
+</div>
+</script>      
+<script id="OSM_SW_OrderDetails-View-Desktop" type="text/template">
+    {{log 'Testing1'}}
+    {{log this}}
+   <div class="cc_order_details">
+    {{#if this.isConfirmation}}
+     <div class="panel panel-default cc_panel cc_order_confirmation" style="margin-bottom:0px">
+      <div class="panel-heading cc_heading">
+       <h3 class="panel-title cc_title">{{pageLabelMap 'OrderConfirmation_Title'}}</h3>
+      </div>
+      <div class="panel-body cc_body">
+       <p class="cc_order_confirmation_date">
+       <p>
+        
+        <span class="cc_order_status_info">{{pageLabelMap 'OrderConfirmation_PlacedOrder' this.name}}</span>
+        </p>
+        <p>
+        <span class="cc_order_status_info">{{pageLabelMap 'OrderConfirmation_OrderDate'}}&#58;&#160;</span>
+        <span class="cc_order_status_info">{{date this.orderDate}}</span>
+        </p>
+
+        {{#each this.transactionPayments}}
+            {{#ifEquals this.accountType 'cc'}}
+            {{#ifNotEquals this.token undefined}}
+             <!--@chanchala LL-68 Added by if-else condition to set the value as N/A - 24/08/2022 -->
+                {{#ifNotEquals this.amount 0}}
+                       <p><span class="">Transaction ID&#58;&#160; {{this.token}} </span></p>
+                {{else}}
+                     <p><span class="">Transaction ID&#58;&#160; N/A </span></p>
+                {{/ifNotEquals}}
+                <!-- changes End here for LL-68  -->
+            {{/ifNotEquals}}
+            {{/ifEquals}}
+           {{/each}}
+          
+       </p>
+       {{#unless this.userIsGuest}}
+       <p class="cc_order_confirmation_status">
+        <span class="cc_order_status_info">{{pageLabelMap 'OrderConfirmation_StatusInfo'}}&#160;</span>
+        <span class="cc_order_history"><a href="#" class="orderHistory cc_order_history">{{pageLabelMap 'OrderConfirmation_OrderHistory'}}</a>.</span>
+        
+       </p>
+       {{/unless}}
+       <div class="cc_order_confirmation_payments">
+        {{#each this.payments}}
+         {{#ifEquals paymentMethod "PO Number"}}
+          <p class="cc_order_confirmation_payment">{{pageLabelMap 'CheckOut_POGuidingText'}}</p>
+         {{/ifEquals}}
+        {{/each}}
+       </div>
+      </div>
+     </div>
+    {{else}}
+     <div class="panel panel-default cc_panel cc_order_information">
+      <div class="panel-heading cc_heading">
+       <h3 class="panel-title cc_title">{{pageLabelMap 'OrderInformation'}}</h3>
+      </div>
+      <div class="panel-body cc_body">
+       <p class="cc_order_information_number">
+        <span class="cc_order_number">{{pageLabelMap 'OrderView_OrderNumber'}}&#58;&#160;</span>
+        <span class="cc_order_name">{{this.name}}</span>
+        {{#ifDisplay 'OD.DsplExtOrderNumber'}}
+         <span class="cc_order_ext_number">{{pageLabelMap 'ExternalOrderID'}}&#58;&#160;</span>
+         <span class="cc_order_ext_id">{{this.externalOrderId}}</span>
+        {{/ifDisplay}}
+       </p>
+       <p class="cc_order_information_date">
+        <span class="cc_order_date_label">{{pageLabelMap 'MyOrdersInc_OrderDate'}}&#58;&#160;</span>
+        <span class="cc_order_date">{{this.orderDate}}</span>
+       </p>
+       <p class="cc_order_information_status">
+        <span class="cc_order_status_label">{{pageLabelMap 'MyOrdersInc_Status'}}&#160;</span>
+        <span class="cc_order_status">{{pageLabelMap this.status}}</span>
+       </p>
+       <p class="pull-right">
+        <a href="#" class="orderHistory cc_order_history">{{pageLabelMap 'OrderConfirmation_OrderHistory'}}</a>
+       </p>
+       <div class="cc_order_information_payments">
+        {{#each this.payments}}
+         {{#ifEquals paymentMethod "PO Number"}}
+          <p class="cc_order_information_payment">{{pageLabelMap 'CheckOut_POGuidingText'}}</p>
+         {{/ifEquals}}
+        {{/each}}
+       </div>
+      </div>
+     </div>
+    {{/if}}
+    <div class="well cc_well cc_order_information" style="padding-bottom: 0px;padding-top:0px; width:85%">
+      <div class="row">
+       <div class="col-xs-12 col-md-4">
+        <h5 class="cc_buyer_information">{{pageLabelMap 'CheckOut_BuyerInformation'}}</h5>
+        
+        {{#if this.isOnBehalf}}
+          <div class="col-xs-12"> 
+           <div style="width: 32%; float: left;">
+               Purchased By :
+            </div>
+           <div style="width: 68%; float: right;">
+            <div class="cc_buyer_accountname">{{this.OSMSWPurchaseBy}}</div>
+            <div class="cc_buyer_firstname">{{this.purchasedByFollowedText}}</div>
+            <div class="cc_buyer_phone"></div>
+            <div class="cc_buyer_email"></div>
+         </div>
+         </div>
+         <div class="col-xs-12"> 
+           <div>
+               On Behalf of :
+            </div>
+           <div >
+            <div class="cc_buyer_accountname">{{this.accountR.sfdcName}}</div>
+            <div class="cc_buyer_firstname">{{this.contactR.sfdcName}}</div>
+            <div class="cc_buyer_phone">{{this.contactR.phone}}</div>
+            <div class="cc_buyer_email">{{this.contactR.email}}</div>
+         </div>
+         </div>   
+        {{else}}
+        <!--
+            {{#ifEquals this.purchasedByUserType 'SSOEM Admin'}}
+                <div class="col-xs-12"> 
+                   <div style="width: 32%; float: left;">
+                       Purchased By :
+                    </div>
+                   <div style="width: 68%; float: right;">
+                    <div class="cc_buyer_accountname">{{this.OSMSWPurchaseBy}}</div>
+                    <div class="cc_buyer_firstname">{{this.purchasedByFollowedText}}</div>
+                    <div class="cc_buyer_phone"></div>
+                    <div class="cc_buyer_email"></div>
+                 </div>
+                 </div>
+                 <div class="col-xs-12"> 
+                   <div>
+                       On Behalf of :
+                    </div>
+                   <div >
+                    <div class="cc_buyer_accountname">{{this.accountR.sfdcName}}</div>
+                    <div class="cc_buyer_firstname">{{this.contactR.sfdcName}}</div>
+                    <div class="cc_buyer_phone">{{this.contactR.phone}}</div>
+                    <div class="cc_buyer_email">{{this.contactR.email}}</div>
+                 </div>
+                 </div> 
+            {{else}}
+            -->
+             {{#ifEquals this.purchasedByUserType 'Distributor Admin'}}
+                 
+                 <p class="cc_buyer">
+                    <div class="cc_buyer_accountname">{{this.accountR.sfdcName}}</div>
+                    <div class="cc_buyer_firstname">{{this.contactR.sfdcName}}</div>
+                    <div class="cc_buyer_email">{{this.contactR.email}}</div>
+                 </p>
+             {{else}}
+                 <p class="cc_buyer">
+                    <div class="cc_buyer_accountname">{{this.accountR.sfdcName}}</div>
+                    <div class="cc_buyer_firstname">{{this.buyerFirstName}} {{this.buyerLastName}}</div>
+                    <div class="cc_buyer_phone">{{this.buyerPhone}}</div>
+                    <div class="cc_buyer_email">{{this.buyerEmail}}</div>
+                 </p>
+             {{/ifEquals}}
+           <!-- {{/ifEquals}} -->
+        
+           
+         {{/if}}   
+        </div>
+       <div class="col-xs-12 col-md-4">
+        <h5 class="cc_billing_address_label">{{pageLabelMap 'CheckOut_BillingAddress'}}</h5>
+        {{#if isthirdpartypayment}}
+            <!--MP-326 CODE START-->
+            <span id="third_party_customer_name">
+                {{thirdpartycustname}}
+            </span>
+            <br>
+            Customer BMS number: <span id="third_party_customer_number">{{thirdpartycustnum}}</span>
+            <br>
+            IAM Customer number: <span id="third_party_IAM_Number">{{thirdpartyIAMNO}}</span>            
+            <!--MP-326 CODE END-->
+        {{/if}}
+        <p class="cc_billing">
+         <span class="cc_billing_address">{{> addressDisplay this.billingAddress}}</span>
+        </p>
+        <h5 class="cc_payment_information">{{pageLabelMap 'CheckOut_PaymentInformationLeg'}}</h5>
+        <p class="cc_payment">
+         {{#each this.payments}}
+          {{#ifEquals paymentMethod "Credit Card"}}
+           <span class="cc_payment_information_cc_type">{{cardType}}&#160;</span>
+           <span class="cc_payment_information_cc_number_label">{{pageLabelMap 'CheckOut_CCCardNumber'}}&#58;&#160;</span>
+           <span class="cc_payment_information_cc_number">************{{cardNumber}}</span>
+           <span class="cc_payment_information_cc_expdate_label">{{pageLabelMap 'CheckOut_CCExpDate'}}&#58;&#160;</span>
+           <span class="cc_payment_information_cc_expdate">{{expMonth}}/{{expYear}}</span>
+          {{else}}
+           <span class="cc_payment_information_payment_method_label">{{pageLabelMap paymentMethod}}&#58;&#160;</span>
+           <span class="cc_payment_information_payment_method">{{accountNumber}}</span>
+          {{/ifEquals}}
+         {{/each}}
+          {{#each this.transactionPayments}}
+           <!--@chanchala LL-68  -Added If-else condition to set the value as N/A - 17/8/2022-->
+              {{#ifNotEquals this.amount 0}}
+                 <span class="cc_payment_information_transaction_payments">{{pageLabelMapMultiString 'PaymentDisplay_' this.accountType this.accountType this.accountNumber this.subAccountNumber (pageLabelMapMultiString 'PaymentType_' this.paymentType) (pageLabelMapMultiString 'PaymentExpMonth_' this.expirationMonth) (pageLabelMap this.expirationYear)}}</span>
+              {{else}}
+                 <span class="cc_payment_information_transaction_payments">N/A</span>
+            {{/ifNotEquals}}
+            <!-- Changes End Here for LL-68 -->
+           {{/each}}
+        </p>
+        
+       </div>
+       <div class="col-xs-12 col-md-4">
+        <h5 class="cc_shipping_address_label">{{pageLabelMap 'CheckOut_ShippingAddress'}}</h5>
+        <p class="cc_shipping">
+         <span class="cc_shipping_address">{{> addressDisplay this.shippingAddress}}</span>
+        </p>
+       </div>
+      <!-- <div class="col-xs-12 col-md-4">
+        {{#if this.hasCoupon}}
+         <h5 class="cc_coupon_label">{{pageLabelMap 'CartInc_AppliedCoupon'}}</h5>
+         <p class="cc_coupon_section">
+          <span class="cc_coupon">{{this.appliedCoupons}}</span>
+         </p>
+        {{/if}}
+       </div>
+      -->  
+      </div>
+     
+     </div>
+      
+      {{#ifNotEquals this.accountR.CSSDistributorCode '02930'}}
+      {{#ifNotEquals this.accountR.CSSDistributorCode '03520'}}
+      {{#ifNotEquals this.accountR.CSSDistributorCode '02860'}}
+      {{#ifNotEquals this.accountR.CSSDistributorCode '02680'}}
+      {{#ifNotEquals this.accountR.CSSDistributorCode '02850'}}
+      {{#ifNotEquals this.accountR.CSSDistributorCode '02466'}}
+      {{#ifNotEquals this.accountR.CSSDistributorCode '04959'}}
+      {{#ifNotEquals this.accountR.billingCountry 'United States'}}
+       <div id="GOMSPriceMsg"  style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;width: 85%;height: 100%;">                                  
+             <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; Prices shown here are for illustration purposes only. Please refer to the Global Order Management System (GOMS) and your local ERP to view accurate pricing and invoices.
+       </div>
+      {{/ifNotEquals}}
+      {{/ifNotEquals}}
+      {{/ifNotEquals}}
+      {{/ifNotEquals}}
+      {{/ifNotEquals}}
+      {{/ifNotEquals}} 
+      {{/ifNotEquals}}
+      {{/ifNotEquals}}
+      
+     {{> orderItemsDesktop}}
+     <div class="cc_totals_section" >
+      {{> totalsSection}}
+     </div>
+     {{#if this.shipments}}
+      <table class="shopping_cart orderShipments cc_order_shipments_table">
+       <tr class="cc_tr">
+        <th class="cc_th_tracking_url">&#160;</th>
+        <th class="cc_th_date">{{pageLabelMap 'OrderShipment_ShipmentDate'}}</th>
+        <th class="cc_th_carrier">{{pageLabelMap 'OrderShipment_Carrier'}}</th>
+        <th class="cc_th_method">{{pageLabelMap 'OrderShipment_ShipmentMethod'}}</th>
+        <th class="cc_th_tracking_num">{{pageLabelMap 'OrderShipment_TrackingNumber'}}</th>
+        <th class="cc_th_deliver_date">{{pageLabelMap 'OrderShipment_DeliveryDate'}}</th>
+       </tr>
+       {{#each this.shipments}}
+        <tr class="cc_tr_values {{sfid}}">
+         <td class="cc_td_tracking_url"><a target="shiptracking" href="{{{trackingUrl}}}">{{pageLabelMap 'OrderShipment_Track'}}</a></td>
+         <td class="cc_td_date">{{shipmentDateStr}}</td>
+         <td class="cc_td_carrier">{{carrier}}</td>
+         <td class="cc_td_method">{{shippingMethod}}</td>
+         <td class="cc_td_tracking_num">{{trackingNo}}</td>
+         <td class="cc_td_deliver_date">{{deliveryDateStr}}</td>
+        </tr>
+        {{#each this.items}}
+         <tr class="cc_tr_details">
+          <td />
+          <td colspan="5" class="cc_td_detail_line {{sfid}}">
+           <span class="cc_sku_label">{{pageLabelMap 'CartInc_SKU'}}</span>&#58;&#160;<span class="cc_sku_value">{{sku}}</span>, <span class="cc_qty_label">{{pageLabelMap 'CartInc_Qty'}}</span>&#58;&#160;<span class="cc_qty">{{quantity}}</span>
+          </td>
+         </tr>
+        {{/each}}
+       {{/each}}
+      </table>
+     {{/if}}
+    </div>
+   </div>
+  </script>
+
+<script id="TotalSection" type="text/template">
+<div class="total cc_total" style="margin-left: 40.5%;">
+    
+     
+    {{#ifGreater this.calculatedTotalDiscount "0.00"}}
+     <div class="col-md-8" style="text-align:right;padding-top:3px;padding-right: 182px; width:67%">
+        <span class="col-md-4 cc_tax_label" style="text-align:right;width:70%">{{pageLabelMap 'CartInc_OriginalPrice'}}&nbsp;&#58;</span>
+        <span id="cart_original_price" class="cc_tax">{{price this.originalOrderSubtotal this.currencyCode}}</span>
+    </div>
+    
+   
+    <div class="col-md-8" style="text-align:right;padding-top:3px;padding-right: 182px; width:67%">
+        <span class="col-md-4 cc_tax_label" style="text-align:right;width:70%">{{pageLabelMap 'CartInc_TotalDiscount'}}&nbsp;&#58;</span>
+        <span id="total_discount" class="cc_tax"><font color="red">-{{price this.calculatedTotalDiscount this.currencyCode}}</font></span>
+    </div>
+    {{/ifGreater}}
+    
+    <div class="col-md-8" style="text-align:right;padding-top:3px;padding-right: 182px; width:67%">
+        <span class="col-md-4 cc_tax_label" style="text-align:right;width:70%">{{pageLabelMap 'MyInvoice_Sub_Total'}}&nbsp;&#58;</span>
+        <span id="sub_total" class="cc_tax">{{price this.subTotal this.currencyCode}}</span>
+    </div> 
+    
+    
+    <div class="col-md-8" style="text-align:right;padding-top:3px;padding-right: 182px; width:67%">
+        <span class=" col-md-4 cc_tax_label" style="text-align:right;width:70%">{{pageLabelMap 'CheckOut_EstimatedTax'}}&nbsp;&#58;</span>
+         {{#if this.tax}}
+            <span id="estimated_tax" class="cc_tax">{{price this.tax  this.currencyCode}}</span>
+            {{else}}
+             <span id="estimated_tax" class="cc_tax">{{price 0.0 this.currencyCode}}</span>
+         {{/if}}
+        
+     </div>
+    
+   {{#ifStoreSetting 'Skip_Shipping_Calculation__c'}}
+    &#160;
+   {{else}}
+   {{/ifStoreSetting}}
+   
+   {{#ifDisplay 'OR.ShowTotalSurcharge' }}
+    {{#if this.surchargeAmount }}
+     <p class="cc_surcharge">
+      <span class="cc_surcharge_label">{{pageLabelMap 'CartInc_Surcharge'}}&#58;&#160;</span>
+      <span id="cart_surcharge_amount" class="cc_surcharge_amount">{{price this.surchargeAmount this.currencyCode}}</span>
+     </p>
+    {{/if}}
+   {{/ifDisplay}}
+   <div class="cc_grand_total col-md-8" style="text-align:right;margin-bottom:15px;padding-right: 178px;">
+    
+
+          <span class=" col-md-8 cc_total_label" style="text-align:right;width:70%">{{pageLabelMap 'CartInc_GrandTotal'}}&nbsp;&#58;</span>
+    <span id="cart_total_amount" class="cc_total_amount">{{sum this.subTotal this.tax this.shippingCharge this.adjustment this.surchargeAmount this.currencyCode}}</span>
+   </div>
+  </div>
+ </script>
+ 
+ <script id="OrderItems-Desktop" type="text/template">
+   <div class="panel panel-default cc_panel cc_order_item_list" style="margin-bottom:5px">
+   
+   <div class="row CMI-Cart-table-header" style="width:85%">
+             
+            <div class="col-md-12">
+                <div class="col-md-3" style="text-align:center; width:32%;"><!-- LL-22 width reduced from 37% to 32% -->
+                    <!--<b>{{pageLabelMap 'MyOrdersInc_Product'}}</b>-->
+                          <B>Product</B>    
+                     
+                </div>
+                <div class="col-md-2" style="width:10%;">
+                <B>{{pageLabelMap 'CartInc_BillingFrequency'}}</B>
+                </div>
+                <!--MP-133-->                
+                <div class="col-md-2" style="text-align:left;padding-left:0px;width:9%;padding-right:0px;"><!-- LL-22 width reduced from 10% to 9% -->
+                <!--<B>{{pageLabelMap 'SubscriptionLength'}}</B>-->
+                <B>{{pageLabelMap 'Subscription'}}<br/>{{pageLabelMap 'End date'}}</B>
+                </div>
+                <!--MP-133-->
+                <!-- LL-22 Code Start - added number of bundles heading as label due to pageLabelMap creating <p> tags -->
+                    <div class="col-md-1" style="padding-right:0px;">
+                        <B>{!$Label.OSM_NumberOfBundles}&nbsp;<span style="cursor: default;" title="{!$Label.OSM_NumberOfBundles_Help_Text}" style="border:1px solid" >&#128712;</span>
+                        </B></div>
+                        <!-- LL-22 Code End -->
+                        <div class="col-md-1" style="text-align:left;padding-right:0px;width:8%;"> <!-- LL-22 added padding-right & width -->
+                <B>{{pageLabelMap 'CartInc_Qty'}}</B>
+                </div>
+                <div class="col-md-1" style="padding-right:0px;width:9%;"><!-- LL-22 added padding-right & width-->
+                <B>{{pageLabelMap 'CartInc_Price'}}</B>
+                </div>
+                <div class="col-md-1" style="padding-right:0px;width:9%;"><!-- LL-22 added padding-right & width-->
+                <B>{{pageLabelMap 'CartInc_Subtotal'}}</B>
+                </div>
+                <div class="col-md-2" style="padding-right:0px;width:14%;"><!-- LL-22 added padding-right & width-->
+                <B>{{pageLabelMap 'MyOrdersInc_NextSteps'}}
+               {{#checkPermission }}
+                                            <span style="cursor: default;" title="Some of your purchased products require activation codes or must be assigned to individual users or equipment to operate .Please contact your local distributor to assign users to your application"style="border:1px solid" >&#128712;</span>
+                                              {{else}}
+                                             <span style="cursor: default;" title="Some of your purchased products require activation codes or must be assigned to individual users or equipment to operate" style="border:1px solid" >&#128712;</span>
+                
+                                     {{/checkPermission}}
+                  </B>
+                </div>
+            </div>
+        </div>
+        
+    {{#each this.orderItems}}
+     <div class="panel-body {{this.itemID}}" style="width:85%" >
+      {{#ifNotEquals this.itemType 'Coupon'}}
+      <div class="col-md-12">
+      <div class="col-md-3" style="width: 33%;"> <!-- LL-22 reduced width from 35% to 33% -->
+           <div class="col-md-5" style="">
+           <!-- Upgrade Issue - Commented Out for Now -->
+            {{#if this.this.OSMSWProductLinkR}}
+            {{#contains this.mockProduct.name 'Add-on'}}
+           {{else}}
+                {{productLink this.OSMSWProductLinkR 'cc_order_prod_link' image=(displayImage this.mediaWrapper 'orderDetail img-responsive' alt=this.mockProduct.name dataId=this.mockProduct.sku)}}
+           {{/contains}}
+            {{else}}
+            {{#contains this.mockProduct.name 'Add-on'}}
+           {{else}}
+                {{productLink this.displayProductR 'cc_order_prod_link' image=(displayImage this.mediaWrapper 'orderDetail img-responsive' alt=this.mockProduct.name dataId=this.mockProduct.sku)}}
+          {{/contains}}
+            {{/if}}
+           </div>
+       
+           <div class="col-md-7" style="">  
+            <p class="cc_item_title">
+            {{#if this.this.OSMSWProductLinkR}}
+             {{#ifEquals this.pricingType 'external'}}
+              {{#if this.extName}}
+              <!-- Upgrade Issue - Commented Out for Now -->
+               {{productLink this.OSMSWProductLinkR 'cc_prod_link' text=(displayProductName  this.mockProduct.name)}}
+              {{else}}
+               {{#if this.itemLabel}}
+               <!-- Upgrade Issue - Commented Out for Now -->
+                {{productLink this.OSMSWProductLinkR 'cc_prod_link' text=(displayProductName  this.mockProduct.name)}}
+               {{else}}
+               <!-- Upgrade Issue - Commented Out for Now -->
+                {{productLink this.OSMSWProductLinkR 'cc_prod_link' text=(displayProductName this.mockProduct.name)}}
+               {{/if}}
+              {{/if}}
+             {{else}}
+              {{#if this.itemLabel}}
+              <!-- Upgrade Issue - Commented Out for Now -->
+               {{productLink this.OSMSWProductLinkR 'cc_prod_link' text=(displayProductName  this.mockProduct.name )}}
+              {{else}}
+              <!-- Upgrade Issue - Commented Out for Now -->
+               {{productLink this.OSMSWProductLinkR 'cc_prod_link' text=(displayProductName  this.mockProduct.name )}}
+              {{/if}}
+             {{/ifEquals}}
+             {{else}}
+                {{#ifEquals this.pricingType 'external'}}
+                  {{#if this.extName}}
+                  <!-- Upgrade Issue - Commented Out for Now -->
+                   {{productLink this.displayProductR 'cc_prod_link' text=(displayProductName  this.mockProduct.name)}}
+                  {{else}}
+                   {{#if this.itemLabel}}
+                   <!-- Upgrade Issue - Commented Out for Now -->
+                    {{productLink this.displayProductR 'cc_prod_link' text=(displayProductName  this.mockProduct.name )}}
+                   {{else}}
+                   <!-- Upgrade Issue - Commented Out for Now -->
+                    {{productLink this.displayProductR 'cc_prod_link' text=(displayProductName this.mockProduct.name)}}
+                   {{/if}}
+                  {{/if}}
+                 {{else}}
+                  {{#if this.itemLabel}}
+                  <!-- Upgrade Issue - Commented Out for Now -->
+                   {{productLink this.displayProductR 'cc_prod_link' text=(displayProductName  this.mockProduct.name )}}
+                  {{else}}
+                  <!-- Upgrade Issue - Commented Out for Now -->
+                   {{productLink this.displayProductR 'cc_prod_link' text=(displayProductName  this.mockProduct.name )}}
+                  {{/if}}
+                 {{/ifEquals}}
+             {{/if}}
+             {{#contains this.pricingModifierTypes 'tiered'}}
+              <div class="cc_prt_tool_tip_div cc_prt_tool_tip_div_od" data-toggle="tooltip" title="{{pageLabelMap 'ProductPricingTiers_VolumeHover'}}">
+               <span class="cc_prt_tool_tip_text cc_prt_tool_tip_text_od">{{pageLabelMap 'ProductPricingTiers_VolumePricingApplied'}}</span>
+              </div>
+             {{/contains}}
+             
+            </p>
+            <p class="fontitalic">
+                {{#if this.isRenew}}
+                    <span>{{pageLabelMap 'MyOrdersInc_RenewedUntil'}} {{date this.OSMRenewSubscriptionEndDate}}</span>
+                {{/if}}
+            </p>
+            
+            <p class="cc_subscription_product_desc" style="text-align: justify;">
+              {{unescape this.mockProduct.shortDesc}}
+             </p>
+              {{#if this.minorLines }}
+              {{#ifNotEquals pricingType "attrGroup" }}
+               {{#ifNotEquals this.mockProduct.groupName 'FluidWatch'}}
+               <!-- Changes - Demo Issues - Feb 15 - hide the Included Products link -->
+               <p class="cc_included_items">
+                <a href="#included_items{{this.itemID}}" id="includedItemsLink" data-toggle="modal" data-id="{{this.itemID}}"><span class="icon-ViewBound">&nbsp;{{pageLabelMap 'CheckOut_IncludedItems'}}</a>
+               </p>
+               {{> includedDisplay}}
+              {{/ifNotEquals}}
+              {{/ifNotEquals}}
+             {{/if}}
+           </div>
+       
+       </div>
+        
+         <!--
+         {{#ifNotEquals ../isConfirmation true}}
+          <p class="cc_order_status">
+           <span class="cc_status_label">{{pageLabelMap 'MyOrdersInc_Status'}}&#58;&#160;</span>
+           <span class="cc_status">{{pageLabelMap orderLineStatus}}</span>
+          </p>
+         {{/ifNotEquals}}
+         -->
+         <div class="col-md-2" style="text-align: center;width:8%;"> <!-- LL-22 width reduced from 10% to 8% -->
+         {{#ifEquals this.mockProduct.groupName 'DA'}}
+         
+           <span>{{this.billingFrequency}}</span>
+          
+          {{else}}
+          
+           <span></span>
+          
+          {{/ifEquals}}
+          </div>
+         <!-- MP-133 Code Start--> 
+         <div class="col-md-2" style="text-align: center;width:10%;"> <!-- LL-22 width reduced from 13% to 10% -->
+         <!-- MP-372 Code Start--> 
+         {{#ifNotEquals this.mockProduct.groupName 'FluidWatch' }}                                                                  
+         {{#ifEquals this.displayName '99 Year'}}
+          <!-- MP-430 Code Start-->   
+        {{else}}
+              {{#ifEquals this.isRenew false}}
+                {{#if this.subscriptionEndDate}}
+                   {{#ifEquals this.OSMSWIswithoutCoterm false}}
+                          {{date this.subscriptionEndDate}}
+        			{{else}}
+                         {{reqdate this.requestDate this.displayName}}  
+        		   {{/ifEquals}}
+        		     {{else}}
+                         {{reqdate this.requestDate this.displayName}}  
+                    {{/if}} 
+                    {{else}}
+                     {{date this.OSMRenewSubscriptionEndDate}} 
+                    {{/ifEquals}}
+          <!-- MP-430 Code END-->
+             {{/ifEquals}}  
+          {{/ifNotEquals}}
+		 {{#if this.OSMSWCouponApplied}} 
+              <div style="margin-top: 40%;width: 250%;"><span><b>{{this.couponR.couponCode}}</b> {{pageLabelMap 'OSM_Applied'}}</span></div>                                                              
+            {{/if}} 
+         <!--MP-372 Code End-->
+         </div>
+         <!--MP-133 Code End-->
+         <!-- LL-22 Code Start - -->
+         <div class="col-md-1 cc_order_numberOfBundles" style="padding-left:3%">
+            <span class="cc_order_numberOfBundles" >{{this.numberofBundles}}</span>
+            </div>                                                                           
+           <!-- LL-22 Code End -->   
+         {{#ifNotEquals this.itemType 'Coupon'}}
+          <div class="col-md-1 cc_order_quantity" style="padding-left:3%">
+           <span class="cc_quantity" >{{this.quantity}}</span>
+                                                                          
+																																																																								  
+																																				 
+           </div>
+         {{/ifNotEquals}}
+
+         {{#ifNotEquals this.itemType 'Coupon'}}
+          <div class="col-md-1" style="" style="padding-left:2%" >
+           <span class="cc_price">{{{price this.price ../currencyCode}}}</span>
+              
+            {{#ifNotEquals this.SubAmount this.recurringPriceSubAmount}}
+            <!-- {{#ifGreater this.absoluteDiscount 0}} -->
+             <!-- <span class="col-md-1 cc_price_label" style="padding-left:2%" style="">{{pageLabelMap 'Checkout_YouSave'}}&nbsp;&#58;&#160;</span> -->
+             
+            <!-- {{/ifGreater}} -->
+            <!-- {{#ifLessThan this.absoluteDiscount 0}} -->
+             <!-- <span class="col-md-1 cc_price_label" style="padding-left:2%" style="">{{pageLabelMap 'CartInc_Surcharge'}}&nbsp;&#58;&#160;</span> -->
+             <!-- <span class="cc_price"><font color="red">-{{{priceAbs this.absoluteDiscount ../currencyCode}}}</font></span> -->
+            <!-- {{/ifLessThan}} -->
+           {{/ifNotEquals}}
+          </div>
+         {{/ifNotEquals}}
+
+         <!-- hard coded the estimated tax -->
+         <div class="col-md-1" style="padding-left:2%" >
+         <span>{{{price this.recurringPriceSubAmount ../currencyCode}}}</span>
+         {{#ifNotEquals this.orderItemDiscount '0.00'}}
+                                                                           <span class="cc_price"><div style="margin-top:59%;"><font color="red">-${{orderItemDiscount}}</font></div></span>
+         {{/ifNotEquals}}
+         </div>
+
+         <!--LL-22 updated style from padding-left:2%-->
+         <div class="col-md-2 cc_item_total" style="padding-left:3%;width:15%;padding-right:0px">
+         {{#if this.isRenew}}
+            
+          {{else}}
+          
+            {{#ifEquals this.mockProduct.groupName 'DA'}}
+                <span class="cc_total"><a  href="{!$label.OSM_AssignSubscription_Link}" target="_blank"  class="link_user"><span class="CMI-text-icons">+</span>{!$label.OSM_Upper_Component12}</a></span>
+
+            {{/ifEquals}}
+            {{#ifEquals this.mockProduct.groupName 'SES'}}
+                {{#if this.displayProductR.OSMSWShowCheckyouremailMsg}}
+                    <p><span class="cc_total">&#9993; Check your email for license key</span></p>
+                {{/if}}
+               
+                       {{#if this.displayProductR.OSMSWShowAssignUserLink}}                                                 
+                        {{#checkPermission }}
+                                {{else}}
+                            <p><span class="cc_total"><a  href="{!surl}" target="_blank"  class="link_user"><span class="CMI-text-icons">+</span>{!$label.OSM_Upper_Component14}</a></span></p>
+                                     {{/checkPermission}}                                                   
+                      {{/if}}
+                
+            {{/ifEquals}}
+            
+          {{/if}}
+                                  <!--  <a href="#" class="CMI-link-icons OSM-Free-Trial" id="FreeTrialLink" onclick="return false;">{{pageLabelMap 'FreeTrial_Label'}}</a>   -->
+
+         </div>
+         {{#if sellerName}}
+          <p class="cc_seller">
+           <span class="cc_soldby_label">{{pageLabelMap 'Prod_SoldBy'}}&#58;&#160;</span>
+           <span class="cc_soldby">{{sellerName}}</span>
+          </p>
+         {{/if}}
+
+         {{#if this.isSubscription}}
+          <p class="cc_subscription_summary">
+           {{subscriptionSummary 'Order_Subscription_' this.subscriptionFrequency mockProduct.sku itemTotal}}
+          </p>
+          <p class="cc_subscription_next_date">
+           {{pageLabelMap 'Order_Subscription_Next_Payment'}} {{this.nextSubscriptionDateStr}}
+          </p>
+          {{#if this.isLimitedSubscription}}
+           <p class="cc_subscription_summary">
+            {{pageLabelMap 'Order_Subscription_End_Date'}} {{this.subscriptionEndDateStr}}
+           </p>
+          {{/if}}
+         {{/if}}
+         {{#each minorLines}}
+          {{#if this.isSubscription}}
+           <p class="cc_subscription_summary">
+            {{subscriptionSummary 'Order_Subscription_' this.subscriptionFrequency mockProduct.sku itemTotal}}
+           </p>
+           <p class="cc_subscription_next_date">
+            {{pageLabelMap 'Order_Subscription_Next_Payment'}} {{this.nextSubscriptionDateStr}}
+           </p>
+           {{#if this.isLimitedSubscription}}
+            <p class="cc_subscription_end_date">
+             {{pageLabelMap 'Order_Subscription_End_Date'}} {{this.subscriptionEndDateStr}}
+            </p>
+           {{/if}}
+          {{/if}}
+         {{/each}}
+         
+         {{#ifEquals pricingType "attrGroup" }}
+          <p class="cc_cart_attribute_items">
+           <a href="#order_attribute_items{{this.itemID}}" id="orderAttributeItemsLink" data-toggle="modal" data-id="{{this.itemID}}">{{pageLabelMap 'CheckOut_AttributeItems'}}</a>
+          </p>
+          {{> orderAttributesDisplay}}
+         {{/ifEquals}}
+        
+       </div>
+      {{/ifNotEquals}}
+      {{#ifEquals this.itemType 'Coupon'}}
+       <p class="item_title coupon_title">
+        {{{this.mockProduct.name}}}
+       </p>
+      {{/ifEquals}}
+     </div>
+     <hr>
+    {{/each}}
+   </div>
+  </script>
+  
+  <script id="AddressDisplay-New" type="text/template">
+  <div class="address_selection_display">
+   {{#ifDisplay 'SO.DsplAddrName'}}
+    {{#if this.firstName }}
+     <p class="cc_addr_name">
+      <span class="cc_firstname">{{this.firstName}}&#160;</span>
+      {{#if this.lastName }}
+       <span class="cc_lastname">{{this.lastName}}</span>
+      {{/if}}
+     </p>
+    {{else}}
+     {{#if this.lastName }}
+      <p class="cc_addr_name">
+       <span class="cc_lastname">{{this.lastName}}</span>
+      </p>
+     {{/if}}
+    {{/if}}
+
+   {{/ifDisplay}}
+   {{#ifDisplay 'SO.DsplAddrCompany'}}
+    {{#if this.companyName}}
+     <p class="cc_addr_company">{{this.companyName}}</p>
+    {{/if}}
+   {{/ifDisplay}}
+   {{#if this.address1}}
+    <span class="addr_line1 cc_addr_line">{{this.address1}}</span><br/>
+   {{else}}
+    {{#if this.addressFirstline}}
+     <span class="addr_line1 cc_addr_line">{{this.addressFirstline}}</span><br/>
+    {{/if}}
+   {{/if}}
+
+   {{#if this.address2}}
+    <span class="addr_line2 cc_addr_line">{{this.address2}}</span><br/>
+   {{else}}
+    {{#if this.addressSecondline}}
+     <span class="addr_line1 cc_addr_line">{{this.addressSecondline}}</span><br/>
+    {{/if}}
+   {{/if}}
+
+   {{#if this.address3}}
+    <span class="addr_line3 cc_addr_line">{{this.address3}}</span><br/>
+   {{else}}
+    {{#if this.addressThirdline}}
+     <span class="addr_line1 cc_addr_line">{{this.addressThirdline}}</span><br/>
+    {{/if}}
+   {{/if}}
+   <span class="cc_addr_city">{{this.city}}</span>
+   {{#if this.state}}
+    <span class="cc_addr_state">&#44;&#160;{{this.state}}</span>
+   {{else}}
+    {{#if this.stateCode}}
+     <span class="cc_addr_state">&#44;&#160;{{this.stateCode}}</span>
+    {{else}}
+     {{#if this.stateISOCode}}
+      <span class="cc_addr_state">&#44;&#160;{{this.stateISOCode}}</span>
+     {{/if}}
+    {{/if}}
+   {{/if}}
+   <span class="cc_addr_postal">&#160;{{this.postalCode}}</span><br/>
+   <span class="cc_addr_country">{{this.country}}</span>
+  </div>
+ </script>
+ 
+ 
+  <script>
+    Handlebars.registerHelper("math", function(lvalue, operator, rvalue, options) {
+        lvalue = parseFloat(lvalue);
+        rvalue = parseFloat(rvalue);
+            
+        return {
+            "+": (lvalue + rvalue).toFixed(2),
+            "-": (lvalue - rvalue).toFixed(2),
+            "*": (lvalue * rvalue).toFixed(2),
+            "/": (lvalue / rvalue).toFixed(2),
+            "%": (lvalue % rvalue).toFixed(2)
+        }[operator];
+    });
+    
+  Handlebars.registerHelper('date', function(milsec) {
+    if(milsec  != "" && milsec != undefined)
+    {
+        var params = Array.prototype.slice.call(arguments, 1);
+        var thisDate = new Date(milsec);
+        var dateToStr = thisDate.toUTCString().split(' ');
+        var datefinal = dateToStr[1] + ' ' + dateToStr[2]+' '+dateToStr[3];
+
+    return datefinal;
+    }
+    else
+        return "";
+
+}); 
+    // MP-564 Code start by swetha
+    Handlebars.registerHelper('reqdate', function(milsec,duration) {
+    if(milsec  != "" && milsec != undefined)
+    {
+         				var reqDate = new Date(milsec);
+                        var year= reqDate.getFullYear();
+                        var month = new Date(reqDate).getMonth();
+   						var day   = new Date(reqDate).getDate();
+                        var datefinal=reqDate;
+       					const split_string = duration.split("");
+        				var term = parseInt(split_string[0]);
+                        if(duration.trim().includes("Year")){
+                              datefinal  = new Date(year + term, month, day);
+                        }else if(duration.trim().includes("Month")){ 
+                            if(month+1 == 1){
+                                if(reqDate.getDate() === 29){
+                                   datefinal.setDate(reqDate.getDate()+ 28); 
+                                }else{
+    							datefinal.setDate(reqDate.getDate()+ 27);
+                                }
+                            }else{
+                                datefinal = new Date(year, month+term, day);
+                            }
+                        }else if(duration.trim().includes("Quarter")){
+                            datefinal  = new Date(year, month+(term*3), day);
+                        }else if(duration.trim().includes("Week")){
+                              datefinal.setDate(reqDate.getDate() + term * 7);   
+                        } 
+        			var datefinalmill = datefinal.getTime();
+					var thisDate = new Date(datefinalmill);
+                    var dateToStr = thisDate.toUTCString().split(' ');
+                    var datefinalconvert = dateToStr[1] + ' ' + dateToStr[2]+' '+dateToStr[3];
+        
+    return datefinalconvert;
+    }
+    else
+        return "";
+
+}); 
+    // MP-564 Code END by swetha
+    Handlebars.registerHelper('checkPermission', function(options) {
+        console.log('distPer'+CCRZ.subsc.perms.isDistAdmin);
+         console.log('distPer2'+CCRZ.subsc.perms.isDistrBranch);
+       if(CCRZ.subsc.perms.isDistAdmin === false && CCRZ.subsc.perms.isDistrBranch === false && CCRZ.subsc.perms.isOnBehalf === false) {
+         return options.fn(this);
+       }
+        return options.inverse(this);
+    });
+  </script>
+  
+  <script>
+    // LL-22 Code Start - bridging to get the custom label value
+    window.$Label = window.$Label || {};
+    $Label.OSM_ShowNumberofBundlesValue = '{!($Label.OSM_ShowNumberofBundlesValue)}';
+    // LL-22 Code End
+    jQuery(function($){
+        var remotecall = _.extend(CCRZ.RemoteInvocation,{className:'OSM_SW_OrderConfCntrl'});
+        remotecall.invokeCtx('addShippingAddress',window.location.href,function(response){
+            
+            console.log(response);
+              if (response && response.success){
+                  console.log('Response Data'+response.data.isthirdpartypayment);
+                       if(response.data.isthirdpartypayment){
+                           CCRZ.orderDetailModel.attributes.isthirdpartypayment = true; 
+                           CCRZ.orderDetailModel.attributes.thirdpartycustname = response.data.thirdpartycustname;
+                            CCRZ.orderDetailModel.attributes.thirdpartycustnum = response.data.thirdpartycustnum;
+                            CCRZ.orderDetailModel.attributes.thirdpartyIAMNO = response.data.thirdpartyIAMNO;
+                        }else{
+                            CCRZ.orderDetailModel.attributes.isthirdpartypayment = false;  
+                        }
+              }
+            },{buffer:false,escape:false,nmsp:false});
+	    //MP-668 Code Start
+        remotecall.invokeCtx('callInterCompanyPDF',window.location.href,function(response){
+        	console.log('3----->>'+response);
+            if (response && response.success){
+                  console.log('interCompanyPDFGenerated');
+                }
+        },{buffer:false,escape:false,nmsp:false});
+	//MP-668 Code End
+        CCRZ.pubSub.once('view:OrderDetailView:refresh',function(myOrdersView){
+            console.log("in console");
+            CCRZ.orderDetailModel.attributes.totalOriginalPrice = sessionStorage['totalOriginalPrice'];
+            CCRZ.orderDetailModel.attributes.totalDiscount = sessionStorage['totalDiscount'];
+            //CCRZ.orderDetailModel.attributes.appliedCoupons = sessionStorage['appliedCoupon'];
+            var orderItems = CCRZ.orderDetailModel.attributes.orderItems;
+            // LL-22 Code Start - getting an array of product names that can display a value in the number of bundles column
+            const showNumOfBundlesCheck = $Label.OSM_ShowNumberofBundlesValue.toLowerCase().split(',');//["zap-it","zap-it oem","fleetcount","fleet count"];
+            // LL-22 Code End
+            orderItems.forEach(function(oi) {
+                oi.orderItemDiscount = (oi.recurringPriceSubAmount - oi.SubAmount).toFixed(2);
+                                // LL-22 Code Start - replaces the number of bundles value for products that are not zap-it or fleet count w/ empty string.
+                                let num = oi.numberofBundles;
+                if(oi.mockProduct.name != null) {
+                    let str = oi.mockProduct.name;
+                    oi.numberofBundles = "";
+                    if(showNumOfBundlesCheck.includes(str.toLowerCase())) {
+                        oi.numberofBundles = num;
+                        }
+                    }
+                // LL-22 Code End
+
+            });
+            console.log(myOrdersView.model.attributes.orderItems);
+
+            myOrdersView.render();
+
+            
+        });
+    });
+  </script>
+
+</apex:page>

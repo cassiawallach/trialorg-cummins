@@ -1,0 +1,20 @@
+@istest
+global class CG_J2AQsolTokenMock implements HttpCalloutMock{
+    global HTTPResponse respond(HTTPRequest req) 
+    {
+        HttpResponse res = new HttpResponse();
+        {
+            res.setHeader('Content-Type', 'application/json');
+            res.setStatus('Success');
+            res.setStatusCode(200);
+            system.debug('StatusCode***'+res.getStatusCode());
+            res.setBody('{"apiToken":"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJBUElfQUNDRVNTX1RPS0VOIiwiaXNzIjoiaHR0cDovL3FzLXN0Zy5jdW1taW5zLmNvbS9pbnRlZ3JhdGlvbnNlcnZpY2VzIiwiZXhwIjoxNTY5MjY1NjM2LCJpYXQiOjE1NjkyMjI0MzYsInVzZXJuYW1lIjoiR1VJREFOWl9XRUIifQ.RIQngZ4N3S5zMo3JceYDsuNW8jzHlAUU3GhXx1pJS7buMmU2LHN0U96E4Y1gstPxuWzWtAdKG0KWZwEGJVfPQiyNS3_pcVwxs6Db7HI5CPWpeYqnjtglgnZssIN_D8bNNjtv1pNt7rltjTpJlYi_cjzbBzNtMG3Hkx1waH_bhXNxQKTio4xF6EgBAP-HpWTH82JGRJ6UAP0vne-atf-VTdqmyoORIYarLmlCCDNkO4PqesAmQ9vbVHXIuILSQXyyUsURLej41YtY9-D2s_PRPBaAM1c83YwfeKklyl5t-hwZG0ProQKpzoKWhtAerQfuMrStO3cqz1id_ukzAQ-8Rok1UsJcXMvwCUJik-vItQPW8HEccEHF2Ha9sty2Vo93k-1v4H1SEtWv9hK_-fibXB0aQC3k0KK1fml0oq1VSyj0i9ydlK6eJkaflPeehJkAYD7K7tJkqzTgJd-QLV4CKI1RAQBUxZ20jGE_ahKVzXON7taJdfkraHTbsu6AKTQbZwTd07GaqfcASq9-qGEWD7-Nvh4bl_-TQB9skpLs65jxjqIrOFnTuEphBD9gZsXf7jjiAcypqT3iz4HT5WWQen8bbCz-c7k_cB00havRNoZpe0iJoqR7aoejLHJuIQ42yFVCz7eFDl5t9Nr4bbGyGTt1Tjs1TxK0m6d5c62DUEs"}');
+            system.debug('Response***'+res.getBody());
+        }
+        system.debug('Response1***'+res.getBody());
+        return res;
+        
+        
+    }
+
+}

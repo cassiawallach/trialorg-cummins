@@ -1,0 +1,1023 @@
+<apex:page showHeader="{! showHeaderAndSidebar }" sidebar="{! showHeaderAndSidebar }" standardcontroller="disco__Form__c" extensions="disco.Ctl_FormDetail"
+    action="{!ensureForm}">
+    <apex:variable var="isLocal" value="false" />
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+
+    <head>
+        <title>{!formName}</title>
+        <apex:includeScript value="/support/console/35.0/integration.js" />
+        <apex:includeScript value="{!$Resource.disco__babelpolyfill}" />
+        <apex:includeScript value="{!$Resource.disco__customModalJS}" />
+        <apex:includeScript value="{!URLFOR($Resource.disco__jquery_3_6_0, 'jquery.min.js')}" />
+        <apex:includeScript value="{!URLFOR($Resource.disco__esig, 'sigpad/assets/json2.min.js')}" />
+        <apex:includeScript value="{!URLFOR($Resource.disco__jquery_ui_1_12_1, 'jquery-ui.min.js')}" />
+        <apex:includeScript value="{!URLFOR($Resource.disco__esig, 'sigpad/jquery.signaturepad.js')}" />
+        <apex:includeScript value="{!URLFOR($Resource.disco__jquerymodal, '/jquerymodal/jquery.modal.js')}" />
+        <apex:includeScript value="{!URLFOR($Resource.disco__lightgallery, '/lightgallery/js/lightgallery-all.js')}" />
+        <apex:includeScript value="{!$Resource.disco__momentJS}" />
+        <apex:includeScript value="{!$Resource.disco__html2canvas_js}" />
+        <apex:includeScript value="{!$Resource.disco__jspdf_min_js}" />
+        <apex:includeScript value="{!$Resource.disco__forcetk_js}" />
+
+        <apex:styleSheet value="{!URLFOR($Resource.disco__bootstrap_3_4_1, 'css/bootstrap.min.css')}" />
+        <apex:styleSheet value="{!$Resource.disco__completeFormCSS}" />
+        <apex:styleSheet value="{!$Resource.disco__forms_css}" />
+        <apex:styleSheet value="{!URLFOR($Resource.disco__lightgallery, '/lightgallery/css/lightgallery.css')}" />
+        <apex:styleSheet value="{!URLFOR($Resource.disco__SLDS250, '/assets/styles/salesforce-lightning-design-system-vf.min.css')}" />
+        <apex:styleSheet value="{!$Resource.disco__quill_snow_css}" />
+        <apex:includeScript value="{!$Resource.disco__purify_min_js}" />
+
+        <script>
+            var sfEnv = {};
+            sfEnv.VFR = {};
+            sfEnv.apiSessionId = '{!JSENCODE($Api.Session_ID)}';
+            sfEnv.sfTheme = '{!JSENCODE(userTheme)}';
+            sfEnv.isSF1 = sfEnv.sfTheme === 'Theme4t' ? true : false;
+            sfEnv.VFR.queryAllForms = '{!$RemoteAction.Ctl_FormDetail.queryAllForms}';
+            sfEnv.VFR.saveAllAnswers = '{!$RemoteAction.Ctl_FormDetail.saveAnswers}';
+            sfEnv.VFR.lockForm = '{!$RemoteAction.Ctl_FormDetail.lockForm}';
+            sfEnv.VFR.deleteForm = '{!$RemoteAction.Ctl_FormDetail.deleteForm}';
+            sfEnv.VFR.archiveForm = '{!$RemoteAction.Ctl_FormDetail.archiveForm}';
+            sfEnv.VFR.unarchiveForm = '{!$RemoteAction.Ctl_FormDetail.unarchiveForm}';
+            sfEnv.VFR.cloneForm = '{!$RemoteAction.Ctl_FormDetail.deepCloneForm}';
+            sfEnv.VFR.retrieveAnswerFiles = '{!$RemoteAction.Ctl_FormDetail.retrieveAnswerFiles}';
+            sfEnv.VFR.retrieveTemplateImageData = '{!$RemoteAction.Ctl_FormDetail.retrieveTemplateImages}';
+            sfEnv.VFR.updateFormMobileAvailable = '{!$RemoteAction.Ctl_FormDetail.updateFormMobileAvailable}';
+            sfEnv.VFR.queryPhotoData = '{!$RemoteAction.Ctl_FormDetail.queryPhotoData}';
+            sfEnv.VFR.getLogoForPDFs = '{!$RemoteAction.Ctl_FormDetail.getLogoForPDFs}';
+            sfEnv.thisForm = '{!JSENCODE(thisFormJSON)}' !== '' ? JSON.parse('{!JSENCODE(thisFormJSON)}') : '';
+            sfEnv.namespace = '{!JSENCODE(namespace)}';
+            sfEnv.formId = '{!JSENCODE(formID)}';
+            sfEnv.isFormDetail = true;
+            sfEnv.formListViewID = '{!JSENCODE(formListViewID)}';
+            sfEnv.formObjectPrefix = '{!JSENCODE(formObjectPrefix)}';
+            sfEnv.SLDS_PATH = '{!JSENCODE($Resource.SLDS250)}';
+            sfEnv.hasDiscoveries = '{!JSENCODE(IF(hasDiscoveries,"true","false"))}';
+            sfEnv.formStatus = '{!JSENCODE(formStatus)}';
+            sfEnv.formIsLocked = '{!JSENCODE(IF(formIsLocked,"true","false"))}' == "true" ? true : false;
+            sfEnv.formSaveError = '{!JSENCODE(saveError)}';
+            sfEnv.allowMakeDiscosBtn = '{!JSENCODE(IF(allowMakeDiscosBtn,"true","false"))}' == "true" ? true : false;
+            sfEnv.isConsole = (typeof sforce !== 'undefined' && sforce.hasOwnProperty('console') && sforce.console.isInConsole()) ? true : false;
+            sfEnv.isLightningExp = (typeof sforce !== 'undefined' && sforce.hasOwnProperty('one')) ? true : false;
+            sfEnv.isLightningComp = false;
+            sfEnv.customCSS = '{!JSENCODE(customCSS)}';
+            sfEnv.retURL = '/' + '{!JSENCODE(thisForm.Form_Template__c)}'; // for form detail we always go back to the form template detail
+            sfEnv.forceSites = JSON.parse('{!JSENCODE(forceSitesJSON)}');
+            sfEnv.linkedRecords = JSON.parse('{!JSENCODE(linkedRecordsJSON)}');
+            sfEnv.yourekaDisabled = '{!JSENCODE(IF(yourekaDisabled,"true", "false"))}';
+            sfEnv.endpointAvailable = '{!JSENCODE(IF(endpointAvailable,"true", "false"))}';
+
+            sfEnv.publicSiteBaseUrl = '{!JSENCODE(publicSiteBaseURL)}';
+            sfEnv.orgId = '{!$Organization.Id}';
+            sfEnv.isPublicSite = '{!JSENCODE(publicSiteBaseURL)}' !== '' ? true : false;
+            sfEnv.publicSiteBaseUrl = '{!JSENCODE(publicSiteBaseURL)}';
+            sfEnv.isCommunityUser = '{!JSENCODE(IF(isCommunityUser,"true","false"))}' == "true" ? true : false;
+            sfEnv.isPublicSite = '{!JSENCODE(publicSiteBaseURL)}' !== '' && !sfEnv.isCommunityUser ? true : false;
+            sfEnv.discoImgIcon = '{!JSENCODE($Resource.youreka_discovery_png)}';
+            sfEnv.einsteinIcon = '{!JSENCODE($Resource.einstein_no_text_60_png)}';
+            sfEnv.discoveryFieldSet = JSON.parse('{!JSENCODE(discoveryFieldSet)}');
+
+            // Slice url param traditionally so it can be used in IE
+            if (window.location.search && window.location.search.indexOf('isLWC') > -1) {
+                var param = window.location.search.split('isLWC')[1].slice(1);
+                if (param && param.indexOf('&') > -1) {
+                    param = param.slice(0, param.indexOf('&'));
+                }
+                sfEnv.isLWC = param === 'true';
+            }
+
+            /*** Made global for mobile ***/
+            sfEnv.isMobileApp = false;
+            sfEnv.fieldLinkUpdateArray = [];
+            /******/
+            var linkedSectionIndexes = {}; // global storage for linked section indexes
+
+            sfEnv.countryPickLists = '{!JSENCODE(IF(countryPickListsOn,"true","false"))}' == "true" ? true : false;
+            sfEnv.stateCountryMap = JSON.parse('{!JSENCODE(stateCountryMapStr)}');
+
+            var Slideout = null; // Slideout only used on CompleteForm, declare var to avoid loading issue.
+
+            $(document).ready(function () {
+
+                // hack to remove overriding SF stylesheet in classic
+                $('link[rel=stylesheet][href*="slds.css"]').remove();
+
+                if (sfEnv.isLWC) {
+                    $('#closeBtn').parent().show();
+                    $('#navigateToBtn').hide();
+                    $('#moreActionsBtn').hide();
+                }
+                $('.controls select[multiple]').each(function (index, el) {
+                    $(el).prop('size', $(el).find('option').length);
+                    $(el).css('max-height', '100%');
+                });
+
+                // if youreka is disabled or the tooling API endpoint isnt available redirect to the get started page
+                if (sfEnv.yourekaDisabled === 'true' || sfEnv.endpointAvailable == 'false') {
+                    if (sfEnv.isLightningExp) {
+                        sforce.one.navigateToURL('/apex/' + sfEnv.namespace + 'GetStarted');
+                    } else {
+                        var pathName = window.location.pathname;
+                        if (pathName.indexOf('apex') > -1) {
+                            sfEnv.pathStart = 'apex/';
+                        } else {
+                            let noLeadingSlash = pathName.slice(1);
+                            sfEnv.pathStart = noLeadingSlash.slice(0, noLeadingSlash.indexOf('/') + 1);
+                        }
+                        window.location.href = '/' + sfEnv.pathStart + sfEnv.namespace + 'GetStarted';
+                    }
+                }
+
+                // Init photo gallery with $Resource.lightgallery
+                $(".gallery-scroll-view").lightGallery();
+            });
+        </script>
+        <style>
+            .hiddenEl {
+                display: none;
+            }
+
+            .shownEl {
+                display: inline;
+            }
+
+            .btn {
+                width: 140px !important;
+            }
+
+            /* needs to be wider for process problems btn */
+
+            /*.multiselectWrapper {
+        overflow-x: hidden;
+        overflow-y: scroll;
+        width:98%;
+        max-width:250px;
+        height:100px;
+    }*/
+
+            .currentPageContainer {
+                padding-top: 0;
+            }
+
+            /* override style for extra padding above form */
+
+            /* OVERRIDES TO FORCE STYLES BACK TO SF STYLES OUTSIDE COMPLETE FORM*/
+
+            h2 {
+                font-size: 14px;
+                margin: 0 !important;
+            }
+
+            body {
+                font-size: 12px !important;
+            }
+
+            /* reset override set by bootstrap*/
+
+            * {
+                box-sizing: content-box;
+            }
+
+            /* re-add style scoped to our page*/
+
+            #ourPage {
+                box-sizing: border-box;
+            }
+
+            /* keeps inputs on the same row as required bar when required present */
+
+            .controls {
+                display: flex;
+            }
+
+            .controls-table tr td {
+                display: flex;
+            }
+
+            /* align answer output with question label */
+
+            p.inputReplace {
+                margin: 5px 0 0 5px;
+            }
+
+            .buttons {
+                position: relative;
+                padding-top: 10px;
+                padding-bottom: 0;
+                height: 45px;
+            }
+
+            .buttons #navigateToBtn {
+                position: absolute;
+                left: 0;
+                top: 10px;
+            }
+
+            #navigateToMenu {
+                left: 10px;
+                top: 45px;
+                right: inherit;
+                display: none;
+            }
+
+            .buttons #moreActionsBtn {
+                position: absolute;
+                right: 0;
+                top: 10px;
+            }
+
+            #actionsMenu {
+                left: inherit;
+                right: 10px;
+                display: none;
+                /* default to closed menu */
+            }
+
+            /* for State/Country Field Link Field Type error messages */
+
+            .error-text {
+                color: #df0033;
+                /*same as @cancel-go-back in site.less */
+                background-color: #F4F6F9;
+                border-radius: 4px;
+                border: 1px solid #d8dde6;
+                padding: 6px;
+                text-align: center;
+            }
+
+            .state-country-invalid {
+                font-weight: 300;
+                font-size: 24px;
+                line-height: 1.25;
+            }
+
+            .state-country-container {
+                max-width: 1000px;
+                margin: 0 auto;
+            }
+
+            /* Style to overside slds to disable the button, which is really a link */
+
+            .disabled-slds-btn {
+                background-color: #fff !important;
+                cursor: default !important;
+                color: #d8dde6 !important;
+                pointer-events: none;
+            }
+
+            .banner-container {
+                margin: 10px 0;
+            }
+
+            #lightgallery {
+                max-height: 110px;
+                overflow: auto;
+                white-space: nowrap;
+            }
+
+            #lightgallery img {
+                max-height: 75px;
+            }
+
+            .disabled-control-color {
+                background-color: #e0e5ee!important;
+                min-height: 35px;
+                word-wrap: break-word;
+                white-space: pre-wrap;
+            }
+
+            .slds-form-element {
+                width: 100%;
+            }
+
+            .slds-scope .slds-card__body .disco-table .wrapping-cell {
+                white-space: pre-wrap;
+            }
+        </style>
+    </head>
+
+    <body id="ourPage">
+        <div id="custom-modal-container" />
+        <div>
+            <div class="slds-scope">
+                <apex:outputPanel layout="block" rendered="{!NOT(validFLSandCRUD)}">
+                    <div class="slds-notify slds-notify_alert slds-theme_alert-texture" role="alert">
+                        <apex:messages />
+                        <button type="button" class="slds-button slds-button_neutral js-no-license-cancel">Cancel</button>
+                    </div>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!yourekaDisabled}">
+                    <c:YourekaDisabled messageText="{!yourekaDisabledMessage}" />
+                </apex:outputPanel>
+                <apex:outputPanel layout="block" styleClass="builderPageIntro alertErrorContainer" rendered="{!AND(NOT(userLicOkForCompleteForm),NOT(isSF1),NOT(yourekaDisabled),validFLSandCRUD)}">
+                    <div class="page-error-cont">
+                        <div class="license-error alertError">
+                            A Youreka User License is required to view Youreka Forms. Please contact your System Admin for more information.
+                        </div>
+                        <button type="button" class="btn cancelBtn js-no-license-cancel">Cancel</button>
+                    </div>
+                </apex:outputPanel>
+                <apex:outputPanel layout="block" styleClass="builderPageIntro alertErrorContainer" rendered="{!AND(isSF1,NOT(isUserOkForMobile))}">
+                    <div class="page-error-cont">
+                        <div class="alertError">
+                            Using Youreka in Salesforce1 requires a Premium+Mobile, Community+Mobile, or Template Builder Youreka User License. Please
+                            contact your System Admin for more information.
+                        </div>
+                        <button type="button" class="btn cancelBtn js-no-license-cancel">Cancel</button>
+                    </div>
+                </apex:outputPanel>
+            </div>
+
+            <apex:outputPanel rendered="{!AND(userLicOkForCompleteForm,NOT(AND(isSF1,NOT(isUserOkForMobile))),NOT(yourekaDisabled),validFLSandCRUD)}">
+                <!-- chatter box -->
+                <div>
+                    <chatter:feedWithFollowers entityId="{!formId}" />
+                </div>
+
+                <div class="slds-scope containerBox js-form" id="completeFormPage">
+                    <!-- Saving Modal -->
+                    <div id="savingStatus" class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog" style="display:none;">
+                        <div class="slds-modal__container OR-modal-margin">
+                            <div class="slds-modal__content slds-p-around_medium OR-modal__content">
+                                <div class="slds-spinner_large OR-spinner-align_center slds-m-top_large">
+                                    <img src="{!JSENCODE($Resource.SLDS250) + '/assets/images/spinners/slds_spinner_brand.gif'}" alt="Saving..." />
+                                </div>
+                                <h3 class="saveText modal-title slds-text-heading_medium slds-m-top_large slds-text-align_center slds-m-bottom_large"></h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="js-page-backdrop slds-backdrop slds-backdrop_closed"></div>
+                    <!-- END Saving Modal -->
+
+                    <form class="form-horizontal" id="mainForm">
+                        <div class="buttons">
+
+                            <button type="button" class="slds-button slds-button_icon-more" id="navigateToBtn" aria-haspopup="true">
+                                Navigate To
+                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon_x-small">
+                                    <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#down')}"></use>
+                                </svg>
+                                <span class="slds-assistive-text">Navigate To</span>
+                            </button>
+                            <div id="navigateToMenu" class="slds-dropdown slds-dropdown_left slds-dropdown_small">
+                                <ul class="dropdown__list" role="menu">
+                                    <!-- only if NOT SF1  -->
+                                    <apex:outputPanel layout="none" rendered="{!NOT(userTheme=='Theme4t')}">
+                                        <li class="slds-dropdown__item" role="presentation">
+                                            <a class="linked-record" data-sfid="{!thisForm.disco__Form_Template__c}" role="menuitem" tabindex="0">
+                                                <span class="slds-truncate">Form Template</span>
+                                            </a>
+                                        </li>
+                                    </apex:outputPanel>
+                                    <!-- only on SF1 -->
+                                    <apex:outputPanel layout="none" rendered="{!userTheme=='Theme4t'}">
+                                        <li class="slds-dropdown__item" role="presentation">
+                                            <a class="return-sf1-forms-list" role="menuitem" tabindex="0">
+                                                <span class="slds-truncate">Forms List</span>
+                                            </a>
+                                        </li>
+                                    </apex:outputPanel>
+                                    <!-- JS will add other linked records -->
+                                </ul>
+                            </div>
+
+                            <span class="{!IF(showEditBtn,'shownEl','hiddenEl')}">
+                                <a href="#" id="cfBtn" class="slds-button slds-button_brand">Edit</a>
+                            </span>
+
+                            <span class="{!IF(AND(showLockForm,showForm),'shownEl','hiddenEl')}">
+                                <a href="#" id="lockBtn" class="slds-button slds-button_neutral" type="button">Lock</a>
+                            </span>
+
+                            <span class="{!IF(AND(showProcessDiscoveries,showForm),'shownEl','hiddenEl')}">
+                                <a href="#" id="makeDiscoveriesBtn" class="slds-button slds-button_neutral" type="button">Make Discoveries</a>
+                            </span>
+
+                            <span style="display:none;">
+                                <a href="#" id="closeBtn" class="slds-button slds-button_brand">Close</a>
+                            </span>
+
+                            <button type="button" class="slds-button slds-button_icon-more" id="moreActionsBtn" aria-haspopup="true">
+                                <svg aria-hidden="true" class="slds-button__icon">
+                                    <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#settings')}"></use>
+                                </svg>
+                                <svg aria-hidden="true" class="slds-button__icon slds-button__icon_x-small">
+                                    <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#down')}"></use>
+                                </svg>
+                                <span class="slds-assistive-text">Show More</span>
+                            </button>
+                            <div id="actionsMenu" class="slds-dropdown slds-dropdown_left slds-dropdown_small">
+                                <ul class="dropdown__list" role="menu">
+                                    <li class="{!IF(AND(showArchiveForm,!showLockForm),'shownEl','hiddenEl')} slds-dropdown__item" role="presentation">
+                                        <a id="archiveBtn" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Archive</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#download')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="{!IF(AND(showArchiveForm,showLockForm),'shownEl','hiddenEl')} slds-dropdown__item" role="presentation">
+                                        <a id="lockArchiveBtn" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Archive</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#download')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item slds-hide" role="presentation">
+                                        <a id="createPDFBtn" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Generate PDF</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/utility-sprite/svg/symbols.svg#page')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="{!IF(showUnArchiveForm,'shownEl','hiddenEl')} slds-dropdown__item" role="presentation">
+                                        <a id="unarchiveBtn" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Unarchive</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#upload')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item {!IF(AND(showPublicForm,showForm),'shownEl','hiddenEl')}" role="presentation">
+                                        <a id="publicURLBtn" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Public URL</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#share')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="{!IF(showArchiveForm,'showEl','hiddenEl')} slds-dropdown__item" role="presentation">
+                                        <a id="cloneBtn" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Clone</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#copy')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item" role="presentation">
+                                        <a id="deleteBtn" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Delete</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#delete')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item" role="presentation">
+                                        <a id="enableMobileBtn" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Enable on Mobile</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#add')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item" role="presentation">
+                                        <a id="disableMobileBtn" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Disable on Mobile</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="slds-dropdown__item" role="presentation">
+                                        <a id="deepLinkBtn" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Open in Mobile App</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#new_window')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="{!IF(showEditProperties,'showEl','hiddenEl')} slds-dropdown__item" role="presentation">
+                                        <a id="editPropertiesBtn" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">Edit Form Properties</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#settings')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                    <li class="{!IF(showViewProperties,'showEl','hiddenEl')} slds-dropdown__item" role="presentation">
+                                        <a id="viewPropertiesBtn" role="menuitem" tabindex="0">
+                                            <span class="slds-truncate">View Form Properties</span>
+                                            <svg aria-hidden="true" class="slds-icon slds-icon_x-small slds-icon-text-default slds-m-left_small slds-shrink-none">
+                                                <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#preview')}"></use>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- warning message if premium will expire -->
+                        <c:PremiumExpiration />
+                        <!-- Form Status Progress Tracker -->
+                        <div class="slds-m-top_medium slds-m-bottom_x-large">
+                            <div class="slds-progress">
+                                <ol class="slds-progress__list">
+                                    <li class="slds-progress__item slds-is-completed">
+                                        <button type="button" class="slds-button slds-button_icon slds-progress__marker slds-progress__marker_icon new-stage" title="New">
+                                            <svg class="slds-button__icon" aria-hidden="true">
+                                                <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.SLDS250, '/assets/icons/utility-sprite/svg/symbols.svg#success')}"
+                                                />
+                                            </svg>
+                                            <span class="slds-assistive-text">New</span>
+                                        </button>
+                                    </li>
+                                    <li class="slds-progress__item {!IF(formStatus == 'NEW','slds-hide','slds-is-completed')}">
+                                        <button type="button" class="slds-button slds-button_icon slds-progress__marker slds-progress__marker_icon in-progress-stage"
+                                            title="In Progress">
+                                            <svg class="slds-button__icon" aria-hidden="true">
+                                                <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.SLDS250, '/assets/icons/utility-sprite/svg/symbols.svg#success')}"
+                                                />
+                                            </svg>
+                                            <span class="slds-assistive-text">In Progress</span>
+                                        </button>
+                                    </li>
+                                    <li class="slds-progress__item {!IF(formStatus == 'NEW','','slds-hide')}">
+                                        <button type="button" class="slds-button slds-progress__marker in-progress-stage">
+                                            <span class="slds-assistive-text">In Progress</span>
+                                        </button>
+                                    </li>
+                                    <li class="slds-progress__item js-save-error slds-has-error slds-hide">
+                                        <button type="button" class="slds-button slds-button_icon slds-progress__marker slds-progress__marker_icon save-error-stage"
+                                            title="Save Error">
+                                            <svg class="slds-button__icon" aria-hidden="true">
+                                                <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.SLDS250, '/assets/icons/utility-sprite/svg/symbols.svg#warning')}"
+                                                />
+                                            </svg>
+                                            <span class="slds-assistive-text">Save Error</span>
+                                        </button>
+                                    </li>
+                                    <li class="slds-progress__item {!IF(formStatus != 'NEW' && formStatus != 'IN PROGRESS','slds-is-completed','slds-hide')}">
+                                        <button type="button" class="slds-button slds-button_icon slds-progress__marker slds-progress__marker_icon submitted-stage"
+                                            title="Submitted">
+                                            <svg class="slds-button__icon" aria-hidden="true">
+                                                <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.SLDS250, '/assets/icons/utility-sprite/svg/symbols.svg#success')}"
+                                                />
+                                            </svg>
+                                            <span class="slds-assistive-text">Submitted</span>
+                                        </button>
+                                    </li>
+                                    <li class="slds-progress__item {!IF(formStatus == 'NEW' || formStatus == 'IN PROGRESS','','slds-hide')}">
+                                        <button type="button" class="slds-button slds-progress__marker submitted-stage">
+                                            <span class="slds-assistive-text">Submitted</span>
+                                        </button>
+                                    </li>
+                                    <li class="slds-progress__item locked-stage_complete {!IF(formStatus == 'LOCKED' || formStatus == 'ARCHIVED','slds-is-completed','slds-hide')}">
+                                        <button type="button" class="slds-button slds-button_icon slds-progress__marker slds-progress__marker_icon locked-stage"
+                                            title="Locked">
+                                            <svg class="slds-button__icon" aria-hidden="true">
+                                                <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.SLDS250, '/assets/icons/utility-sprite/svg/symbols.svg#success')}"
+                                                />
+                                            </svg>
+                                            <span class="slds-assistive-text">Locked</span>
+                                        </button>
+                                    </li>
+                                    <li class="slds-progress__item locked-stage_incomplete {!IF(formStatus != 'LOCKED' && formStatus != 'ARCHIVED','','slds-hide')}">
+                                        <button type="button" class="slds-button slds-progress__marker locked-stage">
+                                            <span class="slds-assistive-text">Locked</span>
+                                        </button>
+                                    </li>
+                                    <li class="slds-progress__item archived-stage_complete {!IF(formStatus == 'ARCHIVED','slds-is-completed','slds-hide')}">
+                                        <button type="button" class="slds-button slds-button_icon slds-progress__marker slds-progress__marker_icon archived-stage"
+                                            title="Archived">
+                                            <svg class="slds-button__icon" aria-hidden="true">
+                                                <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="{!URLFOR($Resource.SLDS250, '/assets/icons/utility-sprite/svg/symbols.svg#success')}"
+                                                />
+                                            </svg>
+                                            <span class="slds-assistive-text">Archived</span>
+                                        </button>
+                                    </li>
+                                    <li class="slds-progress__item archived-stage_incomplete {!IF(formStatus == 'ARCHIVED','slds-hide','')}">
+                                        <button type="button" class="slds-button slds-progress__marker archived-stage">
+                                            <span class="slds-assistive-text">Archived</span>
+                                        </button>
+                                    </li>
+                                </ol>
+                                <div class="slds-progress-bar slds-progress-bar_x-small" aria-valuemin="0" aria-valuemax="100" role="progressbar">
+                                    <span class="slds-progress-bar__value js-form-status_width"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <apex:outputPanel layout="none" rendered="{!NOT(ISNULL(saveError))}">
+                            <div class="slds-text-heading_medium slds-m-vertical_medium slds-box slds-theme_shade">
+                                <h1 class="sf-save-error">
+                                    <apex:outputText value="{!saveError}" />
+                                </h1>
+                            </div>
+                        </apex:outputPanel>
+
+                        <!-- all attachments -->
+                        <apex:outputPanel layout="none" rendered="{!totalPhotoCount > 0}">
+                            <h3 class="slds-text-heading_medium">Photos
+                                <span class="slds-text-heading_small">({!totalPhotoCount})</span>
+                            </h3>
+                            <apex:outputPanel rendered="{!userTheme != 'Theme4t'}">
+                                <div id="lightgallery" class="slds-box slds-m-top_x-small">
+                                    <div class="gallery-scroll-view">
+                                        <!-- SF Files -->
+                                        <apex:outputPanel layout="none" rendered="{!allSFFileIDs.size > 0}">
+                                            <apex:repeat value="{!allSFFileIDs}" var="photoID">
+                                                <a data-src="/sfc/servlet.shepherd/version/download/{!photoID}">
+                                                    <apex:image url="/sfc/servlet.shepherd/version/renditionDownload?rendition=THUMB720BY480&versionId={!photoID}" />
+                                                </a>
+                                            </apex:repeat>
+                                        </apex:outputPanel>
+                                        <!-- Attachments -->
+                                        <apex:outputPanel layout="none" rendered="{!allAttachmentIDs.size > 0}">
+                                            <apex:repeat value="{!allAttachmentIDs}" var="photoID">
+                                                <a data-src="/servlet/servlet.FileDownload?file={!photoID}">
+                                                    <apex:image url="/servlet/servlet.FileDownload?file={!photoID}" />
+                                                </a>
+                                            </apex:repeat>
+                                        </apex:outputPanel>
+
+                                    </div>
+                                </div>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!userTheme == 'Theme4t'}">
+                                <button class="slds-button slds-button_neutral slds-m-top_x-small" id="sf1-photo-gallery" type="button">
+                                    {!totalPhotoCount} photo{!IF(totalPhotoCount > 1,'s','')} taken - tap to view
+                                </button>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+
+                        <div class="slds-card js-youreka-insights slds-m-top_small">
+                            <div class="slds-card__header slds-grid grid_flex-spread">
+                                <h2 class="slds-text-heading_small slds-truncate">Youreka Insights:</h2>
+                            </div>
+                            <div class="einstein-loader js-einstein">
+                                <img src="{!JSENCODE($Resource.einstein_animation)}" />
+                            </div>
+                            <div class="slds-card__body slds-p-horizontal_small slds-hide js-cards js-temp-margin insights-cards">
+                                <ul class="slds-list_horizontal slds-has-cards_space has-selections card-list js-card-fade slds-hide"></ul>
+                            </div>
+                        </div>
+                        <apex:outputPanel layout="block" styleClass="currentPageContainer" rendered="{!showForm}">
+
+                            <div class="slds-box slds-theme_shade slds-theme_alert-texture slds-m-top_medium" role="alert" id="loadingMessage">
+                                <h2>Loading...</h2>
+                            </div>
+                            <div class="slds-box slds-theme_error slds-theme_alert-texture slds-m-top_medium slds-m-bottom_x-large js-no-sections" role="alert"
+                                style="display:none;">
+                                <h2>No sections added to this form.</h2>
+                            </div>
+                            <div id="formContent">
+                                <!-- javascript inserts form content -->
+                            </div>
+
+                        </apex:outputPanel>
+                    </form>
+                </div>
+            </apex:outputPanel>
+        </div>
+
+        <!-- confirmation modal for locking form -->
+        <div class="slds-scope">
+            <div class="slds-hide modal js-confirm-modal">
+                <div class="slds-modal slds-fade-in-open" aria-hidden="false" role="dialog">
+
+                    <!-- lock form modal -->
+                    <div id="lock-confirm-modal" class="slds-hide js-modal-content">
+                        <div class="slds-modal__container OR-modal-margin">
+                            <div class="modal-header slds-modal__header">
+                                <h3 class="modal-title slds-text-heading_small OR-modal-heading">Lock Form
+                                    <span class="js-error-title slds-hide">Error</span>
+                                </h3>
+                            </div>
+                            <div class="slds-modal__content slds-p-around_medium js-standard-text">Locking the form will disable the edit button blocking further updates to the form. It will also
+                                allow discoveries to be created for this form.</div>
+                            <div class="slds-modal__content slds-p-around_medium js-error-text slds-hide"></div>
+                            <div class="slds-modal__footer">
+                                <div class="slds-x-small-buttons_horizontal">
+                                    <button class="slds-button slds-button_neutral" id="cancel-lock-modal" type="button">
+                                        Cancel
+                                    </button>
+                                    <button class="slds-button slds-button_neutral slds-button_brand" id="confirm-lock-modal" type="button">
+                                        Lock
+                                    </button>
+                                    <div class="slds-spinner_container slds-hide">
+                                        <div class="slds-spinner_brand slds-spinner slds-spinner_small" aria-hidden="false" role="alert">
+                                            <div class="slds-spinner__dot-a"></div>
+                                            <div class="slds-spinner__dot-b"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- clone form modal -->
+                    <div id="clone-modal" class="slds-hide js-modal-content">
+                        <div class="slds-modal__container OR-modal-margin">
+                            <div class="modal-header slds-modal__header">
+                                <h3 class="modal-title slds-text-heading_small OR-modal-heading">
+                                    Clone Form
+                                    <span class="js-error-title slds-hide">Error</span>
+                                </h3>
+                            </div>
+                            <div class="slds-modal__content slds-p-around_medium js-standard-text">
+                                Cloning the form will create a new copy of the form with the same answers.
+                                <br/>
+                                <ul class="slds-list_dotted slds-m-top_medium">
+                                    <li>Photos/Attachments will not be cloned</li>
+                                    <li>Linked Sections will be handled as follows:</li>
+                                    <ul class="slds-list_dotted ">
+                                        <li>All shared linked sections will be updated with the latest records</li>
+                                        <li>Linked sections entries that are not shared will not be cloned</li>
+                                    </ul>
+                                </ul>
+                            </div>
+                            <div class="slds-modal__content slds-p-around_medium js-error-text slds-hide"></div>
+                            <div class="slds-modal__footer">
+                                <div class="slds-x-small-buttons_horizontal">
+                                    <button class="slds-button slds-button_neutral" id="cancel-clone-modal" type="button">
+                                        Cancel
+                                    </button>
+                                    <button class="slds-button slds-button_neutral slds-button_brand" id="confirm-clone-modal" type="button">
+                                        Clone
+                                    </button>
+                                    <div class="slds-spinner_container slds-hide">
+                                        <div class="slds-spinner_brand slds-spinner slds-spinner_small" aria-hidden="false" role="alert">
+                                            <div class="slds-spinner__dot-a"></div>
+                                            <div class="slds-spinner__dot-b"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- make discoveries modal  -->
+                    <div id="md-lock-confirm-modal" class="slds-hide js-modal-content">
+                        <div class="slds-modal__container OR-modal-margin">
+                            <div class="modal-header slds-modal__header">
+                                <h3 class="modal-title slds-text-heading_small OR-modal-heading">Lock Form
+                                    <span class="js-error-title slds-hide">Error</span>
+                                </h3>
+                            </div>
+                            <div class="slds-modal__content slds-p-around_medium js-standard-text">In order to make discoveries, the form will locked. Locking the form will disable the edit button
+                                blocking further updates to the form.</div>
+                            <div class="slds-modal__content slds-p-around_medium js-error-text slds-hide"></div>
+                            <div class="slds-modal__footer">
+                                <div class="slds-x-small-buttons_horizontal">
+                                    <button class="slds-button slds-button_neutral" id="md-cancel-lock-modal" type="button">
+                                        Cancel
+                                    </button>
+                                    <button class="slds-button slds-button_neutral slds-button_brand" id="md-confirm-lock-modal" type="button">
+                                        Lock and Make Discoveries
+                                    </button>
+                                    <div class="slds-spinner_container slds-hide">
+                                        <div class="slds-spinner_brand slds-spinner slds-spinner_small" aria-hidden="false" role="alert">
+                                            <div class="slds-spinner__dot-a"></div>
+                                            <div class="slds-spinner__dot-b"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- delete form modal -->
+                    <div id="delete-modal" class="slds-hide js-modal-content">
+                        <div class="slds-modal__container OR-modal-margin">
+                            <div class="modal-header slds-modal__header">
+                                <h3 class="modal-title slds-text-heading_small OR-modal-heading">Delete Form
+                                    <span class="js-error-title slds-hide">Error</span>
+                                </h3>
+                            </div>
+                            <div class="slds-modal__content slds-p-around_medium js-standard-text">Are you sure you want to delete this Form?</div>
+
+                            <apex:outputPanel layout="none" rendered="{!NOT(nonInheritedLinkedSectionRecords.empty)}">
+                                <div class="slds-modal__content slds-p-horizontal_medium slds-p-bottom_medium js-standard-text">
+                                    <div class="slds-notify_container slds-notify_container-OR slds-m-bottom_small">
+                                        <div class="slds-notify slds-notify_alert slds-theme_warning slds-theme_alert-texture delete-modal_flex" role="alert">
+                                            <span class="delete-notice">
+                                                <span class="slds-assistive-text">Info</span>
+                                                <span class="slds-icon_container slds-m-right_small" title="delete warning">
+                                                    <svg aria-hidden="true" class="slds-icon slds-icon_small">
+                                                        <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#warning')}"></use>
+                                                    </svg>
+                                                </span>
+                                                <p class="slds-text-body_regular">
+                                                    The following records will be deleted upon deleting this form:
+                                                </p>
+                                            </span>
+                                            <ul>
+                                                <apex:repeat value="{!nonInheritedLinkedSectionRecords}" var="linkedRecord">
+                                                    <li class="slds-text-body_regular">{!linkedRecord.name} ({!linkedRecord.objectName})</li>
+                                                </apex:repeat>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </apex:outputPanel>
+
+                            <div class="slds-modal__content slds-p-around_medium js-error-text slds-hide"></div>
+                            <div class="slds-modal__footer">
+                                <div class="slds-x-small-buttons_horizontal">
+                                    <button class="slds-button slds-button_neutral" id="cancel-delete-modal" type="button">
+                                        Cancel
+                                    </button>
+                                    <button class="slds-button slds-button_neutral slds-button_brand" id="confirm-delete-modal" type="button">
+                                        Delete
+                                    </button>
+                                    <div class="slds-spinner_container slds-hide">
+                                        <div class="slds-spinner_brand slds-spinner slds-spinner_small" aria-hidden="false" role="alert">
+                                            <div class="slds-spinner__dot-a"></div>
+                                            <div class="slds-spinner__dot-b"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- archive modal -->
+                    <div id="archive-modal" class="slds-hide js-modal-content">
+                        <div class="slds-modal__container OR-modal-margin">
+                            <div class="modal-header slds-modal__header">
+                                <h3 class="modal-title slds-text-heading_small OR-modal-heading">Archive Form
+                                    <span class="js-error-title slds-hide">Error</span>
+                                </h3>
+                            </div>
+                            <div class="slds-modal__content slds-p-around_medium js-standard-text">Archiving the form will save space but reports and workflows on Answers will not include Answers
+                                on this form. Do you want to proceed?</div>
+                            <div class="slds-modal__content slds-p-around_medium js-error-text slds-hide"></div>
+                            <div class="slds-modal__footer">
+                                <div class="slds-x-small-buttons_horizontal">
+                                    <button class="slds-button slds-button_neutral" id="cancel-archive-modal" type="button">
+                                        Cancel
+                                    </button>
+                                    <button class="slds-button slds-button_neutral slds-button_brand" id="confirm-archive-modal" type="button">
+                                        Archive
+                                    </button>
+                                    <div class="slds-spinner_container slds-hide">
+                                        <div class="slds-spinner_brand slds-spinner slds-spinner_small" aria-hidden="false" role="alert">
+                                            <div class="slds-spinner__dot-a"></div>
+                                            <div class="slds-spinner__dot-b"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- lock and archive modal -->
+                    <div id="lock-archive-modal" class="slds-hide js-modal-content">
+                        <div class="slds-modal__container OR-modal-margin">
+                            <div class="modal-header slds-modal__header">
+                                <h3 class="modal-title slds-text-heading_small OR-modal-heading">Archive Form
+                                    <span class="js-error-title slds-hide">Error</span>
+                                </h3>
+                            </div>
+                            <div class="slds-modal__content slds-p-around_medium js-standard-text">Archiving the form will save space but reports and workflows on Answers will not include Answers
+                                on this form. Archiving the form also automatically locks the form, thereby disabling the
+                                edit button which blocks further updates to the form. Do you want to proceed? </div>
+                            <div class="slds-modal__content slds-p-around_medium js-error-text slds-hide"></div>
+                            <div class="slds-modal__footer">
+                                <div class="slds-x-small-buttons_horizontal">
+                                    <button class="slds-button slds-button_neutral" id="cancel-lock-archive-modal" type="button">
+                                        Cancel
+                                    </button>
+                                    <button class="slds-button slds-button_neutral slds-button_brand" id="confirm-lock-archive-modal" type="button">
+                                        Archive
+                                    </button>
+                                    <div class="slds-spinner_container slds-hide">
+                                        <div class="slds-spinner_brand slds-spinner slds-spinner_small" aria-hidden="false" role="alert">
+                                            <div class="slds-spinner__dot-a"></div>
+                                            <div class="slds-spinner__dot-b"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- unarchive modal -->
+                    <div id="unarchive-modal" class="slds-hide js-modal-content">
+                        <div class="slds-modal__container OR-modal-margin">
+                            <div class="modal-header slds-modal__header">
+                                <h3 class="modal-title slds-text-heading_small OR-modal-heading">Unarchive Form
+                                    <span class="js-error-title slds-hide">Error</span>
+                                </h3>
+                            </div>
+                            <div class="slds-modal__content slds-p-around_medium js-standard-text">This form was archived to save space. Do you want to unarchive anyway?</div>
+                            <div class="slds-modal__content slds-p-around_medium js-error-text slds-hide"></div>
+                            <div class="slds-modal__footer">
+                                <div class="slds-x-small-buttons_horizontal">
+                                    <button class="slds-button slds-button_neutral" id="cancel-unarchive-modal" type="button">
+                                        Cancel
+                                    </button>
+                                    <button class="slds-button slds-button_neutral slds-button_brand" id="confirm-unarchive-modal" type="button">
+                                        Unarchive
+                                    </button>
+                                    <div class="slds-spinner_container slds-hide">
+                                        <div class="slds-spinner_brand slds-spinner slds-spinner_small" aria-hidden="false" role="alert">
+                                            <div class="slds-spinner__dot-a"></div>
+                                            <div class="slds-spinner__dot-b"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- public form URL modal -->
+                    <div id="public-url-modal" class="slds-hide js-modal-content">
+                        <div class="slds-modal__container OR-modal-margin">
+                            <div class="modal-header slds-modal__header">
+                                <h3 class="modal-title slds-text-heading_small OR-modal-heading">Public Form URL
+                                    <span class="js-error-title slds-hide">Error</span>
+                                </h3>
+                            </div>
+                            <div class="slds-modal__content slds-p-around_medium js-standard-text">
+                                <div>
+                                    In order to access this form from a public site you must first configure a Force.com site with an active site homepage of
+                                    disco__PublicTemplates.page. Once this is configured, select your public site below to
+                                    generate the public URL to view this form on the selected site.
+                                </div>
+                                <div class="slds-m-vertical_medium">
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label" for="retURL">Return URL (URL user returns to after completing form)</label>
+                                        <div class="slds-form-element__control  slds-input-has-icon slds-input-has-icon_right">
+                                            <input id="retURL" class="slds-input" type="text" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-m-vertical_medium">
+                                    <div class="slds-form-element">
+                                        <label class="slds-form-element__label hosting-site-label" for="select-01">Form hosting site</label>
+                                        <div class="slds-form-element__control hosting-site-wrapper">
+                                            <div class="slds-select_container">
+                                                <select id="sitesList" class="slds-select">
+                                                    <!-- JS adds options -->
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <button class="slds-button slds-button_neutral slds-button_brand slds-m-vertical_small hosting-site-btn" id="publicURLSelectBtn"
+                                            type="button">
+                                            Select
+                                        </button>
+                                    </div>
+
+                                </div>
+                                <div class="public-url-container slds-hide">
+                                    <hr/>
+                                    <div class="slds-m-vertical_medium">
+                                        <div class="slds-form-element">
+                                            <label class="slds-form-element__label" for="generatedURL">Public URL</label>
+                                            <div class="slds-form-element__control  slds-input-has-icon slds-input-has-icon_right">
+                                                <span id="copyBtnContainer">
+                                                    <svg aria-hidden="true" class="slds-input__icon slds-icon-text-default" id="urlCopyBtn" style="cursor:pointer;">
+                                                        <use xlink:href="{!URLFOR($Resource.SLDS250, 'assets/icons/utility-sprite/svg/symbols.svg#copy')}"></use>
+                                                    </svg>
+                                                </span>
+                                                <input id="generatedURL" readonly="true" class="slds-input" type="text" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-modal__content slds-p-around_medium js-error-text slds-hide"></div>
+                            <div class="slds-modal__footer">
+                                <div class="slds-x-small-buttons_horizontal">
+                                    <button class="slds-button slds-button_neutral" id="confirm-public-url-modal" type="button">
+                                        Done
+                                    </button>
+                                    <div class="slds-spinner_container slds-hide">
+                                        <div class="slds-spinner_brand slds-spinner slds-spinner_small" aria-hidden="false" role="alert">
+                                            <div class="slds-spinner__dot-a"></div>
+                                            <div class="slds-spinner__dot-b"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-backdrop slds-backdrop_closed"></div>
+            </div>
+        </div>
+
+        <!-- Using apex:include loads the file too quickly -->
+
+        <apex:outputPanel rendered="{!isLocal = 'false'}" layout="none">
+            <script src='{!$Resource.formDisplayAppBundle_js}'></script>
+        </apex:outputPanel>
+
+        <apex:outputPanel rendered="{!isLocal = 'true'}" layout="none">
+            <script src="https://localhost:9005/formDisplayApp/dist/bundle.js"></script>
+        </apex:outputPanel>
+
+        <script src="{!URLFOR($Resource.svg4everybody, '/svg4everybody/svg4everybody.min.js')}"></script>
+        <script>
+            $(document).ready(function () {
+                svg4everybody(); // init
+            });
+        </script>
+    </body>
+
+    </html>
+</apex:page>

@@ -1,0 +1,292 @@
+<apex:page id="TeamSupervisor" sidebar="false" showheader="false" doctype="html-5.0" controller="cnx.TeamSupervisorController" applyHtmlTag="false" applyBodyTag="false">
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <head>
+            <apex:includescript value="{!URLFOR($Resource.cnx__CnxSfdcResources, 'addons/TeamSupervisor/lib/jquery.min.js')}"/>
+            <apex:includeScript value="{!URLFOR($Resource.cnx__CnxSfdcResources, 'addons/TeamSupervisor/lib/svg4everybody.js')}"/>
+            <apex:includescript value="/support/console/43.0/integration.js" />
+            <apex:includescript value="/support/api/33.0/interaction.js" />
+            <apex:includescript value="/soap/ajax/33.0/connection.js" />
+            <apex:stylesheet value="{!URLFOR($Resource.cnx__CnxSfdcResources, 'gadget/css/connects.min.css')}"/>
+            <apex:stylesheet value="{!URLFOR($Resource.cnx__CnxSfdcResources,'addons/TeamSupervisor/css/TeamSupervisor.min.css')}"/>
+            <apex:includeScript value="{!URLFOR($Resource.cnx__CnxSfdcResources,'js/ConnectsIntegrationAPI.min.js')}"/>
+            <apex:includeScript value="{!URLFOR($Resource.cnx__CnxSfdcResources,'addons/TeamSupervisor/js/TeamSupervisor.min.js')}"/>
+            <apex:slds />
+            <apex:outputPanel layout="none" rendered="{!$User.UIThemeDisplayed  == 'Theme4u' || $User.UIThemeDisplayed  == 'Theme4d'}">
+                <script>
+                    var messageChannel = "{!$MessageChannel.cnx__ConnectsIntegrationAPI__c}";
+                    ConnectsIntegrationAPI.setLMSEnvironment({
+                        mode: 'Visualforce',
+                        channel: messageChannel
+                    });
+                </script>
+            </apex:outputPanel>
+            <script>
+                window.utilitySpritePath = '{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/')}';
+                window.TeamSupervisor.teamSupervisorInit();
+            </script>
+        </head>
+        <body>
+            <div id="content" class="slds-scope connectionPending">
+                <div class="preconnectInfo infoText">{!$Label.WaitingForConnectsConnection}</div>
+                <div id="errorOverlay"></div>
+                    <div class="slds-tabs_default slds-tabs_medium" id="cnx-view-tabs">
+                        <ul class="slds-tabs_default__nav" role="tablist">
+                            <li class="slds-tabs_default__item slds-is-active" title="{!$Label.TeamView}" role="presentation">
+                                <a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" tabindex="0" aria-selected="true" aria-controls="sldsTeamTab" id="sldsTeamTab__nav">{!$Label.TeamView}</a>
+                            </li>
+                            <li class="slds-tabs_default__item" title="{!$Label.QueueView}" role="presentation" style="display:none">
+                                <a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" tabindex="-1" aria-selected="false" aria-controls="sldsQueueTab" id="sldsQueueTab__nav">{!$Label.QueueView}</a>
+                            </li>
+                            <li class="slds-tabs_default__item" title="{!$Label.TeamMessageView}" role="presentation" style="display:none">
+                                <a class="slds-tabs_default__link" href="javascript:void(0);" role="tab" tabindex="-1" aria-selected="false" aria-controls="sldsMessageTab" id="sldsMessageTab__nav">{!$Label.TeamMessageView}</a>
+                            </li>
+                        </ul>
+                        <div id="sldsTeamTab" class="slds-tabs_default__content slds-show" role="tabpanel" aria-labelledby="sldsTeamTab__nav">
+                            <div id="agentsView">
+                                <div class="slds-grid slds-gutters">
+                                    <div id="agentsViewTitle" class="titleBar slds-col slds-grow-none">
+                                        <span class="content"></span>
+                                    </div>
+                                    <div class="toggleOfflineAgents slds-col slds-grow-none slds-col_bump-left">
+                                        <label class="slds-checkbox_toggle slds-grid">
+                                            <strong><span class="slds-form-element__label slds-m-bottom_none">
+                                                {!$Label.I18n_AgentstateView_ShowOfflineAgents}
+                                            </span></strong>
+                                            <input type="checkbox" onchange="window.TeamSupervisor.toggleOfflineAgents()"/>
+                                            <span class="slds-checkbox_faux_container" aria-live="assertive">
+                                                <span class="slds-checkbox_faux"></span>
+                                                <span class="slds-checkbox_on">{!$Label.Enabled}</span>
+                                                <span class="slds-checkbox_off">{!$Label.Disabled}</span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div id="agentsViewContent" class="slds-scrollable" style="position: relative">
+                                    <table id="agentsTable" class="slds-table slds-table_cell-buffer slds-table_bordered slds-table--fixed-layout cnxTable cnxVirtualTable">
+                                        <thead>
+                                            <tr class="slds-line-height_reset" style="height:2rem">
+                                                <th id="channelDetailToggleHeader" class="channelDetailToggleCol" scope="col"></th>
+                                                <th id="agentIdHeader" class="agentIdCol" scope="col">
+                                                    <div class="slds-truncate" title="{!$Label.AgentId}">{!$Label.AgentId}</div>
+                                                </th>
+                                                <th id="agentNameHeader" class="agentNameCol" scope="col">
+                                                    <div class="slds-truncate" title="{!$Label.I18n_AgentstateView_AgentNameHeaderText}">{!$Label.I18n_AgentstateView_AgentNameHeaderText}</div>
+                                                </th>
+                                                <th id="agentStateHeader" class="agentStateCol" scope="col">
+                                                    <div class="slds-truncate" title="{!$Label.I18n_AgentstateView_AgentStateHeaderText}">{!$Label.I18n_AgentstateView_AgentStateHeaderText}</div>
+                                                </th>
+                                                <th id="agentTimeHeader" class="agentTimeCol" scope="col">
+                                                    <div class="slds-truncate" title="{!$Label.I18n_AgentstateView_AgentTimeHeaderText}">{!$Label.I18n_AgentstateView_AgentTimeHeaderText}</div>
+                                                </th>
+                                                <th id="agentExtensionHeader" class="agentExtensionCol" scope="col">
+                                                    <div class="slds-truncate" title="{!$Label.I18n_AgentBarExtension}">{!$Label.I18n_AgentBarExtension}</div>
+                                                </th>
+                                                <th id="agentActionsHeader" class="agentActionsCol unclickable" scope="col">
+                                                    <div class="slds-truncate" title="{!$Label.Action}">{!$Label.Action}</div>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                    <div id="noAgentsMessage" class="slds-align_absolute-center" style="height: 5rem">
+                                        {!$Label.I18n_ErrorBsSupervisorNoAgentsToDisplay}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="sldsQueueTab" class="slds-tabs_default__content slds-hide" role="tabpanel" aria-labelledby="sldsQueueTab__nav" style="display:none">
+                            <div id="queueView">
+                                <div id="queueViewContent" class="slds-scrollable" style="position: relative;">
+                                    <table id="queueTable" class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-table--fixed-layout cnxTable cnxVirtualTable">
+                                        <thead>
+                                            <tr class="slds-line-height_reset" style="height:2rem">
+                                                <th id="queueNameHeader" class="queueNameCol" scope="col" rowspan="2">
+                                                    <div class="slds-truncate" title="{!$Label.QueueName}">{!$Label.QueueName}</div>
+                                                </th>
+                                                <th id="callCountHeader" class="center callCountCol" scope="col" rowspan="2">
+                                                    <div class="slds-truncate" title="{!$Label.AmountOfCallsTitle}">{!$Label.AmountOfCallsText}</div>
+                                                </th>
+                                                <th id="longestCallHeader" class="center longestCallCol" scope="col" rowspan="2">
+                                                    <div class="slds-truncate" title="{!$Label.I18n_QueueStatsView_MaxTimeHeaderTitle}">{!$Label.I18n_QueueStatsView_MaxTimeHeaderText}</div>
+                                                </th>
+                                                <th id="readyHeader" class="center readyCol" scope="col" rowspan="2">
+                                                    <div class="slds-truncate" title="{!$Label.AmountOfAgentsInReadyStateTitle}">{!$Label.I18n_Ready}</div>
+                                                </th>
+                                                <th id="notReadyHeader" class="center notReadyCol" scope="col" rowspan="2">
+                                                    <div class="slds-truncate" title="{!$Label.AmountOfAgentsInNotReadyStateTitle}">{!$Label.I18n_NotReady}</div>
+                                                </th>
+                                                <th id="busyHeader" class="center busyCol" scope="col" rowspan="2">
+                                                    <div class="slds-truncate" title="{!$Label.AmountOfAgentsInBusyOrOtherStateTitle}">{!$Label.AmountOfAgentsInBusyOrOtherStateText}</div>
+                                                </th>
+                                                <th class="center inboundCol unclickable" colspan="3">
+                                                    <div class="slds-truncate" title="{!$Label.AmountOfAgentsInActiveStateTitle}">{!$Label.I18n_QueueStatsView_ActiveHeaderText}</div>
+                                                </th>
+                                                <th class="center wrapUpCol unclickable" colspan="2">
+                                                    <div class="slds-truncate" title="{!$Label.AmountOfAgentsInWrapUpStateTitle}">{!$Label.I18n_WrapUpState}</div>
+                                                </th>
+                                            </tr>
+                                            <tr class="slds-line-height_reset" style="height:2rem">
+                                                <th style="display:none"></th>
+                                                <th id="inboundHeader" class="center" scope="col" >
+                                                    <div class="slds-truncate" title="{!$Label.AmountOfInboundCallsTitle}">{!$Label.AmountOfInboundCallsText}</div>
+                                                </th>
+                                                <th id="outboundHeader" class="center" scope="col" >
+                                                    <div class="slds-truncate" title="{!$Label.AmountOfOutboundCallsTitle}">{!$Label.AmountOfOutboundCallsText}</div>
+                                                </th>
+                                                <th id="internalHeader" class="center" scope="col">
+                                                    <div class="slds-truncate" title="{!$Label.AmountOfOtherCallsTitle}">{!$Label.AmountOfOtherCallsText}</div>
+                                                </th>
+                                                <th id="wrapupReadyHeader" class="center" scope="col">
+                                                    <div class="slds-truncate" title="{!$Label.AmountOfWrapUpReadyCallsTitle}">{!$Label.AmountOfWrapUpReadyCallsText}</div>
+                                                </th>
+                                                <th id="wrapupNotReadyHeader" class="center" scope="col">
+                                                    <div class="slds-truncate" title="{!$Label.AmountOfWrapUpNotReadyCallsTitle}">{!$Label.AmountOfWrapUpNotReadyCallsText}</div>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="sldsMessageTab" class="slds-tabs_default__content slds-hide slds-scrollable_y" role="tabpanel" aria-labelledby="sldsMessageTab__nav">
+                            <div class="slds-grid slds-wrap slds-gutters">
+                                <div class="slds-col slds-size_1-of-1 slds-large-size_3-of-5" id="teamMessages">
+                                    <c:Card label="{!$Label.cnx__sendteammessage}" growBody="true">
+                                        <div id="sendMessageView">
+                                            <div class="slds-form">
+                                                <div class="slds-form-element slds-form-element_stacked">
+                                                    <label class="slds-form-element__label" for="team-message-textarea">{!$Label.ComposeMessage}</label>
+                                                    <div class="slds-form-element__control">
+                                                        <textarea id="team-message-textarea" placeholder="{!$Label.StartTyping}" rows="4" maxlength="255" class="slds-textarea"></textarea>
+                                                    </div>
+                                                </div>
+                                                <div id="team-duration-wrapper" class="slds-form-element slds-form-element_stacked">
+                                                    <label class="slds-form-element__label" for="teams-duration">{!$Label.Duration}</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-combobox_container">
+                                                            <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-combobox-picklist slds-timepicker" aria-expanded="false" aria-haspopup="listbox" role="combobox">
+                                                                <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
+                                                                    <input type="text" class="slds-input slds-combobox__input" id="teams-duration" aria-autocomplete="list" autoComplete="off" role="textbox" pattern="[0-9]{2}:[0-9]{2}" placeholder="--:--"/>
+                                                                    <span class="slds-icon_container slds-icon-utility-clock slds-input__icon slds-input__icon_right">
+                                                                        <svg class="slds-icon slds-icon slds-icon_x-small slds-icon-text-default" aria-hidden="true">
+                                                                            <use xlink:href="{!URLFOR($Asset.SLDS, 'assets/icons/utility-sprite/svg/symbols.svg#clock')}"></use>
+                                                                        </svg>
+                                                                    </span>
+                                                                </div>
+                                                                <div id="listbox-unique-id" role="listbox" class="slds-dropdown slds-dropdown_fluid slds-dropdown_length-5">
+                                                                    <ul class="slds-listbox slds-listbox_vertical" role="presentation">
+                                                                    </ul>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div id="team-selector-table-container"  class="slds-form-element slds-form-element_stacked">
+                                                    <div class="slds-table--header-fixed_container">
+                                                        <div class="slds-scrollable_y">
+                                                            <table aria-multiselectable="true" class="slds-table slds-table_bordered slds-table--header-fixed cnxTable">
+                                                                <thead>
+                                                                    <tr class="slds-text-title_caps">
+                                                                        <th id="team-add" class="slds-text-align_left" scope="col" style="width:3.25rem">
+                                                                            <div class="slds-cell-fixed slds-th__action slds-th__action_form">
+                                                                                <div class="slds-checkbox">
+                                                                                    <input type="checkbox" name="options" id="teams-add-all-button" value="teams-add-all-button" tabindex="0" aria-labelledby="check-select-all-label column-group-header" />
+                                                                                    <label class="slds-checkbox__label" for="teams-add-all-button" id="check-select-all-label">
+                                                                                        <span class="slds-checkbox_faux"></span>
+                                                                                        <span class="slds-form-element__label slds-assistive-text">{!$Label.SelectAllTeams}</span>
+                                                                                    </label>
+                                                                                </div>
+                                                                            </div>
+                                                                        </th>
+                                                                        <th id="team-name" aria-label="{!$Label.TeamName}" aria-sort="none" class="slds-is-sortable slds-cell-fixed" scope="col">
+                                                                            <div class="slds-cell-fixed slds-truncate" title="{!$Label.TeamName}">{!$Label.TeamName}</div>
+                                                                        </th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="slds-form-element slds-form-element_stacked">
+                                                    <input class="slds-button slds-button_brand" type="submit" value="Send Message" disabled="true"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </c:Card>
+                                </div>
+                                <div class="slds-col slds-size_1-of-1 slds-large-size_2-of-5" id="recentMessages">
+                                    <c:Card label="{!$Label.cnx__recentteammessages}" growBody="true">
+                                        <div class="slds-text-title slds-m-bottom_x-small" id="recentMessagesSubtitle">{!$Label.RecentlySent}</div>
+                                        <div class="recentMessagesList">
+                                            <ul class="slds-has-dividers_top-space slds-has-dividers_bottom-space slds-m-bottom_x-small slds-m-top_medium recentMessagesListHeader">
+                                                <li class="slds-item">
+                                                    <article class="slds-tile slds-media">
+                                                        <div class="slds-media__figure">
+                                                            <div class="slds-checkbox">
+                                                                <input type="checkbox" name="options" id="checkbox-select-all" value="checkbox-select-all" />
+                                                                <label class="slds-checkbox__label" for="checkbox-select-all">
+                                                                    <span class="slds-checkbox_faux"></span>
+                                                                    <span class="slds-form-element__label slds-assistive-text">{!$Label.SelectAllMessages}</span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="slds-media__body">
+                                                            <div class="slds-tile__detail slds-m-bottom_xxx-small slds-m-top_xxx-small">
+                                                                <label class="slds-tile__title" for="checkbox-select-all">
+                                                                    {!$Label.SelectAllMessages}
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                        <button class="slds-button slds-button_destructive" id="deleteSelectedButton" disabled="true">{!$Label.DeleteSelected}</button>
+                                                    </article>
+                                                </li>
+                                            </ul>
+                                            <ul class="slds-has-dividers_around-space recentMessagesListBody slds-scrollable_y">
+                                                <li class="slds-item" id="noTeamMessages">
+                                                    <article class="slds-tile slds-tile_board">
+                                                        <div class="slds-tile__detail">
+                                                            <p class="slds-text-align_center">{!$Label.NoTeamMessages}</p>
+                                                        </div>
+                                                    </article>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </c:Card>
+                                    <div id="modalView" class="slds-hide">
+                                        <section role="dialog" tabindex="-1" aria-label="{!$Label.ConfirmDeleteModalDescription}" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                                            <div class="slds-modal__container">
+                                                <header class="slds-modal__header">
+                                                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="{!$Label.CloseModalTitle}">
+                                                        <svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+                                                            <use xlink:href="{!URLFOR($Asset.SLDS, '/assets/icons/utility-sprite/svg/symbols.svg#close')}"></use>
+                                                        </svg>
+                                                        <span class="slds-assistive-text">{!$Label.CloseModalTitle}</span>
+                                                    </button>
+                                                    <h2 class="slds-modal__title slds-hyphenate" id="modalTitle">{!$Label.ConfirmDelete}</h2>
+                                                </header>
+                                                <div class="slds-modal__content slds-p-around_medium" id="modalConfirmText"></div>
+                                                <footer class="slds-modal__footer">
+                                                    <button class="slds-button slds-button_neutral" id="cancelButton">{!$Label.CancelDelete}</button>
+                                                    <button class="slds-button slds-button_destructive" id="confirmDeleteButton">{!$Label.PerformDelete}</button>
+                                                </footer>
+                                            </div>
+                                        </section>
+                                        <div class="slds-backdrop slds-backdrop_open"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <div id="errorView">
+                    <div id="errorViewContent">
+                        <div id="errorTitle" class="slds-align_absolute-center" style="height:5rem"></div>
+                        <div id="errorMessage" class="slds-align_absolute-center" style="height:5rem"></div>
+                    </div>
+                </div>
+            </div>
+        </body>
+    </html>
+</apex:page>

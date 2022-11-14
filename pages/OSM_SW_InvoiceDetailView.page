@@ -1,0 +1,1415 @@
+<!--**************************************************************************************************************************************************************
+Name:  OSM_SW_InvoiceDetailView
+Copyright Â© 2018  Cummins
+==================================================================================================================================================================
+==================================================================================================================================================================
+Purpose:                                                            
+This visualforce page serves as the layout for Invoice Detail page.                                   
+==================================================================================================================================================================
+==================================================================================================================================================================
+History                                                            
+-------                                                            
+VERSION  AUTHOR            DATE              DETAIL                                
+1.0 -             
+1.1 -    Ronnie          08/10/2021    Changes added as part of MAR-1716 - to get bmsPONumber in the InvoiceDataWrpr Wrapper class
+1.2 -    Ronnie          11/10/2021    Changes added as part of MP-133 - to display Subscription Length as a column
+1.3 -    Ronnie          12/03/2021    Changes added as part of MP-372 to display Subscription Length value only for subscription based products. 
+******************************************************************************************************************************************************************* -->
+
+<apex:page sidebar="false" controller="OSM_SW_InvoiceDetailView_Ctrl" showHeader="false" standardStylesheets="false" applyHtmlTag="false">
+<!--OSM_SW_InvoiceDetailView Page-->
+    <script type="text/javascript">
+            CCRZ.uiProperties.InvoiceDetailView.desktop.tmpl = 'InvoiceDetail-Desktop-New';
+            CCRZ.uiProperties.InvoiceDetailView.phone.tmpl = 'InvoiceDetail-Desktop-New';   
+            CCRZ.uiProperties.InvoiceDetailView.partial.addressDisplay = '#AddressDisplay-New';
+            
+    jQuery(function($){
+       
+       CCRZ.uiProperties.InvoiceDetailView.partial.includedDisplay = '#OMS-Cart-IncludedItems';
+                
+        
+    });
+        </script>
+        
+     <style>
+
+        /* .blackClr{
+            color: black;
+        } */
+        .redClr{
+            color: red;
+        }
+         textarea {
+           border: none;
+           overflow: auto;
+           outline: none;
+           -webkit-box-shadow: none;
+           -moz-box-shadow: none;
+            box-shadow: none;
+           resize: none; /*remove the resize handle on the bottom right*/
+        }
+    </style>     
+
+      
+    
+    <script id="InvoiceDetail-Desktop-New" type="text/template">
+       <div class="panel panel-default cc_panel cc_panel_invoice_detail">
+        <div class="panel-body cc_body container-fluid">
+         <div class="row">
+          <div class="col-xs-12">
+            <div class="messagingSection-invoice-Info" style="display: none"></div>
+            <div class="messagingSection-invoice-Warning" style="display: none"></div>
+            <div class="messagingSection-invoice-Error" style="display: none"></div>
+           
+          </div>
+         </div>
+         {{#if this.loaded}}
+          <div class="row">
+           <div class="col-xs-6">
+                    <div class="invoiceContainer cc_invoice_action_container"></div>
+           </div>
+           <div class="col-xs-6">
+            <div class="invoiceContainer cc_invoice_action_container">
+             <p class="panel-body pull-right cc_action_buttons">
+              <a href="javascript:void(0);" class="myInvoices cc_myinvoices">{{pageLabelMap 'MyInvoices_MyInvoicesBtn'}}</a>
+             </p>
+            </div>
+           </div>
+          </div>
+          <div class="row cc_title_row">
+           <!--  Added for MAR-1196  -->
+           {{#ifEquals this.paymentMethod 'po'}}
+               {{#if this.isCreditMemo}}             
+               {{else}}
+                    <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+                        <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span>
+                        &nbsp;{{pageLabelMap 'MyInvoice_ProductsMessage'}}
+                    </div>
+               {{/if}}
+           {{/ifEquals}}
+           <!--  End: MAR-1196  -->
+           <div class="panel-heading cc_heading">
+           <h3 class="panel-title cc_title">{{pageLabelMap 'MyInvoices_HeaderDetailHdr'}}</h3>
+          </div>
+          </div>
+          <div class="invoiceHeaderContainer row cc_invoice_header_container">
+           <!-- this is the invoice detail area -->
+           
+           <div class="col-sm-6 cc_invoice_header_col" style=" padding-left: 0px;">
+           <div class="row" style="padding-top:10px;padding-left: 12%;">
+               <div class="col-xs-2" style=" padding-left: 0px; text-align: left; width:21.6%;">
+               <div class="pull-right cc_header_label_bill_to_address" style="font-weight: bold;width: 109px;" >Bill From/Remit To :</div>
+              </div>
+              
+                {{#ifEquals this.IsGOMSInvoice true}} <!-- Added IF condition for Mar-712 -->
+              <div class="col-xs-6">
+                                    <div class="pull-left cc_header_value_bill_to_address">{{pageLabelMap 'As_Per_Columbus'}}</div> 
+               </div> 
+               {{else}}
+               {{#ifEquals this.isInterCompanyInvoice true}}
+              <div class="col-xs-6">
+                                        <div class="pull-left cc_header_value_bill_to_address">{{pageLabelMap 'InvoicePayToAddressIntercompany'}}</div> 
+               </div> 
+               {{else}}             
+               {{#ifEquals this.isSouthernCustomer true}} 
+              <div class="col-xs-6">
+               <div class="pull-left cc_header_value_bill_to_address">{{pageLabelMap 'InvoicePayToAddressSP'}}
+               </div> 
+               </div>
+               {{else}}
+               {{#ifEquals this.paymentMethod 'cc'}}
+              <div class="col-xs-6">
+               <div class="pull-left cc_header_value_bill_to_address">{{pageLabelMap 'InvoicePayToAddress'}}
+               </div> 
+               </div>
+               
+              {{else}}
+                 {{#ifEquals this.isBoltPO true}}
+                        <div class="col-xs-6">
+                        <div class="pull-left cc_header_value_bill_to_address"></div> 
+                        {{pageLabelMap 'InvoicePayToAddressIntercompany'}}
+                        </div> 
+                    {{else}}
+                    
+                            <div class="col-xs-6">
+                          {{#each this.pdfRemitToAddress}}
+                            <div class="pull-left cc_header_value_bill_to_address">{{this}}</div> <br/>
+                            {{/each}}
+                            </div>
+                        
+                 {{/ifEquals}}   
+                {{/ifEquals}}
+             {{/ifEquals}}
+            {{/ifEquals}}
+            {{/ifEquals}} <!-- Added IF condition for Mar-712 -->                                           
+           </div>
+           </div>
+                    
+            
+           <div class="col-sm-6 cc_invoice_header_col">
+             <div class="row" style="padding-top:10px; margin-left:-180px; padding-bottom: 30px;">
+              <div class="col-xs-3">
+               <div class="pull-right cc_header_label_bill_to_address" style="font-weight: bold;" >{{pageLabelMap 'MyInvoices_BillToAddressLabel'}}</div>
+              </div>
+            {{#if this.billAddr}}
+            {{#ifEquals this.IsGOMSInvoice true}} <!-- Added IF condition for Mar-712 -->
+             <div class="col-xs-6">
+               <div class="pull-left cc_header_value_bill_to_address">{{> addressDisplay this.billAddr}}</div>
+              </div>
+                                    <!--</div>--> <!-- Removed by Swetha Mp-860 -->
+             {{else}}        
+             {{#ifEquals this.isInterCompanyInvoice false}}
+              <div class="col-xs-6">
+               <div class="pull-left cc_header_value_bill_to_address">{{> addressDisplay this.billAddr}}</div>
+              </div>
+                                        <!--</div>--> <!-- Removed by Swetha Mp-860 -->
+             {{else}}
+              {{#ifEquals this.isInterCompanyInvoice true}}
+              <div class="col-xs-6">
+                  {{#if this.pdfRemitToAddress}}
+                   {{#each this.pdfRemitToAddress}}
+                    <div class="pull-left cc_header_value_bill_to_address">{{this}}</div> <br/>
+                   {{/each}}
+              {{else}}
+                    <div class="pull-left cc_header_value_bill_to_address">{{this.payToAddressName}}</div> <br/>
+                    <div class="pull-left cc_header_value_bill_to_address">{{this.payToAddress}}</div> <br/>
+                    <div class="pull-left cc_header_value_bill_to_address">{{this.payToAddressCity}} , {{this.payToAddressState}} {{this.payToAddressPostalCode}}</div> <br/>
+                          
+              {{/if}}
+     
+             </div>
+               {{/ifEquals}}
+               {{/ifEquals}}
+        {{/ifEquals}} <!-- Added IF condition for Mar-712 -->                                                           
+            {{/if}}
+            </div>
+           </div>
+           <div class="invoiceHeaderContainer row cc_invoice_header_container">
+           <div class="col-md-3 cc_invoice_header_col" style="width: 30%; padding-left: 0px;">
+               <div class="row">
+                    <div class="col-xs-6"> 
+                    <div class="pull-right cc_header_label_name" style="font-weight: bold;">Account Name :</div>
+                    <!-- <div class="pull-left cc_header_value_bill_to">{{this.billto.name}}</div>-->
+                </div>
+             <div class="col-xs-6">
+                  <div id="account_name" class="pull-left cc_header_value_name">{{this.billTo.name}}</div>
+                 </div><br/>
+               <div class="col-xs-6">         
+                     <div class="pull-right cc_header_label_name" style="font-weight: bold;">{{pageLabelMap 'MyInvoices_InvoiceNameLabel'}}</div>
+                </div>
+                {{#if this.isCreditMemo}}
+                       {{#ifEquals this.paymentMethod 'cc'}}
+                           <div class="col-xs-6">
+                                  <div id="invoice_number" class="pull-left cc_header_value_name">{{this.CreditmemoNumber}}</div>
+                            </div>
+                        {{else}}
+                                    {{#ifEquals this.isInterCompanyInvoice true}}
+                                          {{#ifEquals this.IsGOMSInvoice true}}
+                                               <div class="col-xs-6">
+                                                   <div id="invoice_number" class="pull-left cc_header_value_name">{{this.CreditmemoNumber}}</div>
+                                               </div>
+                                           {{else}}
+                                                 <div class="col-xs-6">
+                                                 <div id="invoice_number" class="pull-left cc_header_value_name">{{this.CreditmemoNumber}}</div>
+                                                 </div>
+                                          {{/ifEquals}}
+                                    {{else}}
+                                           {{#ifEquals this.isBoltPO true}}
+                                                   <div class="col-xs-6">
+                                                         <div id="invoice_number" class="pull-left cc_header_value_name">{{this.CreditmemoNumber}}</div>
+                                                    </div>
+                                            {{else}}
+                                                    {{#ifEquals this.IsGOMSInvoice true}}
+                                                    <div class="col-xs-6">
+                                                        <div id="invoice_number" class="pull-left cc_header_value_name">{{this.CreditmemoNumber}}</div>
+                                                    </div>
+                                                     {{else}}
+                                                    <div class="col-xs-6">
+                                                            <div id="invoice_number" class="pull-left cc_header_value_name">{{this.refundBMSNumber}}</div>
+                                                    </div>
+                                                   {{/ifEquals}}
+                             
+                                            {{/ifEquals}}
+                                    {{/ifEquals}}
+                     {{/ifEquals}}
+                 {{else}}
+                           {{#ifEquals this.paymentMethod 'cc'}}
+                                     <div class="col-xs-6">
+                                          <div id="invoice_number" class="pull-left cc_header_value_name">{{this.name}}</div>
+                                     </div>
+                           {{else}}
+                    
+                              {{#ifEquals this.isInterCompanyInvoice true}}
+                                  {{#ifEquals this.IsGOMSInvoice true}}
+                                      <div class="col-xs-6">
+                                        <div id="invoice_number" class="pull-left cc_header_value_name">{{this.GOMSInvoiceNo}}</div>
+                                      </div>
+                                     {{else}}
+                                      <div class="col-xs-6">
+                                        <div id="invoice_number" class="pull-left cc_header_value_name">{{this.name}}</div>
+                                      </div>
+                                  {{/ifEquals}} 
+                             
+                               {{else}}
+                                     {{#ifEquals this.isBoltPO true}}
+                                        <div class="col-xs-6">
+                                            <div id="invoice_number"  class="pull-left cc_header_value_name">{{this.name}}</div>
+                                        </div>
+                                     {{else}}
+                                        {{#ifEquals this.IsGOMSInvoice true}}
+                                        <div class="col-xs-6">
+                                        <div id="invoice_number" class="pull-left cc_header_value_name">{{this.GOMSInvoiceNo}}</div>
+                                        </div>
+                                        {{else}}
+                                        <div class="col-xs-6">
+                                            <div id="invoice_number" class="pull-left cc_header_value_name">{{this.bmsInvoiceNumber}}</div>
+                                        </div>
+                                        {{/ifEquals}} 
+                         
+                                     {{/ifEquals}}
+                               {{/ifEquals}}
+                 {{/ifEquals}}
+             {{/if}}
+            </div>
+            {{#if this.isCreditMemo}}
+                <div class="row">
+                  <div class="col-xs-6">
+                          <div class="pull-right cc_header_label_status" style="font-weight: bold;" >{{pageLabelMap 'MyInvoicesDetail_Type'}}</div>
+                  </div>
+                  <div class="col-xs-6">
+                            <div class="pull-left cc_header_value_status">{{pageLabelMap 'Credit Memo'}}</div>
+                  </div>
+                 </div>
+            {{else}}
+                 <div class="row">
+                     <div class="col-xs-6">
+                          <div class="pull-right cc_header_label_status" style="font-weight: bold;" >{{pageLabelMap 'MyInvoicesDetail_Type'}}</div>
+                     </div>
+                      <div class="col-xs-6">
+                           <div class="pull-left cc_header_value_status">{{pageLabelMap 'Invoice'}}</div>
+                     </div>
+                 </div>
+             {{/if}}
+            {{#if this.dateIssuedStr}}
+                       <div class="row">
+                         <div class="col-xs-6">
+                               <div class="pull-right cc_header_label_date_issued" style="font-weight: bold;" >{{pageLabelMap 'MyInvoices_DateLabel'}}</div>
+                         </div>
+                              {{#ifEquals this.paymentMethod 'cc'}}
+                                    <div class="col-xs-6">
+                                          <div class="pull-left cc_header_value_date_issued">{{date this.dateIssuedStr}}</div>
+                                    </div>
+                              {{else}}
+                 
+                                   {{#ifEquals this.isInterCompanyInvoice true}} 
+                                           {{#ifEquals this.IsGOMSInvoice true}}
+                                                    <div class="col-xs-6">
+                                                        <div class="pull-left cc_header_value_date_issued">{{date this.dateIssuedStr}}</div>
+                                                     </div>
+                                            {{/ifEquals}}
+                
+                                     {{/ifEquals}}
+             
+             
+                                     {{#ifEquals this.isBoltPO true}}
+                                             <div class="col-xs-6">
+                                                    <div class="pull-left cc_header_value_date_issued">{{date this.dateIssuedStr}}</div>
+                                              </div>
+            
+                                              {{else}}
+             
+                                              {{#ifEquals this.IsGOMSInvoice true}}
+                                         <!-- Mar-1179     <div class="col-xs-6">
+                                                  <div class="pull-left cc_header_value_date_issued">{{date this.dateIssuedStr}}</div>
+                                               </div> -->
+                                                 {{else}}
+                                               <div class="col-xs-6">
+                                                     <div class="pull-left cc_header_value_date_issued">{{date this.bmsInviceDate}}</div>
+                                                </div>
+                                                 {{/ifEquals}}
+              
+                                      {{/ifEquals}}
+                     {{/ifEquals}}
+            
+             </div>
+            {{/if}}
+            
+             <div class="row" >
+                     <div class="col-xs-6" style=" padding-left: 0px; text-align: left;">
+                              <div class="pull-right cc_header_label_amount" style="font-weight: bold;">{{pageLabelMap 'MyInvoices_AmountLabel'}}</div>
+                      </div>
+              
+                       {{#ifEquals this.paymentMethod 'cc'}}
+                              <div class="col-xs-6">
+                                 {{#ifEquals this.amount 0}}
+                                       <div class="pull-left cc_header_value_amount ">{{price this.amount this.currencyIsoCode}}</div>
+                                 {{else}}
+                                     <div class="pull-left cc_header_value_amount {{this.normalInvoiceCls}}">
+                                         {{#if this.isCreditMemo}}-{{/if}}
+                                          {{price this.amount this.currencyIsoCode}}
+                                      </div>
+                                   {{/ifEquals}}
+                              </div>                                                                            
+                         {{else}}
+                              {{#ifEquals this.isBoltPO true}}
+                                        <div class="col-xs-6">
+                                           {{#ifEquals this.amount 0}}
+                                                   <div class="pull-left cc_header_value_amount ">{{price this.amount this.currencyIsoCode}}</div>
+                                              {{else}}
+                                                   <div class="pull-left cc_header_value_amount {{this.normalInvoiceCls}}">{{#if this.isCreditMemo}}-{{/if}}{{price this.amount this.currencyIsoCode}}</div>
+                                           {{/ifEquals}}
+                                         </div>
+                               {{else}}  
+             
+                                  <div class="col-xs-6">
+                    
+                                         {{#ifEquals this.bmsInviceTotal 0}}
+                                                    <div class="pull-left cc_header_value_amount ">{{price this.bmsInviceTotal this.currencyIsoCode}}</div>
+                                                {{else}}
+                                                    <div class="pull-left cc_header_value_amount {{this.normalInvoiceCls}}">{{#if this.isCreditMemo}}-{{/if}}{{price this.amount this.currencyIsoCode}}</div>
+                                         {{/ifEquals}}
+                   
+                                  </div>
+             
+                               {{/ifEquals}}
+                        {{/ifEquals}}  
+             </div>
+            
+            
+            {{#if this.bmsInvoiceTotalDiscount}}
+            {{#ifEquals this.paymentMethod 'po'}}         
+                 {{#ifEquals this.isBoltPO false}}
+              <div class="row">
+              <div class="col-xs-6">
+               <div class="pull-right cc_header_label_amount" style="font-weight: bold;" >{{pageLabelMap 'MyInvoices_InvoiceTotalDiscountLabel'}}</div>
+              </div>
+               
+            <div class="col-xs-6">
+               <div class="pull-left cc_header_value_amount">{{this.bmsInvoiceTotalDiscount}}</div>
+              </div>
+                                            </div> <!-- Added by Swetha Mp-860 -->
+             {{/ifEquals}}
+             {{/ifEquals}}  
+                                    <!-- </div> --> <!-- Removed by Swetha Mp-860 -->
+            {{/if}}
+            
+            {{#if this.bmsInvoiceCreatedDate}}
+            {{#ifEquals this.paymentMethod 'po'}}         
+                 {{#ifEquals this.isBoltPO false}}
+              <div class="row">
+              <!--<div class="col-xs-6">
+               <div class="pull-right cc_header_label_amount" style="font-weight: bold;" >{{pageLabelMap 'MyInvoices_InvoiceCreatedDateLabel'}}</div>
+              </div>
+               
+            <div class="col-xs-6">
+               <div class="pull-left cc_header_value_amount">{{ date this.bmsInvoiceCreatedDate}}</div>
+              </div>-->
+                                            </div> <!-- Added by Swetha Mp-860 -->
+             {{/ifEquals}}
+             {{/ifEquals}}  
+                                    <!--</div>--> <!-- Removed by Swetha Mp-860 -->
+            {{/if}}
+            {{#ifEquals this.paymentMethod 'cc'}}
+                {{#if this.status}}
+                 <div class="row">
+                  <div class="col-xs-6">
+                   <div class="pull-right cc_header_label_status" style="font-weight: bold;" >{{pageLabelMap 'MyInvoices_StatusLabel'}}</div>
+                  </div>
+                  <div class="col-xs-6">
+                   <div class="pull-left cc_header_value_status">{{this.status}}</div>
+                  </div>
+                 </div>
+                {{/if}}
+                {{#if this.isCreditMemo}}
+                 <div class="row">
+                  <div class="col-xs-6">
+                   <div class="pull-right cc_header_label_status" style="font-weight: bold;" >{{pageLabelMap 'Refund Transaction Id'}}&#160;&#58;</div>
+                  </div>
+                  <div class="col-xs-6">
+                   <div class="pull-left cc_header_value_status">{{this.refundTransactionId}}</div>
+                  </div>
+                 </div>
+                 {{/if}}
+                {{#ifEquals this.status 'Paid'}}
+                
+                {{#if this.isCreditMemo}}
+                 
+                 {{else}}
+                     {{#if this.transactionId}}
+                     <div class="row">
+                      <div class="col-xs-6">
+                       <div class="pull-right cc_header_label_status" style="font-weight: bold;" >{{pageLabelMap 'Transaction Id'}}&#160;&#58;</div>
+                      </div>
+                      <div class="col-xs-6">
+                       <!--@chanchala LL-69  -Added If-else condition to Set the value as N/A - 17/8/2022 -->
+                        {{#ifNotEquals this.invAmount 0}}
+                               <div class="pull-left cc_header_value_status">{{this.transactionId}}</div>
+                           {{else}}
+                               <div class="pull-left cc_header_value_status">N/A</div>
+                           {{/ifNotEquals}}
+                           <!-- Changes End Here For LL-69 -->
+                      </div>
+                     </div>
+                    {{/if}}
+                {{/if}}
+                
+                {{/ifEquals}}
+            {{/ifEquals}}
+           </div>
+           <div class="col-md-3 cc_invoice_header_col" style="padding-top:10px; margin-left:113px; padding-bottom: 30px;">
+                  <div class="col-xs-6">
+                          <div class="pull-right cc_header_label_bill_to_address" style="font-weight: bold;" >3rd Party Billing :</div>
+                  </div>
+                  {{#ifEquals this.isInterCompanyInvoice true}}
+                  <div class="col-xs-6">
+                            <div class="pull-left cc_header_label_bill_to_address"></div>
+                  </div>
+                  {{else}}
+                  <div class="col-xs-6">
+                            <div class="pull-left cc_header_label_bill_to_address">{{this.IsThirdParty}}</div>
+                  </div>
+                  {{/ifEquals}}
+                  
+            <br />
+                  <div class="col-xs-6">
+                          <div class="pull-right cc_header_label_bill_to_address" style="font-weight: bold;" >On Behalf of :</div>
+                  </div>
+                  {{#ifEquals this.isInterCompanyInvoice true}}
+                  {{#ifEquals this.IsThirdParty 'Yes'}}
+                  <div class="col-xs-6">
+                           <!-- <div class="pull-left cc_header_label_bill_to_address">{{this.billTo.name}}</div> -->
+                           <div class="pull-left cc_header_label_bill_to_address"></div>
+                  </div>
+                  {{/ifEquals}}
+                  {{else}}
+                  {{#ifEquals this.IsThirdParty 'Yes'}}
+                  <div class="col-xs-6">
+                           <!-- <div class="pull-left cc_header_label_bill_to_address">{{this.billTo.name}}</div> -->
+                           <div class="pull-left cc_header_label_bill_to_address">{{this.OnBehalfOfAcc}}</div>
+                  </div>
+                  {{/ifEquals}}
+                  
+                  {{/ifEquals}}
+                  
+                </div>
+        </div>
+          </div>  
+          {{#if this.invoiceItems2}}
+          {{#ifEquals this.paymentMethod 'cc'}}
+           <div class="invoiceContainer invoiceItemsContainer cc_invoice_items_container">
+            <div class="row">
+             <div class="col-xs-2" style="padding-left:0px">
+               <h4 class="title cc_title">{{pageLabelMap 'MyInvoice_Products'}}</h3>
+          </div>
+            </div>
+            </div>
+            <div class="row">
+             <div class="col-xs-12" style="padding-left: 0px;">
+              <div class="table-responsive">
+               <table id="invoiceTable" class="table table-hover shopping_cart invoiceItems cc_table cc_invoice_items_table" style="width:70%">
+                <tr class="cc_table_header_row" style="color: white;background-color: black;">
+                 <th class="cc_table_header" style="width: 47%;">
+                  <span class="cc_table_header_item_invoice_id">{{pageLabelMap 'MyInvoice_Product'}}</span>
+                 </th>
+                 
+                  <th class="cc_table_header" style="width: 14%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'MyInvoice_BillingFrequency'}}</span>
+                 </th>
+                  <th class="cc_table_header" style="width: 14%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'MyInvoice_SubLength'}}</span>
+                 </th>
+                 
+                 <th class="cc_table_header" style="width: 14%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'MyInvoice_Order_s'}}</span>
+                 </th>
+                <!-- @Charlynn LL-23 Code Start 22 July 2022 Showing Number of bundles -->	
+                <th class="cc_table_header" style="width: 14%;">	
+                <span class="cc_table_header_status">{{pageLabelMap 'MyInvoice_NumberOfBundles'}}</span>	
+                </th>	
+                <!-- LL-23 Code End -->
+                 <th class="cc_table_header" style="width: 19%;">
+                  <span class="cc_table_header_item_amount">{{pageLabelMap 'MyInvoice_Quantity'}}</span>
+                 </th>
+                 <th class="cc_table_header">
+                  <span class="cc_table_header_type">{{pageLabelMap 'MyInvoice_Amount'}}</span>
+                 </th>
+                 
+                 
+                </tr>
+                  
+                 
+                
+                    {{#each this.invoiceItems2}}
+                 <tr class="myAccInvoiceRows cc_my_acc_invoice_rows">
+                  <td class="cc_table_col">
+                  {{#ifEquals this.product.parentProductName ""}}
+                    <span class="cc_col_item">{{productLink this.product 'cc_invoice_product_link' text=this.product.name}}</span>
+                   
+                    
+                  {{else}}
+                    <span class="cc_col_item">{{productLink this.product 'cc_invoice_product_link' text=this.product.parentProductName}}</span>
+                  
+                  {{/ifEquals}}
+                 
+                  <p class="">
+                       {{#if this.product.Showincludedlink}}
+                             <p class="cc_included_items">
+                                           <a href="#included_items{{this.product.sfid}}" id="includedItemsLink" data-toggle="modal" data-id="{{this.itemID}}" data-target="#included_items{{this.product.sfid}}"><span class="icon-ViewBound"></span> &nbsp;{{pageLabelMap 'CheckOut_IncludedItems'}}</a>
+                               </p>
+                        <div id="included_items{{this.product.sfid}}" class="modal fade cc_modal cc_cart_included_items_modal" tabindex="-1" role="dialog" aria-hidden="true">
+ <div class="modal-dialog" role="document">
+  <div class="modal-content cc_modal_content">
+   <div class="modal-header" style="color: white;background-color: black;font-weight: bold;">
+    <!--<button type="button" class="close cc_close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&#215;</span></button>-->
+    {{#ifEquals this.product.pricingType 'external'}}
+    
+     {{#if extName}}
+        {{this.extName}}&#58;&#160;{{pageLabelMap 'CheckOut_IncludedItems'}}
+     {{else}}
+        {{this.product.name}}&#58;&#160;{{pageLabelMap 'CheckOut_IncludedItems'}}
+     {{/if}}
+    {{else}}
+        {{this.product.name}}&#58;&#160;{{pageLabelMap 'CheckOut_IncludedItems'}}
+    {{/ifEquals}}
+   </div>
+   <div class="modal-body cc_modal-body">
+    <div class="table-responsive">
+     <table class="cart_figures table cc_table cc_included_items">
+      <thead class="cc_table_header">
+       <th class="cc_name">{{pageLabelMap 'Name'}}</th>
+       <th class="cc_qty">{{pageLabelMap 'Qty'}}</th>
+       {{#ifEquals this.product.Producttype 'Dynamic Kit'}}
+        <th class="cc_total">{{pageLabelMap 'CartInc_Total'}}</th>
+       {{/ifEquals}}
+       {{#ifEquals this.product.Producttype 'Kit'}}
+        <th class="cc_total">{{pageLabelMap 'CartInc_Total'}}</th>
+       {{/ifEquals}}
+      </thead>
+      <tbody>
+      {{#each this.product.includeditems}}
+       <tr>
+        <td class="cc_name">
+        {{#ifEquals this.pricingType 'external'}}
+         <span class="cc_value cc_name">
+         {{#if extName}}
+          {{this.extName}}
+         {{else}}
+          {{this.name}}
+         {{/if}}
+         </span><br/>
+         <!-- MAR-630 Commented Code start
+         <span class="cc_value cc_sku">
+         {{#if extSKU}}
+          {{this.extSKU}}
+         {{else}}
+          {{this.sku}}
+         {{/if}}
+         </span>
+         //MAR-630 Commented Code start -->
+        {{else}}
+         <span class="cc_value cc_name">{{this.name}}</span><br/><span class="cc_value cc_sku">{{this.sku}}</span>
+        {{/ifEquals}}
+        {{#contains this.Pricingmodifier 'tiered'}}
+         {{#ifNotEquals this.pricingType 'Bundle'}}
+          <div class="cc_prt_tool_tip_div cc_prt_tool_tip_div_ct" data-toggle="tooltip" title="{{pageLabelMap 'ProductPricingTiers_VolumeHover'}}">
+           <span class="cc_prt_tool_tip_text cc_prt_tool_tip_text_ct">{{pageLabelMap 'ProductPricingTiers_VolumePricingApplied'}}</span>
+          </div>
+         {{/ifNotEquals}}
+        {{/contains}}
+        </td>
+         
+        {{#ifGreater this.quantity 998}}
+        <td class="cc_qty">{{pageLabelMap 'MyOrdersInc_Unlimited'}} {{#contains this.name 'insite'}}licenses{{else}}users{{/contains}}</td>
+        {{else}}
+          <td class="cc_qty">{{this.quantity}} {{#contains this.name 'insite'}}licenses{{else}}users{{/contains}}</td>
+
+        {{/ifGreater}}
+        {{#ifEquals ProductType 'Dynamic Kit'}}
+         <td class="cc_total"><span class="price cc_totalPrice">{{price this.itemTotal}}</span></td>
+        {{/ifEquals}}
+        {{#ifEquals Producttype 'Kit'}}
+         <td class="cc_total"><span class="price cc_totalPrice">{{price this.itemTotal}}</span></td>
+        {{/ifEquals}}
+       </tr>
+      {{/each}}
+      </tbody>
+     </table>
+    </div>
+   </div>
+    <div class="modal-footer">
+        <button type="button" class=" cc_close btn btn-default btn-sm cc_checkout_btn" data-dismiss="modal" aria-label="Close">{{pageLabelMap 'MyOrdersInc_Close'}}</button>
+      </div>
+  </div>
+ </div>
+</div>
+                        
+                        
+                        
+                        
+                        
+                         {{/if}}
+
+                  </p>
+                  </td>
+                  
+                  <td class="cc_table_col">
+                   <span class="cc_col_type">{{this.billingFrequenecy}}</span>
+                  </td>
+                  <td class="cc_table_col">  
+                   <!-- MP-372 Code Start -->
+                   {{#ifEquals this.subLength '99 Year'}}
+             
+                   {{else}}
+                       <span class="cc_col_type">{{this.subLength}}</span>   
+                   {{/ifEquals}}  
+                   <!-- MP-372 Code End -->
+                  </td>
+                  
+                  <td class="cc_table_col">
+                   <span class="cc_col_type">{{this.orderName}}</span>
+                   {{#if this.couponApplied}}
+                      <div style="margin-top: 22%;width: 200%;">
+                       <span class="cc_col_type"><B>{{this.couponCode}}</B> applied</span>
+                      </div>    
+                   {{/if}}
+                  </td>
+                  <!-- LL-23 Code Start -->	
+                  <td class="cc_table_col" style="padding-left: 24px;">	
+                    <span class="cc_col_invoice_item_id">{{this.numberOfBundles}}</span>	
+                   </td>	
+                   <!-- LL-23 Code End -->
+                  <td class="cc_table_col" style="padding-left: 24px;">
+                   <span class="cc_col_invoice_item_id">{{this.quantity}}</span>
+                  </td>
+                  <td class="cc_table_col">
+                  {{#if this.couponApplied}}
+                        {{#ifEquals this.originalAmount 0}}
+                            <span class="cc_col_amount " >{{price this.originalAmount this.currencyIsoCode}}</span>
+                            <div style="margin-top: 25%;">
+                            </div>
+                       {{else}}
+                            <span class="cc_col_amount {{this.normalInvoiceCls}}" >{{#if this.isCreditMemo}}-{{/if}}{{price this.originalAmount this.currencyIsoCode}}</span>
+                        {{/ifEquals}}
+                        <br />
+                            {{#ifEquals this.discountedAmount 0}}
+                                                                               
+                             <span class="cc_col_amount" >{{price this.discountedAmount this.currencyIsoCode}}</span>  
+                            {{else}}
+                             <div style="margin-top: 45%;">
+                               <span class="cc_col_amount {{this.creditMemoInvoiceCls}}" >{{#if this.isCreditMemo}}{{else}}-{{/if}}{{price this.discountedAmount this.currencyIsoCode}}  
+                               </span>
+                             </div>
+                            {{/ifEquals}}                           
+                  {{else}}
+                        
+                        {{#ifEquals this.amount 0}}
+                            <span class="cc_col_amount {{this.currencyIsoCode}} " >{{price this.amount this.currencyIsoCode}}</span>
+                        {{else}}
+                            <span class="cc_col_amount {{this.currencyIsoCode}} {{this.normalInvoiceCls}}" >{{#if this.isCreditMemo}}-{{/if}}{{price this.amount this.currencyIsoCode}}</span>
+                        {{/ifEquals}}
+                   {{/if}}
+                  </td>
+
+                 </tr>
+                {{/each}}
+                
+               </table>
+              </div>
+              <hr style="color:dark-grey; margin-right: 30%;">
+             </div>
+            </div>
+           </div>
+           
+           {{else}}
+           
+           <div class="invoiceContainer invoiceItemsContainer cc_invoice_items_container">
+             
+            <div class="row">
+               
+             <div class="col-xs-2" style="padding-left:0px">
+                   
+               <h4 class="title cc_title" style="padding-top:30px">{{pageLabelMap 'MyInvoice_Products'}}</h4>
+              
+             </div>
+             <div class="col-xs-6" style="padding-left:0px;padding-top: 0px;margin-top: 12px;margin-left: -196px;">
+             </div>
+            </div>
+            <div class="row">
+             <div class="col-xs-12" style="padding-left:0px">
+              <div class="table-responsive">
+               <table id="invoiceTable" class="table table-hover shopping_cart invoiceItems cc_table cc_invoice_items_table" style="width:70%">
+                <tr class="cc_table_header_row" style="color:white; background-color:black">
+                 <th class="cc_table_header">
+                  <span class="cc_table_header_item_invoice_id">{{pageLabelMap 'MyInvoice_Product'}}</span>
+                 </th>
+                 <th class="cc_table_header">
+                    <span class="cc_table_header_item_amount">{{pageLabelMap 'MyInvoice_PaymentType'}}</span>
+                 </th>
+                
+                  <th class="cc_table_header">
+                  <span class="cc_table_header_item_amount">{{pageLabelMap 'MyInvoice_BillingFrequency'}}</span>
+                 </th>
+                  <th class="cc_table_header">
+                  <span class="cc_table_header_item_amount">{{pageLabelMap 'MyInvoice_SubLength'}}</span>
+                 </th>
+                 
+                 <th class="cc_table_header" style="width: 104px;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'MyInvoice_Order_s'}}</span>
+                 </th>
+                <!-- @Akila LL-85 Code Start Showing Number of bundles -->    
+                <th class="cc_table_header" style="width: 14%;">    
+                    <span class="cc_table_header_status">{{pageLabelMap 'MyInvoice_NumberOfBundles'}}</span>    
+                </th>    
+                <!-- LL-85 Code End --> 
+                 <th class="cc_table_header">
+                  <span class="cc_table_header_item_amount">{{pageLabelMap 'MyInvoice_Quantity'}}</span>
+                 </th>
+                 <th class="cc_table_header"  style="text-align: right; padding-right: 7px;">
+                  <span class="cc_table_header_type">{{pageLabelMap 'MyInvoice_Amount'}}</span>
+                 </th>
+                 
+                 
+                </tr>
+                
+                    {{#each this.invoiceItems2}}
+                 <tr class="myAccInvoiceRows cc_my_acc_invoice_rows">
+                  <td class="cc_table_col">
+                  {{#ifEquals this.product.parentProductName ""}}
+                    <span class="cc_col_item">{{productLink this.product 'cc_invoice_product_link' text=this.product.name}}</span>
+                  {{else}}
+                    <span class="cc_col_item">{{productLink this.product 'cc_invoice_product_link' text=this.product.parentProductName}}</span>
+                  {{/ifEquals}}
+                  </td>
+                  
+                  {{#ifEquals this.isInterCompanyInvoice true}}
+                  <td class="cc_table_col">
+                       <span class="cc_col_type">{{this.bmsPONumber}}</span>
+                   </td>
+                  {{else}}
+                   <td class="cc_table_col">
+                       <span class="cc_col_type">{{this.poNumber}}</span>
+                   </td>
+                  {{/ifEquals}}
+                  
+                  <td class="cc_table_col">
+                   <span class="cc_col_type">{{this.billingFrequenecy}}</span>
+                    
+                  </td>
+                  <td class="cc_table_col">
+                   <!-- MP-372 Code Start -->
+                   {{#ifEquals this.subLength '99 Year'}}
+             
+                   {{else}}
+                       <span class="cc_col_type">{{this.subLength}}</span>   
+                   {{/ifEquals}}  
+                   <!-- MP-372 Code End -->
+                  </td> 
+                  <td class="cc_table_col">
+                   <span class="cc_col_type">{{this.orderName}}</span>
+                   {{#if this.couponApplied}}
+                      <div style="margin-top: 25%;width: 200%;">
+                       <span class="cc_col_type"><B>{{this.couponCode}}</B> applied</span>
+                      </div>    
+                   {{/if}}
+                  </td>
+
+                  <!--@Akila LL-85 Code Start -->    
+                  <td class="cc_table_col" style="padding-left: 24px;">    
+                    <span class="cc_col_invoice_item_id">{{this.numberOfBundles}}</span>    
+                  </td>    
+                  <!--@Akila LL-85 Code End -->
+
+                  <td class="cc_table_col" style="padding-left: 26px;">
+                   <span class="cc_col_invoice_item_id">{{this.quantity}}</span>
+                  </td>
+                  <td class="cc_table_col" style="text-align: right; padding-right: 7px;">
+                    {{#if this.couponApplied}}
+                        {{#ifEquals this.originalAmount 0}}
+                            <span class="cc_col_amount " >{{price this.originalAmount this.currencyIsoCode}}</span>
+                            <div style="margin-top: 25%;">
+                            </div>
+                       {{else}}
+                            <span class="cc_col_amount {{this.normalInvoiceCls}}" >{{#if this.isCreditMemo}}-{{/if}}{{price this.originalAmount this.currencyIsoCode}}</span>
+                        {{/ifEquals}}
+                        <br />
+                            {{#ifEquals this.discountedAmount 0}}
+                                                                               
+                             <span class="cc_col_amount" >{{price this.discountedAmount this.currencyIsoCode}}</span>  
+                            {{else}}
+                             <div style="margin-top: 45%;">
+                               <span class="cc_col_amount {{this.creditMemoInvoiceCls}}" >{{#if this.isCreditMemo}}{{else}}-{{/if}}{{price this.discountedAmount this.currencyIsoCode}}  
+                               </span>
+                             </div>
+                            {{/ifEquals}}                           
+                  {{else}}
+                        
+                        {{#ifEquals this.amount 0}}
+                            <span class="cc_col_amount {{this.currencyIsoCode}} " >{{price this.amount this.currencyIsoCode}}</span>
+                        {{else}}
+                            <span class="cc_col_amount {{this.currencyIsoCode}} {{this.normalInvoiceCls}}" >{{#if this.isCreditMemo}}-{{/if}}{{price this.amount this.currencyIsoCode}}</span>
+                        {{/ifEquals}}
+                   {{/if}}
+                   
+                  </td>
+                  
+
+                 </tr>
+                {{/each}}
+                <!--tr><td /><td /><td /><td /><td /><td /><td /> <tr /-->                                                                                           
+               </table>
+               <hr style="width:70%" align="left">
+              </div>
+             </div>
+            </div>
+           </div>
+           {{/ifEquals}}
+           
+          {{/if}}
+
+          <div class="total cc_total" style="text-align: right;padding-right: 15.9%;">
+            {{#ifGreater this.totalDiscount "0.00"}}
+                
+                        <div class="col-md-10 cc_subTotal" style="padding-top:5px">
+                          <span class="col-md-11 cc_subTotal_label" style="width:90%">{{pageLabelMap 'CartInc_OriginalPrice'}}&#160;&#58;&#160;</span>
+                          {{#ifEquals this.originalSubTotal 0}}
+                            <span id="cart_original_price" class="cc_subTotal" >{{price this.originalSubTotal this.currencyIsoCode }}</span>
+                          {{else}}
+                            <span id="cart_original_price" class="cc_subTotal {{this.normalInvoiceCls}}" >{{#if this.isCreditMemo}}-{{/if}}{{price this.originalSubTotal this.currencyIsoCode }}</span>
+                          {{/ifEquals}}
+                        </div>
+                       <div class="col-md-10 cc_subTotal" style="padding-top:5px">
+                          <span class="col-md-11 cc_subTotal_label" style="width:90%">{{pageLabelMap 'CartInc_TotalDiscount'}}&#160;&#58;&#160;</span>
+                          {{#ifEquals this.totalDiscount 0}}
+                                <span id="total_discount" class="cc_subTotal" >{{price this.totalDiscount this.currencyIsoCode }}</span>
+                            {{else}}
+                                <span id="total_discount" class="cc_subTotal {{this.creditMemoInvoiceCls}}" >{{#if this.isCreditMemo}}{{else}}-{{/if}}{{price this.totalDiscount this.currencyIsoCode }}</span>
+                            {{/ifEquals}}
+                        </div>
+                          
+
+            {{/ifGreater}}
+               <div class="col-md-10 cc_subTotal" style="padding-top:5px">
+                <span class="col-md-11 cc_subTotal_label" style="width:90%">{{pageLabelMap 'MyInvoice_Sub_Total'}}&#160;&#58;&#160;</span>
+                    {{#ifEquals this.subTotalAmount 0}}
+                        <span id="sub_total_amount" class="cc_subTotal">{{price this.subTotalAmount this.currencyIsoCode }}</span>
+                    {{else}}
+                        <span id="sub_total_amount" class="cc_subTotal {{this.normalInvoiceCls}}">{{#if this.isCreditMemo}}-{{/if}}{{price this.subTotalAmount this.currencyIsoCode }}</span>
+                    {{/ifEquals}}
+                
+               </div>
+            
+                <div class="col-md-10 cc_shipping">
+                 <span class="col-md-11 cc_shipping_label" style="width:90%">{{pageLabelMap 'OSM_TotalTax'}}&#160;&#58;&#160;</span>
+                    {{#ifEquals this.vertexTax 0}}
+                        <span id="total_tax" class="cc_shipping_charge ">{{price this.vertexTax this.currencyIsoCode}}</span>
+                    {{else}}
+                        <span id="total_tax" class="cc_shipping_charge {{this.normalInvoiceCls}}">{{#if this.isCreditMemo}}-{{/if}}{{price this.vertexTax this.currencyIsoCode}}</span>
+                    {{/ifEquals}}
+                 
+                </div>
+                                                                                    
+                                                                                    
+                <div class="row" >
+                                                                                   
+                                                                                                                                                       
+               <div class="col-md-3 cc_grand_total">
+                     {{#if this.haspurchasercomments}}
+                          <div style="padding-left:0px;padding-top:0px;text-align: left;">
+                                <p style="padding-top:0px;font-size:15px;">Purchaser Comments</p>                                                            
+                          </div>                                                            
+                      {{/if}} 
+                </div>
+               <div class="col-md-9 cc_grand_total" style="text-align:left;width: 59.333333%;">
+                    <div style="padding-left:357px;width: 99%;" class="row">
+                        <div style="width: 53.5%; float: left;text-align:right;">
+                            <span class=" cc_total_label" style="">{{pageLabelMap 'MyInvoice_Grand_Total'}} &#58;</span>                                                           
+                        </div> 
+                        <div style="width: 46.5%; float: left;text-align:right;">
+                            {{#ifEquals this.amount 0}}
+                             <span id="total_amount" class="cc_total_amount" style="text-align:right;">{{price this.amount this.currencyIsoCode }}</span>
+                          {{else}}
+                             <span id="total_amount" class="cc_total_amount {{this.normalInvoiceCls}}" style="text-align:right">{{#if this.isCreditMemo}}-{{/if}}{{price this.amount this.currencyIsoCode }}</span>
+                           {{/ifEquals}}
+                        </div>                                                          
+                    
+                     
+                          
+                                                                                  
+                  </div>                                                            
+                </div>
+              </div>                                                               
+        </div>
+           {{#if this.haspurchasercomments}}
+               
+                 <div class="row">
+                  <div  style="width:68.666667%;padding-left:16px;">
+                     <div style="border-style:solid;border-width:1px;border-color:#000000;" >
+                       <textarea style="border:none;width:99.9%;" name="textarea" rows="8"  readonly id="purchasercommentsid">{{this.purchasercomments}}</textarea>
+                     </div>
+                   </div>  
+                  </div>
+                
+             {{/if}}                                                                    
+        {{#if this.isCreditMemo}}
+        
+        {{else}}
+        
+          {{#ifEquals this.status 'Paid'}}
+          {{#ifNotEquals this.type 'Summary'}}
+           {{#if this.invoicePaymentsTo}}
+            <div class="invoiceContainer cc_invoice_payments_to_container">
+             <div class="row">
+             <div class="col-xs-12" style="padding-left:0px">
+               <h4 class="title cc_title">{{pageLabelMap 'MyInvoices_InvoicePaymentsToHdr'}}</h4>
+              </div>
+             </div>
+             <div class="row">
+              <div class="col-xs-12" style="padding-left:0px">
+               <div class="table-responsive">
+                <table id="invoiceTable" class="table table-hover shopping_cart invoicePayments cc_table cc_invoice_payments_table" style="width:70%">
+                 <tr class="cc_table_header_row"  style="color:white; background-color:black">  
+                       <th class="cc_table_header">
+                       <span class="cc_table_header_payment_ts">{{pageLabelMap 'MyInvoices_PaymentTS'}}</span>
+                       </th>
+                       <th class="cc_table_header">
+                       <span class="cc_table_header_payment_account_number">{{pageLabelMap 'MyInvoices_PaymentAccount'}}</span>
+                       </th>
+                       <th class="cc_table_header">
+                       <!--MAR-1775 Code Start -->
+                       <span class="cc_table_header_payment_account_number">{{pageLabelMap 'MyInvoices_CardNumber'}}</span>
+                       </th>
+                       <!--MAR-1775 Code End -->
+                       <th class="cc_table_header" style="width:12.3%">
+                       <span class="cc_table_header_payment_amount">{{pageLabelMap 'MyInvoices_PaymentAmount'}}</span>
+                       </th>                  
+                 </tr>
+               {{extractBMSPONumber this}}
+                 {{#each this.invoicePaymentsTo}} 
+                  <tr class="myAccInvoiceRows invoicePaymentRows {{this.sfid}} cc_my_acc_invoice_rows cc_invoice_payment_rows">
+                   <td class="cc_table_col">
+                    <span class="cc_col_payment_ts">{{dateTime this.paymentTSStr}}</span>
+                   </td>
+                   <!--MAR-1775 Code Start -->
+                   <td class="cc_table_col" style="width:33%">
+                       {{#ifEquals this.accountType "cc"}}  
+                           <!-- @Chanchala LL-69  -Added If-else condition to set the value as N/A - 17/8/2022-->
+                          {{#ifEquals this.invAmount 0}}
+                               <span class="cc_payment_information_transaction_payments">N/A</span>
+                           {{else}}
+                               <span class="cc_payment_information_transaction_payments">{{pageLabelMap 'Credit_Card'}}</span>
+                           {{/ifEquals}}
+                           <!-- Changes End Here For LL-69 -->
+                       {{else}}
+                           <span class="cc_payment_information_transaction_payments">{{pageLabelMap 'Purchase_Order'}}</span>
+                       {{/ifEquals}}
+                   </td>
+                   <td class="cc_table_col" style="width:33%">
+                   <!--MAR-1716 Code Start-->
+                       {{#ifEquals this.isInterCompanyInvoice true}}    
+                           <span id="payment_info" class="cc_col_account_number">{{this.bmsPONumber}}</span>
+                       {{else}}
+                           <!-- @Chanchala LL-69  -Added If-else condition to set the value as N/A - 17/8/2022-->
+                               {{#ifNotEquals this.invAmount 0}}
+                                   <span id="payment_info" class="cc_col_account_number">{{this.accountNumber}}</span>
+                               {{else}}
+                                   <span id="payment_info" class="cc_col_account_number">N/A</span>
+                               {{/ifNotEquals}}
+                               <!-- Changes End Here For LL-69 -->
+                       {{/ifEquals}}
+                   <!--MAR-1716 Code Ends-->
+                   </td>
+                   <!--MAR-1775 Code End -->
+                   <td class="cc_table_col" style="text-align:right; padding-right:48px">
+                    <span class="cc_col_amount {{this.currencyIsoCode}}">{{price this.invAmount this.currencyIsoCode}}</span>
+                   </td>
+                   
+                  </tr>
+                 {{/each}}
+                </table>
+               </div>
+              </div>
+             </div>
+            </div>
+           {{/if}}
+          {{/ifNotEquals}}
+          {{/ifEquals}}
+          <div class="row">
+           <div class="col-xs-6">
+            <div class="invoiceContainer cc_invoice_action_container">
+             {{#ifEquals this.status 'Open'}}
+              {{#ifEquals this.paymentMethod 'cc'}}
+               <p class="panel-body pull-left cc_action_buttons">
+                <button type="button" class="btn btn-default btn-sm makePayment cc_make_payment">{{pageLabelMap 'MyInvoices_MakePaymentBtn'}}</button>
+               </p>
+              {{/ifEquals}}
+             {{/ifEquals}}
+            </div>
+           </div>
+           <div class="col-xs-6">
+            <div class="invoiceContainer cc_invoice_action_container">
+            </div>
+           </div>
+          </div>
+         {{/if}}
+         {{/if}}
+        </div>
+       </div>
+      </script>
+     
+      
+      <script id="AddressDisplay-New" type="text/template">
+      <div class="address_selection_display">
+       {{#ifDisplay 'SO.DsplAddrName'}}
+        {{#if this.firstName }}
+         <p class="cc_addr_name">
+          <span class="cc_firstname">{{this.firstName}}&#160;</span>
+          {{#if this.lastName }}
+           <span class="cc_lastname">{{this.lastName}}</span>
+          {{/if}}
+         </p>
+        {{else}}
+         {{#if this.lastName }}
+          <p class="cc_addr_name">
+           <span class="cc_lastname">{{this.lastName}}</span>
+          </p>
+         {{/if}}
+        {{/if}}
+
+       {{/ifDisplay}}
+       {{#ifDisplay 'SO.DsplAddrCompany'}}
+        {{#if this.companyName}}
+         <p class="cc_addr_company">{{this.companyName}}</p>
+        {{/if}}
+       {{/ifDisplay}}
+       {{#if this.address1}}
+        <span class="addr_line1 cc_addr_line">{{this.address1}}</span><br/>
+       {{else}}
+        {{#if this.addressFirstline}}
+         <span class="addr_line1 cc_addr_line">{{this.addressFirstline}}</span><br/>
+        {{/if}}
+       {{/if}}
+
+       {{#if this.address2}}
+        <span class="addr_line2 cc_addr_line">{{this.address2}}</span><br/>
+       {{else}}
+        {{#if this.addressSecondline}}
+         <span class="addr_line1 cc_addr_line">{{this.addressSecondline}}</span><br/>
+        {{/if}}
+       {{/if}}
+
+       {{#if this.address3}}
+        <span class="addr_line3 cc_addr_line">{{this.address3}}</span><br/>
+       {{else}}
+        {{#if this.addressThirdline}}
+         <span class="addr_line1 cc_addr_line">{{this.addressThirdline}}</span><br/>
+        {{/if}}
+       {{/if}}
+       <span class="cc_addr_city">{{this.city}}</span>
+       {{#if this.state}}
+        <span class="cc_addr_state">&#44;&#160;{{this.state}}</span>
+       {{else}}
+        {{#if this.stateCode}}
+         <span class="cc_addr_state">&#44;&#160;{{this.stateCode}}</span>
+        {{else}}
+         {{#if this.stateISOCode}}
+          <span class="cc_addr_state">&#44;&#160;{{this.stateISOCode}}</span>
+         {{/if}}
+        {{/if}}
+       {{/if}}
+       <span class="cc_addr_postal">&#160;{{this.postalCode}}</span><br/>
+       <span class="cc_addr_country">{{this.country}}</span>
+      </div>
+     </script>
+      <script>
+      
+      
+    Handlebars.registerHelper('dateTime', function(milsec) {
+            if(milsec  != "" && milsec != undefined)
+            {
+                var thisDate = new Date(milsec);
+                var strTime = formatAMPM(thisDate);
+                var thisDate = new Date(milsec);
+                    var dateToStr = thisDate.toUTCString().split(' ');
+                    datefinal = dateToStr[1] + ' ' + dateToStr[2]+' '+dateToStr[3]+" "+strTime;
+                
+                return datefinal;
+            }
+            else
+                return "";
+        }); 
+        
+        function formatAMPM(date) {
+          var hours = date.getHours();
+          var minutes = date.getMinutes();
+          var ampm = hours >= 12 ? 'PM' : 'AM';
+          hours = hours % 12;
+          hours = hours ? hours : 12; // the hour '0' should be '12'
+          minutes = minutes < 10 ? '0'+minutes : minutes;
+          var strTime = hours + ':' + minutes + ' ' + ampm;
+          return strTime;
+        }
+    //MAR-1716 Code Starts
+    Handlebars.registerHelper('extractBMSPONumber', function(data) {
+        data.invoicePaymentsTo.forEach(function(item){
+            item.bmsPONumber = data.bmsPONumber;
+            item.isInterCompanyInvoice = data.isInterCompanyInvoice;
+            item.invAmount=data.invAmount;
+        });
+    });
+    //MAR-1716 Code Ends   
+      Handlebars.registerHelper('date', function(milsec) {
+          console.log('Invoice detailview date-->> '+milsec);
+        if(milsec  != "" && milsec != undefined) {
+            if(/^[a-zA-Z0-9- ]*$/.test(milsec) == false){
+                console.log('string--if-->> '+milsec);
+                console.log('User Locale '+CCRZ.currentUser.LocaleSidKey);
+                var params = Array.prototype.slice.call(arguments, 1);
+                var thisDate ;
+                if(CCRZ.currentUser.LocaleSidKey==='en_AU'){
+                    var splittedValue = milsec.split('/');
+                    thisDate = new Date(splittedValue[2],splittedValue[1]-1,splittedValue[0]);
+                }else{
+                    thisDate = new Date(milsec);
+                }
+                console.log('thisDate '+thisDate);
+                var dateToStr = thisDate.toString().split(' ');
+                console.log('UTC Converted date'+dateToStr);
+                var datefinal = dateToStr[2] + ' ' + dateToStr[1]+' '+dateToStr[3];
+                console.log('Datefinal '+datefinal);
+              }else{
+                 console.log('string--else-->> '+milsec);
+                console.log('User Locale '+CCRZ.currentUser.LocaleSidKey);
+                var params = Array.prototype.slice.call(arguments, 1);
+                var thisDate ;
+                if(CCRZ.currentUser.LocaleSidKey==='en_AU'){
+                    var splittedValue = milsec.split('/');
+                    thisDate = new Date(splittedValue[2],splittedValue[1]-1,splittedValue[0]);
+                }else{
+                    thisDate = new Date(milsec);
+                }
+                console.log('thisDate '+thisDate);
+                var dateToStr = thisDate.toUTCString().split(' ');
+                //var dateToStr = thisDate.toString().split(' ');
+                console.log('UTC Converted date'+dateToStr);
+                var datefinal = dateToStr[1] + ' ' + dateToStr[2]+' '+dateToStr[3];
+                //var datefinal = dateToStr[2] + ' ' + dateToStr[1]+' '+dateToStr[3];
+                console.log('Datefinal '+datefinal);
+                //console.log('Distributorcode'+distribcode);
+             
+              }
+        return datefinal;
+        }
+        else{
+            console.log('Date Undefined ');
+            return "";
+        }
+            
+
+
+    }); 
+
+
+        jQuery(function($){
+        
+        var isRefreshFirstTime = true;
+        
+        CCRZ.pubSub.on('view:InvoiceDetailView:refresh',function(invoiceDetailView){
+           if(!isRefreshFirstTime){
+           
+           var cookieId = CCRZ.getCookie('invoicePayment__msg');
+           if(cookieId && cookieId=='success'){
+           
+                    CCRZ.setCookie('invoicePayment__msg', 'remove', null);
+                    CCRZ.pubSub.trigger('pageMessage',
+                    {
+                        messages:[
+                            {
+                                type : 'CUSTOM',
+                                severity : 'INFO',
+                                labelId : 'MyInvoices_PaymentSuccess',
+                                classToAppend : 'messagingSection-invoice-Info'
+                            }
+                        ]
+                    
+                });
+
+           }
+        }             
+            
+                    CCRZ.subsc.InvoiceDataAction.getInvoiceData(function(response)
+                    {
+                    
+                        if(isRefreshFirstTime)
+                        {
+                            if (response.success)
+                            {
+                                console.log("In refresh invoice detail view after response");
+                                console.log(response);
+                                if(invoiceDetailView)
+                                {
+                                    invoiceDetailView.model.attributes.invoiceItems;
+                                    if(invoiceDetailView.model != undefined)
+                                    {
+                                        if(invoiceDetailView.model.attributes != undefined)
+                                        {
+                                            if(invoiceDetailView.model.attributes != undefined)
+                                            {
+                                                if(response.data != undefined)
+                                                    if(response.data.dataSet != undefined)
+                                                    {
+                                                      if(response.data.dataSet.hasCoupon != undefined && response.data.dataSet.hasCoupon){
+                                                            invoiceDetailView.model.attributes.hasCoupon = response.data.dataSet.hasCoupon;
+                                                            invoiceDetailView.model.attributes.originalSubTotal = response.data.dataSet.originalSubTotal;
+                                                            invoiceDetailView.model.attributes.totalDiscount = response.data.dataSet.totalDiscount;
+                                                        }
+                                                        if(response.data.dataSet.lstInvoiceItem != undefined)
+                                                            invoiceDetailView.model.attributes.invoiceItems2 = response.data.dataSet.lstInvoiceItem;
+                                                        if(response.data.dataSet.vartexTax != undefined)
+                                                            invoiceDetailView.model.attributes.vertexTax = Number(response.data.dataSet.vartexTax);
+                                                        if(response.data.dataSet.subTotalAmount != undefined)
+                                                            invoiceDetailView.model.attributes.subTotalAmount = Number(response.data.dataSet.subTotalAmount);
+                                                        if(response.data.dataSet.paymentMethod != undefined)
+                                                            invoiceDetailView.model.attributes.paymentMethod = response.data.dataSet.paymentMethod;
+                                                        if(response.data.dataSet.isSouthernCustomer != undefined){
+                                                           invoiceDetailView.model.attributes.isSouthernCustomer = response.data.dataSet.isSouthernCustomer;
+                                                        }
+                                                        if(response.data.dataSet.isCreditMemo != undefined)
+                                                        {
+                                                            invoiceDetailView.model.attributes.isCreditMemo = response.data.dataSet.isCreditMemo;
+                                                            if(response.data.dataSet.isCreditMemo)
+                                                            {
+                                                                invoiceDetailView.model.attributes.refundTransactionId = "";
+                                                            }
+                                                        }
+                                                        
+                                                        
+                                                        if(response.data.dataSet.IsThirdParty != undefined)
+                                                        invoiceDetailView.model.attributes.IsThirdParty = response.data.dataSet.IsThirdParty;
+                                                        
+                                                        if(response.data.dataSet.OnBehalfOfAcc != undefined)
+                                                        invoiceDetailView.model.attributes.OnBehalfOfAcc = response.data.dataSet.OnBehalfOfAcc;
+                                                        
+                                                        if(response.data.dataSet.refundBMSNumber != undefined)
+                                                        invoiceDetailView.model.attributes.refundBMSNumber = response.data.dataSet.refundBMSNumber;
+                                                        
+                                                        if(response.data.dataSet.creditMemoInvoiceCls != undefined)
+                                                        invoiceDetailView.model.attributes.creditMemoInvoiceCls = response.data.dataSet.creditMemoInvoiceCls;
+                                                        
+                                                        if(response.data.dataSet.normalInvoiceCls != undefined)
+                                                        invoiceDetailView.model.attributes.normalInvoiceCls = response.data.dataSet.normalInvoiceCls;
+                                                        
+                                                        if(response.data.dataSet.refundTransactionId != undefined)
+                                                            invoiceDetailView.model.attributes.refundTransactionId = response.data.dataSet.refundTransactionId;
+                                                        
+                                                        if(response.data.dataSet.CreditmemoNumber != undefined)
+                                                            invoiceDetailView.model.attributes.CreditmemoNumber = response.data.dataSet.CreditmemoNumber;
+                                                        
+                                                        
+                                                        if(response.data.dataSet.transactionId != undefined)
+                                                        {
+                                                            invoiceDetailView.model.attributes.transactionId = response.data.dataSet.transactionId;
+                                                        }
+                                                        
+                                                // code added by Neha Sharma            
+                                                        if(response.data.dataSet.bmsInvoiceNumber != undefined)
+                                                            invoiceDetailView.model.attributes.bmsInvoiceNumber = response.data.dataSet.bmsInvoiceNumber;
+                                                        
+                                                        if(response.data.dataSet.pdfRemitToAddress != undefined)
+                                                            invoiceDetailView.model.attributes.pdfRemitToAddress = response.data.dataSet.pdfRemitToAddress;
+                                                        
+                                                        console.log('invoiceDetailView.model.attributes.pdfRemitToAddress' + invoiceDetailView.model.attributes.pdfRemitToAddress);
+                                                        
+                                                        // START : Changes - Juhi - Feb 12 2019 - Map Entire BMS Address
+                                                        if(response.data.dataSet.payToAddressName != undefined)
+                                                            invoiceDetailView.model.attributes.payToAddressName = response.data.dataSet.payToAddressName;
+                                                        if(response.data.dataSet.payToAddress != undefined)
+                                                            invoiceDetailView.model.attributes.payToAddress = response.data.dataSet.payToAddress;
+                                                        if(response.data.dataSet.payToAddressCity != undefined)
+                                                            invoiceDetailView.model.attributes.payToAddressCity = response.data.dataSet.payToAddressCity;
+                                                        if(response.data.dataSet.payToAddressState != undefined)
+                                                            invoiceDetailView.model.attributes.payToAddressState = response.data.dataSet.payToAddressState;
+                                                        if(response.data.dataSet.payToAddressPostalCode != undefined)
+                                                            invoiceDetailView.model.attributes.payToAddressPostalCode = response.data.dataSet.payToAddressPostalCode;
+                                                        // END : Changes - Juhi - Feb 12 2019 - Map Entire BMS Address
+                                                        //MAR-1716 Code Starts
+                                                        if(response.data.dataSet.bmsPONumber != undefined)
+                                                            invoiceDetailView.model.attributes.bmsPONumber = response.data.dataSet.bmsPONumber;
+                                                        if(response.data.dataSet.isInterCompanyInvoice != undefined)
+                                                            invoiceDetailView.model.attributes.isInterCompanyInvoice = response.data.dataSet.isInterCompanyInvoice;
+                                                        //MAR-1716 Code Ends
+                            //MP-316 Code Start
+                                                        if(response.data.dataSet.invAmount != undefined)
+                                                            invoiceDetailView.model.attributes.invAmount = response.data.dataSet.invAmount;
+                                                        //MP-316 Code End
+                                                        if(response.data.dataSet.isBoltPO != undefined)
+                                                            invoiceDetailView.model.attributes.isBoltPO = response.data.dataSet.isBoltPO;
+                                                        if(response.data.dataSet.bmsInviceTotal != undefined)
+                                                            invoiceDetailView.model.attributes.bmsInviceTotal = response.data.dataSet.bmsInviceTotal;
+                                                        if(response.data.dataSet.bmsInviceDate != undefined)
+                                                        invoiceDetailView.model.attributes.bmsInviceDate = response.data.dataSet.bmsInviceDate;
+                                                        if(response.data.dataSet.pdfId != undefined)
+                                                        invoiceDetailView.model.attributes.pdfId = response.data.dataSet.pdfId;
+                                                        if(response.data.dataSet.imageUrl != undefined)
+                                                        invoiceDetailView.model.attributes.imageUrl = response.data.dataSet.imageUrl;
+                                                        if(response.data.dataSet.bmsInvoiceCreatedDate != undefined)
+                                                        invoiceDetailView.model.attributes.bmsInvoiceCreatedDate =response.data.dataSet.bmsInvoiceCreatedDate;
+                                                        if(response.data.dataSet.bmsInvoiceTotalDiscount != undefined)
+                                                        invoiceDetailView.model.attributes.bmsInvoiceTotalDiscount = response.data.dataSet.bmsInvoiceTotalDiscount;
+                                                        
+                                                        if(response.data.dataSet.isInterCompanyInvoice != undefined)
+                                                        invoiceDetailView.model.attributes.isInterCompanyInvoice = response.data.dataSet.isInterCompanyInvoice;
+                                                    
+                                                       if(response.data.dataSet.IsGOMSInvoice != undefined)
+                                                        invoiceDetailView.model.attributes.IsGOMSInvoice = response.data.dataSet.IsGOMSInvoice;
+                                                        
+                                                        if(response.data.dataSet.GOMSInvoiceNo != undefined)
+                                                        invoiceDetailView.model.attributes.GOMSInvoiceNo = response.data.dataSet.GOMSInvoiceNo;
+                                                        
+                                                        if(response.data.dataSet.haspurchasercomments!= undefined){
+                                                           invoiceDetailView.model.attributes.haspurchasercomments= response.data.dataSet.haspurchasercomments;
+                                                           invoiceDetailView.model.attributes.purchasercomments = response.data.dataSet.purchasercomments;
+                                                        }
+                                                     }
+                                            }
+                                        }
+                                    }
+                                } 
+                                 console.log(invoiceDetailView);
+                                 isRefreshFirstTime = false;
+                                 invoiceDetailView.render();
+                            }
+                        }
+                        
+                    }
+                    );
+                    
+        });
+        
+        CCRZ.subsc = _.extend(CCRZ.subsc||{});
+            CCRZ.subsc.InvoiceDataAction = _.extend( 
+            {
+                className : 'OSM_SW_InvoiceDetailView_Ctrl',
+                getInvoiceData : function(callback)
+                {
+                    var invoiceId = CCRZ.invoiceDetailModel.attributes.sfid
+                    this.invokeContainerLoadingCtx($('body'),'fetchInvoiceDetails',invoiceId, function(response)
+                    {
+                        console.log("==== in method to featch invoice %o",response);
+                        
+                         callback(response);
+                    },
+                    {
+                        buffer : false, // this call will be executed by itself
+                        nmsp   : false  // defines that this is a call to a subscriber class
+                    }); 
+                }
+                
+            },
+            
+            CCRZ.RemoteInvocation);
+            
+        });
+
+      </script>
+        
+    </apex:page>

@@ -1,0 +1,1860 @@
+<apex:component controller="CG_CL_ClaimsSRTCampaignsController_New" allowDML="true"
+                id="campaings">
+
+    <!--<apex:attribute name="jobId" type="Id" description="JobId" assignTo="{!pgId}"></apex:attribute> -->
+    <apex:attribute name="isDealerClaim" description="DealerClaim" required="true" type="Boolean"
+                    assignTo="{!isDealer}" />
+    <apex:attribute name="isCata" description="Catastrophic" required="true" type="Boolean"
+                    assignTo="{!isCatastrophic}" />
+    <apex:attribute name="displayType" description="Display Type" required="true" type="string"
+                    assignTo="{!sVfComp}" />
+    <apex:attribute name="claimsId" description="Display Type" required="true" type="ID"
+                    assignTo="{!Cid}" />
+    <apex:attribute name="MPSNCheckbox" description="Getting psn check box value" type="boolean"
+                    />
+    <apex:attribute name="JobId" description="Getting Job value" type="String" />
+    <apex:attribute name="IsPenalty" description="Penaltytobapplied" type="boolean" assignTo="{!PenaltyExists}" /> 
+    <apex:attribute name="mainController" description="Main Controller Type" type="CG_CL_ClaimsSRTs" assignTo="{!mainContr}" />
+    <script>
+
+        function MpsnCounterFA(input,SRTCode){
+            try{ 
+                console.log('SRTCode ' + SRTCode);
+                var enteredText = parseInt(input.value);
+                var psncount =  parseInt('{!claimsRecList[0].Total_PSN_Count__c}');
+                console.log('enteredText Rep' + enteredText);
+                console.log('psncount Rep' + psncount);
+                var arraySRTCode = ['00-400-00','00-401-00','00-404-00','00-724-00'];
+
+                var length = arraySRTCode.length;
+                for (var i = 0; i < length; i++) {
+                    if (arraySRTCode[i] == SRTCode){
+                        console.log('success');
+                        if(enteredText >= psncount){
+                            document.getElementById(input.id).value = psncount;
+                        }
+                    }
+                }
+            }
+            catch(err){
+                console.log('exception>>' + err.message)
+            }
+        }
+
+        function filteredSRTScrollbar() {
+            var trLength1 = $(".SRTTable tbody tr").length;
+            var totalHeight1 = 0;
+
+            for (i = 0; i < trLength1; i++) {
+                totalHeight1 = $('.SRTTable tbody tr').eq(i).height() +
+                    totalHeight1;
+                if (i == 9) {
+                    $(".SRTTable tbody").height(totalHeight1).css('overflow-y',
+                                                                  'scroll');
+                    console.log("trLength1" + ' ' + trLength1);
+                    console.log("totalHeight1" + ' ' + totalHeight1);
+                }
+
+                if (trLength1 < 10) {
+                    $(".SRTTable tbody, .SRTTable thead").css('display',
+                                                              'table-row-group');
+                    $(".SRTTable tbody td").css('width', '10%');
+                }
+
+            }
+        }
+
+        function addSRTScrollbar() {
+            // alert('addsrtscroll on edit calling');
+            var trLengthaddSRT = $(".addSRTTable tbody tr").length;
+            var totalHeightaddSRT = 0;
+            for (i = 0; i < trLengthaddSRT; i++) {
+                totalHeightaddSRT = $('.addSRTTable tbody tr').eq(i).height() +
+                    totalHeightaddSRT;
+                if (i == 9) {
+                    $(".addSRTTable tbody").height(totalHeightaddSRT).css(
+                        'overflow-y', 'scroll');
+                    console.log("trLengthaddSRT" + ' ' + trLengthaddSRT);
+                    console.log("totalHeightaddSRT" + ' ' + totalHeightaddSRT);
+                }
+
+                if (trLengthaddSRT < 10) {
+                    $(".addSRTTable tbody, .addSRTTable thead").css('display',
+                                                                    'table-row-group');
+                    $(".addSRTTable tbody td").css('width', '10%');
+                }
+
+            }
+        }
+
+        function CallTwoScrollbarFunctions() {
+            // alert('calling CallTwoScrollbarFunctions');
+            filteredSRTScrollbar();
+            addSRTScrollbar();
+        }
+
+    </script>
+
+
+    <script type="text/javascript">
+        function srtEdit1(url, title, w) {
+            var left = (screen.width / 2) - (w / 2);
+            window.open(url, title,
+                        'status = 1 scrollbars=yes, resizable=1, copyhistory=no, width=' +
+                        w + ', height=800,left=' + left);
+        }
+
+        /*   function srtEdit1(url,title,w){
+
+            var left = (screen.width/2)-(w/2);
+            window.open(url, title, 'status = 1 scrollbars=yes, resizable=1, copyhistory=no, width='+w+',height= 800, left='+left);
+            CallTwoScrollbarFunctions();
+           // window.open( url, "myWindow", "status = 1,  height = 800, width = 800,scrollbars=yes,resizable=1,left=450");
+        } */
+
+    </script>
+    <script type="text/javascript">
+        $(function() {
+            $('#check_id').click(function() {
+                console.debug('inside the method true');
+                //$('input:checkbox').attr('checked', 'checked');
+                //console.log($('input:checkbox[id^="reppages:jobplanfrm:j_id959:j_id960:rep:0:j_id1057:0:j_id1059:0:inputId"]'));
+                //$('input:checkbox').prop("checked", true);
+                console.debug($('.diagCheckbox'));
+                $('.diagCheckbox').each(function() {
+                    $(this).prop("checked", true);
+                });
+
+                console.debug('inside the method true 1');
+                return false;
+            });
+            $('#uncheck_id').click(function() {
+                console.debug('inside the method false');
+                $('.diagCheckbox').each(function() {
+                    $(this).removeAttr('checked');
+                });
+                console.debug('inside the method false');
+                return false;
+            });
+        });
+
+        function textCounter(field, field2, maxlimit) {
+            var countfield = document.getElementById(field2);
+            if (field.value.length > maxlimit) {
+                field.value = field.value.substring(0, maxlimit);
+                return false;
+            } else {
+                countfield.value = maxlimit - field.value.length;
+            }
+        }
+
+        function validateMaxValClaim(compId, srtID) {
+            var CoveredVal = document.getElementById(compId.id).value;
+            var mpsnValue = '{!MPSNCheckbox}';
+            var Penalty = '{!isPenalty}';
+            //alert('SRTId:'+srtID);
+            //alert('mpsnValue:'+mpsnValue);
+            if (Penalty == 'false' && mpsnValue == 'true' && (srtID == '00-901-00' || srtID ==
+                                                              '00-902-00' || srtID == '00-904-00')) { //Modified as per story 155910
+                if (CoveredVal > 50) { 
+                    document.getElementById(compId.id).value = 50;
+                }
+            } else {
+                //if (CoveredVal > 100) {
+                // document.getElementById(compId.id).value = 100;
+            }
+        }
+
+
+        function validateRepairSRT(compId) {
+            var WarrTime = document.getElementById(compId.id).value;
+            if (WarrTime > 100) {
+                document.getElementById(compId.id).value = 100;
+            }
+        }
+
+        function srtreqlen(e, compId) {
+            if((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 9 || e.which == 46 || e.which == 110 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105))
+            {
+
+            } 
+            else 
+            {
+                return false;
+            }   
+        }
+
+        function srtquanlenRep(e, compId) {
+            if ((e.which > 47 && e.which <= 57)) {} else {
+                return false;
+            }
+        }
+
+        function qtyPressURP(e, compId) {
+            var technicianTimeVal = document.getElementById(compId.id).value;
+            if ((e.which > 47 && e.which <= 57) || e.which == 8) {
+
+            } else {
+                return false;
+            }
+        }
+
+        function SRTCamChk(){
+            $('.URCheckbox').each(function() {
+                $(this).prop("checked", true);
+
+            });
+            return false;
+        }
+
+        function SRTCamunChk(){
+            $('.URCheckbox').each(function() {
+                $(this).removeAttr('checked');
+            });
+            return false;
+        }
+        function checkCam1(){
+            $('.URCheckbox1').each(function() {
+                $(this).prop("checked", true);
+            });
+            return false;
+
+        }
+
+        function unCheckCam1(){
+            $('.URCheckbox1').each(function() {
+                $(this).removeAttr('checked');
+            });
+            return false;
+        }
+
+        function checkCam2(){
+            $('.URCheckbox2').each(function() {
+                $(this).prop("checked", true);
+            });
+            return false;
+
+        }
+
+        function unCheckCam2(){
+            $('.URCheckbox2').each(function() {
+                $(this).removeAttr('checked');
+            });
+            return false;
+        }
+        function getpercReqFAJS(thisObj,srtID){
+            // alert('kalpana');
+            $(thisObj).closest('td').append('<img src="/img/loading.gif" id="spinner" style="margin-left:10px;position:absolute;"/>');
+            getpercReqFA(thisObj.value,srtID);
+        }
+        function removeSpinner(){
+            $("#spinner").remove();
+
+
+        }
+    </script>
+
+    <script>
+        /* GSSC -20 Begin */
+        /* Campaign Section */
+        function ClaimsSRTNotesPopupCampaign(stepId){
+            console.log('stepId ' + stepId);
+            ClaimsSRTNotesCampWS(stepId);
+        }
+
+        function afterWScallSRTNotesClaimsCampaign(){
+            $('#ClaimsSRTNotesCampPopup').modal('show');
+        }
+
+        /* TRP Section */
+
+        function ClaimsSRTNotesPopupTRP(stepId){
+            console.log('stepId ' + stepId);
+            ClaimsSRTNotesTRPWS(stepId);
+        }
+
+        function afterWScallSRTNotesClaimsTRP(){
+            $('#ClaimsSRTNotesTRPPopup').modal('show');
+        }
+
+        /* ATC Section */
+
+        function ClaimsSRTNotesPopupATC(stepId){
+            console.log('stepId ' + stepId);
+            ClaimsSRTNotesATCWS(stepId);          
+        }
+
+        function afterWScallSRTNotesClaimsATC(){
+            $('#ClaimsSRTNotesATCPopup').modal('show');
+        }
+        
+        function validateNumFlexSRTTimeFA(e,compId){
+            console.log('****e**'+e.which);
+            if((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46)
+            {
+
+            }
+            else 
+            {
+                return false;
+            }        
+        }
+        
+        function validateFlexSrtFA(compId){
+            console.log('****'+document.getElementById(compId.id).value);
+            var technicianTime= document.getElementById(compId.id).value;
+            var techTimelength=document.getElementById(compId.id).value.length;
+            var techTimesplit = [];
+
+            console.log('**Timelength'+techTimelength);
+            console.log('technicianTime'+technicianTime);
+            if(technicianTime.includes('.')){
+                techTimesplit = technicianTime.split(".");
+                var declength = techTimesplit[1].length;
+                console.log('insideIfdeclength'+declength);
+                if(declength > 1){
+                    console.log('insidedeclength');
+                    var newStr = technicianTime.substring(0, technicianTime.length-1);
+                    console.log('newStr');
+                    document.getElementById(compId.id).value = newStr;
+                    return false;    
+                }
+            }
+            else {
+                console.log('insideElse');
+                if(techTimelength == 4)
+                {
+                    console.log('insideElse1');
+                    var newStr1 = technicianTime.substring(0, technicianTime.length-1);
+                    var newStr2 = newStr1/10;
+                    document.getElementById(compId.id).value = newStr2;
+                }
+            }
+            console.log('***value***'+ document.getElementById(compId.id).value);
+            if(techTimelength == 3 && !technicianTime.includes('.')){
+                console.log('insideElse22***'+document.getElementById(compId.id).value);
+                var result = Number(document.getElementById(compId.id).value)/10;
+                document.getElementById(compId.id).value=result;
+            }
+        } 
+
+
+    </script>
+
+    <div class="panel-group cmi_generic-accordion">
+
+        <!-- story GSSC-20 Begin -->
+        <apex:actionFunction name="ClaimsSRTNotesCampWS" action="{!callClaimsAccessStepDetailsCamp}" reRender="reRenderClaimsNotesCampWS">
+            <apex:param name="idStepClaimsCamp" value="" assignTo="{!lineItemStepIdClaimsCamp}"/>
+        </apex:actionFunction>
+
+        <apex:actionFunction name="ClaimsSRTNotesTRPWS" action="{!callClaimsAccessStepDetailsTRP}" reRender="reRenderClaimsNotesTRPWS">
+            <apex:param name="idStepClaimsTRP" value="" assignTo="{!lineItemStepIdClaimsTRP}"/>
+        </apex:actionFunction>
+
+        <apex:actionFunction name="ClaimsSRTNotesATCWS" action="{!callClaimsAccessStepDetailsATC}" reRender="reRenderClaimsNotesATCWS">
+            <apex:param name="idStepClaimsATC" value="" assignTo="{!lineItemStepIdClaimsATC}"/>
+        </apex:actionFunction>
+        
+        <!-- story GSSC-20 End -->
+
+        <div class="panel panel-default">
+            <div class="panel-heading " id="accordion1-heading-3" onclick ="filedsetMethodCampaignTRPATCs();">
+                <h4 class="panel-title" data-toggle="collapse" data-parent="#accordion1-heading-3"
+                    data-target="#campaign-accordian" aria-expanded="true">
+                    <!--onclick="getCampDetails1(); return false;"  onclick="krishna()" -->
+                    <a class="accordion-toggle">
+                        <span class="glyphicon glyphicon-plus"></span>
+                        <div class="cmi_accordion-title"><b>{!$Label.css_Camp_TRP_ATC}</b></div>
+                    </a>
+                </h4>
+            </div>
+        </div>
+
+        <div id="campaign-accordian" class="panel-collapse collapse" aria-expanded="true"
+             style="margin-top:10px">
+            <apex:actionRegion >
+                <apex:outputPanel id="campPanelValues">
+                    <div class="panel-body" id="accordion1-body-3">
+                        <div class="row">
+                            <div class="col-sm-12" style="padding-top:20px;">
+                                <div class="hidden-xs">
+                                    <apex:actionFunction name="getpercReqFA"  action="{!SRTPercReqFA}" oncomplete="removeSpinner();" rerender="ReqPnl3,ReqPnl1,ReqPnl2"  ><!--status="percReqId"-->
+                                        <apex:param name="CoveredValue" value="" assignTo="{!selCoveredVal}" />
+                                        <apex:param name="SRTIDVal" value="" assignTo="{!selSRTID}" />
+                                    </apex:actionFunction>
+                                    <!-- <apex:actionStatus startText="requesting..." id="percReqId">
+<apex:facet name="start">Saving... <img src="/img/loading.gif"
+/></apex:facet>
+<apex:facet name="stop"></apex:facet>
+</apex:actionStatus>&nbsp;&nbsp;-->
+                                    <div class="row cmi_jobplan-table">
+                                        <div class="col-md-12 col-xs-12" style="margin:25px 0px;">
+
+                                            <!--  <u><div class="cmi_accordion-title">
+<b>{!$Label.CSS_Campaignss}</b> 
+</div></u> --><br/> <br/>
+                                            <!-- <div style="float: right;margin-top:-10px;margin-right:18px;"/>  -->
+                        <!--Added isClaimReadOnly__C && isServiceJobReadOnly__c condition as per Story #GSSC-37,-By RAJESH 06th Nov 2019-->                                
+                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">                    
+                                            <!---#171837 dealer and distributor can't able to edit by sneha --->
+                                            <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">
+                                                <apex:outputpanel rendered="{!IF(checklaborrate == true && isFieldActionSRTCovered == true, true, false)}"> 
+                                                    <div style="float: right;margin-top: -35px;margin-right:18px;">
+                                                        <!--<div style="float: right;margin-top:-10px;margin-right:18px;"> -->
+                                                        <i class="CMI-edit-icon"></i>
+                                                        <!--<apex:commandLink value="{!$Label.css_Edit}" reRender="newEditPopUp"/><br/>-->
+                                                        <a onclick="srtEdit1('/apex/CG_ClaimsSRTEditPopUp?ClaimsId={!CID}&type=Campaign&pgName=ClaimsSRTs','srtPopup',900)"
+                                                           href="" target="_blank" style="cursor: pointer;">{!$Label.css_Edit}</a><br/></div>
+                                                    </apex:outputPanel>  
+
+                                                <apex:outputpanel rendered="{!IF(checklaborrate == false || isFieldActionSRTCovered == false, true, false)}">
+                                                    <div style="float: right;margin-top: -15px;margin-right:18px;">
+                                                        <i class="CMI-edit-icon"></i>         
+                                                        <font color="#007c7c">{!$Label.css_Edit}</font>
+                                                    </div><br/>   
+                                                    </apex:outputPanel>
+
+                                                <!--   <apex:commandButton onclick = "srtEdit1('/apex/CG_ClaimsSRTEditPopUp?ClaimsId={!CID}&typ=Campaign&pgName=ClaimsSRTs','srtPopup',900)" target="_blank oncomplete -->
+                                                <!--<a onclick="srtEdit('/apex/css_srtEditPopup?JobOrderId={!JobId}&typ=Diagnosis&pgName=JobPlanSRT')" href="" target="_blank"  onmouseover="" style="cursor: pointer;" >{!$Label.css_Edit}</a>-->
+                                                <!-- </div><br/>
+</apex:outputPanel> -->
+                                                <div style="float: right;margin-top: -02px;margin-right:10px;">
+                                                    <u><a id ="cuncheck_id" href="#/" onclick="SRTCamunChk()" Class="text-decoration: none;">{!$Label.CSS_Uncheck_All}</a></u>&nbsp;&nbsp;
+                                                    <u><a id ="cicheck_id" href="#/" onclick="SRTCamChk()" Class="text-decoration: none;">{!$Label.CSS_Check_All}</a></u>&nbsp;&nbsp;
+                                                </div> <br/>
+                                            </apex:outputPanel>
+                                    </apex:outputPanel>
+                        <!--END--as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->            
+                                            <apex:OutputPanel id="CampData">
+                                                <table class="mytable table table-bordered table-striped cmi_jobplan-table" width="100%"
+                                                       cellpadding="0" cellspacing="0">
+                                                    <thead>
+                                                        <tr>
+                                                            <td colspan="14">
+
+                                                                <p style="font-weight: bold;font-size: 14px;text-align: left;margin-bottom:0px">{!$Label.css_Campaigns}
+                                                                </p>
+                                                            </td>
+                                                        </tr>
+
+
+                                                        <tr height="54">
+                                                            <!--<th>{!$Label.CSS_Field_Action_Number}</th> -->
+
+                                                            <!--<th>{!$Label.CSS_Select}</th>-->
+                                                            <th>{!$Label.css_Campaign}</th>
+                                                            <th>{!$Label.CSS_Account_Code}</th>
+                                                            <!--sivaganesh Commented below code for Story GSSC-293-->
+                                                            <!--<th>
+                                                                   <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">
+                                                                    <apex:outputpanel rendered="{!if(sVfComp =='ClaimsSRT',true,false)}">
+                                                                        <!--  <th>-->
+                                                                        <!--<apex:commandLink styleClass="cmi-sortUpIcon" action="{!changeUpOrder}" />&nbsp;<br/>
+                                                                        <apex:commandLink styleClass="cmi-sortDownIcon" action="{!changeDownOrder}" />
+
+                                                                        <!--apex:outputLabel styleClass="cmi-sortUpIcon"/>&nbsp;<br/>
+                                                                         <apex:outputLabel styleClass="cmi-sortDownIcon"/-->
+                                                                        <!--  </th>-->
+                                                                    <!--</apex:outputpanel>
+                                                                </apex:outputPanel>
+
+                                                                <apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">
+                                                                    <apex:outputpanel rendered="{!if(sVfComp =='ClaimsSRT',true,false)}">
+                                                                        <!--  <th>-->
+                                                                        <!--<apex:outputLabel styleClass="cmi-sortUpIcon" />&nbsp;<br/>
+                                                                        <apex:outputLabel styleClass="cmi-sortDownIcon" />
+                                                                        <!--  </th>-->
+                                                                    <!--</apex:outputpanel>
+                                                                </apex:outputPanel>
+
+
+                                                                <apex:outputpanel rendered="{!if(sVfComp !='ClaimsSRT',true,false)}">
+                                                                    <!-- <th>-->
+                                                                    <!--<apex:outputLabel styleClass="cmi-sortUpIcon" />&nbsp;<br/>
+                                                                    <apex:outputLabel styleClass="cmi-sortDownIcon" />
+                                                                    <!--  </th>-->
+                                                                <!--</apex:outputpanel>
+
+                                                            </th>-->
+                                                            <th>{!$Label.CSS_Select}</th>
+                                                            <th>{!$Label.css_SRT_Code}</th>
+                                                            <th>{!$Label.css_SRT_Description}</th>
+                                                            <th>{!$Label.CSS_Access_Code}</th>
+                                                            <th>{!$Label.css_SRT_Time}</th>
+                                                            <th>{!$Label.CSS_Qty}</th>
+                                                            <th>{!$Label.css_Percent_Requested}</th>
+                                                            <th>{!$Label.CSS_Claimed_Hours}</th>
+
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <apex:repeat value="{!campListWrap}" var="camp" id="dia">
+                                                            <!-- <apex:outputPanel rendered="{!IF(diag.IsPopUpSRT != true,true,false)}"> -->
+                                                            <tr>
+                                                                <!--Added isClaimReadOnly__C && isServiceJobReadOnly__c condition as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->
+                                                                 <!--<td>
+                                                                <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}"> 
+                                                                      <apex:inputCheckbox value="{!camp.srtRec.srtCheckBox}" styleClass="URCheckbox" disabled="true"/>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}"> 
+                                                                     <apex:outputPanel rendered="{!IF(camp.srtRec.srtType != 'Field Action Access' && camp.srtRec.srtType != 'Access',true,false)}">
+
+                                                                   <!-- <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">--><!--as per GSSC-58,included srtId null check-->
+                                                                   <!--<apex:outputPanel rendered="{!IF(canEdit == true && (camp.srtRec.srtID != null && camp.srtRec.srtID != ''),true,false)}"> 
+
+                                                                       <!-- <td>-->
+
+                                                                            <!--<apex:inputCheckbox value="{!camp.srtRec.srtCheckBox}" styleClass="URCheckbox">
+
+                                                                            </apex:inputCheckbox>
+                                                                            <apex:actionSupport event="onchange" action="{!getdiagnosisTime}" rerender="rTime,opClaimedHrs"
+                                                                                                />
+                                                                        <!--</td>-->
+                                                                    <!--</apex:outputPanel>
+
+                                                                    <!--<apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">--><!--as per GSSC-58,included srtId null check-->
+                                                                    <!--<apex:outputPanel rendered="{!IF(canEdit == false || (camp.srtRec.srtID == null || camp.srtRec.srtID == ''),true,false)}">
+
+                                                                       <!-- <td>-->
+
+                                                                            <!--<apex:inputCheckbox value="{!camp.srtRec.srtCheckBox}" styleClass="URCheckbox" disabled="true">
+
+                                                                            </apex:inputCheckbox>
+                                                                            <apex:actionSupport event="onchange" action="{!getdiagnosisTime}" rerender="rTime,opClaimedHrs"
+                                                                                                />
+                                                                       <!-- </td>-->
+                                                                    <!--</apex:outputPanel>
+                                                                </apex:outputPanel>
+                                                                     <apex:outputPanel rendered="{!IF(camp.srtRec.srtType == 'Field Action Access' || camp.srtRec.srtType == 'Access',true,false)}">
+                                                                    <apex:outputPanel rendered="{!IF(canEdit == true && (camp.srtRec.srtID != null && camp.srtRec.srtID != ''),true,false)}"> 
+                                                                    <!--<td>-->
+                                                                        <!--<apex:inputCheckbox value="{!camp.srtRec.accessSrtCheckBox}" styleClass="URCheckbox">
+                                                                            <apex:actionSupport event="onchange" action="{!getdiagnosisTime}" rerender="rTime,totalCampAccTime,opClaimedHrs"/>
+                                                                        </apex:inputCheckbox>
+                                                                    <!--</td>-->
+                                                                    <!--</apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(canEdit == false || camp.srtRec.srtID == null || camp.srtRec.srtID == '',true,false)}"> 
+                                                                   <!-- <td>-->
+                                                                        <!--<apex:inputCheckbox value="{!camp.srtRec.accessSrtCheckBox}" styleClass="URCheckbox" disabled="true">
+                                                                            <apex:actionSupport event="onchange" action="{!getdiagnosisTime}" rerender="rTime,totalCampAccTime,opClaimedHrs"/>
+                                                                        </apex:inputCheckbox>
+                                                                    <!--</td>-->
+                                                                    <!--</apex:outputPanel>
+                                                                </apex:outputPanel>
+                                                                </apex:outputPanel>
+                                                                </td>-->
+                                                                
+                                                                <td>
+                                                                    <!-- {!camp.srtRec.IsPopUpSRT} {!isAutomatedClaim} {!camp.srtRec.compId} -->
+                                                                    <apex:outputPanel rendered="{!IF(camp.srtRec.compId != null && camp.srtRec.compId != '',true,false)}">
+                                                                        <apex:outputPanel rendered="{!IF(camp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                                            <apex:outputText value="{!camp.srtRec.compId}" />
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(camp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                                           <b><apex:outputText value="{!camp.srtRec.compId}"/></b>
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>
+                                                                </td>
+                                                                <td>
+                                                                    <apex:outputPanel rendered="{!IF(camp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                                        <apex:outputpanel rendered="{!IF(checklaborrate==true,true,false)}"> 
+                                                                            <apex:outputText value="{!camp.srtRec.accountcode}" />
+                                                                            </apex:outputPanel> 
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(camp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                                        <apex:outputpanel rendered="{!IF(checklaborrate==true,true,false)}">
+                                                                            <b><apex:outputText value="{!camp.srtRec.accountcode}"/></b>
+                                                                            </apex:outputPanel>
+                                                                    </apex:outputPanel>
+                                                                </td>
+                                                                
+                                                                <!--sivaganesh added below code for story GSSC-293-->
+                                                                <td>
+                                                                <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}"> 
+                                                                      <apex:inputCheckbox value="{!camp.srtRec.srtCheckBox}" styleClass="URCheckbox" disabled="true"/>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}"> 
+                                                                     <apex:outputPanel rendered="{!IF(camp.srtRec.srtType != 'Field Action Access' && camp.srtRec.srtType != 'Access',true,false)}">
+
+                                                                   <!-- <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">--><!--as per GSSC-58,included srtId null check-->
+                                                                   <apex:outputPanel rendered="{!IF(canEdit == true && (camp.srtRec.srtID != null && camp.srtRec.srtID != ''),true,false)}"> 
+
+                                                                       <!-- <td>-->
+
+                                                                            <apex:inputCheckbox value="{!camp.srtRec.srtCheckBox}" styleClass="URCheckbox">
+                                                                            </apex:inputCheckbox>
+                                                                            <apex:actionSupport event="onchange" action="{!getdiagnosisTime}" rerender="rTime,opClaimedHrs"/>
+                                                                        <!--</td>-->
+                                                                    </apex:outputPanel>
+
+                                                                    <!--<apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">--><!--as per GSSC-58,included srtId null check-->
+                                                                    <apex:outputPanel rendered="{!IF(canEdit == false || (camp.srtRec.srtID == null || camp.srtRec.srtID == ''),true,false)}">
+
+                                                                       <!-- <td>-->
+
+                                                                            <apex:inputCheckbox value="{!camp.srtRec.srtCheckBox}" styleClass="URCheckbox" disabled="true">
+
+                                                                            </apex:inputCheckbox>
+                                                                            <apex:actionSupport event="onchange" action="{!getdiagnosisTime}" rerender="rTime,opClaimedHrs"
+                                                                                                />
+                                                                       <!-- </td>-->
+                                                                    </apex:outputPanel>
+                                                                </apex:outputPanel>
+                                                                     <apex:outputPanel rendered="{!IF(camp.srtRec.srtType == 'Field Action Access' || camp.srtRec.srtType == 'Access',true,false)}">
+                                                                    <apex:outputPanel rendered="{!IF(canEdit == true && (camp.srtRec.srtID != null && camp.srtRec.srtID != ''),true,false)}"> 
+                                                                    <!--<td>-->
+                                                                        <apex:inputCheckbox value="{!camp.srtRec.accessSrtCheckBox}" styleClass="URCheckbox">
+                                                                            <apex:actionSupport event="onchange" action="{!getdiagnosisTime}" rerender="rTime,totalCampAccTime,opClaimedHrs"/>
+                                                                        </apex:inputCheckbox>
+                                                                    <!--</td>-->
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(canEdit == false || camp.srtRec.srtID == null || camp.srtRec.srtID == '',true,false)}"> 
+                                                                   <!-- <td>-->
+                                                                        <apex:inputCheckbox value="{!camp.srtRec.accessSrtCheckBox}" styleClass="URCheckbox" disabled="true">
+                                                                            <apex:actionSupport event="onchange" action="{!getdiagnosisTime}" rerender="rTime,totalCampAccTime,opClaimedHrs"/>
+                                                                        </apex:inputCheckbox>
+                                                                    <!--</td>-->
+                                                                    </apex:outputPanel>
+                                                                </apex:outputPanel>
+                                                                </apex:outputPanel>
+                                                                </td>
+                                                                
+                                                                <!--sivaganesh Commented below code for story GSSC-293-->
+                                                                <!--<td align="center">
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}"> 
+                                                                         <apex:inputCheckbox value="{!camp.srtRec.selectedRecord}" styleClass="sortChkTRP" disabled="true"/>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}"> 
+                                                                        <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">
+                                                                                <apex:inputCheckbox id="selectAccountRow" value="{!camp.srtRec.selectedRecord}" styleClass="sortChkTRP"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">
+                                                                                <apex:inputCheckbox id="selectAccountRow1" value="{!camp.srtRec.selectedRecord}"
+                                                                                                    styleClass="sortChkTRP"
+                                                                                                    disabled="true"
+                                                                                                    />
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>    
+                                                                </td>-->
+                                                                <td>
+                                                                    <apex:outputPanel rendered="{!IF(camp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                                        <apex:outputText value="{!camp.srtRec.srtID}" />
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(camp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                                        <b><apex:outputText value="{!camp.srtRec.srtID}"/></b>
+                                                                    </apex:outputPanel>
+                                                                </td>
+                                                                <td>
+
+                                                                    <apex:outputPanel rendered="{!IF(camp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                                        <!-- GSSC-20-->
+                                                                        <!-- <apex:outputText value="{!camp.srtRec.srtDescription}" /> -->
+                                                                        <apex:commandLink value="{!camp.srtRec.srtDescription}" style="text-decoration:underline;" onclick="ClaimsSRTNotesPopupCampaign('{!camp.srtRec.StepId}')" status="SpinnigNotesPopupClaimsCampaign" reRender="none" oncomplete="afterWScallSRTNotesClaimsCampaign()">
+                                                                            <span class="cmi_eyeIcon"/>
+                                                                        </apex:commandLink> &nbsp;&nbsp;
+                                                                    </apex:outputPanel>
+
+                                                                    <apex:outputPanel rendered="{!IF(camp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                                        <b>
+                                                                            <!--<apex:outputText value="{!camp.srtRec.srtDescription}"/> -->
+                                                                            <apex:commandLink value="{!camp.srtRec.srtDescription}" style="text-decoration:underline;" onclick="ClaimsSRTNotesPopupCampaign('{!camp.srtRec.StepId}')" status="SpinnigNotesPopupClaimsCampaign" reRender="none" oncomplete="afterWScallSRTNotesClaimsCampaign()">
+                                                                                <span class="cmi_eyeIcon"/>
+                                                                            </apex:commandLink> &nbsp;&nbsp;
+                                                                        </b>
+                                                                    </apex:outputPanel>
+
+                                                                    <apex:actionStatus id="SpinnigNotesPopupClaimsCampaign">
+                                                                        <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                                                        <apex:facet name="stop"></apex:facet>
+                                                                    </apex:actionStatus>
+
+                                                                    <div class="modal fade" id="ClaimsSRTNotesCampPopup" role="dialog" data-backdrop="static" data-keyboard="false">
+                                                                        <div class="modal-dialog modal-md">
+                                                                            <div class="modal-content" style="text-align:left">
+                                                                                <div class="modal-header">
+                                                                                    <apex:commandButton styleClass="cross_butten" html-data-dismiss="modal" action="{!ClaimsCampNotesPopupOk}" rerender="reRenderClaimsNotesCampWS" value="."/>
+                                                                                    <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_cummins_service_system}</h4>
+                                                                                </div>
+                                                                                <div class="modal-body" style="height:150px;overflow-y:scroll">
+                                                                                    <apex:outputPanel id="reRenderClaimsNotesCampWS">
+                                                                                         <apex:outputText style="font-size:14px" escape="false" value="{!StepDescriptionClaims}"> </apex:outputText>
+                                                                                     </apex:outputPanel>
+                                                                                </div>
+                                                                                <div class="modal-footer" style="border-top:1px solid #D2D2D2;padding:5px;">
+                                                                                    <div style="text-align:center">
+                                                                                        <apex:commandButton styleClass="btn-intake btn-intake-footer m-btn-width" html-data-dismiss="modal" style="padding:4px 10px;" action="{!ClaimsCampNotesPopupOk}" rerender="reRenderClaimsNotesCampWS" value="Ok"></apex:commandButton>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <!--  Story GSSC-20  End-->
+
+                                                                </td>
+                                                                <td>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}"> 
+                                                                         <apex:outputText value="{!camp.srtRec.AccessCode}"/>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                         <!--GSSC-237-->
+                                                                         <apex:outputPanel rendered="{!IF(camp.srtRec.flexFlag != true,true,false)}"> 
+                                                                                <apex:selectList value="{!camp.srtRec.AccessCode}" size="1" disabled="{!IF(canEdit == false,true,false)}" style="{!IF((camp.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+                                                                                    <apex:selectOptions value="{!if((camp.srtRec.sid!=null && camp.srtRec.sid!=''),mapaccesscode[camp.srtRec.sid],'')}"></apex:selectOptions>
+                                                                                </apex:selectList>
+                                                                        </apex:outputPanel>
+                                                                         <apex:outputPanel rendered="{!IF(camp.srtRec.flexFlag == true,true,false)}">
+                                                                                 <apex:outputText value="{!camp.srtRec.AccessCode}"/>
+                                                                         </apex:outputPanel> 
+                                                                         <!--GSSC-237--> 
+                                                                    </apex:outputPanel>
+                                                                        
+                                                                    <!--As per conversation with satish we have to override the exsiting funtionality based on 171484 story,By RAJESH 21-02-2019->
+<!--apex:outputPanel rendered="{!IF(camp.srtRec.IsPopUpSRT == true,true,false)}"-->
+                                                                    <!--Story172627:Commented for code optimization
+<apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">
+<apex:outputpanel rendered="{!if(camp.srtRec.jobAccessCode == 'R',true,false)}">
+<apex:selectList value="{!camp.srtRec.AccessCode}" size="1" disabled="false" style="{!IF((camp.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[camp.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel>
+<apex:outputpanel rendered="{!if(camp.srtRec.jobAccessCode != 'R' && camp.srtRec.accessCodeR!='0.000000' && (camp.srtRec.accessCodeA!='0.000000' || camp.srtRec.accessCodeB!='0.000000' || camp.srtRec.accessCodeC!='0.000000' || camp.srtRec.accessCodeD!='0.000000') ,true,false)}">
+<apex:selectList value="{!camp.srtRec.AccessCode}" size="1" disabled="false" style="{!IF((camp.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[camp.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel>
+<apex:outputpanel rendered="{!if(camp.srtRec.jobAccessCode != 'R' && camp.srtRec.accessCodeR=='0.000000' && (camp.srtRec.accessCodeA!='0.000000' || camp.srtRec.accessCodeB!='0.000000' || camp.srtRec.accessCodeC!='0.000000' || camp.srtRec.accessCodeD!='0.000000'),true,false)}">    
+<apex:selectList value="{!camp.srtRec.AccessCode}" size="1" disabled="false" style="{!IF((camp.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[camp.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel>               
+</apex:outputPanel>
+<apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">
+<apex:outputpanel rendered="{!if(camp.srtRec.jobAccessCode == 'R',true,false)}">
+<apex:selectList value="{!camp.srtRec.AccessCode}" size="1" disabled="true" style="{!IF((camp.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[camp.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel>
+<apex:outputpanel rendered="{!if(camp.srtRec.jobAccessCode != 'R' && camp.srtRec.accessCodeR!='0.000000' && (camp.srtRec.accessCodeA!='0.000000' || camp.srtRec.accessCodeB!='0.000000' || camp.srtRec.accessCodeC!='0.000000' || camp.srtRec.accessCodeD!='0.000000') ,true,false)}">
+<apex:selectList value="{!camp.srtRec.AccessCode}" size="1" disabled="true" style="{!IF((camp.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[camp.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel>
+<apex:outputpanel rendered="{!if(camp.srtRec.jobAccessCode != 'R' && camp.srtRec.accessCodeR=='0.000000' && (camp.srtRec.accessCodeA!='0.000000' || camp.srtRec.accessCodeB!='0.000000' || camp.srtRec.accessCodeC!='0.000000' || camp.srtRec.accessCodeD!='0.000000'),true,false)}">    
+<apex:selectList value="{!camp.srtRec.AccessCode}" size="1" disabled="true" style="{!IF((camp.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[camp.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel>  
+</apex:outputPanel>
+End-->
+                                                                </td>
+                                                                <apex:outputPanel rendered="{!IF(camp.srtRec.srtType != 'Field Action Access',true,false)}">
+                                                                    <td>
+                                                                        <apex:outputPanel rendered="{!IF((camp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && camp.srtRec.flexFlag != true,true,false)}">
+                                                                            <apex:outputText value="{!camp.srtRec.srtTime}" />
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF((camp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && camp.srtRec.flexFlag == true,true,false)}">
+                                                                            <apex:inputText value="{!camp.srtRec.srtTime}" style="width:50px;" onkeypress="return validateNumFlexSRTTimeFA(event,this)" styleClass="{!IF(camp.srtRec.flexFlag == true && camp.srtRec.srtTime == 0.0 && camp.srtRec.srtCheckBox == true,'showRedBorder','')}" maxlength="4" onkeyup="validateFlexSrtFA(this)" html-placeholder="0.0" id="srtTimeIdCam"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF((camp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) && camp.srtRec.flexFlag != true,true,false)}">
+                                                                            <b><apex:outputText value="{!camp.srtRec.srtTime}"/></b>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF((camp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) && camp.srtRec.flexFlag == true,true,false)}">
+                                                                            <b><apex:inputText value="{!camp.srtRec.srtTime}" style="width:50px;" onkeypress="return validateNumFlexSRTTimeFA(event,this)" styleClass="{!IF(camp.srtRec.flexFlag == true && camp.srtRec.srtTime == 0.0 && camp.srtRec.srtCheckBox == true,'showRedBorder','')}" maxlength="4" onkeyup="validateFlexSrtFA(this)" html-placeholder="0.0" id="srtTimeIdCam1"/></b>
+                                                                        </apex:outputPanel>
+                                                                    </td>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF(camp.srtRec.srtType == 'Field Action Access',true,false)}">
+                                                                    <td>
+                                                                        <apex:outputPanel rendered="{!IF(camp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                                            <apex:outputText value="{!camp.srtRec.srtAccessTime}" />
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF((camp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && camp.srtRec.flexFlag == true,true,false)}">
+                                                                            <apex:inputText value="{!camp.srtRec.srtAccessTime}" style="width:50px;" onkeypress="return validateNumFlexSRTTimeFA(event,this)" styleClass="{!IF(camp.srtRec.flexFlag == true && camp.srtRec.srtAccessTime == 0.0 && camp.srtRec.accessSrtCheckBox == true,'showRedBorder','')}" maxlength="4" onkeyup="validateFlexSrtFA(this)" html-placeholder="0.0" id="srtAccTimeIdCam"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(camp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                                            <b><apex:outputText value="{!camp.srtRec.srtAccessTime}"/></b>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF((camp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) && camp.srtRec.flexFlag == true,true,false)}">
+                                                                            <b><apex:inputText value="{!camp.srtRec.srtAccessTime}"  style="width:50px;" onkeypress="return validateNumFlexSRTTimeFA(event,this)" styleClass="{!IF(camp.srtRec.flexFlag == true && camp.srtRec.srtAccessTime == 0.0 && camp.srtRec.accessSrtCheckBox == true,'showRedBorder','')}" maxlength="4" onkeyup="validateFlexSrtFA(this)" html-placeholder="0.0" id="srtAccTimeIdCam1"/></b>
+                                                                        </apex:outputPanel>
+                                                                    </td>
+                                                                </apex:outputPanel>
+                                                                <td>
+                                                                     <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}"> 
+                                                                          <apex:outputText value="{!camp.srtRec.quantity}" style="width:50px;"/>
+                                                                     </apex:outputPanel>
+                                                                     <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}"> 
+                                                                            <!-- <apex:outputPanel rendered="{!IF(camp.srtRec.IsPopUpSRT != true,true,false)}">-->
+                                                                            <apex:outputPanel rendered="{!IF(NOT(CONTAINS(camp.srtRec.srtID,'00-901') || camp.srtRec.srtID = '00-10S-00'|| CONTAINS(camp.srtRec.srtID,'00-902')|| CONTAINS(camp.srtRec.srtID,'00-904') || camp.srtRec.flexFlag = true), true,false)}">
+                                                                                <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">
+                                                                                    <apex:InputText value="{!camp.srtRec.quantity}" id="qtyDiag" maxlength="4" onkeyup="MpsnCounterFA(this,'{!camp.srtRec.srtID}')" onkeydown="return srtreqlen(event,this)"
+                                                                                                    style="width:50px;"
+                                                                                                    />
+                                                                                </apex:outputPanel>
+                                                                                <apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">
+                                                                                    <!--apex:InputText value="{!camp.srtRec.quantity}" id="qtyDiag1" maxlength="4" onkeypress="return srtquanlen(event,this)" style="width:50px;" disabled="true" /-->
+                                                                                    <apex:outputText value="{!camp.srtRec.quantity}" id="qtyDiag1" style="width:50px;"
+                                                                                                     />
+                                                                                </apex:outputPanel>
+                                                                            </apex:outputPanel>
+                                                                            <!--</apex:outputPanel>-->
+                                                                            <apex:outputPanel rendered="{!IF((CONTAINS(camp.srtRec.srtID,'00-901') || camp.srtRec.srtID = '00-10S-00' || CONTAINS(camp.srtRec.srtID,'00-902')|| CONTAINS(camp.srtRec.srtID,'00-904') || camp.srtRec.flexFlag = true), true,false)}">
+                                                                                <b><apex:outputText value="{!camp.srtRec.quantity}"  /></b>
+                                                                            </apex:outputPanel>
+                                                                    </apex:outputPanel>        
+                                                                </td>
+
+                                                                <td>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}"> 
+                                                                          <apex:outputText value="{!camp.srtRec.percentCov}"/>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}"> 
+                                                                        <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}" id="ReqPnl3">
+                                                                            <apex:inputText value="{!camp.srtRec.percentCov}" id="wartyDiag" maxlength="3" onkeyup="validateMaxValClaim(this,'{!camp.srtRec.srtID}');" 
+                                                                                            onkeypress="return srtquanlenRep(event,this)" onchange="getpercReqFAJS(this,'{!camp.srtRec.srtID}');"
+                                                                                            style="{!IF((camp.srtRec.percentReqFlag==true),'width:50px;border: 2px solid red !important','width:50px;')}" />
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">
+                                                                            <!--apex:inputText value="{!camp.srtRec.percentCov}" id="wartyDiag1" maxlength="3" onkeyup="validateMaxValClaim(this,'{!camp.srtRec.srtID}');" onkeypress="return srtquanlenRep(event,this)" style="width:50px;" disabled="true" /-->
+                                                                            <apex:outputText value="{!camp.srtRec.percentCov}" id="wartyDiag1" style="{!IF((camp.srtRec.percentReqFlag==true),'width:50px;border: 2px solid red !important','width:50px;')}" />
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>    
+                                                                </td>
+                                                <!--END-- as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->                
+                                                                <td>
+                                                                    <apex:outputPanel id="opClaimedHrs">
+                                                                        <apex:outputPanel rendered="{!IF(camp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                                            <apex:outputPanel rendered="{!IF(camp.srtRec.srtCheckBox == true || camp.srtRec.accessSrtCheckBox == true,true,false)}">
+                                                                                <apex:outputText value="{!camp.srtRec.ClaimedHrs}" />
+                                                                            </apex:outputPanel>
+                                                                            <apex:outputPanel rendered="{!IF(camp.srtRec.srtCheckBox == false && camp.srtRec.accessSrtCheckBox == false,true,false)}">
+
+                                                                            </apex:outputPanel>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(camp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                                            <apex:outputPanel rendered="{!IF(camp.srtRec.srtCheckBox == true || camp.srtRec.accessSrtCheckBox == true,true,false)}">
+                                                                                <apex:outputText value="{!camp.srtRec.ClaimedHrs}" />
+                                                                            </apex:outputPanel>
+                                                                            <apex:outputPanel rendered="{!IF(camp.srtRec.srtCheckBox == false && camp.srtRec.accessSrtCheckBox == false,true,false)}">
+
+                                                                            </apex:outputPanel>
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>
+
+                                                                </td>
+                                                            </tr>
+                                                            <!-- </apex:outputPanel> -->
+
+
+
+                                                        </apex:repeat>
+                                                    </tbody>
+
+                                                </table>
+                                                <!-- </apex:OutputPanel>-->
+                                                <!-- Commented for Story 171492 by Moulika -->
+                                                <!--<div class="col-sm-12">   
+<span><b>{!$Label.css_Total_Campaign_Access_Time}</b></span> <br></br>
+<apex:outputPanel id="totalCampAccTime">
+<div ><apex:outputText value="{!totalDecimalTimeAccTot}"/></div>
+</apex:outputPanel>
+
+</div>-->
+                                                <div class="col-sm-12">
+                                                    <span><b>{!$Label.css_Total_Campaign_SRT_Time}</b></span> <br></br>
+                                                <apex:outputPanel id="rTime">
+                                                    <div>
+                                                        <apex:outputText value="{!totalDecimalTimecamp}"/>
+                                                    </div>
+                                                </apex:outputPanel>
+                                                </div>
+                                            </apex:OutputPanel>
+                                        <!---TRP---->
+                                        <apex:outputPanel rendered="{!If((MPSNCheckbox ==true && JobId==null),false,true)}">
+                            <!--Added isClaimReadOnly__C  condition as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->                                
+                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">                
+                                            <div class="col-md-12 col-xs-12" style="margin:25px 0px;" />
+                                            <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">
+
+                                                <apex:outputpanel rendered="{!IF(checklaborrate==true && isFieldActionSRTCovered == true,true,false)}">
+                                                    <div style="float: right;margin-top: -35px;margin-right:18px;">
+                                                        <i class="CMI-edit-icon"></i>
+                                                        <a onclick="srtEdit1('/apex/CG_ClaimsSRTEditPopUp?ClaimsId={!CID}&type=TRP&pgName=ClaimsSRTs','srtPopup',900)" href="" target="_blank" style="cursor: pointer;">{!$Label.css_Edit}</a><br/></div>
+                                                </apex:outputPanel> 
+                                                <apex:outputpanel rendered="{!IF(checklaborrate == false || isFieldActionSRTCovered == false, true, false)}">
+                                                    <div style="float: right;margin-top: -35px;margin-right:18px;"> 
+                                                        <i class="CMI-edit-icon"></i>         
+                                                        <font color="#007c7c">{!$Label.css_Edit}</font>
+                                                    </div><br/>   
+                                                </apex:outputPanel>
+
+                                                <!--   <apex:commandButton onclick = "srtEdit1('/apex/CG_ClaimsSRTEditPopUp?ClaimsId={!CID}&typ=Campaign&pgName=ClaimsSRTs','srtPopup',900)" target="_blank oncomplete -->
+                                                <!--<a onclick="srtEdit('/apex/css_srtEditPopup?JobOrderId={!JobId}&typ=Diagnosis&pgName=JobPlanSRT')" href="" target="_blank"  onmouseover="" style="cursor: pointer;" >{!$Label.css_Edit}</a>-->
+                                                <!-- </div><br/>
+</apex:outputPanel> -->
+                                                <div style="float: right;margin-top: -02px;margin-right:10px;">
+                                                    <u><a id ="uncheck_id" href="#/" onclick="unCheckCam1()" Class="text-decoration: none;">{!$Label.CSS_Uncheck_All}</a></u>&nbsp;&nbsp;
+                                                    <u><a id ="check_id" href="#/" onclick="checkCam1()" Class="text-decoration: none;">{!$Label.CSS_Check_All}</a></u>&nbsp;&nbsp;
+                                                </div> <br/>
+                                            </apex:outputPanel>
+                                        </apex:outputPanel>    
+                                        </apex:outputPanel>
+<!--END--as per Story #GSSC-37,-By RAJESH 06th Nov 2019-->
+                                        <apex:OutputPanel rendered="{!If((MPSNCheckbox ==true && JobId==null),false,true)}">
+                                            <apex:OutputPanel id="TrpData">
+                                                <table class="mytable table table-bordered table-striped cmi_jobplan-table" width="100%"
+                                                       cellpadding="0" cellspacing="0">
+                                                    <thead>
+                                                        <tr>
+                                                            <td colspan="14">
+
+                                                                <p style="font-weight: bold;font-size: 14px;text-align: left;margin-bottom:0px">{!$Label.css_TRPs}
+                                                                </p>
+                                                            </td>
+                                                        </tr>
+
+
+                                                        <tr height="54">
+                                                            <!--<th>{!$Label.CSS_Field_Action_Number}</th> -->
+                                                            <!--<th>{!$Label.CSS_Select}</th>-->
+                                                            <th>{!$Label.css_Campaign}</th>
+                                                            <th>{!$Label.CSS_Account_Code}</th>
+                                                            <!--sivaganesh commented below code for story GSSC-293-->
+                                                            <!--<th>
+                                                                    <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">
+                                                                    <apex:outputpanel rendered="{!if(sVfComp =='ClaimsSRT',true,false)}">
+
+                                                                        <apex:commandLink styleClass="cmi-sortUpIcon" action="{!changeUpOrderTRP}" />&nbsp;<br/>
+                                                                        <apex:commandLink styleClass="cmi-sortDownIcon" action="{!changeDownOrderTRP}" />
+
+                                                                    </apex:outputpanel>
+                                                                    <apex:outputpanel rendered="{!if(sVfComp !='ClaimsSRT',true,false)}">
+
+                                                                        <apex:outputLabel styleClass="cmi-sortUpIcon" />&nbsp;<br/>
+                                                                        <apex:outputLabel styleClass="cmi-sortDownIcon" />
+
+                                                                    </apex:outputpanel>
+                                                                    </apex:outputpanel>
+
+                                                                <apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">
+                                                                    <apex:outputpanel rendered="{!if(sVfComp =='ClaimsSRT',true,false)}">
+
+                                                                        <apex:outputLabel styleClass="cmi-sortUpIcon" />&nbsp;<br/>
+                                                                        <apex:outputLabel styleClass="cmi-sortDownIcon" />
+                                                                    </apex:outputpanel>
+                                                                </apex:outputPanel>
+
+                                                            </th>-->
+                                                            <th>{!$Label.CSS_Select}</th>
+                                                            <th>{!$Label.css_SRT_Code}</th>
+                                                            <th>{!$Label.css_SRT_Description}</th>
+                                                            <th>{!$Label.CSS_Access_Code}</th>
+                                                            <th>{!$Label.css_SRT_Time}</th>
+                                                            <th>{!$Label.CSS_Qty}</th>
+                                                            <th>{!$Label.css_Percent_Requested}</th>
+                                                            <th>{!$Label.CSS_Claimed_Hours}</th>
+
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <apex:repeat value="{!trpListWrap}" var="trp" id="trp">
+                                                            <!-- <apex:outputPanel rendered="{!IF(diag.IsPopUpSRT != true,true,false)}"> -->
+                                                            <tr>
+                                                                <!--sivaganesh commented below code for story GSSC-293-->
+                                                                 <!--<td>
+                                                                    <!--Added isClaimReadOnly__C condition as per Story #GSSC-37,-By RAJESH 06th Nov 2019-->
+                                                                     <!--<apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                           <apex:inputCheckbox value="{!trp.srtRec.srtCheckBox}" disabled="true"/>
+                                                                     </apex:outputPanel>
+                                                                     <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                         <apex:outputPanel rendered="{!IF(trp.srtRec.srtType != 'Field Action Access' && trp.srtRec.srtType != 'Access',true,false)}">
+                                                                    <!--<apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">--><!--GSSC-58 TajMahal Sprint, included null check for srtID to checkt for infoonly SRT--->
+                                                                    <!--<apex:outputPanel rendered="{!IF(canEdit == true && (trp.srtRec.srtID != null && trp.srtRec.srtID != ''),true,false)}">
+                                                                       
+                                                                            <apex:inputCheckbox value="{!trp.srtRec.srtCheckBox}" styleClass="URCheckbox1">
+                                                                                <apex:actionSupport event="onchange" action="{!getdiagnosisTimeTRP}" rerender="rTimetrp,totaltrp"
+                                                                                                    />
+                                                                            </apex:inputCheckbox>
+                                                                       
+                                                                    </apex:outputPanel>
+                                                                    <!--<apex:outputPanel rendered="{!IF(canEdit == false,true,false)}>--><!--GSSC-58 TajMahal Sprint, included null check for srtID to checkt for infoonly SRT--->
+                                                                    <!--<apex:outputPanel rendered="{!IF(canEdit == false || (trp.srtRec.srtID == null || trp.srtRec.srtID == ''),true,false)}">
+                                                                      
+                                                                            <apex:inputCheckbox value="{!trp.srtRec.srtCheckBox}" styleClass="URCheckbox1" disabled="true">
+                                                                                <apex:actionSupport event="onchange" action="{!getdiagnosisTimeTRP}" rerender="rTimetrp,totaltrp"
+                                                                                                    />
+                                                                            </apex:inputCheckbox>
+                                                                        
+                                                                    </apex:outputPanel>
+
+                                                                </apex:outputPanel>
+                                                                         <apex:outputPanel rendered="{!IF(trp.srtRec.srtType == 'Field Action Access' || trp.srtRec.srtType == 'Access',true,false)}">
+                                                                    <apex:outputPanel rendered="{!IF(trp.srtRec.srtID != null && trp.srtRec.srtID != '',true,false)}">
+                                                                    
+                                                                        <apex:inputCheckbox value="{!trp.srtRec.accessSrtCheckBox}" styleClass="URCheckbox1">
+                                                                            <apex:actionSupport event="onchange" action="{!getdiagnosisTimeTRP}" rerender="rTimetrp,totaltrp,totalTrpAccTime"/>
+                                                                        </apex:inputCheckbox>
+                                                                    
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(trp.srtRec.srtID == null || trp.srtRec.srtID == '',true,false)}">
+                                                                    
+                                                                        <apex:inputCheckbox value="{!trp.srtRec.accessSrtCheckBox}" styleClass="URCheckbox1" disabled="true">
+                                                                           <apex:actionSupport event="onchange" action="{!getdiagnosisTimeTRP}" rerender="rTimetrp,totaltrp,totalTrpAccTime"/>
+                                                                        </apex:inputCheckbox>
+                                                                    
+                                                                    </apex:outputPanel>
+                                                                </apex:outputPanel>
+                                                                     </apex:outputPanel>
+                                                                </td>-->
+                                                                <td>
+                                                                     <apex:outputPanel rendered="{!IF(trp.srtRec.compId != null && trp.srtRec.compId != '',true,false)}">
+                                                                          <apex:outputPanel rendered="{!IF(trp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                                             <apex:outputText value="{!trp.srtRec.compId}" />
+                                                                        </apex:outputPanel>
+                                                                           <apex:outputPanel rendered="{!IF(trp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                                             <b><apex:outputText value="{!trp.srtRec.compId}"/></b>
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>
+                                                                </td>
+                                                                <td>
+                                                                    <apex:outputPanel rendered="{!IF(trp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                                        <apex:outputpanel rendered="{!IF(checklaborrate==true,true,false)}"> 
+                                                                            <apex:outputText value="{!trp.srtRec.accountcode}" />
+                                                                            </apex:outputPanel> 
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(trp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                                        <apex:outputpanel rendered="{!IF(checklaborrate==true,true,false)}"> 
+                                                                            <b><apex:outputText value="{!trp.srtRec.accountcode}"/></b>
+                                                                            </apex:outputPanel> 
+                                                                    </apex:outputPanel>
+                                                                </td>
+                                                                <!--sivaganesh commented below code for story GSSC-293-->
+                                                                <!--<td align="center">
+                                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                             <apex:inputCheckbox value="{!trp.srtRec.selectedRecord}" styleClass="sortChkTRP" disabled="true" /> 
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                        <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">
+                                                                            
+                                                                                <apex:inputCheckbox id="selectAccountRow" value="{!trp.srtRec.selectedRecord}" styleClass="sortChkTRP"
+                                                                                                    />
+                                                                            
+                                                                        </apex:outputPanel>
+        
+                                                                        <apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">
+                                                                           
+                                                                                <apex:inputCheckbox id="selectAccountRow1" value="{!trp.srtRec.selectedRecord}" styleClass="sortChkTRP"
+                                                                                                    disabled="true"
+                                                                                                    />
+                                                                           
+                                                                        </apex:outputPanel>
+                                                                   </apex:outputPanel>     
+                                                                </td>-->
+                                                                
+                                                                <!--sivaganesh added below code for story GSSC-293-->
+                                                                <td>
+                                                                    <!--Added isClaimReadOnly__C condition as per Story #GSSC-37,-By RAJESH 06th Nov 2019-->
+                                                                     <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                           <apex:inputCheckbox value="{!trp.srtRec.srtCheckBox}" disabled="true"/>
+                                                                     </apex:outputPanel>
+                                                                     <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                         <apex:outputPanel rendered="{!IF(trp.srtRec.srtType != 'Field Action Access' && trp.srtRec.srtType != 'Access',true,false)}">
+                                                                    <!--<apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">--><!--GSSC-58 TajMahal Sprint, included null check for srtID to checkt for infoonly SRT--->
+                                                                    <apex:outputPanel rendered="{!IF(canEdit == true && (trp.srtRec.srtID != null && trp.srtRec.srtID != ''),true,false)}">
+                                                                       
+                                                                            <apex:inputCheckbox value="{!trp.srtRec.srtCheckBox}" styleClass="URCheckbox1">
+                                                                                <apex:actionSupport event="onchange" action="{!getdiagnosisTimeTRP}" rerender="rTimetrp,totaltrp"
+                                                                                                    />
+                                                                            </apex:inputCheckbox>
+                                                                       
+                                                                    </apex:outputPanel>
+                                                                    <!--<apex:outputPanel rendered="{!IF(canEdit == false,true,false)}>--><!--GSSC-58 TajMahal Sprint, included null check for srtID to checkt for infoonly SRT--->
+                                                                    <apex:outputPanel rendered="{!IF(canEdit == false || (trp.srtRec.srtID == null || trp.srtRec.srtID == ''),true,false)}">
+                                                                      
+                                                                            <apex:inputCheckbox value="{!trp.srtRec.srtCheckBox}" styleClass="URCheckbox1" disabled="true">
+                                                                                <apex:actionSupport event="onchange" action="{!getdiagnosisTimeTRP}" rerender="rTimetrp,totaltrp"
+                                                                                                    />
+                                                                            </apex:inputCheckbox>
+                                                                        
+                                                                    </apex:outputPanel>
+
+                                                                </apex:outputPanel>
+                                                                         <apex:outputPanel rendered="{!IF(trp.srtRec.srtType == 'Field Action Access' || trp.srtRec.srtType == 'Access',true,false)}">
+                                                                    <apex:outputPanel rendered="{!IF(trp.srtRec.srtID != null && trp.srtRec.srtID != '',true,false)}">
+                                                                    
+                                                                        <apex:inputCheckbox value="{!trp.srtRec.accessSrtCheckBox}" styleClass="URCheckbox1">
+                                                                            <apex:actionSupport event="onchange" action="{!getdiagnosisTimeTRP}" rerender="rTimetrp,totaltrp,totalTrpAccTime"/>
+                                                                        </apex:inputCheckbox>
+                                                                    
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(trp.srtRec.srtID == null || trp.srtRec.srtID == '',true,false)}">
+                                                                    
+                                                                        <apex:inputCheckbox value="{!trp.srtRec.accessSrtCheckBox}" styleClass="URCheckbox1" disabled="true">
+                                                                           <apex:actionSupport event="onchange" action="{!getdiagnosisTimeTRP}" rerender="rTimetrp,totaltrp,totalTrpAccTime"/>
+                                                                        </apex:inputCheckbox>
+                                                                    
+                                                                    </apex:outputPanel>
+                                                                </apex:outputPanel>
+                                                                     </apex:outputPanel>
+                                                                </td>
+                                                                
+                                                                <td>
+                                                                    <apex:outputPanel rendered="{!IF(trp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                                        <apex:outputText value="{!trp.srtRec.srtID}" />
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(trp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                                        <b><apex:outputText value="{!trp.srtRec.srtID}"/></b>
+                                                                    </apex:outputPanel>
+                                                                </td>
+                                                                <td>
+                                                                    <apex:outputPanel rendered="{!IF(trp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                                        <!--apex:outputText value="{!trp.srtRec.srtDescription}" /-->
+                                                                        <!-- GSSC -20 Begin -->
+                                                                        <apex:commandLink value="{!trp.srtRec.srtDescription}" style="text-decoration:underline;" onclick="ClaimsSRTNotesPopupTRP('{!trp.srtRec.StepId}')" status="SpinnigNotesPopupClaimsTRP" reRender="none" oncomplete="afterWScallSRTNotesClaimsTRP()">
+                                                                            <span class="cmi_eyeIcon"/>
+                                                                        </apex:commandLink> &nbsp;&nbsp;
+
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(trp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                                        <b><!--apex:outputText value="{!trp.srtRec.srtDescription}"/-->
+                                                                            <apex:commandLink value="{!trp.srtRec.srtDescription}" style="text-decoration:underline;" onclick="ClaimsSRTNotesPopupTRP('{!trp.srtRec.StepId}')" status="SpinnigNotesPopupClaimsTRP" reRender="none" oncomplete="afterWScallSRTNotesClaimsTRP()">
+                                                                                <span class="cmi_eyeIcon"/>
+                                                                            </apex:commandLink> &nbsp;&nbsp;
+                                                                        </b>
+                                                                    </apex:outputPanel>
+
+                                                                    <apex:actionStatus id="SpinnigNotesPopupClaimsTRP">
+                                                                        <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                                                        <apex:facet name="stop"></apex:facet>
+                                                                    </apex:actionStatus>
+
+                                                                    <div class="modal fade" id="ClaimsSRTNotesTRPPopup" role="dialog" data-backdrop="static" data-keyboard="false">
+                                                                        <div class="modal-dialog modal-md">
+                                                                            <div class="modal-content" style="text-align:left">
+                                                                                <div class="modal-header">
+                                                                                    <apex:commandButton styleClass="cross_butten" html-data-dismiss="modal" action="{!ClaimsTRPNotesPopupOk}" rerender="reRenderClaimsNotesTRPWS" value="."/>
+                                                                                    <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_cummins_service_system}</h4>
+                                                                                </div>
+                                                                                <div class="modal-body" style="height:150px;overflow-y:scroll">
+                                                                                    <apex:outputPanel id="reRenderClaimsNotesTRPWS">
+                                                                                        <apex:outputText style="font-size:14px" escape="false" value="{!StepDescriptionTRP}"> </apex:outputText>
+                                                                                   </apex:outputPanel>
+                                                                                </div>
+                                                                                <div class="modal-footer" style="border-top:1px solid #D2D2D2;padding:5px;">
+                                                                                    <div style="text-align:center">
+                                                                                        <apex:commandButton styleClass="btn-intake btn-intake-footer m-btn-width" html-data-dismiss="modal" style="padding:4px 10px;" action="{!ClaimsTRPNotesPopupOk}" rerender="reRenderClaimsNotesTRPWS" value="Ok"></apex:commandButton>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <!--  Story GSSC-20  End-->
+
+                                                                </td>
+                                                                <td>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                         <apex:outputText value="{!trp.srtRec.AccessCode}"/>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                         <!--GSSC-237-->
+                                                                            <apex:outputPanel rendered="{!IF(trp.srtRec.flexFlag != true,true,false)}">
+                                                                                <apex:selectList value="{!trp.srtRec.AccessCode}" size="1" disabled="{!IF(canEdit == false,true,false)}" style="{!IF((trp.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+                                                                                    <apex:selectOptions value="{!if((trp.srtRec.sid!=null && trp.srtRec.sid!=''),mapaccesscode[trp.srtRec.sid],'')}"></apex:selectOptions>
+                                                                                </apex:selectList>
+                                                                            </apex:outputPanel>
+                                                                             <apex:outputPanel rendered="{!IF(trp.srtRec.flexFlag == true,true,false)}">
+                                                                                     <apex:outputText value="{!trp.srtRec.AccessCode}"/>
+                                                                             </apex:outputPanel> 
+                                                                        <!--GSSC-237--> 
+                                                                    </apex:outputPanel>
+                                                                    <!--As per conversation with satish we have to override the exsiting funtionality based on 171484 story,By RAJESH 21-02-2019->
+
+<!--Story172627:Commented for code optimization
+<apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">
+<apex:outputpanel rendered="{!if(trp.srtRec.jobAccessCode == 'R',true,false)}">
+<apex:selectList value="{!trp.srtRec.AccessCode}" size="1" disabled="false" style="{!IF((trp.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[trp.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel>
+<apex:outputpanel rendered="{!if(trp.srtRec.jobAccessCode != 'R' && trp.srtRec.accessCodeR!='0.000000' && (trp.srtRec.accessCodeA!='0.000000' || trp.srtRec.accessCodeB!='0.000000' || trp.srtRec.accessCodeC!='0.000000' || trp.srtRec.accessCodeD!='0.000000') ,true,false)}">
+<apex:selectList value="{!trp.srtRec.AccessCode}" size="1" disabled="false" style="{!IF((trp.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[trp.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel>
+<apex:outputpanel rendered="{!if(trp.srtRec.jobAccessCode != 'R' && trp.srtRec.accessCodeR=='0.000000' && (trp.srtRec.accessCodeA!='0.000000' || trp.srtRec.accessCodeB!='0.000000' || trp.srtRec.accessCodeC!='0.000000' || trp.srtRec.accessCodeD!='0.000000'),true,false)}">    
+<apex:selectList value="{!trp.srtRec.AccessCode}" size="1" disabled="false" style="{!IF((trp.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[trp.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel>  
+</apex:outputPanel>
+<apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">
+<apex:outputpanel rendered="{!if(trp.srtRec.jobAccessCode == 'R',true,false)}">
+<apex:selectList value="{!trp.srtRec.AccessCode}" size="1" disabled="true" style="{!IF((trp.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[trp.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel>
+<apex:outputpanel rendered="{!if(trp.srtRec.jobAccessCode != 'R' && trp.srtRec.accessCodeR!='0.000000' && (trp.srtRec.accessCodeA!='0.000000' || trp.srtRec.accessCodeB!='0.000000' || trp.srtRec.accessCodeC!='0.000000' || trp.srtRec.accessCodeD!='0.000000') ,true,false)}">
+<apex:selectList value="{!trp.srtRec.AccessCode}" size="1" disabled="true" style="{!IF((trp.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[trp.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel>
+<apex:outputpanel rendered="{!if(trp.srtRec.jobAccessCode != 'R' && trp.srtRec.accessCodeR=='0.000000' && (trp.srtRec.accessCodeA!='0.000000' || trp.srtRec.accessCodeB!='0.000000' || trp.srtRec.accessCodeC!='0.000000' || trp.srtRec.accessCodeD!='0.000000'),true,false)}">    
+<apex:selectList value="{!trp.srtRec.AccessCode}" size="1" disabled="true" style="{!IF((trp.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[trp.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel> 
+
+
+</apex:outputPanel>
+end-->
+                                                                </td>
+                                                                <apex:outputPanel rendered="{!IF(trp.srtRec.srtType != 'Field Action Access',true,false)}">
+                                                                    <td>
+                                                                        <apex:outputPanel rendered="{!IF((trp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && trp.srtRec.flexFlag != true,true,false)}">
+                                                                            <apex:outputText value="{!trp.srtRec.srtTime}" />
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF((trp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && trp.srtRec.flexFlag == true,true,false)}">
+                                                                            <apex:inputText value="{!trp.srtRec.srtTime}" style="width:50px;" onkeypress="return validateNumFlexSRTTimeFA(event,this)" styleClass="{!IF(trp.srtRec.flexFlag == true && trp.srtRec.srtTime == 0.0 && trp.srtRec.srtCheckBox == true,'showRedBorder','')}" maxlength="4" onkeyup="validateFlexSrtFA(this)" html-placeholder="0.0" id="srtTimeTrpId"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF((trp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) && trp.srtRec.flexFlag != true,true,false)}">
+                                                                            <b><apex:outputText value="{!trp.srtRec.srtTime}"/></b>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF((trp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) && trp.srtRec.flexFlag == true,true,false)}">
+                                                                            <b><apex:inputText value="{!trp.srtRec.srtTime}" style="width:50px;" onkeypress="return validateNumFlexSRTTimeFA(event,this)" styleClass="{!IF(trp.srtRec.flexFlag == true && trp.srtRec.srtTime == 0.0 && trp.srtRec.srtCheckBox == true,'showRedBorder','')}" maxlength="4" onkeyup="validateFlexSrtFA(this)" html-placeholder="0.0" id="srtTimeTrpId1"/></b>
+                                                                        </apex:outputPanel>
+                                                                    </td>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF(trp.srtRec.srtType == 'Field Action Access',true,false)}">
+                                                                    <td>
+                                                                        <apex:outputPanel rendered="{!IF((trp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && trp.srtRec.flexFlag != true,true,false)}">
+                                                                            <apex:outputText value="{!trp.srtRec.srtAccessTime}" />
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF((trp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && trp.srtRec.flexFlag == true,true,false)}">
+                                                                            <apex:inputText value="{!trp.srtRec.srtAccessTime}" style="width:50px;" onkeypress="return validateNumFlexSRTTimeFA(event,this)" styleClass="{!IF(trp.srtRec.flexFlag == true && trp.srtRec.srtAccessTime == 0.0 && trp.srtRec.accessSrtCheckBox == true,'showRedBorder','')}" maxlength="4" onkeyup="validateFlexSrtFA(this)" html-placeholder="0.0" id="srtAccTimeTrpId"/>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF((trp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) && trp.srtRec.flexFlag != true,true,false)}">
+                                                                            <b><apex:outputText value="{!trp.srtRec.srtAccessTime}"/></b>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF((trp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) && trp.srtRec.flexFlag == true,true,false)}">
+                                                                            <b><apex:inputText value="{!trp.srtRec.srtAccessTime}"  style="width:50px;" onkeypress="return validateNumFlexSRTTimeFA(event,this)" styleClass="{!IF(trp.srtRec.flexFlag == true && trp.srtRec.srtAccessTime == 0.0 && trp.srtRec.accessSrtCheckBox == true,'showRedBorder','')}" maxlength="4" onkeyup="validateFlexSrtFA(this)" html-placeholder="0.0" id="srtAccTimeTrpId1"/></b>
+                                                                         </apex:outputPanel>
+                                                                    </td>
+                                                                </apex:outputPanel>
+                                                                <td>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                         <b><apex:outputText value="{!trp.srtRec.quantity}"  /></b>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                        <!-- <apex:outputPanel rendered="{!IF(trp.srtRec.IsPopUpSRT != true,true,false)}">-->
+                                                                        <!--apex:outputPanel rendered="{!IF(trp.srtRec.srtID != '00-901-00' && trp.srtRec.srtID != '00-902-00'  && trp.srtRec.srtID != '00-904-00' && trp.srtRec.srtID != '00-10S-00' && trp.srtRec.srtID != '00-724-00' && trp.srtRec.srtID != '00-400-00' && trp.srtRec.srtID != '00-401-00' && trp.srtRec.srtID != '00-404-00', true,false)}"-->
+                                                                        <apex:outputPanel rendered="{!IF(NOT(CONTAINS(trp.srtRec.srtID,'00-901') || trp.srtRec.srtID = '00-10S-00' || CONTAINS(trp.srtRec.srtID,'00-902')|| CONTAINS(trp.srtRec.srtID,'00-904') || trp.srtRec.flexFlag = true), true,false)}">
+                                                                            <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">
+                                                                                <apex:InputText value="{!trp.srtRec.quantity}" id="qtyDiag" maxlength="4" onkeyup="MpsnCounterFA(this,'{!trp.srtRec.srtID}')" onkeydown="return srtreqlen(event,this)" style="width:50px;"  />
+                                                                            </apex:outputPanel>
+                                                                            <apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">
+                                                                                <apex:outputText value="{!trp.srtRec.quantity}" id="qtyDiag1" style="width:50px;"  />
+                                                                                <!--apex:InputText value="{!trp.srtRec.quantity}" id="qtyDiag1" maxlength="4" onkeypress="return srtquanlen(event,this)" style="width:50px;" disabled="true"  /-->
+                                                                            </apex:outputPanel>
+                                                                        </apex:outputPanel>
+                                                                        <!--</apex:outputPanel>-->
+                                                                        <!--apex:outputPanel rendered="{!IF( trp.srtRec.srtID == '00-901-00' || trp.srtRec.srtID == '00-902-00' || trp.srtRec.srtID == '00-904-00' || trp.srtRec.srtID == '00-10S-00' || trp.srtRec.srtID == '00-724-00' || trp.srtRec.srtID == '00-400-00' || trp.srtRec.srtID == '00-401-00' || trp.srtRec.srtID == '00-404-00' , true,false)}"-->
+                                                                        <apex:outputPanel rendered="{!IF((CONTAINS(trp.srtRec.srtID,'00-901') || trp.srtRec.srtID = '00-10S-00' || CONTAINS(trp.srtRec.srtID,'00-902')|| CONTAINS(trp.srtRec.srtID,'00-904') || trp.srtRec.flexFlag = true), true,false)}">
+                                                                            <b><apex:outputText value="{!trp.srtRec.quantity}"  /></b>
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>
+                                                                </td>
+                                                                <td>
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                         <apex:outputText value="{!trp.srtRec.percentCov}"/>
+                                                                    </apex:outputPanel>    
+                                                                    <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                        <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}" id="ReqPnl1">
+                                                                            <apex:InputText value="{!trp.srtRec.percentCov}" id="wartyDiag" maxlength="3" onkeyup="validateMaxValClaim(this,'{!trp.srtRec.srtID}');"
+                                                                                            onkeypress="return srtquanlenRep(event,this)" onchange="getpercReqFAJS(this,'{!trp.srtRec.srtID}');"
+                                                                                            style="{!IF((trp.srtRec.percentReqFlag==true),'width:50px;border: 2px solid red !important','width:50px;')}" />
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">
+                                                                            <apex:outputText value="{!trp.srtRec.percentCov}" id="wartyDiag1" style="{!IF((trp.srtRec.percentReqFlag==true),'width:50px;border: 2px solid red !important','width:50px;')}"   />
+                                                                            <!--apex:InputText value="{!trp.srtRec.percentCov}" id="wartyDiag1" maxlength="3" onkeyup="validateMaxValClaim(this,'{!trp.srtRec.srtID}');" onkeypress="return srtquanlenRep(event,this)" style="width:50px;" disabled="true"/-->
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>    
+                                                                </td>
+                                                                <td>
+                                                                    <!--<apex:InputText value="{!srtlist.srtRec.Claimed_Hours__c}" maxlength="5" style="width:50px;" id="diagClHoursLength" onkeyup="validateTTMLExpenseTotalDiag(this)" onkeypress="return qtyPressDiag(event,this)"/>-->
+                                                                    <!--<apex:outputText value="{!srtlist.srtRec.Claimed_Hours__c}"/>-->
+                                                                    <apex:outputPanel id="totaltrp">
+                                                                        <apex:outputPanel rendered="{!IF(trp.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                                            <apex:outputPanel rendered="{!IF(trp.srtRec.srtCheckBox == true || trp.srtRec.accessSrtCheckBox == true,true,false)}">
+                                                                                <apex:outputText value="{!trp.srtRec.ClaimedHrs}" />
+                                                                            </apex:outputPanel>
+                                                                            <apex:outputPanel rendered="{!IF(trp.srtRec.srtCheckBox == false && trp.srtRec.accessSrtCheckBox == false,true,false)}">
+                                                                            </apex:outputPanel>
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(trp.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                                            <apex:outputPanel rendered="{!IF(trp.srtRec.srtCheckBox == true || trp.srtRec.accessSrtCheckBox == true,true,false)}">
+                                                                                <b><apex:outputText value="{!trp.srtRec.ClaimedHrs}"/></b>
+                                                                            </apex:outputPanel>
+                                                                            <apex:outputPanel rendered="{!IF(trp.srtRec.srtCheckBox == false && trp.srtRec.accessSrtCheckBox == false,true,false)}">
+                                                                            </apex:outputPanel>
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>
+                                                                </td>
+                                                            </tr>
+                                                            <!-- </apex:outputPanel> -->
+
+
+
+                                                        </apex:repeat>
+                                                    </tbody>
+
+                                                </table>
+                                                <!-- </apex:OutputPanel>-->
+                                                <!-- Commented for Story 171492 by Moulika -->
+                                                <!--<div class="col-sm-12">   
+<span><b>{!$Label.css_Total_TRP_Access_Time}</b></span> <br></br>
+<apex:outputPanel id="totaltrpAccTime">
+<div ><apex:outputText value="{!totalDecimalTimeAccTottrp}"/></div>
+</apex:outputPanel>
+
+</div>-->
+                                                <div class="col-sm-12">
+                                                    <span><b>{!$Label.css_Total_TRP_SRT_Time}</b></span>                                                        <br></br>
+                                                <apex:outputPanel id="rTimetrp">
+                                                    <div>
+                                                        <apex:outputText value="{!totalDecimalTimetrp}"
+                                                                         />
+                                                    </div>
+                                                </apex:outputPanel>
+                                                </div>
+                                        </apex:OutputPanel>
+                                        </apex:OutputPanel>
+                                    <!--TRP END--->
+                                    <!---ATC---->
+
+                                    <div class="col-md-12 col-xs-12" style="margin:25px 0px;" />
+                             <!--Added isClaimReadOnly__C condition as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->                                
+                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}">        
+                                    <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">
+
+                                        <apex:outputpanel rendered="{!IF(checklaborrate==true && isFieldActionSRTCovered == true,true,false)}">
+                                            <div style="float: right;margin-top: -35px;margin-right:18px;">
+                                                <!--<div style="float: right;margin-top:-10px;margin-right:18px;"> -->
+                                                <i class="CMI-edit-icon"></i>
+                                                <!--<apex:commandLink value="{!$Label.css_Edit}" reRender="newEditPopUp"/><br/>-->
+                                                <a onclick="srtEdit1('/apex/CG_ClaimsSRTEditPopUp?ClaimsId={!CID}&type=ATC&pgName=ClaimsSRTs','srtPopup',900)"
+                                                   href="" target="_blank" style="cursor: pointer;">{!$Label.css_Edit}</a><br/></div>
+                                            </apex:outputPanel>
+
+                                        <apex:outputpanel rendered="{!IF(checklaborrate == false || isFieldActionSRTCovered == false, true, false)}">
+                                            <div style="float: right;margin-top: -35px;margin-right:18px;">
+                                                <i class="CMI-edit-icon"></i>         
+                                                <font color="#007c7c">{!$Label.css_Edit}</font>
+                                            </div><br/>   
+                                            </apex:outputPanel>
+
+                                        <!--   <apex:commandButton onclick = "srtEdit1('/apex/CG_ClaimsSRTEditPopUp?ClaimsId={!CID}&typ=Campaign&pgName=ClaimsSRTs','srtPopup',900)" target="_blank oncomplete -->
+                                        <!--<a onclick="srtEdit('/apex/css_srtEditPopup?JobOrderId={!JobId}&typ=Diagnosis&pgName=JobPlanSRT')" href="" target="_blank"  onmouseover="" style="cursor: pointer;" >{!$Label.css_Edit}</a>-->
+                                        <!-- </div><br/>
+</apex:outputPanel> -->
+                                        <div style="float: right;margin-top: -02px;margin-right:10px;">
+                                            <u><a id ="uncheck_id" href="#/" onclick="unCheckCam2()" Class="text-decoration: none;">{!$Label.CSS_Uncheck_All}</a></u>&nbsp;&nbsp;
+                                            <u><a id ="check_id" href="#/" onclick="checkCam2()" Class="text-decoration: none;">{!$Label.CSS_Check_All}</a></u>&nbsp;&nbsp;
+                                        </div> <br/>
+                                    </apex:outputPanel>
+                         </apex:outputPanel> 
+                <!--END--as per Story #GSSC-37,-By RAJESH 05th Nov 2019-->          
+                                    <apex:OutputPanel id="AtcData">
+                                        <table class="mytable table table-bordered table-striped cmi_jobplan-table" width="100%"
+                                               cellpadding="0" cellspacing="0">
+                                            <thead>
+                                                <tr>
+                                                    <td colspan="14">
+
+                                                        <p style="font-weight: bold;font-size: 14px;text-align: left;margin-bottom:0px">{!$Label.css_ATCs}
+                                                        </p>
+                                                    </td>
+                                                </tr>
+
+
+                                                <tr height="54">
+                                                    <!--<th>{!$Label.CSS_Field_Action_Number}</th> -->
+                                                    <!--<th>{!$Label.CSS_Select}</th>-->
+                                                    <th>{!$Label.css_Campaign}</th>
+                                                    <th>{!$Label.CSS_Account_Code}</th>
+                                                    <!--sivaganesh Commented below code for story GSSC-293-->
+                                                    <!--<th>
+                                                           <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">
+                                                            <apex:outputpanel rendered="{!if(sVfComp =='ClaimsSRT',true,false)}">
+
+                                                                <apex:commandLink styleClass="cmi-sortUpIcon" action="{!changeUpOrderTRP}" />&nbsp;<br/>
+                                                                <apex:commandLink styleClass="cmi-sortDownIcon" action="{!changeDownOrderTRP}" />
+
+                                                            </apex:outputpanel>
+                                                            <apex:outputpanel rendered="{!if(sVfComp !='ClaimsSRT',true,false)}">
+
+                                                                <apex:outputLabel styleClass="cmi-sortUpIcon" />&nbsp;<br/>
+                                                                <apex:outputLabel styleClass="cmi-sortDownIcon" />
+
+                                                            </apex:outputpanel>
+                                                            </apex:outputpanel>
+
+                                                        <apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">
+                                                            <apex:outputpanel rendered="{!if(sVfComp =='ClaimsSRT',true,false)}">
+
+                                                                <apex:outputLabel styleClass="cmi-sortUpIcon" />&nbsp;<br/>
+                                                                <apex:outputLabel styleClass="cmi-sortDownIcon" />
+                                                            </apex:outputpanel>
+                                                        </apex:outputPanel>
+
+                                                    </th>-->
+                                                    <th>{!$Label.CSS_Select}</th>
+                                                    <th>{!$Label.css_SRT_Code}</th>
+                                                    <th>{!$Label.css_SRT_Description}</th>
+                                                    <th>{!$Label.CSS_Access_Code}</th>
+                                                    <th>{!$Label.css_SRT_Time}</th>
+                                                    <th>{!$Label.CSS_Qty}</th>
+                                                    <th>{!$Label.css_Percent_Requested}</th>
+                                                    <th>{!$Label.CSS_Claimed_Hours}</th>
+
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <apex:repeat value="{!atcListWrap}" var="atc" id="atc">
+                                                    <!-- <apex:outputPanel rendered="{!IF(diag.IsPopUpSRT != true,true,false)}"> -->
+                                                    <tr>
+                                                        <!--sivaganesh Commented below code for story GSSC-293-->
+                                                        <!--<td>
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                 <apex:inputCheckbox value="{!atc.srtRec.accessSrtCheckBox}" styleClass="URCheckbox2" disabled="true"/>
+                                                            </apex:outputPanel> 
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}"> 
+                                                              <apex:outputPanel rendered="{!IF(atc.srtRec.srtType != 'Field Action Access' && atc.srtRec.srtType != 'Access',true,false)}">
+                                                            <!--<apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">--><!--GSSC-58 TajMahal Sprint, included null check for srtID to checkt for infoonly SRT--->
+                                                               <!---<apex:outputPanel rendered="{!IF(canEdit == true && (atc.srtRec.srtID != null && atc.srtRec.srtID != ''),true,false)}">
+                                                                
+
+                                                                    <apex:inputCheckbox value="{!atc.srtRec.srtCheckBox}" styleClass="URCheckbox2">
+                                                                        <apex:actionSupport event="onchange" action="{!getdiagnosisTimeATC}" rerender="rTimeatc,atctime"/>
+                                                                    </apex:inputCheckbox>
+                                                               
+                                                            </apex:outputPanel>
+
+                                                            <!--<apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">--><!--GSSC-58 TajMahal Sprint, included null check for srtID to checkt for infoonly SRT--->
+                                                            <!--<apex:outputPanel rendered="{!IF(canEdit == false || (atc.srtRec.srtID == null || atc.srtRec.srtID == ''),true,false)}">
+                                                                
+
+                                                                    <apex:inputCheckbox value="{!atc.srtRec.srtCheckBox}" styleClass="URCheckbox2" disabled="true">
+                                                                       <apex:actionSupport event="onchange" action="{!getdiagnosisTimeATC}" rerender="rTimeatc,atctime"/>
+                                                                    </apex:inputCheckbox>
+                                                                
+                                                            </apex:outputPanel>
+
+                                                        </apex:outputPanel>
+                                                              <apex:outputPanel rendered="{!IF(atc.srtRec.srtType == 'Field Action Access' || atc.srtRec.srtType == 'Access',true,false)}">
+                                                           <apex:outputPanel rendered="{!IF(atc.srtRec.srtID != null && atc.srtRec.srtID != '',true,false)}">
+                                                            
+                                                                <apex:inputCheckbox value="{!atc.srtRec.accessSrtCheckBox}" styleClass="URCheckbox2">
+                                                                    <apex:actionSupport event="onchange" action="{!getdiagnosisTimeATC}" rerender="rTimeatc,atctime"/>
+                                                                </apex:inputCheckbox>
+                                                            
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(atc.srtRec.srtID == null || atc.srtRec.srtID == '',true,false)}">
+                                                            
+                                                                <apex:inputCheckbox value="{!atc.srtRec.accessSrtCheckBox}" styleClass="URCheckbox2" disabled="true">
+                                                                    <apex:actionSupport event="onchange" action="{!getdiagnosisTimeATC}" rerender="rTimeatc,atctime"/>
+                                                                </apex:inputCheckbox>
+                                                            
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                            </apex:outputPanel>
+                                                        </td>-->
+                                                        <td>
+                                                            <apex:outputPanel rendered="{!IF(atc.srtRec.compId != null && atc.srtRec.compId != '',true,false)}">
+                                                                <apex:outputPanel rendered="{!IF(atc.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                                    <apex:outputText value="{!atc.srtRec.compId}" />
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF(atc.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                                    <b><apex:outputText value="{!atc.srtRec.compId}"/></b>
+                                                                </apex:outputPanel>
+                                                            </apex:outputPanel>
+                                                        </td>
+                                                        <td>
+                                                            <apex:outputPanel rendered="{!IF(atc.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                                <apex:outputpanel rendered="{!IF(checklaborrate==true,true,false)}">
+                                                                    <apex:outputText value="{!atc.srtRec.accountcode}" />
+                                                                    </apex:outputPanel>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(atc.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                                <apex:outputpanel rendered="{!IF(checklaborrate==true,true,false)}">
+                                                                    <b><apex:outputText value="{!atc.srtRec.accountcode}"/></b>
+                                                                    </apex:outputPanel>
+                                                            </apex:outputPanel>
+                                                        </td>
+                                                        <!--sivaganesh Commented below code for story GSSC-293-->
+                                                        <!--<td align="center">
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}"> 
+                                                                 <apex:inputCheckbox value="{!atc.srtRec.selectedRecord}" disabled="true"/>
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}"> 
+                                                                        <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">
+                                                                            
+                                                                                <apex:inputCheckbox id="selectAccountRow" value="{!atc.srtRec.selectedRecord}" styleClass="sortChkTRP"
+                                                                                                    />
+                                                                           
+                                                                        </apex:outputPanel>
+                
+                                                                        <apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">
+                                                                            
+                                                                                <apex:inputCheckbox id="selectAccountRow1" value="{!atc.srtRec.selectedRecord}" styleClass="sortChkTRP"
+                                                                                                    disabled="true"
+                                                                                                    />
+                                                                            
+                                                                        </apex:outputPanel>
+                                                            </apex:outputPanel>
+                                                          </td>-->
+                                                          
+                                                          <!--sivaganesh added below code for story GSSC-293-->
+                                                          <td>
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                 <apex:inputCheckbox value="{!atc.srtRec.accessSrtCheckBox}" styleClass="URCheckbox2" disabled="true"/>
+                                                            </apex:outputPanel> 
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}"> 
+                                                              <apex:outputPanel rendered="{!IF(atc.srtRec.srtType != 'Field Action Access' && atc.srtRec.srtType != 'Access',true,false)}">
+                                                            <!--<apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">--><!--GSSC-58 TajMahal Sprint, included null check for srtID to checkt for infoonly SRT--->
+                                                               <apex:outputPanel rendered="{!IF(canEdit == true && (atc.srtRec.srtID != null && atc.srtRec.srtID != ''),true,false)}">
+                                                                
+
+                                                                    <apex:inputCheckbox value="{!atc.srtRec.srtCheckBox}" styleClass="URCheckbox2">
+                                                                        <apex:actionSupport event="onchange" action="{!getdiagnosisTimeATC}" rerender="rTimeatc,atctime"/>
+                                                                    </apex:inputCheckbox>
+                                                               
+                                                            </apex:outputPanel>
+
+                                                            <!--<apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">--><!--GSSC-58 TajMahal Sprint, included null check for srtID to checkt for infoonly SRT--->
+                                                            <apex:outputPanel rendered="{!IF(canEdit == false || (atc.srtRec.srtID == null || atc.srtRec.srtID == ''),true,false)}">
+                                                                
+
+                                                                    <apex:inputCheckbox value="{!atc.srtRec.srtCheckBox}" styleClass="URCheckbox2" disabled="true">
+                                                                       <apex:actionSupport event="onchange" action="{!getdiagnosisTimeATC}" rerender="rTimeatc,atctime"/>
+                                                                    </apex:inputCheckbox>
+                                                                
+                                                            </apex:outputPanel>
+
+                                                        </apex:outputPanel>
+                                                              <apex:outputPanel rendered="{!IF(atc.srtRec.srtType == 'Field Action Access' || atc.srtRec.srtType == 'Access',true,false)}">
+                                                           <apex:outputPanel rendered="{!IF(atc.srtRec.srtID != null && atc.srtRec.srtID != '',true,false)}">
+                                                            
+                                                                <apex:inputCheckbox value="{!atc.srtRec.accessSrtCheckBox}" styleClass="URCheckbox2">
+                                                                    <apex:actionSupport event="onchange" action="{!getdiagnosisTimeATC}" rerender="rTimeatc,atctime"/>
+                                                                </apex:inputCheckbox>
+                                                            
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(atc.srtRec.srtID == null || atc.srtRec.srtID == '',true,false)}">
+                                                            
+                                                                <apex:inputCheckbox value="{!atc.srtRec.accessSrtCheckBox}" styleClass="URCheckbox2" disabled="true">
+                                                                    <apex:actionSupport event="onchange" action="{!getdiagnosisTimeATC}" rerender="rTimeatc,atctime"/>
+                                                                </apex:inputCheckbox>
+                                                            
+                                                            </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                            </apex:outputPanel>
+                                                        </td>
+                                                        
+                                                        <td>
+                                                            <apex:outputPanel rendered="{!IF(atc.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                                <apex:outputText value="{!atc.srtRec.srtID}" />
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(atc.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                                <b><apex:outputText value="{!atc.srtRec.srtID}"/></b>
+                                                            </apex:outputPanel>
+                                                        </td>
+                                                        <td>
+                                                            <apex:outputPanel rendered="{!IF(atc.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                                <!--apex:outputText value="{!atc.srtRec.srtDescription}" /-->
+                                                                <!--  Story GSSC-20  Begin-->
+                                                                <apex:commandLink value="{!atc.srtRec.srtDescription}" style="text-decoration:underline;" onclick="ClaimsSRTNotesPopupATC('{!atc.srtRec.StepId}')" status="SpinnigNotesPopupClaimsATC" reRender="none" oncomplete="afterWScallSRTNotesClaimsATC()">
+                                                                    <span class="cmi_eyeIcon"/>
+                                                                </apex:commandLink> &nbsp;&nbsp;
+
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(atc.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                                <b><!--<apex:outputText value="{!atc.srtRec.srtDescription}"/>-->
+                                                                    <apex:commandLink value="{!atc.srtRec.srtDescription}" style="text-decoration:underline;" onclick="ClaimsSRTNotesPopupATC('{!atc.srtRec.StepId}')" status="SpinnigNotesPopupClaimsATC" reRender="none" oncomplete="afterWScallSRTNotesClaimsATC()">
+                                                                        <span class="cmi_eyeIcon"/>
+                                                                    </apex:commandLink> &nbsp;&nbsp;
+                                                                </b>
+                                                            </apex:outputPanel>
+
+                                                            <apex:actionStatus id="SpinnigNotesPopupClaimsATC">
+                                                                <apex:facet name="start"><img src="/img/loading.gif" /></apex:facet>
+                                                                <apex:facet name="stop"></apex:facet>
+                                                            </apex:actionStatus>
+
+                                                            <div class="modal fade" id="ClaimsSRTNotesATCPopup" role="dialog" data-backdrop="static" data-keyboard="false">
+                                                                <div class="modal-dialog modal-md">
+                                                                    <div class="modal-content" style="text-align:left">
+                                                                        <div class="modal-header">
+                                                                            <apex:commandButton styleClass="cross_butten" html-data-dismiss="modal" action="{!ClaimsATCNotesPopupOk}" rerender="reRenderClaimsNotesATCWS" value="."/>
+                                                                            <h4 class="modal-title" style="color: #FFFFFF;">{!$Label.css_cummins_service_system}</h4>
+                                                                        </div>
+                                                                        <div class="modal-body" style="height:150px;overflow-y:scroll">
+                                                                            <apex:outputPanel id="reRenderClaimsNotesATCWS">
+                                                                                 <apex:outputText style="font-size:14px" escape="false" value="{!StepDescriptionATC}"> </apex:outputText>
+                                                                            </apex:outputPanel>
+                                                                        </div>
+                                                                        <div class="modal-footer" style="border-top:1px solid #D2D2D2;padding:5px;">
+                                                                            <div style="text-align:center">
+                                                                                <apex:commandButton styleClass="btn-intake btn-intake-footer m-btn-width" html-data-dismiss="modal" style="padding:4px 10px;" action="{!ClaimsATCNotesPopupOk}" rerender="reRenderClaimsNotesATCWS" value="Ok"></apex:commandButton>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <!--  Story GSSC-20  End-->
+
+                                                        </td>
+                                                        <td>
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}"> 
+                                                                 <apex:outputText value="{!atc.srtRec.AccessCode}"/>
+                                                             </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}"> 
+                                                              <!--GSSC-237-->
+                                                                 <apex:outputPanel rendered="{!IF(atc.srtRec.flexFlag != true,true,false)}">
+                                                                    <apex:selectList value="{!atc.srtRec.AccessCode}" size="1" disabled="{!IF(canEdit == false,true,false)}" style="{!IF((atc.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+                                                                        <apex:selectOptions value="{!if((atc.srtRec.sid!=null && atc.srtRec.sid!=''),mapaccesscode[atc.srtRec.sid],'')}"></apex:selectOptions>
+                                                                    </apex:selectList>
+                                                                 </apex:outputPanel>
+                                                                 <apex:outputPanel rendered="{!IF(atc.srtRec.flexFlag == true,true,false)}">
+                                                                         <apex:outputText value="{!atc.srtRec.AccessCode}"/>
+                                                                 </apex:outputPanel> 
+                                                              <!--GSSC-237--> 
+                                                            </apex:outputPanel>
+                                                            <!--As per conversation with satish we have to override the exsiting funtionality based on 171484 story,By RAJESH 21-02-2019-->
+                                                            <!--Story172627:Commented for code optimization
+<apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">
+<apex:outputpanel rendered="{!if(atc.srtRec.jobAccessCode == 'R',true,false)}">
+<apex:selectList value="{!atc.srtRec.AccessCode}" size="1" disabled="false" style="{!IF((atc.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[atc.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel>
+<apex:outputpanel rendered="{!if(atc.srtRec.jobAccessCode != 'R' && atc.srtRec.accessCodeR!='0.000000' && (atc.srtRec.accessCodeA!='0.000000' || atc.srtRec.accessCodeB!='0.000000' || atc.srtRec.accessCodeC!='0.000000' || atc.srtRec.accessCodeD!='0.000000') ,true,false)}">
+<apex:selectList value="{!atc.srtRec.AccessCode}" size="1" disabled="false" style="{!IF((atc.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[atc.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel>
+<apex:outputpanel rendered="{!if(atc.srtRec.jobAccessCode != 'R' && atc.srtRec.accessCodeR=='0.000000' && (atc.srtRec.accessCodeA!='0.000000' || atc.srtRec.accessCodeB!='0.000000' || atc.srtRec.accessCodeC!='0.000000' || atc.srtRec.accessCodeD!='0.000000'),true,false)}">    
+<apex:selectList value="{!atc.srtRec.AccessCode}" size="1" disabled="false" style="{!IF((atc.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[atc.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel>
+</apex:outputPanel>
+<apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">
+<apex:outputpanel rendered="{!if(atc.srtRec.jobAccessCode == 'R',true,false)}">
+<apex:selectList value="{!atc.srtRec.AccessCode}" size="1" disabled="true" style="{!IF((atc.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[atc.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel>
+<apex:outputpanel rendered="{!if(atc.srtRec.jobAccessCode != 'R' && atc.srtRec.accessCodeR!='0.000000' && (atc.srtRec.accessCodeA!='0.000000' || atc.srtRec.accessCodeB!='0.000000' || atc.srtRec.accessCodeC!='0.000000' || atc.srtRec.accessCodeD!='0.000000') ,true,false)}">
+<apex:selectList value="{!atc.srtRec.AccessCode}" size="1" disabled="true" style="{!IF((atc.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[atc.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel>
+<apex:outputpanel rendered="{!if(atc.srtRec.jobAccessCode != 'R' && atc.srtRec.accessCodeR=='0.000000' && (atc.srtRec.accessCodeA!='0.000000' || atc.srtRec.accessCodeB!='0.000000' || atc.srtRec.accessCodeC!='0.000000' || atc.srtRec.accessCodeD!='0.000000'),true,false)}">    
+<apex:selectList value="{!atc.srtRec.AccessCode}" size="1" disabled="true" style="{!IF((atc.srtRec.accessCodeFlag==true),'border: 2px solid red !important','')}" >
+
+<apex:selectOptions value="{!mapaccesscode[atc.srtRec.sid]}"></apex:selectOptions>
+</apex:selectList>
+</apex:outputpanel>
+</apex:outputPanel>
+END-->
+
+
+                                                        </td>
+                                                        <apex:outputPanel rendered="{!IF(atc.srtRec.srtType != 'Field Action Access',true,false)}">
+                                                            <td>
+                                                                <apex:outputPanel rendered="{!IF((atc.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && atc.srtRec.flexFlag != true,true,false)}">
+                                                                    <apex:outputText value="{!atc.srtRec.srtTime}" />
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF((atc.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && atc.srtRec.flexFlag == true,true,false)}">
+                                                                    <apex:inputText value="{!atc.srtRec.srtTime}" style="width:50px;" onkeypress="return validateNumFlexSRTTimeFA(event,this)" styleClass="{!IF(atc.srtRec.flexFlag == true && atc.srtRec.srtTime == 0.0 && atc.srtRec.srtCheckBox == true,'showRedBorder','')}" maxlength="4" onkeyup="validateFlexSrtFA(this)" html-placeholder="0.0" id="srtTimeATCId"/>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF((atc.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) && atc.srtRec.flexFlag != true,true,false)}">
+                                                                    <b><apex:outputText value="{!atc.srtRec.srtTime}"/></b>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF((atc.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) && atc.srtRec.flexFlag == true,true,false)}">
+                                                                    <b><apex:inputText value="{!atc.srtRec.srtTime}" style="width:50px;" onkeypress="return validateNumFlexSRTTimeFA(event,this)" styleClass="{!IF(atc.srtRec.flexFlag == true && atc.srtRec.srtTime == 0.0 && atc.srtRec.srtCheckBox == true,'showRedBorder','')}" maxlength="4" onkeyup="validateFlexSrtFA(this)" html-placeholder="0.0" id="srtTimeATCId1"/></b>
+                                                                </apex:outputPanel>
+                                                            </td>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(atc.srtRec.srtType == 'Field Action Access',true,false)}">
+                                                            <td>
+                                                                <apex:outputPanel rendered="{!IF((atc.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && atc.srtRec.flexFlag != true,true,false)}">
+                                                                    <apex:outputText value="{!atc.srtRec.srtAccessTime}" />
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF((atc.srtRec.IsPopUpSRT != true || isAutomatedClaim != true) && atc.srtRec.flexFlag == true,true,false)}">
+                                                                    <apex:inputText value="{!atc.srtRec.srtAccessTime}" style="width:50px;" onkeypress="return validateNumFlexSRTTimeFA(event,this)" styleClass="{!IF(atc.srtRec.flexFlag == true && atc.srtRec.srtAccessTime == 0.0 && atc.srtRec.accessSrtCheckBox == true,'showRedBorder','')}" maxlength="4" onkeyup="validateFlexSrtFA(this)" html-placeholder="0.0" id="srtAccTimeId"/>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF((atc.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) && atc.srtRec.flexFlag != true,true,false)}">
+                                                                    <b><apex:outputText value="{!atc.srtRec.srtAccessTime}"/></b>
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF((atc.srtRec.IsPopUpSRT == true && isAutomatedClaim == true) && atc.srtRec.flexFlag == true,true,false)}">
+                                                                    <b><apex:inputText value="{!atc.srtRec.srtAccessTime}"  style="width:50px;" onkeypress="return validateNumFlexSRTTimeFA(event,this)" styleClass="{!IF(atc.srtRec.flexFlag == true && atc.srtRec.srtAccessTime == 0.0 && atc.srtRec.accessSrtCheckBox == true,'showRedBorder','')}" maxlength="4" onkeyup="validateFlexSrtFA(this)" html-placeholder="0.0" id="srtAccTimeId1"/></b>
+                                                                </apex:outputPanel>
+                                                            </td>
+                                                        </apex:outputPanel>
+
+                                                        <td>
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                                  <b><apex:outputText value="{!atc.srtRec.quantity}"  /></b>
+                                                            </apex:outputPanel> 
+                                                            <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}"> 
+                                                            <!-- <apex:outputPanel rendered="{!IF(trp.srtRec.IsPopUpSRT != true,true,false)}">-->
+                                                            <!--apex:outputPanel rendered="{!IF(atc.srtRec.srtID != '00-901-00' && atc.srtRec.srtID != '00-902-00' && atc.srtRec.srtID != '00-904-00' && atc.srtRec.srtID != '00-10S-00' && atc.srtRec.srtID != '00-724-00' && atc.srtRec.srtID != '00-400-00' && atc.srtRec.srtID != '00-401-00' && atc.srtRec.srtID != '00-404-00', true,false)}"-->
+                                                                    <apex:outputPanel rendered="{!IF(NOT(CONTAINS(atc.srtRec.srtID,'00-901') || atc.srtRec.srtID = '00-10S-00' || CONTAINS(atc.srtRec.srtID,'00-902')|| CONTAINS(atc.srtRec.srtID,'00-904') || atc.srtRec.flexFlag = true), true,false)}">
+                                                                        <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">
+                                                                            <apex:InputText value="{!atc.srtRec.quantity}" id="qtyDiag" maxlength="4" onkeyup="MpsnCounterFA(this,'{!atc.srtRec.srtID}')" onkeydown="return srtreqlen(event,this)"
+                                                                                            style="width:50px;"  />
+                                                                        </apex:outputPanel>
+                                                                        <apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">
+                                                                            <apex:outputText value="{!atc.srtRec.quantity}" id="qtyDiag1" style="width:50px;"  />
+                                                                            <!--apex:InputText value="{!atc.srtRec.quantity}" id="qtyDiag1" maxlength="4" onkeypress="return srtquanlen(event,this)" style="width:50px;" disabled="true" /-->
+                                                                        </apex:outputPanel>
+                                                                    </apex:outputPanel>
+                                                                    <!--</apex:outputPanel>-->
+                                                                    <!--apex:outputPanel rendered="{!IF( atc.srtRec.srtID == '00-901-00' || atc.srtRec.srtID == '00-902-00' || atc.srtRec.srtID == '00-904-00' || atc.srtRec.srtID == '00-10S-00' || atc.srtRec.srtID == '00-724-00' || atc.srtRec.srtID == '00-400-00' || atc.srtRec.srtID == '00-401-00' || atc.srtRec.srtID == '00-404-00', true,false)}"-->
+                                                                    <apex:outputPanel rendered="{!IF((CONTAINS(atc.srtRec.srtID,'00-901') || atc.srtRec.srtID = '00-10S-00' || CONTAINS(atc.srtRec.srtID,'00-902')|| CONTAINS(atc.srtRec.srtID,'00-904') || atc.srtRec.flexFlag = true), true,false)}">
+                                                                        <b><apex:outputText value="{!atc.srtRec.quantity}"  /></b>
+                                                                    </apex:outputPanel>
+                                                            </apex:outputPanel>        
+                                                        </td>
+                                                        <td>
+                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c ==true ,true,false)}">
+                                                              <apex:outputText value="{!atc.srtRec.percentCov}"/>
+                                                        </apex:outputPanel> 
+                                                        <apex:outputPanel rendered="{!IF($User.isClaimReadOnly__c !=true ,true,false)}"> 
+                                                                <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}" id="ReqPnl2">
+                                                                    <apex:InputText value="{!atc.srtRec.percentCov}" id="wartyDiag" maxlength="3" onkeyup="validateMaxValClaim(this,'{!atc.srtRec.srtID}');" onchange="getpercReqFAJS(this,'{!atc.srtRec.srtID}');"
+                                                                                    onkeypress="return srtquanlenRep(event,this)" style="{!IF((atc.srtRec.percentReqFlag==true),'width:50px;border: 2px solid red !important','width:50px;')}" />
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">
+                                                                    <apex:outputText value="{!atc.srtRec.percentCov}" id="wartyDiag1" style="{!IF((atc.srtRec.percentReqFlag==true),'width:50px;border: 2px solid red !important','width:50px;')}"  />
+                                                                    <!--apex:InputText value="{!atc.srtRec.percentCov}" id="wartyDiag1" maxlength="3" onkeyup="validateMaxValClaim(this,'{!atc.srtRec.srtID}');" onkeypress="return srtquanlenRep(event,this)" style="width:50px;" disabled="true" /-->
+                                                                </apex:outputPanel>
+                                                        </apex:outputPanel>
+                                                        </td>
+                                                        <td>
+                                                            <!--<apex:InputText value="{!srtlist.srtRec.Claimed_Hours__c}" maxlength="5" style="width:50px;" id="diagClHoursLength" onkeyup="validateTTMLExpenseTotalDiag(this)" onkeypress="return qtyPressDiag(event,this)"/>-->
+                                                            <!--<apex:outputText value="{!srtlist.srtRec.Claimed_Hours__c}"/>-->
+                                                            <apex:outputPanel id="atctime">
+                                                                <apex:outputPanel rendered="{!IF(atc.srtRec.IsPopUpSRT != true || isAutomatedClaim != true,true,false)}">
+                                                                    <apex:outputPanel rendered="{!IF(atc.srtRec.srtCheckBox == true || atc.srtRec.accessSrtCheckBox == true,true,false)}">
+                                                                        <apex:outputText value="{!atc.srtRec.ClaimedHrs}" />
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(atc.srtRec.srtCheckBox== false && atc.srtRec.accessSrtCheckBox == false,true,false)}">
+                                                                    </apex:outputPanel>
+
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!IF(atc.srtRec.IsPopUpSRT == true && isAutomatedClaim == true,true,false)}">
+                                                                    <apex:outputPanel rendered="{!IF(atc.srtRec.srtCheckBox== true || atc.srtRec.accessSrtCheckBox == true,true,false)}">
+                                                                        <b><apex:outputText value="{!atc.srtRec.ClaimedHrs}"/></b>
+                                                                    </apex:outputPanel>
+                                                                    <apex:outputPanel rendered="{!IF(atc.srtRec.srtCheckBox== false && atc.srtRec.accessSrtCheckBox == false,true,false)}">
+                                                                    </apex:outputPanel>
+                                                                </apex:outputPanel>
+                                                            </apex:outputPanel>
+                                                        </td>
+                                                    </tr>
+                                                    <!-- </apex:outputPanel> -->
+
+
+
+                                                </apex:repeat>
+                                            </tbody>
+
+                                        </table>
+                                        <!-- </apex:OutputPanel>-->
+                                        <!-- Commented for Story 171492 by Moulika -->
+                                        <!--<div class="col-sm-12">   
+<span><b>{!$Label.css_Total_ATC_Access_Time}</b></span> <br></br>
+<apex:outputPanel id="totalatcAccTime">
+<div ><apex:outputText value="{!totalDecimalTimeAccTotAtc}"/></div>
+</apex:outputPanel>
+
+</div>-->
+                                        <div class="col-sm-12">
+                                            <span><b>{!$Label.css_Total_ATC_SRT_Time}</b></span>                                                    <br></br>
+                                        <apex:outputPanel id="rTimeatc">
+                                            <div>
+                                                <apex:outputText value="{!totalDecimalTimeatc}"
+                                                                 />
+                                            </div>
+                                        </apex:outputPanel>
+                                        </div>
+                                    </apex:OutputPanel>
+                                <!--ATC END--->
+                                <div class="col-sm-offset-5 col-sm-4" style="margin-top:10px;">
+                                    <apex:outputPanel rendered="{!IF(canEdit == true,true,false)}">
+                                        <apex:commandButton value="{!$Label.css_save_btn}" action="{!saveCampTRPATCData}"
+                                                            styleClass="saveButton" rerender=""
+                                                            oncomplete="return false;" />&nbsp;&nbsp;
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!IF(canEdit == false,true,false)}">
+                                        <apex:commandButton value="{!$Label.css_save_btn}" action="{!saveCampTRPATCData}"
+                                                            styleClass="cmi_lighttealbutton"
+                                                            rerender="" oncomplete="return false;"
+                                                            />&nbsp;&nbsp;
+                                    </apex:outputPanel>
+                                    <apex:actionStatus startText="requesting..." id="Actstatusid">
+                                        <apex:facet name="start">Saving... <img src="/img/loading.gif"
+                                                                                /></apex:facet>
+                                        <apex:facet name="stop"></apex:facet>
+                                    </apex:actionStatus>&nbsp;&nbsp;
+                                    <!--<apex:commandButton value="Reset" action="{!resetUpdatedCampTRPATCData}" styleClass="cancelButton" reRender="CampData,TRPData,ATCData,campPanelValues" status="ActstatusidR"/>-->
+                                    <apex:outputPanel id="resetButtons">
+                                        <apex:commandButton value="Reset" onclick="this.form.reset();return false;" styleClass="cancelButton"
+                                                            reRender="CampData,TRPData,ATCData,campPanelValues,resetButtons"
+                                                            status="ActstatusidR" />
+                                        <apex:actionStatus startText="requesting..." id="ActstatusidR">
+                                            <apex:facet name="start">Reseting... <img src="/img/loading.gif"
+                                                                                      /></apex:facet>
+                                            <apex:facet name="stop"></apex:facet>
+                                        </apex:actionStatus>&nbsp;&nbsp;
+                                    </apex:outputPanel>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+        </div>
+        </apex:outputPanel>
+    </apex:actionRegion>
+</div>
+</div>
+
+<script>
+    $('.sortChkTRP').on('change', function() {
+        $('.sortChkTRP').not(this).prop('checked', false);
+    });
+
+</script>
+</apex:component>

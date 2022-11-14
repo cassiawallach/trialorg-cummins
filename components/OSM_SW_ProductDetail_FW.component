@@ -1,0 +1,2582 @@
+<apex:component controller="OSM_SW_ProductDetail_FW_Ctrl">
+    <script type="text/javascript"> 
+    CCRZ.uiProperties.productDetailView.desktop.tmpl='CMI-SW-ProductDetail-Desktop';
+    CCRZ.uiProperties.aggregateView.desktop.aggContent.tmpl='CMI-SW-ProductDetail-Aggregate-Desktop';
+    CCRZ.uiProperties.aggregateView.desktop.tmpl='CMI-SW-ProductDetail-Aggregate-Desktop';
+    console.log('OSM_SW_ProductDetail_FW_Ctrl rendered');
+    </script> 
+    
+    <style>
+        #comment{
+            margin-left: 20px;
+            box-shadow: 0 2px 0 #e6e6e6;
+            height: 40px;
+            padding-left: 10px;
+            width: 500px;
+            height: 100px;
+        }    
+        .messagingSection-rfq-Error{
+            background-color: red;
+            margin: 1%;
+            font-size: 15px;
+            color: white;
+        }
+        .CMI-divTableCell, .CMI-divTableHead{
+            padding: 0px 0px;
+        }
+        .CMI-ItalicText{
+            font-style: italic;   
+        }
+        .CMI-Invoice-Message{
+            margin-top: 1%;
+            color: red;
+        }
+        .CMI-login-btn{
+            float: right;
+            margin-right: 3rem;
+            margin-top: 1rem;
+        }
+        .disable-link{
+            pointer-events: none;
+        }
+        a {
+            color: teal;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            color: #003333;
+            text-decoration: underline;
+        }
+        .totalcalCost{
+            margin-top: 7px!important;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .btn-info:focus, .btn-info.focus{
+            background-color: teal;
+            outline-color: teal;
+        }
+        
+        .btn-info:active, .btn-info.active, .open>.dropdown-toggle.btn-info {
+            color: #fff;
+            background-color: teal;
+            border-color: teal;
+            outline-color: teal;
+        }
+        
+        .btn:active, .btn.active {
+            background-image: none;
+            -webkit-box-shadow: inset 0 0px 0px rgba(0, 0, 0, 0);
+            box-shadow: inset 0 0px 0px rgba(0,0,0,0);
+        }
+        .btn-info:hover {
+            color: #fff;
+            background-color: teal;
+            border-color: teal;
+            outline-color: teal;
+        }
+        .btn-info:active:hover, .btn-info.active:hover, .open>.dropdown-toggle.btn-info:hover, .btn-info:active:focus, .btn-info.active:focus, .open>.dropdown-toggle.btn-info:focus, .btn-info:active.focus, .btn-info.active.focus, .open>.dropdown-toggle.btn-info.focus {
+            color: #fff;
+            background-color: teal;
+            border-color: teal;
+            outline-color: teal;
+        }
+        
+        .product-detail-sec{
+            outline:none;
+        }
+        .rfq-margin-top{
+            margin-top:1rem;
+        }
+        
+        .col-md-1-x {
+            float: left;
+            width: 16%;
+            text-align: center;
+        }
+        
+        button-div{
+            font-size: 18px;
+            color: black;
+            text-align: center;
+            border: 1px solid #ccc;
+            background: white;
+            padding: 1px 1px 1px 1px;
+            margin-left: 2%;
+            border-radius: 5px;
+            width: 15%;
+        }
+        
+        .rfq-disappear{
+            display : none !important;
+        }
+        .CMI-tnc-text{    
+            margin: 4rem;
+            margin-top: 2rem;
+        }
+        .tnc-text-align{
+            text-align: center;
+        }
+        .CMI-checkbox-freetrail{
+            margin-left: 33px;
+            padding-top: 0px;
+        }
+        
+        .CMI-checkbox-RFQ{
+            margin-left: 30px;
+            padding-top: 0px;
+        }
+        
+        .CMI-Margin-top{
+            margin-top: 5px;
+        }
+        
+        .CMI-DA-table-cell-Lite {
+            width: 22%;
+            float: left;
+            padding-right: 10px;
+            padding-left: 10px;
+            margin-right: 27px;
+            text-align: center;
+            padding-top: 9px;
+        }
+        
+        .CMI-DA-table-cell-Lite > span {
+            width: 15%;
+            float: left;
+            padding-left: 25px;
+        }
+        
+        .CMI-DA-table-cell-Pro{
+            width: 20%;
+            float: left;
+            padding-left: 10px;
+            padding-right: 10px;
+            margin-right: 20px;
+            text-align: center;
+            padding-top: 9px;
+        }
+        .CMI-DA-Packages{
+            border-color: teal;
+        }
+        .modal-header {
+            background-color: black !important;
+        }
+        body {
+            font-family: "Proxima Nova", "ProximaNova-Reg-webfont", "Proxima-Nova", Calibri, sans-serif;
+            font-size: 13px;
+            font-weight: 400;
+        }
+    </style>
+    
+    
+    <script id="CMI-SW-ProductDetail-Desktop" type="text/template">
+    <div class="panel panel-default product_detail_container product_type_standard phoneProductItem cc_panel cc_product_detail_container cc_product_type_standard">         
+         <div id="50sg" style="background-color: #FEEEED;padding: 10px;border: solid 2px red;display:none;">
+            <span class="icon-Warning" style="color:red; font-size:18px; vertical-align: middle;"></span>
+            &nbsp; Please contact customer support at 1-800-Cummins to purchase this quantity OR reduce quantity to less than {!qty2} for {{this.product.prodBean.name}} to proceed with the purchase.
+        </div>  
+        <div id="25sg" style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;display:none">      
+            <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; Please re-check the quantity attempted to purchase for {{this.product.prodBean.name}}<span id="productname2"></span>
+        </div>
+       
+        <div class="panel-heading cc_heading"> 
+            <h3 class="panel-title cc_title">{{this.product.prodBean.name}}</h3>
+        </div>
+        <div class="panel-body product_detail cc_body cc_product_detail" >
+            <div class="messagingSection-Error" role="alert" style="display: none"></div>
+            <div class="messagingAction-Info" role="alert" style="display: none">
+                <button type="button" class="close cc_close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&#215;</span></button>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    {{#ifDisplay 'PD.DsplSDesc'}}
+                        <div class="CMI-Product-Detail-ShortDes">
+                            <p class="pblock cc_pblock">{{{this.product.prodBean.shortDesc}}}</p>
+                        </div>
+                    {{/ifDisplay}}
+
+
+                    <div class="prod_media cc_prod_media">
+                        {{#if this.mediaWrappers.[SVG Interactive Diagram]}}
+                            {{#each this.mediaWrappers.[SVG Interactive Diagram]}}
+                                <div class="interactive cc_interactive">{{displaySVG this 'mainProdImage prodDetail img-responsive'}}</div>
+                            {{/each}}
+                        {{/if}}
+                        <div id="altImageModal" class="modal fade cc_alt_image_modal" tabindex="-1" role="dialog">
+                            <div class="modal-dialog cc_modal-dialg" role="document">
+                                <div class="modal-content cc_modal-content" style="border-radius:1px;border:1px black;">
+                                    <div class="modal-header cc_modal-header">
+                                        <button type="button" class="close cc_close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&#215;</span></button>
+                                        <h4 class="modal-title cc_modal-title" id="myModalLabel"></h4>
+                                    </div>
+                                    <div class="modal-body cc_modal-body">
+                                        <img class="modalImg cc_modal_img" src=""/>
+                                        <p class="modalText cc_modal_text"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>            
+
+                    {{#if this.product.mediaWrapper }}
+                        <div class="cc_product_detail_photo_container" id="photoContainer">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="cc_main_prod_image"  style=" width: 65%; margin-left: 65px;">{{displayImage this.product.mediaWrapper 'mainProdImage prodDetail img-responsive'}}</div>
+                                </div>
+                            </div>
+                            {{#if this.mediaWrappers.[Alternate Images]}}
+                                <div class="row">
+                                    {{#each this.mediaWrappers.[Product Image]}}
+                                        <div class="col-xs-3">
+                                            <img class="alternate cc_alternate img-responsive thumbnail" src="{{productImage this}}" data-id="{{this.uri}}"/>
+                                        </div>
+                                    {{/each}}
+                                    {{#each this.mediaWrappers.[Alternate Images]}}
+                                        <div class="col-xs-3">
+                                            <img class="alternate cc_alternate img-responsive thumbnail" src="{{productImage this}}" data-id="{{this.uri}}"/>
+                                        </div>
+                                    {{/each}}
+                                </div>
+                            {{/if}}
+                        </div>
+                    {{else}}
+                       {{#if this.mediaWrappers.[SVG Interactive Diagram]}}
+                       {{else}}
+            
+                    <div class="cc_product_detail_photo_container" id="photoContainer">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="cc_main_prod_image img-responsive">{{displayImage this.product.mediaWrapper 'mainProdImage prodDetail'}}</div>
+                            </div>
+                        </div>                
+                    </div>
+                                
+                    {{/if}}
+                    {{/if}}
+                    
+                    <div class="product_detail_item wishFinder cc_wish_finder " data-sku="{{this.product.prodBean.sku}}" id="CMI-LongDescAlignment">                                                                                        
+                        <div class="CMI-longdesc-wrap LongDesc CMI-Product-Detail-LongDes">         
+                            <span class="value cc_value">{{{this.product.prodBean.longDesc}}}</span>
+                        </div>
+                        <input type="button" class="CMI-more-button" style="color:teal;" onclick="$('.product-detail-sec')[0].focus()" value="More Details" />
+                    </div>
+                </div>
+                
+                <div id="subscriptionPackageId" class="col-md-6">        
+                    <div class="subsContainer" ></div>   
+                    <div class="aggSection"></div>         
+                </div>
+                
+            </div> 
+        </div> 
+    </div>      
+    
+    <div class="widgetSection"></div>
+    <div class="product-detail-sec" tabindex="1">
+        <div class="panel panel-default widget_container secRelatedRelated_container cc_panel cc_secRelatedRelated_container">
+            <div class="panel-heading cc_heading">
+                <h3 class="panel-title cc_title">More Details about {{this.product.prodBean.name}}</h3>
+            </div>
+            <div class="panel-body cc_body">
+                <div class="LongDesc CMI-Product-Detail-LongDes">
+                    <span class="">{{{this.product.prodBean.longDesc}}}</span>
+                </div>
+            </div>
+        </div>
+    </div>  
+    
+  <!--  <div id="destination"><div> -->
+    </script>
+        
+    <script id="CMI-SW-ProductDetail-Aggregate-Desktop" type="text/template">
+    
+    </script>
+    
+    <script id="CMI_ProductDetail-SubscPackage-Desktop" type="text/template">
+    
+    {{#ifEquals this.errorOnPageLoad false}}
+    
+    <!--{{#ifEquals this.isBundle true}}
+         <div class="CMI-SES-sub-head row CMI-SES-subscription">Base Package</div>
+         {{/ifEquals}}-->
+           
+         <div class="row cc_qty_control_row CMI-Subsc-Pkg" >
+         
+         </div>
+         <input type="hidden" name="compositKeyForSubProdTerm" value="{{this.compositKeyForSubProdTerm}}" />
+         <input type="hidden" name="hasTnC" value="{{this.hasTnC}}" />
+         <input type="hidden" name="subProdTermsMap" value="{{this.wrapper.subProdTermsMap}}" />
+         <input type="hidden" name="subProdTermPrices" value="{{this.subProdTermPrices}}" />
+         <input type="hidden" name="proratedPrice" value="{{this.proratedPrice}}" />
+         <input type="hidden" name="prodYearPrice" value="{{this.prodYearPrice}}" />
+         <input type="hidden" name="prodMonthlyPrice" value="{{this.prodMonthlyPrice}}" />
+         <input type="hidden" name="totalPrice" value="" />
+         <input type="hidden" name="hasActiveSubs" value="{{this.hasActiveSubs}}" />
+         <input type="hidden" name="isSubscribed" value="{{this.isSubscribed}}" />
+         <input type="hidden" name="hasOtherProductSusbcription" value="{{this.hasOtherProductSusbcription}}" />    
+         <input type="hidden" name="totalQuantityForNonSubProduct" value="" />  
+         <input type="hidden" name="pricePerBillFrequency" value="{{this.pricePerBillFrequency}}" />          
+         <input type="hidden" name="compParentId" value="" />
+         <input type="hidden" name="subslength" value="" />
+         
+         <!--  Start of Bundle Layouts--> 
+        <!--   {{#ifGreater this.quantity 50}}  --> 
+         
+       <!--   {{/ifGreater}}--> 
+         {{#ifEquals this.isBundle true}}    
+         {{#ifEquals this.isSubscribed false}}
+        
+         <div style="width: 100%; height: 100%; padding-top: 20px;">
+         <div style="top: 14px;width: 230px;position: absolute;background: white;font-size: 20px;margin-left: 30px;"><b>Test Package Information</b></div>
+         
+          <div id="50sg" style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;display:none">      
+             <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; Please contact customer support at 1-800-Cummins to purchase these many quantities of this product. Otherwise, please reduce the quantity to less than {!qty2} and go ahead with your purchase.{{this.productName}}
+            </div>  
+            <div id="25sg" style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;display:none">      
+             <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; Please re-check the quantity you are attempting to purchase.{{this.prodname2}}<span id="productname2"></span>
+            </div>
+         
+         <div style="margin: 10px;text-align: left;padding: 20px 10px 5px 10px;border: 1px solid lightgrey;border-bottom-color: grey;">
+          <div id="GOMSPriceMsg" style="width: 100%;height: 100%;padding-left: 2%;margin-bottom: 0px;padding-top: 0px;padding-bottom: 2px;display:none;white-space: normal;">
+             <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">                       
+             <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; Prices shown here are for illustration purposes only. Please refer to the Global Order Management System (GOMS) and your local ERP to view accurate pricing and invoices.
+             </div>
+         </div>
+         
+         <div class="CMI-DA-table">
+         <input type="hidden" name="compProdPrice" class="sellerIDSelected" value="" />
+         {{#ifEquals this.onlyBase false}}
+         <input type="hidden" name="buttonName" value="" />
+         <div class="CMI-DA-table-body">
+         <div class="row CMI-DA-table-row" style="border-bottom:none; margin-bottom:15px"> 
+         
+         <div class="CMI-DA-table-cell-name CMI-ImageDiv" style="width: 45%;">&nbsp;</div>
+         {{#eachInMap this.productIdVsWrapperMap}}
+         <div class="CMI-DA-table-cell-{{value.buttonName}}">
+         
+             <button type="button" data-sku="{{value.sku}}" data-sfid="{{value.sfId}}" data-price="{{value.prodSubscriptionPriceYearly}}" data-button="{{value.buttonName}}" id="{{value.buttonName}}" class="btn btn-info CMI-DA-Packages" style="margin-left: -3px;">{{value.buttonName}}</button>
+             {{#ifEquals value.buttonDisabled false}}
+             <button type="button" data-sku="{{value.sku}}" data-sfid="{{value.sfId}}" data-price="{{value.prodSubscriptionPriceYearly}}" data-button="{{value.buttonName}}" id="{{value.buttonName}}" class="btn btn-info CMI-DA-Packages" style="margin-left: -3px;">{{value.buttonName}}</button>
+             {{/ifEquals}}
+             {{#ifEquals value.buttonDisabled true}}
+             <button type="button" data-sku="{{value.sku}}" data-sfid="{{value.sfId}}" data-price="{{value.prodSubscriptionPriceYearly}}" disabled data-button="{{value.buttonName}}" id="{{value.buttonName}}" class="btn btn-info CMI-DA-Packages" style="margin-left: -3px;">{{value.buttonName}}</button>
+             {{/ifEquals}}
+             
+             <input type="hidden" name="{{value.name}}" class="sellerIDSelected" value="{{value.prodSubscriptionPriceYearly}} : {{value.sku}}" />
+                 </div>
+             {{/eachInMap}}
+             
+             </div>  
+            
+            <div class="row CMI-DA-table-row">
+              <div class="CMI-DA-table-cell-name " style="width:45%; margin-bottom: 10px;text-align: right; padding-right: 60px;font-size: 15px;"><b>Test Name</b></div>
+              <div id="plusColor" class="CMI-DA-table-cell-Lite CMI-plusColor" style="width:30%;font-size: 15px;"><b>Unit of Measure</b></div>
+              <div id="plusColor" class="CMI-DA-table-cell-Lite CMI-plusColor" style="width:30%;font-size: 15px;"><b>Fluid Volume Required</b></div>
+              </div>
+            {{#eachInMap this.specificationsName}}             
+                <div class="row CMI-DA-table-row">
+                    <div class="CMI-DA-table-cell-name " style="width:36%; margin-bottom: 10px;text-align: right;">
+                        <a href="#" class="CMI-link-icons OSM-Product-Detail" data-sku="{{value.sku}}"  onclick="return false;" >{{value.specName}}</a>
+                    </div>
+                    <div id="plusColor" class="CMI-DA-table-cell-Lite CMI-plusColor" style="width:30%;">{{value.unitOfMes}}</div>
+                    <div id="plusColor" class="CMI-DA-table-cell-Lite CMI-plusColor" style="width:30%;">{{value.fluidVolReq}}</div>
+                </div>
+            {{/eachInMap}}
+                         
+                         </div>
+                         {{/ifEquals}}
+                         {{#ifEquals this.onlyBase true}}
+                         {{#eachInMap this.productIdVsWrapperMap}}
+                         <input type="hidden" name="productSkuSelected" class="productSkuSelected" value="{{value.sku}}" />
+                             <input type="hidden" name="buttonName" class="buttonName" value="{{value.buttonName}}" />
+                                 
+                                 {{/eachInMap}}
+                                 <div class="row CMI-DA-table-row">
+                                  <div class="CMI-DA-table-cell-name " style="width:36%; margin-bottom: 10px;text-align: right; padding-right: 60px;font-size: 15px;"><b>Test Name</b></div>
+                                  <div id="plusColor" class="CMI-DA-table-cell-Lite CMI-plusColor" style="width:30%;font-size: 15px;"><b>Unit of Measure</b></div>
+                                  <div id="plusColor" class="CMI-DA-table-cell-Lite CMI-plusColor" style="width:30%;font-size: 15px;"><b>Fluid Volume Required</b></div>
+                                  </div>
+                                  {{#eachInMap this.specificationsName}}
+                                  
+                                  <div class="row CMI-DA-table-row">
+                                  <div class="CMI-DA-table-cell-name " style="width:45%; margin-bottom: 10px;text-align: right; padding-right: 70px;"><a href="#" class="CMI-link-icons OSM-Product-Detail" data-sku="{{value.sku}}"  onclick="return false;" >{{value.specName}}</a></div>
+                                      <div id="plusColor" class="CMI-DA-table-cell-Lite CMI-plusColor" style="width:30%;">{{value.unitOfMes}}</div>
+                                      <div id="plusColor" class="CMI-DA-table-cell-Lite CMI-plusColor" style="width:30%;">{{value.fluidVolReq}}</div>
+                                  </div>
+                                      {{/eachInMap}}
+                                      {{/ifEquals}}                                      
+                                              </div>
+                                              </div>
+                                              </div>
+                                            {{/ifEquals}}
+                                              
+                                            {{#ifEquals this.isSubscribed true}}
+                                                <div style="width: 98.4%;height: 100%;padding-left: 2%;margin-bottom: -15px;padding-top: 26px;">
+                                                    <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">                                              
+                                                        <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; An active Base package exists for this account. Please choose from the below add-on packages
+                                                    </div>
+                                                </div>                                              
+                                                <div id="GOMSPriceMsg" style="width: 98.4%;height: 100%;padding-left: 2%;margin-bottom: -15px;padding-top: 26px;display:none;">
+                                                    <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+                                                        <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; Prices shown here are for illustration purposes only. Please refer to the Global Order Management System (GOMS) and your local ERP to view accurate pricing and invoices.
+                                                    </div>                                              
+                                                </div>
+                                            {{/ifEquals}}
+                                            {{#ifEquals this.isGuestLoginButton true}}                                              
+                                            {{/ifEquals}}
+                                            {{#ifEquals this.isGuest false}}                                              
+                                            {{#ifEquals this.subscriptionSetting false}}                                              
+                                                <div >
+                                                <div class="CMI-SES-sub-head row CMI-SES-subscription">Subscription Eligibility</div>
+                                            {{#ifEquals this.DAExceptionFlag false}} <div class="col-md-8 DA-Guest-User CMI-DA-current" >{{this.daMessage}}</div> {{/ifEquals}}
+                                            {{#ifEquals this.DAExceptionFlag true}} <div class="col-md-8 DA-Guest-User CMI-DA-current" >{{this.DaExceptionMessage}}</div> {{/ifEquals}}
+                                              </div>
+                                          {{/ifEquals}}
+                                              
+                                              <!-- SES Upgrade Packages  -->  
+                                              <div class="row">
+                                              <!-- Now Upgrade package is not part of SES Product Details it will be part of related product section so commented this code-->
+                                              <div class="CMI-SES-upgrade">
+                                              <form class="form-horizontal">              
+                                              <fieldset>
+                                        <div style="width: 95.4%;height: 100%;padding-top: 20px;margin-left: 15px;">
+                                            <div style="top: 22px;width: 155px;position: relative;background: white;font-size: 20px;margin-left: 30px;"><b style=" padding-left: 3px;">Product Details</b></div>                                              
+                                            <div style="margin: 10px;text-align: left;padding: 20px 10px 5px 10px;border: 1px solid lightgrey;border-bottom-color: grey;">
+                                              
+                                              <div class="row CMI-row-style CMI-SES-upgrade-valign" style="border-top:none;border-bottom:none; display:inherit; vertical-align:top;">
+                                                  <div class="col-xs-12 col-md-4" style=" width: 50.5%; margin-left: 22%;">
+                                                      <div class="form-group">
+                                                          <label class="col-xs-5 col-md-4 control-label CMI-SES-Bundles" style=" width: 48%;" Id="NumberofSubscription" for="bundles"><B>Quantity ({!if(is5Packs, '5 Pack','1 Pack')})</B></label>
+                                                          <div class="col-xs-6 col-md-2">
+                                                              <input type="text" id="subcQty" name="subcQty" value="" class="subcQty input-text entry plus_minus cc_entry form-control" maxlength="7"/>
+                                                          </div>
+                                                          <div class="col-xs-12 col-md-12 subscriptionError" style="text-align: center;display:none;">
+                                                              <div style="color:red">Enter a Valid subscription Quantity</div>
+                                                          </div>
+                                                      </div>
+                                                  </div>
+                                                  <div class="col-xs-12 col-md-1 CMI-SES-price" style="width:5%; margin-left:0px; padding-left:0px; text-align:right;top: 8px;">
+                                                    <div><b>X</b></div>
+                                                  </div>
+                                                  <div class="col-xs-12 col-md-1 CMI-SES-price" style="width:15%; margin-left:0px; padding-left:0px; text-align:right;top: 8px;">
+                                                    <div>${{this.prodPrice}}</div>
+                                                  </div>
+                                              </div>
+                                              <!-- <div class="totalCostPerYear"></div>-->
+                                            </div>
+                                        </div>
+                                              
+                                              </fieldset>
+                                              </form>    
+                                              </div>
+                                            <div class="row" style=" margin-left: 61%; margin-right: -8%;">
+                                                <div class="col-lg-6 col-md-12 totalcostCal costPerYear" style="width: 50%; float: left;text-align:right;padding-right:0px;"> 
+                                                    <b>Subtotal</b>
+                                                </div>
+                                                <div class="col-lg-6 col-md-12 totalcostCal costPerYear" style="width: 50%; float: left;">
+                                                    <b><div class="totalCostPerYear">${{this.prodPrice}}</div></b>
+                                                </div>
+                                            </div>
+                                              
+                                              
+                                          {{#ifEquals this.subscriptionSetting true}}
+                                              <div class="product_detail_item wishFinder cc_wish_finder margin-lrem" >
+                                              
+                                              <!-- DA Specifications options  --> 
+                                              
+                                              {{#ifEquals this.isGuestLoginButton true}}
+                                              <!--<div>Click <a href="#login" class="goToLogin">{{pageLabelMap 'here'}}</a> to checkout product.</div>-->
+                                              <div class="CMI-login-btn">
+                                              <div style="display: flex; margin-bottom: 10px">
+                                              <span style="padding-top: 8px; padding-right: 10px"><I>{{pageLabelMap 'Product_Detail_Login_msg'}}</I></span>
+                                              <button type="button" class="btn btn-sm CMI-DA-Packages goToLogin" id="goToLogin">{{pageLabelMap 'Product_Detail_Login'}}</button>
+                                              </div>
+                                              
+                                              <div style="float: right; display: flex">
+                                              <span>{{pageLabelMap 'Product_Detail_New_User'}}</span>
+                                              <a href="{!$Label.OSM_Register_App_URL}"><span style="color: teal; text-decoration: underline;">{{pageLabelMap 'Product_Detail_Register'}}</span></a>
+                                              </div>                
+                                              
+                                              </div>
+                                              {{/ifEquals}}
+                                              {{#ifEquals this.isGuestLoginButton false}}
+                                              <div class="row">
+                                              <div class="col-md-11 pull-right" style="width:99%;float:none !important;">
+                                                  <div class="action cc_action pull-right">
+                                                      <div class="onSuccessAddToCart" style="color: green; background: yellow; background-color: rgb(243, 220, 190);  padding: 10px;  border: 2px solid rgb(59, 214, 30); color: black;   font-size: 13px;   background-color: palegoldenrod; display:none; padding-left: 30px; ">
+                                                          <div style="content: '';position: absolute; border-color: #009933;border-style: solid;border-width: 0 0.25em 0.25em 0;height: 1em;/* top: 1.3em; *//* left: 22.6em; *//* margin-top: -1em; */transform: rotate(45deg);width: 0.5em;display: inherit;/* padding: 13px; */margin-left: -15px;/* float: left;">
+                                                          </div>
+                                                          Added to Cart
+                                                      </div><!--display:none-->
+                                                      <input type="hidden" name="sellerIDSelected" class="sellerIDSelected" value="{{this.product.sellerID}}" />
+                                                      <input type="hidden" name="productSkuSelected" class="productSkuSelected" value="" />
+                                                      <button type="button" class="btn btn-info CMI-DA-Packages" id="processAddToCart">Add To Cart</button>
+                                                  </div>
+                                                
+                                              <div id="GOMSMsg" style="width: 100%;height: 100%;padding-left: 2%;margin-bottom: -15px;padding-top: 50px;display:none">
+                                              
+                                              <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+                                              
+                                              <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; Please contact your Cummins distributor/sales representative to purchase this product.
+                                              </div>
+                                              </div>
+                                              </div>
+                                              </div>
+                                              {{/ifEquals}}    
+                                              </div>
+                                              </div> 
+                                              {{/ifEquals}}
+                                              {{/ifEquals}}
+                                              {{/ifEquals}}   
+                                              
+                                              {{#ifEquals this.isSubscription true}}
+                                              <div class="CMI-DA-table" style="display:none">
+                                              <input type="hidden" name="compProdPrice" class="sellerIDSelected" value="" />
+                                              
+                                              {{#ifEquals this.onlyBase true}}
+                                              {{#eachInMap this.productIdVsWrapperMap}}
+                                              <input type="hidden" name="productSkuSelected" class="productSkuSelected" value="{{value.sku}}" />
+                                              <input type="hidden" name="buttonName" class="buttonName" value="{{value.buttonName}}" />
+                                              
+                                              {{/eachInMap}}
+                                              {{#eachInMap this.specificationsName}}
+                                              
+                                              <div class="row CMI-DA-table-row">
+                                              <!-- <div class="CMI-DA-table-cell-image"><span class=" CMI-Subscription-Icons2 {{value.imageText}}"></span></div> -->
+                                              <div class="CMI-DA-table-cell-name ">{{value.specName}}</div>
+                                              <div id="baseColor" class="CMI-DA-table-cell-Lite CMI-baseColor {{value.displayBaseDiv}}">{{value.base}}</div>
+                                              
+                                              </div>
+                                              
+                                              {{/eachInMap}}
+                                              {{/ifEquals}}
+                                              </div>
+                                              
+                                              {{#ifEquals this.isGuestLoginButton true}}
+                                              
+                                              {{/ifEquals}}
+                                              
+                                              
+                                              {{#ifEquals this.isGuest false}}
+                                              
+                                              {{#ifEquals this.subscriptionSetting false}}
+                                              
+                                              <div >
+                                              <div class="CMI-SES-sub-head row CMI-SES-subscription">Subscription Eligibility</div>
+                                              {{#ifEquals this.DAExceptionFlag false}} <div class="col-md-8 DA-Guest-User CMI-DA-current" >{{this.daMessage}}</div> {{/ifEquals}}
+                                              
+                                              {{#ifEquals this.DAExceptionFlag true}} <div class="col-md-8 DA-Guest-User CMI-DA-current" >{{this.DaExceptionMessage}}</div> {{/ifEquals}}
+                                              
+                                              </div>
+                                              {{/ifEquals}}
+                                              
+                                              {{#ifEquals this.subscriptionSetting true}}
+                                              <!--MAR-573-->
+                                              
+                                              <div id="QSOLProducts" style="width: 98.4%;height: 100%;padding-left: 2%;margin-bottom: -15px;padding-top: 26px;display:none">
+                                              
+                                              
+                                              <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+                                              
+                                              {{#ifContains this.productName 'EDS'}}
+                                              <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; You have an active EBU subscription. To cancel/change your subscription, <a class="cmi_footer_link" href= "{!$Label.OSM_TnC_Footer_VFPage_Link}#exactline" target="_blank" >click here</a>.
+                                              {{else}}
+                                              <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; You have an active CPG subscription. To cancel/change your subscription, <a class="cmi_footer_link" href= "{!$Label.OSM_TnC_Footer_VFPage_Link}#exactline" target="_blank" >click here</a>.
+                                              {{/ifContains}}
+                                              </div>
+                                              </div>
+                                              
+                                              <div class="product_detail_item wishFinder cc_wish_finder margin-lrem" >
+                                              <div class="CMI-subsetting">
+                                              
+                                              <div>
+                                              <form class="form-horizontal">              
+                                              <fieldset>
+                                              
+                                              <div style="width: 100%; height: 100%; padding-top: 20px;">
+                                              <!--MAR-573-->
+                                              {{#ifEquals this.isSubscribed true}}
+                                              <div id="QSOLProducts1" style="top: 70px;position: absolute;background: white;font-size: 20px;margin-left: 48px;display:none"><b>Product Preferences</b></div>
+                                              {{/ifEquals}}
+                                              
+                                            <div id="QSOLProducts2" style="top: 14px;position: absolute;background: white;font-size: 20px;margin-left: 48px;display:none"><b>Product Preferences</b></div>
+                                            <div style="margin: 10px;text-align: left;padding: 20px 10px 5px 10px;border: 1px solid lightgrey;border-bottom-color: grey;">
+                                              
+                                               <div id="GOMSPriceMsg" style="width: 100%;height: 100%;padding-left: 2%;margin-bottom: 0px;padding-top: 0px;padding-bottom: 2px;display:none;white-space: normal;">
+                                                    <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+                                                                              
+                                                    <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; Prices shown here are for illustration purposes only. Please refer to the Global Order Management System (GOMS) and your local ERP to view accurate pricing and invoices.
+                                                    </div>
+                                               </div>
+                                              <div class="form-group">
+                                              
+                                              
+                                              {{#ifEquals this.isSubscribed true}}
+                                              
+                                              
+                                              <label class="col-xs-5 col-md-4 control-label CMI-SES-Bundles" Id="NumberofSubscription" for="bundles"><B>{{pageLabelMap 'Number of Subscription'}} </B><span Id="GuidanzMobileMessg" style="padding-left:1px;" title="1 quantity corresponds to 2 Guidanz mobile users" >&#128712;</span></label>
+                                              
+                                              {{/ifEquals}}
+                                              {{#ifEquals this.isSubscribed false}}
+                                              <label class="col-xs-5 col-md-4 control-label CMI-SES-Bundles" Id="NumberofSubscription" for="bundles"><B>Number of Subscriptions</B><span Id="GuidanzMobileMessg" style="padding-left:1px;" title="1 quantity corresponds to 2 Guidanz mobile users" >&#128712;</span></label>
+                                              {{/ifEquals}}
+                                              
+                                              <div class="col-xs-6 col-md-2">
+                                              <input type="text" id="subcQty" name="subcQty" value="" class="subcQty input-text entry plus_minus cc_entry form-control" maxlength="7"/>
+                                              </div>
+                                              <div class="costSubscription_subsStandAlone"></div>
+                                              <div class="col-xs-12 col-md-12 subscriptionError" style="text-align: center; display:none;">
+                                              <div style="color:red">Enter a Valid subscription Quantity</div>
+                                              </div>
+                                              </div>
+                                              
+                                              <!-- Subscription Length - Multiple Radios (inline) -->
+                                                  <div class="form-group">
+                                                    {{#ifEquals this.hasRelatedProductSubsc false}}
+                                                      <label class="col-xs-5 col-md-4 control-label" for="radios"><B>{{pageLabelMap 'Subscription Length'}}</B></label>
+                                                          
+                                                          <div class="col-md-6 " style="padding-left: 10px;"> 
+                                                      {{#eachInMap this.subscriptionLengthVsYrMultipler}}
+                                                          <label class="radio-inline" for="{{key}}">
+                                                          <input type="radio" class="CMI-SubsLength" {{status}} {{value}} name="subscriptionLengthLst" data-subslength="{{key}}" data-multipler="{{value}}" id="{{key}}" value="{{value}}">{{key}}</input>
+                                                          </label>
+                                                      {{/eachInMap}}
+                                                          
+                                                      {{/ifEquals}}
+                                                       
+                                                          </div>
+                                                       {{#ifEquals this.isSubscribed true}}
+                                                         {{#if isCoTermOptionSelected}}
+                                                         {{#ifEquals this.toShowCoTerm true}}
+                                                            <div class="form-group">                                                                
+                                                                 <label class="col-xs-5 col-md-4 control-label CMI-SES-Bundles" style="padding-top: inherit" Id="NumberofSubscription" for="bundles"><B>{{pageLabelMap 'CO-TERM'}}<span style="padding-left:1px;" title="Co-term option will enable all your active electronic service tools subscriptions to end on the same date and prices will be prorated to the date your first subscription was purchased. To NOT use this option and pay for a full year subscription please UNCHECK this selection." >&#128712;</span></B></label>
+                                                                 <div class="col-xs-6 col-md-2">
+                                                                    <input class="inputBoxforcoTerm" type="checkbox" checked ></input>
+                                                                  </div>
+                                                            </div>
+                                                         {{/ifEquals}}
+                                                         {{/if}}
+                                                         
+                                                           <div class="form-group" style="">
+                                                      {{#ifEquals this.isSubscribed true}}
+                                                      {{#if isCoTermOptionSelected}}
+                                                        {{#ifEquals this.toShowCoTerm false}}
+                                                          <label class="col-xs-5 col-md-4 control-label" style="padding-top: inherit"  ><span ><B>{{pageLabelMap 'Expiration Date'}}</B></span ><span style="padding-left:1px;" title="All subscriptions for a location will be co-termed to end on the same date and the price will be pro-rated depending on the number of days left in your current active subscription" >&#128712;</span></label>
+                                                          <div class="col-xs-6 col-md-2">
+                                                                    <span class="cc_col_order_date"  >{{this.subsEndDate}}</span>
+                                                                  </div>
+                                                        {{/ifEquals}}
+                                                        {{#ifEquals this.toShowCoTerm true}}
+                                                          <label class="col-xs-5 col-md-4 control-label" style="padding-top: inherit"  ><span ><B>{{pageLabelMap 'Expiration Date'}}</B></span ></label>
+                                                          <div class="col-xs-6 col-md-2">
+                                                                    <span class="cc_col_order_date"  >{{this.subsEndDate}}</span>
+                                                                  </div>
+                                                        {{/ifEquals}}
+                                                        {{/if}}
+                                                      {{/ifEquals}}
+                                                          </div>
+                                                         
+                                                      {{else}}
+                                                          
+                                                      {{#ifEquals this.hasRelatedProductSubsc true}}
+                                                        {{#if isCoTermOptionSelected}}
+                                                         {{#ifEquals this.toShowCoTerm true}}
+                                                            <div class="form-group">
+                                                                
+                                                                 <label class="col-xs-5 col-md-4 control-label CMI-SES-Bundles" Id="NumberofSubscription" for="bundles"><B>{{pageLabelMap 'CO-TERM'}}<span style="padding-left:1px;" title="Co-term option will enable all your active electronic service tools subscriptions to end on the same date and prices will be prorated to the date your first subscription was purchased. To NOT use this option and pay for a full year subscription please UNCHECK this selection." >&#128712;</span></B></label>
+                                                                
+                                                                
+                                                                   <div class="col-xs-6 col-md-2">
+                                                                    <input class="inputBoxforcoTerm" type="checkbox" checked ></input>
+                                                                  </div>
+                                                            </div>
+                                                         {{/ifEquals}}
+                                                         {{/if}}
+                                                            {{#if isCoTermOptionSelected}}
+                                                         {{#ifEquals this.toShowCoTerm false}}
+                                                         
+                                                          <div class="form-group">
+                                                                
+                                                                 <label class="col-xs-5 col-md-4 control-label" style="padding-top: inherit"  ><span ><B>{{pageLabelMap 'Expiration Date'}}</B></span ><span style="padding-left:1px;" title="All subscriptions for a location will be co-termed to end on the same date and the price will be pro-rated depending on the number of days left in your current active subscription" >&#128712;</span></label>
+                                                                
+                                                                
+                                                                   <div class="col-xs-6 col-md-2">
+                                                                    <span class="cc_col_order_date"  >{{this.relatedProductSubscEndDate}}</span>
+                                                                  </div>
+                                                            </div>
+                                                            
+                                                            
+                                                         {{/ifEquals}}
+                                                         {{#ifEquals this.toShowCoTerm true}}
+                                                         <div class="form-group">
+                                                                
+                                                                 <label class="col-xs-5 col-md-4 control-label" style="padding-top: inherit"  ><B>{{pageLabelMap 'Expiration Date'}}</B></label>
+                                                                
+                                                                
+                                                                   <div class="col-xs-6 col-md-2">
+                                                                    <span class="cc_col_order_date"  >{{this.relatedProductSubscEndDate}}</span>
+                                                                  </div>
+                                                            </div>
+                                                         {{/ifEquals}}
+                                                         {{/if}}
+                                                      {{/ifEquals}}
+                                                      {{/ifEquals}}
+                                                          
+                                                          <div class="form-group">
+                                                      {{#if isQsolPowerGenerator}}
+                                                          <label style="padding-right: 10px; " class="col-xs-5 col-md-4 control-label" for="radios"><B>{{pageLabelMap 'Version'}}</B></label>
+                                                          
+                                                          <div class="col-md-6"> 
+                                                      {{#eachInMap this.productIdVsWrapperMap}}
+                                                          <label class="radio-inline" for="{{key}}">
+                                                          <input type="radio" class="CMI-SubsVersion" {{status}} {{value}} name="productVersionList" data-subslength="{{key}}" data-SelectedVersionSKU="{{value.sku}}" data-multipler="{{value}}" id="{{key}}" value="{{value}}">{{value.buttonName}}</input>
+                                                          </label>
+                                                      {{/eachInMap}}
+                                                      {{/if}}
+                                                          </div>
+                                                          </div>
+                                                          
+                                                          
+                                                          <div>
+                                                          
+                                                     
+                                                          </div> 
+                                                          </div>
+                                                          </div> 
+                                                          </div>
+                                                          
+                                                         <!-- <div class="totalCostPerYear"></div>-->
+                                                          
+                                                          
+                                                          </fieldset>                  
+                                                          </form>
+                                                          </div>  
+                                                          </div>    
+                                                          <!--------- Start 1 Added by vineet on 16/07/2019       -->
+                                                      {{#ifEquals this.isGuestLoginButton false}}
+                                                      {{#if this.showAddtoCartButtonAgain}}
+                                                          <div class="row">
+                                                          <div class="col-md-11 pull-right">
+                                                          <div class="action cc_action pull-right">
+                                                          <div class="onSuccessAddToCart" style="color: green; background: yellow; background-color: rgb(243, 220, 190);  padding: 10px;  border: 2px solid rgb(59, 214, 30); color: black;   font-size: 13px;   background-color: palegoldenrod; display:none;padding-left: 30px; ">
+                                                          <div style="content: '';position: absolute; border-color: #009933;border-style: solid;border-width: 0 0.25em 0.25em 0;height: 1em;/* top: 1.3em; *//* left: 22.6em; *//* margin-top: -1em; */transform: rotate(45deg);width: 0.5em;display: inherit;/* padding: 13px; */margin-left: -15px;/* float: left;">
+                                                          </div>
+                                                          Added to Cart</div>
+                                                          <input type="hidden" name="sellerIDSelected" class="sellerIDSelected" value="{{this.product.sellerID}}" />
+                                                          <input type="hidden" name="productSkuSelected" class="productSkuSelected" value="" />
+                                                          
+                                                          <button type="button" class="btn btn-info" id="processAddToCart">Add To Cart</button>
+                                                          </div>
+                                                          <div id="GOMSMsg" style="width: 100%;height: 100%;padding-left: 2%;margin-bottom: -15px;padding-top: 50px;display:none">
+                                                                                          
+                                                                                          
+                                                           <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+                                                                                          
+                                                            <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; Please contact your Cummins distributor/sales representative to purchase this product.
+                                                            </div>
+                                                            </div>
+                                                          </div>
+                                                          </div>
+                                                      {{/if}}
+                                                      {{/ifEquals}}
+                                                          <div class="row col-md-11" style="width: 100%;height: 100%;padding-left: 2%;margin-bottom: 0px;padding-top: 0px;padding-bottom: 2px;display:none;white-space: normal;" id="inlinemsg">
+                                                          
+                                                          <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+                                                               <p><span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp;<B>Your Request has been submitted successfully. Please allow up to 2 business days to process the request,Please contact your local distributor if your request is urgent.</B></p>
+                                                          </div>
+                                                          </div>
+                                                          <input type="hidden" name="quantityVal" value="" />
+                                                      {{#if this.ShowRequestForApprovalButton}} 
+                                                          <div class="row">
+                                                          <div class="col-md-11 pull-right">
+                                                          <div class="action cc_action pull-right">
+                                                          
+                                                          
+                                                          <button type="button" class="btn btn-default" id="processApprovalRequest" disabled="true">Request for Approval</button>
+                                                          </div>
+                                                          </div>
+                                                          </div>  
+                                                          <div id="GOMSMsg" style="width: 100%;height: 100%;padding-left: 2%;margin-bottom: -15px;padding-top: 50px;display:none">
+                                                                                          
+                                                          <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+                                                                                          
+                                                          <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; Please contact your Cummins distributor/sales representative to purchase this product.
+                                                          </div>
+                                                          </div>
+                                                      {{/if}}
+                                                      {{#if this.showFinalInlineMessage}}
+                                                          <div class="row" >
+                                                          <div class="col-md-11 pull-right">
+                                                          <div class="action cc_action pull-right">
+                                                          
+                                                          <p><B>Product Not Available now</B></p>
+                                                          </div>
+                                                          </div>
+                                                          </div>
+                                                      {{/if}}
+                                                      {{#if this.pendingForApprovalMsg}}
+                                                          <div class="row" >
+                                                          <div class="col-md-11 pull-right" style="width: 100%;height: 100%;padding-left: 2%;margin-bottom: 0px;padding-top: 0px;padding-bottom: 2px;white-space: normal;">
+                                                          <div class="action cc_action pull-right" style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+                                                          
+                                                          <p><span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp;<B>Your Request has been submitted successfully. Please allow up to 2 business days to process the request,Please contact your local distributor if your request is urgent.</B></p>
+                                                          </div>
+                                                          </div>
+                                                          </div>
+                                                      {{/if}}
+                                                          <!--------- End 1 Added by vineet on 16/07/2019       -->
+                                                          
+                                                      {{#ifEquals this.isGuestLoginButton true}}
+                                                          <!--<div>Click <a href="#login" class="goToLogin">{{pageLabelMap 'here'}}</a> to checkout product.</div>-->
+                                                          <div class="CMI-login-btn">
+                                                          <div style="display: flex; margin-bottom: 10px">
+                                                          <span style="padding-top: 8px; padding-right: 10px"><I>{{pageLabelMap 'Product_Detail_Login_msg'}}</I></span>
+                                                          <button type="button" class="btn btn-sm CMI-DA-Packages goToLogin" id="goToLogin">{{pageLabelMap 'Product_Detail_Login'}}</button>
+                                                          </div>
+                                                          
+                                                          <div style="float: right; display: flex">
+                                                          <span>{{pageLabelMap 'Product_Detail_New_User'}}</span>
+                                                          <a href="{!$Label.OSM_Register_App_URL}" ><span style="color: teal; text-decoration: underline;">{{pageLabelMap 'Product_Detail_Register'}}</span></a>
+                                                          </div>                
+                                                          
+                                                          </div>
+                                                      {{/ifEquals}}
+                                                          
+                                                          
+                                                          </div>
+                                                          </div> 
+                                                      {{/ifEquals}}
+                                                          
+                                                      {{/ifEquals}}
+                                                          </div>
+                                                          </div>
+                                                          </div>                                         
+                                                      {{/ifEquals}}
+                                                          <!-- JK End : StandAlone Subscription Product -->
+                                                          
+                                                          <!-- JK Start : StandAlone External Product -->
+                                                          
+                                                      {{#ifEquals this.isExternal true}}  
+                                                          
+                                                          <form class="form-horizontal">              
+                                                          <fieldset>
+                                                          <div style="width: 100%; height: 100%; padding-top: 20px;">
+                                                          <div style="top: 14px;width: 140px;position: absolute;background: white;font-size: 20px;margin-left: 30px;"><b>Purchase Details</b></div>
+                                                          
+                                                          <div style="margin: 10px;text-align: left;padding: 20px 10px 5px 10px;border: 1px solid lightgrey;border-bottom-color: grey;">
+                                                          <p style="margin-left:10px">To purchase a {{this.productName}} adaptor, visit <a target="_blank" href='https://{!$Label.CumminsStoreExternalSiteURL}'>{!$Label.CumminsStoreExternalSiteURL}</a></p>
+                                                          </div>
+                                                          </div>
+                                                          </fieldset>
+                                                          </form>
+                                                          <button type="button" class="btn btn-default btn-sm CMI-btn-teal"  target="_blank" style ="margin-right:10%; float:right" onclick="window.open('https://{!$Label.CumminsStoreExternalSiteURL}')"><span>Buy &nbsp;</span><span class="icon-OpenInNewWindow"></span></button>
+                                                          
+                                                          
+                                                      {{/ifEquals}}
+                                                          
+                                                          <!-- JK End : StandAlone External Product -->
+                                                          
+                                                          <!-- JK Start : Stand Alone Non Subscription Product -->
+                                                      {{#ifEquals this.isNonSubscription true}}  
+                                                          
+                                                          
+                                                          <!-- <p> StandAlone Non Subscription Product </p> -->
+                                                          
+                                                          
+                                                      {{#ifEquals this.isGuestLoginButton true}}
+                                                         
+                                                      {{/ifEquals}}
+                                                          
+                                                          
+                                                      {{#ifEquals this.isGuest false}}
+                                                          
+                                                      {{#ifEquals this.subscriptionSetting false}}
+                                                          
+                                                          <div >
+                                                          <div class="CMI-SES-sub-head row CMI-SES-subscription">Subscription Eligibility</div>
+                                                      {{#ifEquals this.DAExceptionFlag false}} <div class="col-md-8 DA-Guest-User CMI-DA-current" >{{this.daMessage}}</div> {{/ifEquals}}
+                                                          
+                                                      {{#ifEquals this.DAExceptionFlag true}} <div class="col-md-8 DA-Guest-User CMI-DA-current" >{{this.DaExceptionMessage}}</div> {{/ifEquals}}
+                                                          
+                                                          </div>
+                                                      {{/ifEquals}}
+                                                          
+                                                      {{#ifEquals this.subscriptionSetting true}}
+                                                          <div class="product_detail_item wishFinder cc_wish_finder margin-lrem" >
+                                                          
+                                                          <!-- DA Specifications options  --> 
+                                                          <div class="CMI-subsetting">
+                                                          
+                                                          <div>
+                                                          <form class="form-horizontal"> 
+                                                          
+                                                          <fieldset>
+                                                          
+                                                          <div style="width: 100%; height: 100%; padding-top: 20px;">
+                                                          <div style="top: 14px;width: 224px;position: absolute;background: white;font-size: 20px;margin-left: 48px;"><b>Activation Key Preferences</b></div>
+                                                            
+                                                          <div style="margin: 10px;text-align: left;padding: 20px 10px 5px 10px;border: 1px solid lightgrey;border-bottom-color: grey;">
+                                                          <div id="GOMSPriceMsg" style="width: 100%;height: 100%;padding-left: 2%;margin-bottom: 0px;padding-top: 0px;padding-bottom: 2px;display:none;white-space: normal;">
+                                                                <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+                                                                                                                          
+                                                                <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; Prices shown here are for illustration purposes only. Please refer to the Global Order Management System (GOMS) and your local ERP to view accurate pricing and invoices.
+                                                                </div>
+                                                           </div>
+                                                          <!-- Number of Bundles -->
+                                                          <div class="form-group">
+                                                          <div>                   
+                                                          <label class="col-xs-5 col-md-4 control-label CMI-SES-Bundles" Id="NumberofSubscription" for="bundles" style="width:16%"><B>Bundles</B></label>
+                                                          <div class="col-xs-6 col-md-2">
+                                                          <input type="number" min="0" id="numOfBundles" name="numOfBundles" value="" class="numOfBundles input-text entry plus_minus cc_entry form-control" maxlength="7" />
+                                                          </div>
+                                                          <label class="col-xs-5 col-md-4 control-label" style="color:grey; text-align:left"><i>{{pageLabelMap 'NonSubscription_Bundle_Desc_Text'}}</i></label>
+                                                          </div>
+                                                          </div>
+                                                          <div class="form-group">
+                                                          <div>
+                                                          <label class="col-xs-5 col-md-4 control-label CMI-SES-Bundles" Id="NumberofSubscription" for="bundles" style="width:16%"><B>Counts</B></label>
+                                                          <div class="col-xs-6 col-md-2">
+                                                          <input type="number"  min="0" id="numOfCounts" name="numOfCounts" value="" class="numOfCounts input-text entry plus_minus cc_entry form-control" maxlength="7" />
+                                                          </div>
+                                                          <label class="col-xs-5 col-md-4 control-label" style="color:grey; text-align:left"><i>{{pageLabelMap 'NonSubscription_Count_Desc_Text'}}</i></label>
+                                                          </div>
+                                                          
+                                                          </div>
+                                                          
+                                                          <div class="form-group totalQuantityNonSubscription" style="display:none">
+                                                          <div>
+                                                          <label class="col-xs-5 col-md-4 control-label CMI-SES-Bundles" Id="NumberofSubscription" for="bundles" style="width:16%"><B>Total Quantity</B></label>
+                                                          <div class="col-xs-6 col-md-2">
+                                                          <div class="bundlesAndCountsQuantity"></div>
+                                                          </div>
+                                                          </div>
+                                                          
+                                                          </div>
+                                                          
+                                                          </div> 
+                                                          </div>
+                                                          
+                                                          <div class="totalCostPerYear"></div>
+                                                          
+                                                          </fieldset>                  
+                                                                                                      </form>
+                                                                                                      </div>  
+                                                                                                      </div>    
+                                                                                                      <div class="row" style="display:none;" id="inlinemsg">
+                                                                                                        <div class="col-md-11 pull-right" style="width: 100%;height: 100%;padding-left: 2%;margin-bottom: 0px;padding-top: 0px;padding-bottom: 2px;white-space: normal;">
+                                                                                                               <div class="action cc_action pull-right" style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+                                                                                                      
+                                                                                                                  <p> <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp;<B>Your Request has been submitted successfully. Please allow up to 2 business days to process the request,Please contact your local distributor if your request is urgent.</B></p>
+                                                                                                              </div>
+                                                                                                      </div> 
+                                                                                                      </div>
+                                                                                                      <input type="hidden" name="quantityVal" value="" />
+                                                                                                      {{#if this.ShowRequestForApprovalButton}} 
+                                                                                                      <div class="row">
+                                                                                                      <div class="col-md-11 pull-right">
+                                                                                                      <div class="action cc_action pull-right">
+                                                                                                      
+                                                                                                      <!-- Change  Enable Approval Button  Juhi  May 07, 2019 -->
+                                                                                                      <button type="button" class="btn btn-default" id="processApprovalRequest" disabled="true">Request for Approval</button>
+                                                                                                      </div>
+                                                                                                      </div>
+                                                                                                      </div>
+                                                                                                      <div id="GOMSMsg" style="width: 100%;height: 100%;padding-left: 2%;margin-bottom: -15px;padding-top: 50px;display:none">
+                                                                                          
+                                                                                                      <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+                                                                                                      
+                                                                                                      <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; Please contact your Cummins distributor/sales representative to purchase this product.
+                                                                                                      </div>
+                                                                                                      </div>
+                                                                                                      
+                                                                                                      
+                                                                                                      
+                                                                                                      {{/if}}
+                                                                                                      {{#if this.showReRequestForApproval}}
+                                                                                                      <div class="row">
+                                                                                                      <div class="col-md-11 pull-right">
+                                                                                                      <div class="action cc_action pull-right">
+                                                                                                      
+                                                                                                      <button type="button" class="btn btn-info" id="reprocessApprovalRequest" >Re-Request for Approval</button>
+                                                                                                      </div>
+                                                                                                      </div>
+                                                                                                      </div>
+                                                                                                      <div id="GOMSMsg" style="width: 100%;height: 100%;padding-left: 2%;margin-bottom: -15px;padding-top: 50px;display:none">
+                                                                                          
+                                                                                                      <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+                                                                                                      
+                                                                                                      <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; Please contact your Cummins distributor/sales representative to purchase this product.
+                                                                                                      </div>
+                                                                                                      </div>
+                                                                                                      {{/if}} 
+                                                                                                      
+                                                                                                      <!-- Start 2 Added by Vineet on 16/07/2019 -->
+                                                                                                      {{#ifEquals this.isGuestLoginButton true}}
+                                                                                                      <!--<div>Click <a href="#login" class="goToLogin">{{pageLabelMap 'here'}}</a> to checkout product.</div>-->
+                                                                                                      <div class="CMI-login-btn">
+                                                                                                      <div style="display: flex; margin-bottom: 10px">
+                                                                                                      <span style="padding-top: 8px; padding-right: 10px"><I>{{pageLabelMap 'Product_Detail_Login_msg'}}</I></span>
+                                                                                                      <button type="button" class="btn btn-sm CMI-DA-Packages goToLogin" id="goToLogin">{{pageLabelMap 'Product_Detail_Login'}}</button>
+                                                                                                      </div>
+                                                                                                      
+                                                                                                      <div style="float: right; display: flex">
+                                                                                                      <span>{{pageLabelMap 'Product_Detail_New_User'}}</span>
+                                                                                                      <a href="{!$Label.OSM_Register_App_URL}" ><span style="color: teal; text-decoration: underline;">{{pageLabelMap 'Product_Detail_Register'}}</span></a>
+                                                                                                      </div>                
+                                                                                                      
+                                                                                                      </div>
+                                                                                                      {{/ifEquals}}
+                                                                                                      <!-- End 2 Added by Vineet on 16/07/2019 -->
+                                                                                                      
+                                                                                                      {{#ifEquals this.isGuestLoginButton false}}
+                                                                                                      {{#if this.showAddtoCartButtonAgain}}
+                                                                                                      <div class="row">
+                                                                                                      <div class="col-md-11 pull-right">
+                                                                                                      <div class="action cc_action pull-right">
+                                                                                                      <div class="onSuccessAddToCart" style="color: green; background: yellow; background-color: rgb(243, 220, 190);  padding: 10px;  border: 2px solid rgb(59, 214, 30); color: black;   font-size: 13px;   background-color: palegoldenrod; display:none;padding-left: 30px; ">
+                                                                                                      <div style="content: '';position: absolute; border-color: #009933;border-style: solid;border-width: 0 0.25em 0.25em 0;height: 1em;/* top: 1.3em; *//* left: 22.6em; *//* margin-top: -1em; */transform: rotate(45deg);width: 0.5em;display: inherit;/* padding: 13px; */margin-left: -15px;/* float: left;">
+                                                                                                      </div>
+                                                                                                      Added to Cart</div>
+                                                                                                      <input type="hidden" name="sellerIDSelected" class="sellerIDSelected" value="{{this.product.sellerID}}" />
+                                                                                                      <input type="hidden" name="productSkuSelected" class="productSkuSelected" value="" />
+                                                                                                      
+                                                                                                      <button type="button" class="btn btn-info" id="processAddToCart">Add To Cart</button>
+                                                                                                      
+                                                                                                      </div>
+                                                                                                      <div id="GOMSMsg" style="width: 100%;height: 100%;padding-left: 2%;margin-bottom: -15px;padding-top: 50px;display:none">
+                                                                                          
+                                                                                                      
+                                                                                                      <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+                                                                                                      
+                                                                                                      <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp; Please contact your Cummins distributor/sales representative to purchase this product.
+                                                                                                      </div>
+                                                                                                      </div>
+                                                                                                      </div>
+                                                                                                      </div>
+                                                                                                      {{/if}}
+                                                                                                      {{/ifEquals}}
+                                                                                                      {{#if this.showFinalInlineMessage}}
+                                                                                                      <div class="row" >
+                                                                                                      <div class="col-md-11 pull-right">
+                                                                                                      <div class="action cc_action pull-right">
+                                                                                                      
+                                                                                                      <p><B>Product Not Available now</B></p>
+                                                                                                      </div>
+                                                                                                      </div>
+                                                                                                      </div>
+                                                                                                      {{/if}}
+                                                                                                      {{#if this.pendingForApprovalMsg}}
+                                                                                                      <div class="row" >
+                                                                                                      <div class="col-md-11 pull-right" style="width: 100%;height: 100%;padding-left: 2%;margin-bottom: 0px;padding-top: 0px;padding-bottom: 2px;white-space: normal;">
+                                                                                                      <div class="action cc_action pull-right" style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+                                                                                                      
+                                                                                                      <p><span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span> &nbsp;<B>Your Request has been submitted successfully. Please allow up to 2 business days to process the request,Please contact your local distributor if your request is urgent.</B></p>
+                                                                                                      </div>
+                                                                                                      </div>
+                                                                                                      </div>
+                                                                                                      {{/if}}
+                                                                                                      
+                                                                                                      </div>
+                                                                      
+                                                                                                      </div> 
+                                                                                                      {{/ifEquals}}
+                                                                                                      
+                                                                                                      {{/ifEquals}}
+                                                                                                      </div>
+                                                                                                      </div>
+                                                                                                      </div>                                         
+                                                                                                      {{/ifEquals}}
+                                                                                                      
+                                                                                                      <!-- JK End : Stand Alone Non Subscription Product -->
+                                                                                                      
+                                                                                                      {{/ifEquals}}
+                                                                                                      
+                                                                                                      {{#ifEquals this.errorOnPageLoad true}}      
+                                                                                                      <div class="col-md-8 row CMI-Margin-top DA-Guest-User CMI-DA-current" >{{pageLabelMap 'Product_Detail_Error_Message'}}</div>
+                                                                                                      {{/ifEquals}}
+                                                                                                      
+                                                                                                      
+                                                                                                      
+        <div id="Product-Detail-Model" class="modal fade cc_modal cc_cart_rfq_modal" role="dialog">
+            <div class="modal-dialog" style="margin-left: 32%;" role="document">
+                <div class="modal-content cc_modal_content" style="width: 51rem;border-radius:1px;border:1px black;">
+                    <div class="modal-header CMI-DA-Packages cc_modal_header bgc">
+                        <!-- button type="button" class="close cc_close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&#215;</span></button -->
+                        <h4 class="modal-title cc_modal_title" id="CartRfqLabel">{{this.ProdModelData.prodDetail.name}}</h4>
+                    </div>
+                    <div class="messagingSection-FreeTrial-Error messagingSection-Error" style="display: none">
+                        <div class="alert alert-danger" id="ErrorMsgDenger"></div>
+                    </div>
+                    <div style="padding-left:10px;">
+                        <label><B>{{pageLabelMap 'Description'}}&#58;&#160;</B></label>
+                        <div class="LongDesc CMI-Product-Detail-LongDes" >
+                            <span class="" id="descId" > {{this.ProdModelData.prodDetail.des}}</span>
+                        </div>
+                    </div >
+                    <div class="modal-footer">
+                        <input type="button" class="closeModal btn btn-default cc_add_coupon" style="background-color: #0f4f77;" id="hideModel2" data-dismiss="modal" value="Close" />
+                        <!-- button type="button" class="btn btn-default CMI-DA-Packages " data-dismiss="modal" aria-label="Close" >{{pageLabelMap 'Close'}}</button -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="EDQModel" class="modal fade cc_address_book_modal" role="dialog">
+            <div class="modal-dialog cc_modal-dialg" role="document">
+                <div class="modal-content cc_modal-content" style="border-radius:1px;border:1px black;">
+                    <div class="modal-header cc_modal-header">                                                                                                      
+                        <button type="button" class="close " data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&#215;</span></button>
+                        <h4 class="modal-title cc_title">Submit Request For Approval</h4>
+                    </div>
+                    <div class="modal-body cc_modal-body">
+                        <div id="comment-message" class="form-row">
+                            <i><textarea name = "comment"  placeholder = "Please enter your justification for the purchase here (Optional) .click Submit Request button to submit your request" id = "comment" ></textarea></i>
+                        </div>
+                    </div>
+                </div>                                                                                                      
+            </div>
+        </div>
+    
+    <div class="modal fade cc_modal cc_myaccount_orders_modal" id="ShowWarningMsgID" tabindex="-1" role="dialog" aria-labelledby="CancelMod">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content cc_modal_content" style="border-radius:1px;border:1px black;">
+                <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                    <h4 class="modal-title cc_modal_title" id="CartRfqLabel">Shopping Cart</h4>
+                </div>
+                <div class="modal-body cc_modal_body">
+                    <b>{!$Label.OSM_ProdDetail_Warning_Msg}</b>
+                </div>
+                <div class="modal-footer">
+                    <input type="button" class="closeModal btn btn-default cc_add_coupon" style="background-color: #0f4f77;" id="hideModelOnCancel2" data-dismiss="modal" value="Ok" />
+                    <!-- button type="button" class="btn CMI-DA-Packages " data-dismiss="modal" aria-label="Close" >Close</button -->
+                </div>
+            </div>
+        </div>
+    </div>
+      <!--  <div id="source">         
+            <div class="panel-heading cc_heading"> 
+                <h3 class="panel-title cc_title">Related Products</h3>
+            </div>  
+            <div class="panel-body CMI-ProductList-body">
+                <div class="products_1_row_medium_item CMI-ProductList-item">
+                    <div class="row ">
+                        {{#each this.relatedFWProds}}
+                        <div class="CMI-PP-Item">
+                            <div class="col-md-3 CMI-Catalogue-hover">
+                                <p>
+                                    <a href="{{this.pageURL}}" class="productName CMI-Product-Name Font_Size_Css" data-sku="{{this.sku}}"> 
+                                        {{this.prodName}} 
+                                    </a>
+                                </p>
+                                <a href="{{this.pageURL}}" class="productName CMI-Product-Name Font_Size_Css" data-sku="{{this.sku}}">
+                                    <img class="alternate cc_alternate img-responsive thumbnail" alt="{{this.prodName}}" src="{{this.prodImage.uri}}"/>
+                                </a>
+                                <p class="description cc_desc">
+                                    {{this.shortDesc}}
+                                </p>
+                            </div>
+                        </div>
+                        {{/each}}
+                    </div>
+                </div>
+            </div>
+        </div> -->
+    </script>    
+    
+    <script type="text/javascript">
+    Handlebars.registerHelper("ifGuest", function(options) {
+        if (CCRZ.pagevars.isGuest) {
+            return options.fn(this);
+        }
+    });
+    // MAR - 197
+    function numberWithCommas(amount) {
+        console.log('amount----comma-->',amount);
+        return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+    function goToRegister()
+    {
+        window.location.href =  "{!$Label.OSM_Register_App_URL}";
+        return true;
+    }
+    
+    var productTnCLink = '';
+    var validateFreeTrialDone = false;
+    /*
+    $('#destination').on('click', '.Font_Size_Css', function() {
+        var host = window.location.protocol + "//" + window.location.host + "/";
+        var viewstate = 'DetailView';
+        var cartid = CCRZ.pagevars.currentCartID;
+        var sku = $(this).attr('data-sku');
+        window.location.href = host + 'CMIStore/ccrz__ProductDetails?viewState='+viewstate +'&cartID='+cartid + '&sku='+sku +'&' + getCSRQueryString();
+    });
+    */
+    jQuery(function($){
+        CCRZ.subsc = CCRZ.subsc||{};
+        //CCRZ.rfq= CCRZ.rfq||{};
+        
+        CCRZ.models.RFQModel = CCRZ.CloudCrazeModel.extend({
+            className : "OSM_SW_ProductDetail_FW_Ctrl",
+            saveSubsInModel:function(ccData,callback){
+                this.invokeContainerLoadingCtx($('body'),"saveCCPackageInClass",JSON.Stringify(ccData),
+                                               function(response){
+                                                   if(response && response.success){ alert('--Got the response---')}
+                                               },{buffer:false,escape:false,nmsp:false} );
+            }
+        });
+        
+        function goToDetailPage(){    
+            var host = window.location.protocol + "//" + window.location.host + "/";
+            var viewstate = 'DetailView';
+            var cartid = CCRZ.pagevars.currentCartID;
+            var sku = CCRZ.featuredProductModel.sku;
+            window.location.href = host + 'CMIStore/ccrz__ProductDetails?viewState='+viewstate +'&cartID='+cartid + '&sku='+sku +'&' + getCSRQueryString();
+        }
+        
+        CCRZ.views.RFQPackageView = CCRZ.CloudCrazeView.extend({
+            viewName :'RFQPackageView',
+            className : "OSM_SW_ProductDetail_FW_Ctrl",
+            templateDesktop : CCRZ.util.template('rfqModalTemplate'),
+            templatePhone : CCRZ.util.template('rfqModalTemplate'),
+            firstRender : false,
+            init : function(){
+                this.dataSet = new Object();
+                var modals = this.dataSet;
+                var detail = new Object();
+                detail.FName = '{!$User.FirstName}';
+                detail.LName = '{!$User.LastName}';
+                detail.Company = '{!$User.CompanyName}';
+                //modals = detail;
+                this.dataSet.Detail = detail;
+                console.log(this.dataSet);
+                
+            },
+            
+            renderDesktop : function(){
+                this.setElement($('.rfqModal'));
+                this.$el.html(this.templateDesktop(this.dataSet));
+            },
+            renderPhone : function(){
+                this.setElement($('.rfqModal'));
+                this.$el.html(this.templateDesktop(this.dataSet));
+            },
+            
+        });
+        
+        CCRZ.RFQPackageView = new CCRZ.views.RFQPackageView({
+            model: CCRZ.models.RFQPackageModel
+        });
+        
+        
+        CCRZ.models.SubscriptionPackageModel = CCRZ.CloudCrazeModel.extend({
+            className : "OSM_SW_ProductDetail_FW_Ctrl",
+            saveSubsInModel:function(ccData,callback){
+                this.invokeContainerLoadingCtx($('body'),"saveCCPackageInClass",JSON.Stringify(ccData),
+                                               function(response){
+                                                   if(response && response.success){ alert('--Got the response---')}
+                                               },{buffer:false,escape:false,nmsp:false} );
+            }
+        });
+        
+        CCRZ.views.SubscriptionPackageView = CCRZ.CloudCrazeView.extend({
+            viewName :'SubscriptionPackageCCView',
+            className : "OSM_SW_ProductDetail_FW_Ctrl",
+            templateDesktop : CCRZ.util.template('CMI_ProductDetail-SubscPackage-Desktop'),
+            templatePhone : CCRZ.util.template('CMI_ProductDetail-SubscPackage-Desktop'),
+            firstRender : false,
+            init : function(){
+                this.dataSet = new CCRZ.models.SubscriptionPackageModel();
+                console.log(this.dataSet);
+                console.log('this.dataSet');
+                console.log(CCRZ.currentUser);                
+                this.fetchProdDetailInfoForDA();        
+                       
+                console.log('finish 2');                
+                this.render();                 
+                console.log('finish 3');                
+            },
+            
+            events:{
+                "click #saveCCPackage" : "saveMyPackage",
+                "click #processAddToCart" : "processAddItem",
+                //"click #processAddToCart" : "openWarningPopup",
+                "click .CMI-ProdName-Btn" : "processSelectProd",
+                "click .CMI-SubsLength" : "processSelectSubsLength",
+                "click .inputBoxforcoTerm" : "processSelectcoTerm",
+                "click .CMI-SubsVersion" : "processSelectSubsVersion",
+                "click .CMI-BillingFreq" : "processSelectBillingFreq",
+                "onchange .numOfBundles" : "calculateTotal",
+                "change .numOfBundles" : "processSelectNoOfSubsc",               
+                "onchange .numOfCounts" : "calculateTotal",
+                "change .numOfCounts" : "processSelectNoOfSubsc",                
+                "onchange .subcQty" : "calculateTotal",
+                "change .subcQty" : "processSelectNoOfSubsc",                
+                "change .addOnProductsQty":"calculateAddOnProductsQty",
+                'click .goToLogin' : 'goToLogin',
+                "click .gotoAddOnProduct" :"gotoAddOnProduct",
+                'click .OSM-Product-Detail' : 'openProductDetailModel',
+                'click #processApprovalRequest' : 'openPopup',
+                'click #reprocessApprovalRequest' : 'openPopup',
+                "click .CMI_ProdLink" : "goToProductDetail",
+                "click .CMI_ProdImage" : "goToProductDetail"
+            },
+            
+            goToProductDetail: function(event) {
+                 var sku = $(event.currentTarget).data("sku");
+                 productDetails(sku);
+            },
+            
+            openPopup:function(event){
+                var objLink = $(event.target);
+                $('#EDQModel').modal('show');
+                $(".messagingSection-FreeTrial-Error").css("display", "none");
+                $("#ErrorMsgDenger").html(""); 
+                $('#processApprovalRequest').addClass('CMI-DA-Packages');
+            },
+            
+            openProductDetailModel:function(event) {
+                console.log("Product detail alert");                            
+                
+                var objLink1 = $(event.target);
+                var skuforLink = objLink1.data("sku");
+                console.log(skuforLink);
+                var model = this.dataSet;
+                var thisContains = this;
+                this.invokeContainerLoadingCtx($('body'),"getProductDetail",skuforLink,
+                function(result,event) {
+                    console.log(result);
+                    if(result.success ) {
+                       model.ProdModelData = result.data;
+                       thisContains.render();
+                     //  $('div .subsContainer>#source').remove();
+                       $('#Product-Detail-Model').modal('show');
+                    }                            
+                },{buffer:false,escape:false,nmsp:false});
+            },
+            openWarningPopup:function(event) {
+               
+                var parentsku = CCRZ.detailData.jsonProductData.product.prodBean.SKU
+                //var model = this.dataSet;
+                //var thisContains = this;
+                this.invokeContainerLoadingCtx($('body'),"WarningMsg",parentsku,
+                function(result,event) {
+                    console.log(result);
+                    if(result.success ) {
+                    console.log('result %o',result);
+                      
+                       if(result.data.PymntwrngMsg!=undefined && result.data.PymntwrngMsg ==true)
+                    {                                            
+                         $('#ShowWarningMsgID').modal('show');
+                    }
+                     else{
+                     CCRZ.prodDetailView.processAddItem(event);
+                     }
+
+                      
+                   }                            
+                },{buffer:false,escape:false,nmsp:false});
+            },
+            
+            gotoAddOnProduct: function(event){
+                var objLink = $(event.target);
+                var addOnSku = objLink.data("sku");
+                var host = window.location.protocol + "//" + window.location.host + "/";
+                var viewstate = 'DetailView';
+                var cartid = CCRZ.pagevars.currentCartID;
+                var sku = addOnSku;
+                window.location.href = host + 'CMIStore/ccrz__ProductDetails?viewState='+viewstate +'&cartID='+cartid + '&sku='+sku +'&' + getCSRQueryString();
+            },
+            
+            
+            renderDesktop : function(){
+                this.setElement($('.subsContainer'));
+                this.$el.html(this.templateDesktop(this.dataSet));
+            },
+            
+            renderPhone : function(){
+                this.setElement($('.subsContainer'));
+                this.$el.html(this.templateDesktop(this.dataSet));
+            },
+            
+            updateButtonsModal : function(modalfromAggregateView) {
+                var v = this;
+                this.dataSet.wrapper = modalfromAggregateView;
+                console.log('Test here'+modalfromAggregateView);
+                CCRZ.SubscriptionPackageModel = this.dataSet;
+            },
+            
+            saveMyPackage:function(event){
+                alert('Inside saveMyPackage function of View');
+            },
+            
+            goToLogin : function(event){
+                if (CCRZ.pagevars.currentCartID){
+                    cartParam = CCRZ.pagevars.currentCartID;
+                }else{
+                    cartParam = "";
+                }
+                
+                var urlArgument = '';
+                if(CCRZ.pagevars.currentPageURL.search("\\?refURL") >= 0)
+                    urlArgument = CCRZ.pagevars.currentPageURL.split("?refURL")[0];
+                if(CCRZ.pagevars.currentPageURL.search("&refURL") >= 0)
+                    urlArgument = CCRZ.pagevars.currentPageURL.split("&refURL")[0];
+                
+                if("{!$Label.OSM_Login_Include_https}" == 'true' && !urlArgument.includes('https://')){
+                    urlArgument = 'https://'+urlArgument;
+                }
+                
+                if("{!$Label.OSM_Login_Include_https}" != 'true' && urlArgument.includes('https://')){
+                    urlArgument = urlArgument.replace('https://','');                    
+                }
+                window.location.href =  "{!$Label.OSM_Login_App_Url}" + '&retURL='+urlArgument;
+            },
+            
+            
+            fetchProdDetailInfoForDA:function(){
+                var isSubscribed = false;
+                var SubscribedWith = '';
+                var view = this;
+                var model = this.dataSet;
+                var parentId = CCRZ.detailData.jsonProductData.uid;
+                console.log('parentId'+parentId);
+                console.log('before loop');
+                
+                var relatedProductData = new Array();
+                if(CCRZ.detailData != undefined && CCRZ.detailData.relatedData != undefined && CCRZ.detailData.relatedData.Related != undefined)
+                {
+                    for(var i = 0; CCRZ.detailData.relatedData.Related.length > i ; i++)
+                    {
+                        relatedProductData.push(CCRZ.detailData.relatedData.Related[i].prodBean.sfid);
+                        console.log('in for loop');
+                        console.log(relatedProductData);
+                    }
+                }
+                
+                var objSend = new Object();
+                objSend.relatedDate = relatedProductData;
+                if(CCRZ.pagevars.portalUserId != '') {
+                    objSend.portalUserId = CCRZ.pagevars.portalUserId;
+                }
+                else {
+                    objSend.portalUserId = '{!$User.Id}';
+                }
+                objSend.parentId = parentId;
+                var param = JSON.stringify(objSend);
+                console.log(param);
+                $('input[name="compParentId"]').val(parentId);
+                this.dataSet.wrapper = new Object();
+                console.log('===Calling Data Now===');
+                console.log(model);
+                this.invokeContainerLoadingCtx($('body'),"fetchProdDetailInfoForDA",param,
+               function(result,event){
+                   if(event.status){
+                       try{
+                           console.log('CCRZ.detailData.jsonProductData.product.prodBean.OSMDAFreeProduct');
+                           console.log(CCRZ.detailData.jsonProductData.product.prodBean.OSMDAFreeProduct);
+                           console.log('fetch ProdDetail result %o',result);
+                           console.log(result.data);
+                           console.log('result.data.productIdVsAddOnProducts');    
+                           console.log(result.data.productIdVsAddOnProducts);
+                           model.errorOnPageLoad = false;
+                           model.relatedFWProds = result.data.relatedFWProds;
+                           model.prodPrice = result.data.prodPrice;
+                           model.totalPrice = result.data.prodPrice;
+                           model.OSMSupportAdmin = result.data.OSMSupportAdmin;
+                           console.log(result.data.OSMSupportAdmin);
+                           model.PymntwrngMsg= result.data.PymntwrngMsg;
+                           model.productIdVsWrapperMap = result.data.productIdVsWrapperMap;
+                           model.productIdVsAddOnProducts = result.data.productIdVsAddOnProducts;  
+                           model.header = result.data.onlyBase;
+                           model.onlyBase = result.data.onlyBase;
+                           model.toShowCoTerm = result.data.toShowCoTerm;
+                           model.afterOneYearDate = result.data.afterOneYearDate;
+                           model.isCoTermOptionSelected = result.data.withCoTerm;
+                           model.specificationsName = result.data.sortedProdSpecification;
+                           model.subscriptionLengthVsYrMultipler = result.data.subscriptionLengthVsYrMultipler;
+                           model.billingFrequencies = result.data.billingFrequencies;
+                           model.proratedDnPriceMap = result.data.proratedDnPriceMap;
+                           //JK Added since CCRZ.pagevars.currencyData.currencySymbol value was empty
+                           CCRZ.pagevars.currencyData.currencySymbol = '$';
+                           
+                           if(result.data.hasRelatedProductSubsc != undefined)
+                               model.hasRelatedProductSubsc = result.data.hasRelatedProductSubsc;
+                           
+                           if(result.data.relatedProductSubscEndDate != undefined)
+                               model.relatedProductSubscEndDate = result.data.relatedProductSubscEndDate;
+                           
+                           model.isGuest = false;
+                           model.isGuestLoginButton = CCRZ.pagevars.isGuest;
+                           console.log('model.isGuest'+CCRZ.pagevars.isGuest);                                     
+                            if(CCRZ.detailData.jsonProductData.product.prodBean.OSMDAFreeProduct){
+                                model.isGuest = true;
+                            }
+                            if(CCRZ.pagevars.isGuest){
+                                model.isGuest = false;
+                            }
+                            
+                            model.UpgradePackage = false;
+                            if(CCRZ.detailData  !== undefined && CCRZ.detailData.relatedData  !== undefined && CCRZ.detailData.relatedData.Accessories  !== undefined){
+                                var relatedProd = new Array();
+                                if(CCRZ.detailData.relatedData.Accessories.length >0){
+                                    model.UpgradePackage = true;
+                                    for(var ii=0;ii<CCRZ.detailData.relatedData.Accessories.length; ii++){
+                                        var relsData = CCRZ.detailData.relatedData.Accessories[ii];
+                                        var prodectBean = relsData.prodBean;
+                                        prodectBean.price = relsData.price;
+                                        prodectBean.currencySymbol = CCRZ.pagevars.currencyData.currencySymbol;
+                                        console.log(prodectBean);
+                                        relatedProd.push(prodectBean);
+                                    }
+                                }
+                                model.relatedProd = relatedProd;
+                            }    
+                            model.subscriptionSetting = true;
+                            model.hasActiveSubs = result.data.hasActiveSubs;
+                            model.produstSubProdTermPrice = result.data.prodYearPrice;
+                            if(model.hasActiveSubs || model.hasRelatedProductSubsc){
+                                model.produstSubProdTermPrice = result.data.proratedPriceMap;
+                            }
+                            model.isSubscribed = false;
+                            model.hasOtherProductSusbcription = result.data.hasOtherProductSusbcription;   
+                            console.log("testing...");
+                            console.log(result.data);
+                            if(result.data.hasActiveSubs && result.data.isSubscribed){                                                                
+                                model.isSubscribed = true;
+                                model.subsEndDate = result.data.subscriptionEndDate;                                                                
+                            }
+                            
+                            model.isBundle = false;
+                            model.isExternal = false;
+                            model.isSubscription = false; 
+                            model.isNonSubscription = false;    
+                            if(CCRZ.detailData.jsonProductData.product.prodBean.standAloneProduct == 'Subscription'){
+                                if(model.hasActiveSubs){
+                                    console.log(model.subscriptionLengthVsYrMultipler);
+                                    for (var key in model.subscriptionLengthVsYrMultipler) {
+                                        model.subslength = key;
+                                        $('input[name="subslength"]').val(key);
+                                        console.log('the key is-' + key + '-');
+                                        break;
+                                    }
+                                }
+                                if(CCRZ.detailData.jsonProductData.product.prodBean.QSOLPowerGeneration)
+                                    model.isQsolPowerGenerator = true;
+                                else
+                                    model.isQsolPowerGenerator = false;
+                            }
+                            
+                            if(CCRZ.detailData.jsonProductData.product.prodBean.standAloneProduct == undefined){
+                                model.isBundle = true;
+                                $('input[name="subcQty"]').val(1);
+                                model.quantity = 1;
+                                
+                                if(model.hasActiveSubs || model.onlyBase || (!model.hasActiveSubs && !model.onlyBase) ){
+                                    if(model.hasActiveSubs){
+                                        $('input[name="subcQty"]').val(0);
+                                        model.quantity = 0;
+                                    }
+                                    else if(model.onlyBase) {
+                                        $('input[name="subcQty"]').val(1);
+                                        model.quantity = 1;
+                                    }
+                                    
+                                    for (var key in model.productIdVsWrapperMap) {
+                                        model.productSkuSelected = model.productIdVsWrapperMap[key].sku;
+                                        model.selectedProdId = key;
+                                        if(!model.hasActiveSubs && !model.onlyBase) {
+                                            model.buttonName = model.productIdVsWrapperMap[key].buttonName;
+                                        }                                                                        
+                                        break;
+                                    }
+                                    
+                                    for (var key in model.subscriptionLengthVsYrMultipler) {
+                                        model.subslength = key;
+                                        $('input[name="subslength"]').val(key);
+                                        break;
+                                    }
+                                    
+                                    //RTC_JK
+                                    if(!model.hasActiveSubs && !model.onlyBase)
+                                    {
+                                        console.log('model.productSkuSelected' + model.productSkuSelected);
+                                        console.log('model.selectedProdId' + model.selectedProdId);
+                                        
+                                        $('input[name="subcQty"]').val(1);
+                                        model.quantity = 1;
+                                        
+                                        $('input[id="1 Year"]').prop('checked', true);
+                                        $('input[name="subslength"]').val('1 Year');
+                                        model.subslength = '1 Year';
+                                    }
+                        } 
+                    }
+                                                            
+                    if(CCRZ.detailData.jsonProductData.product.prodBean.standAloneProduct != undefined
+                       && CCRZ.detailData.jsonProductData.product.prodBean.standAloneProduct == 'External'){
+                        model.isExternal = true;
+                    }   
+                    if(CCRZ.detailData.jsonProductData.product.prodBean.standAloneProduct != undefined
+                       && CCRZ.detailData.jsonProductData.product.prodBean.standAloneProduct == 'Subscription'){
+                        model.isSubscription = true;
+                        
+                        //model.productSkuSelected = CCRZ.detailData.jsonProductData.product.prodBean.sku;
+                        for (var key in model.productIdVsWrapperMap) {
+                            model.productSkuSelected = model.productIdVsWrapperMap[key].sku;
+                            break;
+                            
+                        }
+                        
+                    }
+                    
+                    if(CCRZ.detailData.jsonProductData.product.prodBean.standAloneProduct != undefined
+                       && CCRZ.detailData.jsonProductData.product.prodBean.standAloneProduct == 'Non-Subscription'){
+                        model.isNonSubscription = true;
+                        
+                        for (var key in model.productIdVsWrapperMap) {
+                            model.productSkuSelected = model.productIdVsWrapperMap[key].sku;
+                            break;
+                        }
+                        
+                        for (var key in model.subscriptionLengthVsYrMultipler) {
+                            model.subslength = key;
+                            $('input[name="subslength"]').val(key);
+                            break;
+                        }
+                        
+                    }
+                    
+                    // JK - for external product name
+                    model.productName = CCRZ.detailData.jsonProductData.product.prodBean.name;
+                    
+                    model.pricePerBillFrequency = JSON.stringify(result.data.pricePerBillFrequency);
+                    model.prodYearPrice = JSON.stringify(result.data.prodYearPrice);
+                    model.produstSubProdTermPrice = result.data.prodYearPrice;
+                    if(model.hasActiveSubs || model.hasRelatedProductSubsc){
+                        model.produstSubProdTermPrice = result.data.proratedPriceMap;
+                    }
+                    model.proratedPrice = result.data.proratedPriceMap;
+                    model.compositKeyForSubProdTerm = result.data.compositKeyForSubProdTerm;
+                    model.subProdTermPrices = JSON.stringify(result.data.subProdTermPrices);
+                    model.prodMonthlyPrice = JSON.stringify(result.data.prodMonthlyPrice);
+                    
+                    //check added to show or hide Request for Approval button
+                    if(result.data.ShowRequestForApprovalButton != undefined )
+                    {
+                        model.ShowRequestForApprovalButton=result.data.ShowRequestForApprovalButton;
+                        console.log('ShowRequestForApprovalButton>>>'+model.ShowRequestForApprovalButton);
+                    }
+                    if(result.data.showAddtoCartButtonAgain != undefined )
+                    {
+                        model.showAddtoCartButtonAgain=result.data.showAddtoCartButtonAgain;
+                        console.log('showAddtoCartButtonAgain>>>'+model.showAddtoCartButtonAgain);
+                    }
+                    if(result.data.showFinalInlineMessage != undefined )
+                    {
+                        model.showFinalInlineMessage=result.data.showFinalInlineMessage;
+                        console.log('showFinalInlineMessage>>>'+model.showFinalInlineMessage);
+                    }
+                    if(result.data.showReRequestForApproval != undefined )
+                    {
+                        model.showReRequestForApproval=result.data.showReRequestForApproval;
+                        console.log('showReRequestForApproval>>>'+model.showReRequestForApproval);
+                    }
+                    if(result.data.pendingForApprovalMsg != undefined )
+                    {
+                        model.pendingForApprovalMsg=result.data.pendingForApprovalMsg;
+                        console.log('pendingForApprovalMsg>>>'+model.pendingForApprovalMsg);
+                    }
+                    if(result.data.GOMSUser!=undefined)
+                    {
+                        model.GOMSUser=result.data.GOMSUser;
+                        console.log('GOMS User>>>>>'+model.GOMSUser);
+                    }
+                    if(result.data.GOMSPriceMsg!=undefined)
+                    {
+                        model.GOMSPriceMsg=result.data.GOMSPriceMsg;
+                        console.log('GOMS User>>>>>'+model.GOMSUser);
+                    }
+                     if(result.data.OSMSupportAdmin!=undefined)
+                    {
+                        model.OSMSupportAdmin=result.data.OSMSupportAdmin ;
+                        console.log('OSMSupportAdmin >>>>>'+model.OSMSupportAdmin );
+                    }
+                     
+                    if(result.data.testsku!=undefined)
+                    {
+                        model.testsku =result.data.testsku ;
+                        console.log('testsku >>>>>'+model.testsku );
+                    }
+                    if(result.data.PymntwrngMsg!=undefined)
+                    {
+                        model.PymntwrngMsg=result.data.PymntwrngMsg;
+                        console.log('PymntwrngMsg>>>>>'+model.PymntwrngMsg);
+                    }
+                    
+                }catch(e){console.log(e);
+                          console.log('*******Got Excepttion****');
+                          model.errorOnPageLoad = true;      
+                         }
+                var wrapper = new Object(); 
+                
+                view.render();
+                $('input[name="pricePerBillFrequency"]').val(model.pricePerBillFrequency);
+                //$('input[id="termAndConditionFreeTrial"]').prop("checked");   
+                //$('input[id="'+model.subslength+'"]').prop('checked', true);
+                //$('input[name="subslength"]').val(model.subslength);
+                CCRZ.subsPackageView.render();
+                if(model.hasActiveSubs)
+                {
+                    console.log('has active subs only');
+                    for (var key in model.subscriptionLengthVsYrMultipler) {
+                        $('input[id="'+key+'"]').prop('checked', true);
+                        $('input[name="subslength"]').val(key);
+                        model.subslength = key;
+                    }
+                    
+                    if(model.isQsolPowerGenerator)
+                        {
+                            $( "#subcQty" ).prop( "disabled", true );
+                            for (var key in model.productIdVsWrapperMap)
+                            {
+                                if(model.productIdVsWrapperMap[key].selectedPowerGenProduct)
+                                {
+                                    $('input[id="'+key+'"]').prop('checked', true);
+                                    $('.cc_value').text(model.productIdVsWrapperMap[key].longDesc);
+                                    break;
+                                }
+                            }
+                        }
+                        
+                } // RTC_182550 START
+                else {
+                    console.log('has NO active subs');                    
+                    if(model.isBundle) {
+                        $('input[id="1 Year"]').prop('checked', true);
+                        $('input[name="subslength"]').val('1 Year');
+                        model.subslength = '1 Year';
+                    }
+                    if(model.isSubscription) {
+                        $('input[id="1 Year"]').prop('checked', true);
+                        $('input[name="subslength"]').val('1 Year');
+                        model.subslength = '1 Year';
+                        debugger;
+                       if(model.isQsolPowerGenerator) {
+                            $( "#subcQty" ).prop( "disabled", true );
+                            for (var key in model.productIdVsWrapperMap) {
+                                if(model.productIdVsWrapperMap[key].buttonName == 'Consumer') {
+                                    $('input[id="'+key+'"]').prop('checked', true);
+                                    $('.cc_value').text(model.productIdVsWrapperMap[key].longDesc);
+                                }                               
+                            }
+                        }                       
+                    }
+                    if(model.isNonSubscription) {
+                        model.subslength = '99 Year';
+                    }                   
+                }
+                
+                var executeRTC_182550 = true;               
+                if(executeRTC_182550) {
+                    if(model.isSubscription || model.isNonSubscription || model.isBundle) {
+                        if(model.isNonSubscription) {
+                            $('input[name="numOfBundles"]').val(1);
+                            $('input[name="numOfCounts"]').val(1);
+                            model.numOfBundles = 1;
+                            model.numOfCounts = 1;
+                            noOfSubscriptions = 1;
+                            model.noOfSubscription = noOfSubscriptions;
+                        }
+                        else
+                        {
+                            $('input[name="subcQty"]').val(1);
+                            model.quantity = 1;
+                            
+                            model.noOfSubscription = 1; 
+                            noOfSubscriptions = 1;
+                        }
+                        
+                        console.log(model.billingFrequencies);
+                        var billingFreq
+                        if( model.billingFrequencies && model.billingFrequencies[0] !== "undefined"){
+                            billingFreq=model.billingFrequencies[0];        
+                        }
+                        console.log(billingFreq);
+                        if(!model.noOfSubscription){
+                            noOfSubscriptions = 1;
+                        }
+                        else{
+                            noOfSubscriptions = model.noOfSubscription;
+                        }
+                        
+                        var selectedSubsPrice = $('input[name="selectedSubsPrice"]').val();
+                        var prodYearPrice ;
+                        var $d = $('input[name="prodYearPrice"]');
+                        if ($d.length != 0) {
+                            if ($d.val().length != 0 ) {
+                                prodYearPrice = JSON.parse($('input[name="prodYearPrice"]').val());  
+                            }
+                        }
+                        var isSubscribed = model.isSubscribed;
+                        var hasOtherProductSusbcription;
+                        var pricePerBillFrequency;
+                        // var hasOtherProductSusbcription = JSON.parse($('input[name="hasOtherProductSusbcription"]').val());
+                        // var pricePerBillFrequency = JSON.parse($('input[name="pricePerBillFrequency"]').val());
+                        
+                        var $hasOtherProductSusbcriptiontemp=$('input[name="hasOtherProductSusbcription"]');
+                        if ($hasOtherProductSusbcriptiontemp.length != 0) {
+                            if ($hasOtherProductSusbcriptiontemp.val().length != 0 ) {
+                                hasOtherProductSusbcription = JSON.parse($('input[name="hasOtherProductSusbcription"]').val()); 
+                            }
+                        }
+                        var $pricePerBillFrequency=$('input[name="pricePerBillFrequency"]');
+                        if ($pricePerBillFrequency.length != 0) {
+                            if ($pricePerBillFrequency.val().length != 0 ) {
+                                pricePerBillFrequency = JSON.parse($('input[name="pricePerBillFrequency"]').val()); 
+                            }
+                        }
+                        var subslength = $('input[name="subslength"]').val();
+                        var quantity = $('input[name="subcQty"]').val();
+                        
+                        
+                        if(model.isNonSubscription == true){
+                            subslength = model.subslength;
+                            quantity = noOfSubscriptions;
+                        }
+                        if(model.isBundle == true){
+                            quantity = model.quantity;
+                            noOfSubscriptions = model.quantity;
+                            if(model.hasActiveSubs){
+                                quantity = 0;
+                                noOfSubscriptions = 0;
+                            }
+                            else{
+                                console.log('the model.buttonName : ' + model.buttonName);
+                                //model.buttonName = 'Pro';
+                                $('.CMI-plusColor span').attr('class', 'CMI-Icons');
+                                $('.CMI-proColor span').attr('class', 'CMI-Subscription-Icons');
+                                
+                                if(model.buttonName == 'Lite'){
+                                    $('.CMI-plusColor').addClass('plusColor');
+                                    $('.CMI-proColor').removeClass('proColor');
+                                    
+                                    $('#Pro').removeClass('CMI-DA-Packages');
+                                    $('#Lite').addClass('CMI-DA-Packages');
+                                    
+                                    $( "#Pro" ).parent( ".CMI-DA-table-cell-Pro" ).removeClass( 'CMI-DA-Packages');
+                                }
+                                if(model.buttonName == 'Pro'){
+                                    $('.CMI-plusColor').removeClass('plusColor');
+                                    $('.CMI-proColor').addClass('proColor');
+                                    
+                                    $('#Pro').addClass('CMI-DA-Packages');
+                                    $('#Lite').removeClass('CMI-DA-Packages');
+                                    $( "#Lite" ).parent( ".CMI-DA-table-cell-Lite" ).removeClass( 'CMI-DA-Packages');
+                                }
+                            }
+                            
+                        }
+                        var selectedSku = model.productSkuSelected;
+                        if(model.isQsolPowerGenerator){
+                            if($('input[name="productVersionList"]:checked')[0] != undefined)
+                            selectedSku = $('input[name="productVersionList"]:checked')[0].dataset.selectedversionsku;
+                        }
+                        else{
+                            selectedSku = model.productSkuSelected;//$('input[name="productSkuSelected"]').val();
+                        }
+                        console.log('selectedSku'+selectedSku);
+                        var subscriptionLengthLst = $('input[name="subscriptionLengthLst"]:checked').val();
+                        
+                        if(model.isNonSubscription == true){
+                            subscriptionLengthLst = model.subslength;
+                        }
+                        
+                        $(".CMI-Invoice-Message").css("display", "none");
+                        if(!isSubscribed && billingFreq != undefined && billingFreq !='One Time'){
+                            $(".CMI-Invoice-Message").css("display", "block");
+                        }
+                        try {  
+                            console.log(selectedSku+billingFreq+subslength);
+                            console.log('selectedSku-->'+selectedSku);
+                            console.log(billingFreq);
+                            console.log(subslength);
+                            var selectedSubsPrice = 0;
+                            var DnPrice = 0;
+                            window.$Label = window.$Label || {};
+                            $Label.QSOLSku = '{!($Label.QuickServeOnline_RestrictQty)}';
+                            
+                            if($Label.QSOLSku.includes(selectedSku)){
+                                $('#subcQty').prop('disabled', true);
+                            }
+                            window.$Label = window.$Label || {};
+                            $Label.GuidanzMobileSku = '{!($Label.GuidanzMobile_Messg)}';
+                            
+                            if($Label.GuidanzMobileSku.includes(selectedSku)){
+                                $('#GuidanzMobileMessg').show();
+                            }
+                            else{
+                                $('#GuidanzMobileMessg').hide();
+                            }
+                            selectedSubsPrice = prodYearPrice[selectedSku+billingFreq+subslength];
+                            DnPrice = model.proratedDnPriceMap[selectedSku+billingFreq+subslength];                            
+                            model.DnPrice = DnPrice;
+                            var selectedProratedPrice = 0;
+                            if(model.isCoTermOptionSelected){
+                                if((model.hasActiveSubs || model.hasRelatedProductSubsc) && (model.isBundle || model.isSubscription)){
+                                    selectedSubsPrice = model.proratedPrice[selectedSku+billingFreq+subslength];
+                                }
+                            }
+                            model.selectedSubsPrice = selectedSubsPrice;
+                            selectedProratedPrice = selectedSubsPrice;
+                            var prodMonthlyPrice = 0;
+                            var selectedMonthlyPrice = 0;
+                            var selectedPerBillPrice = '';
+                            if(pricePerBillFrequency != undefined && prodMonthlyPrice != undefined){
+                                prodMonthlyPrice = JSON.parse($('input[name="prodMonthlyPrice"]').val());
+                                selectedMonthlyPrice = prodMonthlyPrice[selectedSku+billingFreq+subslength];
+                                selectedPerBillPrice = pricePerBillFrequency[selectedSku+billingFreq+subslength];
+                            }
+                            
+                            var pricePerbill = 0;
+                            var perFre = '';
+                            var prorateddPricePerFrequency = '';
+                            if(selectedPerBillPrice != undefined){
+                                pricePerbill = (selectedPerBillPrice.split(" ")[0] != null && selectedPerBillPrice.split(" ")[0] != undefined) ? selectedPerBillPrice.split(" ")[0]:'';
+                                perFre = (selectedPerBillPrice.split(" ")[1] != null && selectedPerBillPrice.split(" ")[1] != undefined) && (selectedPerBillPrice.split(" ")[2] != null && selectedPerBillPrice.split(" ")[2] != undefined) ? selectedPerBillPrice.split(" ")[1]+' '+selectedPerBillPrice.split(" ")[2]:'';
+                                
+                                if(isSubscribed || model.hasRelatedProductSubsc || (!isSubscribed && hasOtherProductSusbcription)){
+                                    prorateddPricePerFrequency = selectedProratedPrice.toFixed(2)+' '+perFre; 
+                                }
+                            }
+                            
+                            console.log(perFre);
+                            $(".rfqSuccess").css("display", "none");
+                            $(".freeTrialSuccess").css("display", "none");
+                            
+                            if(quantity != undefined &&  quantity!=0 && quantity !='' && subscriptionLengthLst != undefined && billingFreq != undefined || (model.hasRelatedProductSubsc && subscriptionLengthLst == undefined)){
+                                if(!isSubscribed || model.hasRelatedProductSubsc){
+                                    $( "div.costSubscription").replaceWith( '<div class="form-group costSubscription"><label class="col-xs-5 col-md-4 control-label" for="radios"><B>Cost Per Subscription</B></label><div class="col-xs-6 col-md-8"><div class="costCalPerYear costPerYear"> $'+ selectedPerBillPrice+'</div> </div></div>');
+                                    
+                                    $( "div.costSubscription_subsStandAlone").replaceWith( '<div class="costSubscription_subsStandAlone" style="float: right;padding-top: 7px;padding-right: 37px;"><b>$'+ selectedPerBillPrice+'</b></div>');
+                                    
+                                }
+                                // JK for Total Quantity StandAlone Non Subscription
+                                if(quantity > 0) {
+                                    $(".totalQuantityNonSubscription").css("display", "");
+                                    $( "div.bundlesAndCountsQuantity").replaceWith( '<div class="bundlesAndCountsQuantity" style="float: right;padding-top: 7px;padding-right: 37px;"><b>'+ quantity +'</b></div>');
+                                    $('input[name="quantityVal"]').val(quantity);
+                                    $('#processApprovalRequest').attr('disabled', false);
+                                    $('#processApprovalRequest').addClass('CMI-DA-Packages');
+                                    
+                                    model.quantityTotal = quantity;
+                                }
+                                else{
+                                    $('#processApprovalRequest').attr('disabled', true);
+                                    $('#processApprovalRequest').removeClass('CMI-DA-Packages');
+                                }
+                                
+                                if(isSubscribed || model.hasRelatedProductSubsc || (!isSubscribed && hasOtherProductSusbcription && billingFreq!='One Time')){
+                                    $( "div.costSubscription").replaceWith( '<div class="form-group costSubscription"><label class="col-xs-5 col-md-4 control-label" for="radios"><B>Cost Per Subscription</B></label><div class="col-xs-6 col-md-8"><div class="costCalPerYear costPerYear"> $'+ prorateddPricePerFrequency+'</div> </div></div>');
+                                    
+                                    // JK for StandAlone Subscription june 06
+                                    $( "div.costSubscription_subsStandAlone").replaceWith( '<div class="costSubscription_subsStandAlone" style="float: right;padding-top: 7px;padding-right: 37px;"><b>$'+ prorateddPricePerFrequency+'</b></div>');
+                                } 
+                                //MAR-573
+                                debugger;
+                                window.$Label = window.$Label || {};
+                                $Label.QSOLSku = '{!($Label.QSOL_ProductsSKUs)}';
+                                
+                                if($Label.QSOLSku.includes(selectedSku) && isSubscribed){
+                                    console.log('--ashish 1--');
+                                    $('#processAddToCart').attr('disabled', true);
+                                    $('#QSOLProducts').show();
+                                    $('#QSOLProducts1').show();                                    
+                                }else
+                                {
+                                    $('#processAddToCart').attr('disabled', false);
+                                    $('#QSOLProducts2').show();
+                                }
+                                
+                                $("#quoteLink").css("display", "block");
+                                $(".quoteLinkError").css("display", "none");
+                                $(".rfqError").css("display", "none");
+                                $('#processAddToCart').addClass('CMI-DA-Packages');
+                                // $('#processApprovalRequest').addClass('CMI-DA-Packages');
+                                
+                                //var totalPrice = noOfSubscriptions*selectedSubsPrice*model.subsLength;
+                                var totalPrice = 0;
+                                
+                                console.log('selectedSubsPrice--->'+selectedSubsPrice);
+                                console.log(isSubscribed+'--&&--'+selectedProratedPrice+'==='+isSubscribed && selectedProratedPrice > 0);
+                                if(isSubscribed || model.hasRelatedProductSubsc || (!isSubscribed && hasOtherProductSusbcription && billingFreq!="One Time")){
+                                    totalPrice = noOfSubscriptions*selectedProratedPrice.toFixed(2); 
+                                    console.log('If--'+totalPrice);
+                                    $(".Base-Package").css("display", "block");
+                                    $(".package-price").text(CCRZ.pagevars.currencyData.currencySymbol+''+totalPrice.toFixed(2));
+                                    
+                                }else{
+                                    totalPrice = noOfSubscriptions*selectedSubsPrice;
+                                    
+                                    $(".Base-Package").css("display", "block");
+                                    $(".package-price").text(CCRZ.pagevars.currencyData.currencySymbol+''+totalPrice.toFixed(2));
+                                    
+                                    console.log('else--'+totalPrice);
+                                }
+                                if(!isSubscribed && selectedProratedPrice > 0 && billingFreq != 'One Time'){
+                                    // totalPrice = noOfSubscriptions*selectedProratedPrice.toFixed(2);
+                                }
+                                if(!isNaN(totalPrice))
+                                {
+                                    var totalPriceFre = (totalPrice.toFixed(2)+' '+perFre);
+                                    console.log('total Price : ' + totalPriceFre);
+                                    console.log('new ',numberWithCommas(totalPriceFre));
+                                    if(model.isBundle == true)
+                                    {
+                                        console.log('totalPrice---> isBundle '+totalPrice);
+                                        if(model.relatedProd != undefined && model.relatedProd.length>0){
+                                            for(var kk=0; kk< model.relatedProd.length;kk++){
+                                                if(model.relatedProd[kk].price > 0){
+                                                    totalPrice = Number(totalPrice) + Number(model.relatedProd[kk].price);
+                                                    totalPrice = totalPrice.toFixed(2);
+                                                    console.log('totalPrice--->'+totalPrice);
+                                                }
+                                            }
+                                        }
+                                        console.log('totalPrice--->'+totalPrice);
+                                        // MAR - 197
+                                       $( "div.totalCostPerYear" ).replaceWith('<div class="row totalCostPerYear"  style=" margin-left: 61%; margin-right: -8%;"><div class="col-lg-6 col-md-12 totalcostCal costPerYear" style="width: 50%; float: left;text-align:right;padding-right:0px;"> <B>Subtotal</B></div><div class="col-lg-6 col-md-12 totalcostCal costPerYear" style="width: 50%; float: left;"><B>$'+numberWithCommas(totalPriceFre) +'</B></div></div>');
+                                        $('input[name="totalPrice"]').val(totalPrice);
+                                        model.totalPrice = totalPrice;
+                                        
+                                        
+                                        
+                                        if(model.hasActiveSubs){ 
+                                            model.totalPrice = 0;
+                                            $('input[name="totalPrice"]').val(0);
+                                        }
+                                        if(model.buttonName == 'Pro' || model.buttonName == 'Lite'){
+                                            $(".Base-Package").css("display", "block");
+                                            if(selectedSubsPrice == undefined){
+                                                selectedSubsPrice = 0;
+                                            }
+                                            $(".package-price").text(CCRZ.pagevars.currencyData.currencySymbol+''+selectedSubsPrice.toFixed(2));
+                                            $(".package-name").text(model.buttonName);
+                                        }
+                                        
+                                    }
+                                    else if (model.isSubscription)
+                                    {
+                                        console.log('totalPrice---> isSubscription '+totalPrice);
+                                        // MAR - 197
+                                         $( "div.totalCostPerYear" ).replaceWith('<div class="row totalCostPerYear"  style=" margin-left: 61%; margin-right: -8%;"><div class="col-lg-6 col-md-12 totalcostCal costPerYear" style="width: 50%; float: left;text-align:right;padding-right:0px;"> <B>Subtotal</B></div><div class="col-lg-6 col-md-12 totalcostCal costPerYear" style="width: 50%; float: left;"><B>$'+numberWithCommas(totalPriceFre) +'</B></div></div>'); 
+                                       
+                                        $('input[name="totalPrice"]').val(totalPrice);
+                                        model.totalPrice = totalPrice;
+                                    }
+                                    else if (model.isNonSubscription){
+                                        console.log('totalPrice---> isNonSubscription '+totalPrice);
+                                        $( "div.totalCostPerYear" ).replaceWith('<div class="row totalCostPerYear"  style=" margin-left: 61%; margin-right: -8%;"><div class="col-lg-6 col-md-12 totalcostCal costPerYear" style="width: 50%; float: left;text-align:right;padding-right:0px;"> <B>Subtotal</B></div><div class="col-lg-6 col-md-12 totalcostCal costPerYear" style="width: 50%; float: left;"><B>$'+numberWithCommas(totalPriceFre) +'</B></div></div>'); 
+
+                                        $('input[name="totalPrice"]').val(totalPrice);
+                                        model.totalPrice = totalPrice;
+                                    }
+                                }
+                                else
+                                {
+                                    $('#processAddToCart').attr('disabled', true);
+                                    console.log('--ashish 12--');
+                                    $( "div.totalCostPerYear" ).replaceWith('<div class="totalCostPerYear"></div>');
+                                    // JK StandAlone Subscription
+                                    $( "div.costSubscription" ).replaceWith('<div class="costSubscription"></div>');
+                                    $( "div.costSubscription_subsStandAlone" ).replaceWith('<div class="costSubscription_subsStandAlone"></div>');
+                                    $(".totalQuantityNonSubscription").css("display", "none");
+                                    $("#quoteLink").css("display", "none");
+                                    $(".quoteLinkError").css("display", "block");
+                                    $(".quoteLinkError").addClass('disable-link');
+                                    console.log('==totalPrice is NAN');
+                                }
+                            }
+                            else{
+                                //$('#processAddToCart').attr('disabled', true);
+                                console.log('--ashish 13--');
+                                // $('#processAddToCart').removeClass('CMI-DA-Packages');                              
+                                
+                                $("#quoteLink").css("display", "none");
+                                $(".quoteLinkError").css("display", "block");
+                                if(quantity=='' || quantity==0){
+                                    $(".subscriptionError").css("display", "block");
+                                    $('#processAddToCart').attr('disabled', true);
+                                }
+                                //$('#processAddToCart').attr('disabled', true);     
+                                console.log('--ashish 14--');                         
+                            }
+                        }catch(err) {
+                            console.log(err); 
+                        }
+                    }  
+                } 
+            }
+           // destination.appendChild(source);
+            
+        },{buffer:false,escape:false,nmsp:false} );
+            }, 
+            processAddItem: function(event) {
+                var view = this;
+                var model = this.dataSet;
+                
+                //sku, qty, parentId, showMessage, subTerm, sellerID
+                console.log('===clicked ===');
+                var sku=$('input[name="productSkuSelected"]').val();
+                var qty=$('input[name="subcQty"]').val();
+                var parentId=CCRZ.detailData.jsonProductData.uid;
+                var subslength = $('input[name="subslength"]').val();
+                var billingFreq = $('input[name="billingFreq"]:checked').val();
+                // var compositKeyForSubProdTerm = JSON.parse($('input[name="compositKeyForSubProdTerm"]').val());
+                var prodMonthlyPrice = JSON.parse($('input[name="prodMonthlyPrice"]').val());
+                
+                if(model.isQsolPowerGenerator){                
+                    if($('input[name="productVersionList"]:checked')[0] != undefined) {
+                        model.productSkuSelected = $('input[name="productVersionList"]:checked')[0].dataset.selectedversionsku;                     
+                    }
+                }
+                var compositekey = model.productSkuSelected+model.billingFrequencies+model.subslength;
+                console.log(compositekey);
+                var subProdTermId = model.compositKeyForSubProdTerm[compositekey];
+                console.log(model.compositKeyForSubProdTerm);
+                var selectedMonthlyPrice = prodMonthlyPrice[compositekey];
+                var prodTotalPrice = $('input[name="totalPrice"]').val();
+                
+                var showMessage=true;
+                var subTerm=subProdTermId;// = $('input[name="prodSubscriptions"]:checked').val();
+                //var hasActiveSubs = JSON.parse($('input[name="hasActiveSubs"]').val());
+                var hasActiveSubs = $('input[name="hasActiveSubs"]').val();
+                if(!hasActiveSubs){
+                    var sellerID;
+                    if (!qty)
+                        qty = 1;
+                    
+                    this.className = 'cc_RemoteActionController';
+                    this.invokeContainerLoadingCtx(
+                        $('.prodDetailContainer')
+                        ,'addItem'
+                        ,sku
+                        ,qty
+                        ,_.isUndefined(parentId)?null:parentId
+                        ,_.isUndefined(subTerm)?null:subTerm
+                        ,_.isUndefined(sellerID)?null:sellerID
+                        ,null
+                        ,function(response){
+                            var cartId = response.data;
+                            CCRZ.pagevars.currentCartID = cartId;
+                            //cart change will update cookie
+                            CCRZ.pubSub.trigger('cartChange', cartId);
+                            if (showMessage) {
+                                var msgArr = new Array();
+                                msgArr[0] = sku;
+                                var msg = CCRZ.processPageLabelMap('ADDED_TO_CART', msgArr);
+                                var msgContext = CCRZ.createPageMessage('INFO', "messagingAction-Info", msg);
+                                CCRZ.pubSub.trigger("pageMessage", msgContext);
+                            }
+                            this.className = 'cc_ctrl_ProductDetailRD';
+                            
+                        }
+                    );
+                }else{
+                    console.log('Has subscription calling external pricing');
+                    
+                    var remoteCall = _.extend(CCRZ.RemoteInvocation,{className:'OSM_SW_ProductDetail_FW_Ctrl'});
+                    console.log(remoteCall);
+                    var myObject = new Object();
+                    // CCRZ.detailData.jsonProductData.product.prodBean.standAloneProduct
+                    if($('input[name="subcQty"]').val() != undefined)
+                    {
+                        model.quantity = $('input[name="subcQty"]').val();
+                    }
+                    console.log("total price");
+                    console.log(model.quantityTotal);
+                    console.log( model.quantity);
+                    
+                    
+                    console.log(model.DnPrice);
+                    console.log(CCRZ.detailData.jsonProductData.product.prodBean.standAloneProduct);
+                    if(CCRZ.detailData.jsonProductData.product.prodBean.standAloneProduct == "Non-Subscription" )
+                    {
+                        myObject.subcQty = model.quantityTotal != undefined ? model.quantityTotal+"" : '0';
+                    }
+                    else
+                    {
+                        myObject.subcQty = model.quantity != undefined ? model.quantity+"" : '0';
+                    }
+                    
+                    
+                    //if(model.billingFrequencies != null && model.billingFrequencies[0] != undefined){
+                        myObject.billingFreq = model.billingFrequencies[0];//$('input[name="billingFreq"]').val() != undefined ? $('input[name="billingFreq"]').val() : '';
+                   // }
+                    myObject.prodSubscriptions = $('input[name="subslength"]').val() != undefined ? $('input[name="subslength"]').val() : '';
+                    myObject.plan = $('input[name="buttonName"]').val() != undefined ? $('input[name="buttonName"]').val():'';
+                    myObject.rfqDescription = $('textarea#rfq_description').val() != undefined ? $('textarea#rfq_description').val() : '';
+                    myObject.userId = '{!$User.Id}';
+                    myObject.selectedProdSku = model.productSkuSelected;
+                    myObject.DnPrice = model.DnPrice;
+                    myObject.totalPrice = $('input[name="totalPrice"]').val();
+                    myObject.monthlyPrice = selectedMonthlyPrice;
+                    myObject.store=CCRZ.pagevars.storefrontName;
+                    myObject.parentProdSku = CCRZ.detailData.jsonProductData.product.prodBean.SKU;
+                    myObject.billingFrequencies = model.billingFrequencies;
+                    myObject.buttonName = model.buttonName;
+                    myObject.compositKeyForSubProdTerm = model.compositKeyForSubProdTerm;
+                    myObject.isBundle = model.isBundle;
+                    myObject.isExternal = model.isExternal;
+                    myObject.isNonSubscription = model.isNonSubscription;
+                    myObject.isSubscribed = model.isSubscribed;
+                    myObject.isSubscription = model.isSubscription;
+                    myObject.noOfSubscription = model.noOfSubscription;
+                    myObject.parentId = model.parentId;
+                    myObject.pricePerBillFrequency = model.pricePerBillFrequency;
+                    myObject.prodYearPrice = model.prodYearPrice;
+                    myObject.productIdVsWrapperMap = model.productIdVsWrapperMap;
+                    myObject.productSkuSelected = model.productSkuSelected;
+                    
+                    if(model.isQsolPowerGenerator)
+                    {
+                
+                        if($('input[name="productVersionList"]:checked')[0] != undefined)
+                        {
+                            myObject.productSkuSelected = $('input[name="productVersionList"]:checked')[0].dataset.selectedversionsku;
+                            
+                        }
+                    }
+                    
+                    myObject.createWithCoterm = model.isCoTermOptionSelected;
+
+                    if(model.toShowCoTerm)
+                    {
+                        if($(".inputBoxforcoTerm").is(":checked"))
+                            myObject.createWithCoterm = true;
+                        else
+                            myObject.createWithCoterm = false;
+                    }
+                    
+                    myObject.produstSubProdTermPrice = model.produstSubProdTermPrice;
+                    myObject.relatedProd = model.relatedProd;
+                    myObject.relatedProd_selectedProdId = model.relatedProd_selectedProdId;
+                    myObject.subslength = model.subslength;
+                    myObject.totalPrice = model.totalPrice+"";
+                    myObject.selectedSubsPrice = model.selectedSubsPrice;
+                    myObject.numOfBundles = model.numOfBundles;
+                    myObject.numOfCounts = model.numOfCounts;
+                    //myObject.cartId = cartId;
+                    myObject.subProdTermId = subProdTermId;
+                    console.log(subProdTermId);
+                    myObject.parentId = CCRZ.detailData.jsonProductData.uid;
+                    model.parentId = CCRZ.detailData.jsonProductData.uid;
+                    console.log('++++++++++++++++++++++++');
+                    console.log(model); 
+                    console.log(myObject); 
+                    var myString = JSON.stringify(myObject);
+                    var prodDetailString = JSON.stringify(model);
+                    console.log(prodDetailString);
+                    //remoteCall.invokeCtx($('.prodDetailContainer'),'addToCartExternal', myString, function(resp){
+                    remoteCall.invokeContainerLoadingCtx($('.prodDetailContainer'),'addToCartExternal', myString, function(resp){
+                        console.log('addToCartExternal');
+                        console.log('resp data => %o',resp);
+                        console.log(resp);
+                        if (resp && !resp.success && resp.data.RELOADWINDOW){
+                            console.log('RELOAD');
+                            window.location.reload();
+                        }
+                        if (resp && resp.success){                   
+                            console.log('SUCCESS');
+                            console.log(resp);
+                            $(".onSuccessAddToCart").css("display", "block");
+                            if(resp.data && resp.data.cart_id){
+                                CCRZ.pagevars.currentCartID = resp.data.cart_id;
+                                console.log('Set the cartid ==='+CCRZ.pagevars.currentCartID);
+                            }
+                            
+                            CCRZ.pubSub.on('view:headerView:refresh',function(){
+                                console.log('The header is being refreshed');
+                            });
+                            
+                            CCRZ.pubSub.trigger('cartChange', CCRZ.pagevars.currentCartID);
+                        }
+                    },{ buffer : false, escape : false , nmsp:false });
+                var parentsku = CCRZ.detailData.jsonProductData.product.prodBean.SKU
+                //var model = this.dataSet;
+                //var thisContains = this;
+                this.invokeContainerLoadingCtx($('body'),"WarningMsg",parentsku,
+                function(result,event) {
+                    console.log(result);
+                    if(result.success ) {
+                    console.log('result %o',result);
+                      
+                       if(result.data.PymntwrngMsg!=undefined && result.data.PymntwrngMsg ==true)
+                    {                                            
+                         $('#ShowWarningMsgID').modal('show');
+                    }
+                   
+                   }                            
+                },{buffer:false,escape:false,nmsp:false});
+                }
+                
+            },
+            
+            rerenderAddOnPackage:function(){
+                var model = this.dataSet;
+                console.log('sdkfksjfdos');
+                console.log(model);
+                for(var key in model.productIdVsAddOnProducts) {
+                    var addOnProducts = model.productIdVsAddOnProducts[key];
+                    var relatedProd = new Array();
+                    console.log('addOnProducts ');
+                    console.log(addOnProducts );
+                    if(addOnProducts.length >0){
+                        for(var ii=0;ii<addOnProducts.length; ii++){
+                            var relsData = addOnProducts[ii];
+                            var prodectBean = new Object();
+                            prodectBean.sfdcName = relsData.productName;
+                            prodectBean.supportingText = relsData.supportingText;
+                            prodectBean.shortDesc = relsData.productShortDesc;
+                            prodectBean.productId = relsData.productId;
+                            prodectBean.productSku = relsData.productSku;
+                            relatedProd.push(prodectBean);
+                        }
+                        console.log('sdkfksjfdosdwfwdfwew');
+                        model.relatedProd = relatedProd;
+                        console.log(model);
+                        view.render();
+                    }
+                }
+            }, 
+            processSelectProd:function(event){
+                var objLink = $(event.target);
+                console.log(objLink);
+                var yearlyPrice = objLink.data("price");
+                var buttonName = objLink.data("button");
+                
+                var sfId = objLink.data("sfid");
+                var productSkuSelected = objLink.data("sku");
+                var model = this.dataSet; 
+                
+                console.log('yearlyPrice ' + yearlyPrice);
+                console.log('buttonName ' + buttonName);
+                console.log('sfId ' + sfId);
+                console.log('productSkuSelected ' + productSkuSelected);
+                
+                model.selectedProdId = sfId;
+                model.buttonName = buttonName;
+                model.productSkuSelected = productSkuSelected;
+                console.log('sfId===>'+sfId);                
+               
+                $('input[name="buttonName"]').val(model.buttonName);
+                $("input[type=radio]").attr('disabled', false);
+                $("input[name='subcQty']").attr('disabled', false);
+                $('#processApprovalRequest').attr('disabled', false);
+                if(model.buttonName == 'Lite'){
+                    $('.CMI-plusColor').addClass('plusColor');
+                    $('.CMI-proColor').removeClass('proColor');
+                    
+                    $('.CMI-plusColor span').attr('class', 'CMI-Subscription-Icons');
+                    $('.CMI-proColor span').attr('class', 'CMI-Icons');
+                    
+                    $('#Pro').removeClass('CMI-DA-Packages');
+                    $('#Lite').addClass('CMI-DA-Packages');
+                    
+                    $( "#Pro" ).parent( ".CMI-DA-table-cell-Pro" ).removeClass( 'CMI-DA-Packages');
+                }
+                if(model.buttonName == 'Pro'){
+                    $('.CMI-plusColor').removeClass('plusColor');
+                    $('.CMI-proColor').addClass('proColor');
+                    $('.CMI-plusColor span').attr('class', 'CMI-Icons');
+                    $('.CMI-proColor span').attr('class', 'CMI-Subscription-Icons');
+                    $('#Pro').addClass('CMI-DA-Packages');
+                    $('#Lite').removeClass('CMI-DA-Packages');
+                    $( "#Lite" ).parent( ".CMI-DA-table-cell-Lite" ).removeClass( 'CMI-DA-Packages');
+                }
+                var prodSku = objLink.data("sku");
+                
+                $('input[name="productSkuSelected"]').val(prodSku);
+                this.calculatePrice('productSel',yearlyPrice);
+            },
+                        
+            processSelectNoOfSubsc:function(event){
+                if(null == event) {
+                    var x = 1;
+                    console.log('JK event objLink value manual : ' + x );
+                    this.calculatePrice('noOfSubscriptions',x);
+                }
+                else {
+                    var objLink = $(event.target);
+                    console.log('JK event objLink value : ' + objLink.val());
+                    this.calculatePrice('noOfSubscriptions',objLink.val());
+                }
+            },
+            
+            processSelectSubsLength:function(event){
+                var objLink = $(event.target);
+                var model = this.dataSet;
+                var subslength = objLink.data("subslength");
+                $('input[name="subslength"]').val(subslength);
+                model.subslength = subslength;
+                debugger;
+                if($('input[name="subscriptionLengthLst"]:checked')[0])
+                    model.subslength  = $('input[name="subscriptionLengthLst"]:checked')[0].dataset.subslength;
+                console.log(objLink);
+               
+                
+                var subscriptionLength = objLink.data("multipler");
+                if($('input[name="subscriptionLengthLst"]:checked')[0])
+                    subscriptionLength  = $('input[name="subscriptionLengthLst"]:checked')[0].dataset.multipler;
+                
+                this.calculatePrice('subsLength',subscriptionLength);
+                 debugger;
+            },
+            // This new method is added by Yubo, we don't have frontend JS implemented for Subscription Version especially power Gen products
+            processSelectSubsVersion:function(event){
+                var objLink = $(event.target);
+                var model = this.dataSet;
+                var subscriptionLength = objLink.data("multipler");
+                var subsVersionsku = objLink.data("selectedversionsku");
+                model.productSkuSelected = subsVersionsku;
+                console.log('processSelectSubsVersion '+subsVersionsku);
+                this.calculatePrice('subsLength',subscriptionLength);
+
+            },
+            
+            // This new method is added by Yubo, we don't have frontend JS implemented for Subscription Version especially power Gen products
+            processSelectcoTerm:function(event){
+                var objLink = $(event.target);
+                var model = this.dataSet;
+                console.log('testing co term');
+                console.log(model);
+                debugger;
+                var subscriptionLength = model.subsLength;
+                
+                if($(".inputBoxforcoTerm").is(":checked"))
+                {
+                    if(model.isSubscribed){
+                        $('.cc_col_order_date').text(model.subsEndDate);
+                    }
+                    else if(model.hasRelatedProductSubsc){
+                        $('.cc_col_order_date').text(model.relatedProductSubscEndDate);
+                    }                    
+                }
+                else {                    
+                    $('.cc_col_order_date').text(model.afterOneYearDate);
+                }
+                this.calculatePrice('subsLength',subscriptionLength);
+            },
+                        
+            processSelectBillingFreq:function(event){
+                var objLink = $(event.target);
+                var model = this.dataSet;
+                console.log(objLink);
+                this.calculatePrice('billingFrequency',objLink.val());
+            },
+            
+            calculatePrice: function(src,multipler){
+                debugger;
+                var quantity = $('input[name="subcQty"]').val();
+                console.log('------quantity--------');
+                console.log(quantity);
+                if(quantity=='' || quantity==0){
+                    $(".subscriptionError").css("display", "block");
+                    $( "div.totalCostPerYear").replaceWith( '<div class="totalCostPerYear"> <b>$0</b></div>');
+                    $('#processAddToCart').attr('disabled', true);
+                    console.log('--ashish 15--');
+                }
+                else{
+                    $(".subscriptionError").css("display", "none");
+                    var model = this.dataSet;                
+                    console.log(model);
+                    console.log('------model--------');
+                    if(src=='noOfSubscriptions'){                   
+                        model.noOfSubscription = multipler; 
+                        noOfSubscriptions = multipler;
+                    }
+                    
+                    noOfSubscriptions = model.noOfSubscription;                
+                    var subslength = $('input[name="subslength"]').val();
+                    var selectedSku = model.productSkuSelected;                
+                    var prodYearPrice = JSON.parse($('input[name="prodYearPrice"]').val());
+                                
+                    console.log('testing start here');
+                    console.log(selectedSku);
+                    console.log(prodYearPrice);
+                    var selectedSubsPrice = prodYearPrice[selectedSku];
+                    
+                    var totalValue = selectedSubsPrice*quantity;
+                    model.totalPrice = totalValue;                
+                    
+                    $('#processAddToCart').attr('disabled', true);
+                    console.log('--ashish 16--');
+                    //$('#processAddToCart').removeClass('CMI-DA-Packages');
+                    if({!isBlankRule} == true) { 
+                     if(model.OSMSupportAdmin == false) { 
+                  
+                       
+                        if(quantity > {!qty2}){
+                            $('#processAddToCart').attr('disabled', true);
+                            $('#50sg').show();
+                            $('#25sg').hide();
+                            return false;                  
+                        }
+                       
+                        
+                        if((quantity > {!qty1}) && (quantity < {!qty2})) {
+                            $('#processAddToCart').attr('disabled', false);
+                            $('#25sg').show();
+                            $('#50sg').hide();
+                            //return false;
+                        }
+                        
+                        
+                        if(quantity <= {!qty1}){
+                            $('#25sg').hide();
+                      
+                        }
+                       
+                        if(quantity <= {!qty2}) {
+                        $('#50sg').hide();
+                       if(quantity > {!qty1}){
+                        $('#50sg').hide();
+                         $('#25sg').show();
+                       }  
+                    }
+                   
+                    
+                    if(quantity == {!qty1}){
+                        $('#25sg').hide();
+                    }
+                   }
+                  
+                   }
+                    if({!isBlankRule} == false) {
+                     if(quantity == {!qty2}){
+                        $('#50sg').hide();
+                        $('#processAddToCart').attr('disabled', false);
+                        }
+                        if(quantity == {!qty1}){
+                        $('#25sg').hide();
+                        $('#processAddToCart').attr('disabled', false);
+                        }
+                    }
+                    $( "div.totalCostPerYear").replaceWith( '<div class="totalCostPerYear"> <b>$'+ totalValue +'</b></div>');
+                    $('#processAddToCart').attr('disabled', false);
+                }
+            }
+        });
+        
+        
+        CCRZ.subsPackageView = new CCRZ.views.SubscriptionPackageView({
+            model:new CCRZ.models.SubscriptionPackageModel
+        });
+        
+        //Handlebars.registerPartial("mainDASection", $('#CMI_ProductDetail1-SubscPackage-Desktop').html());        
+    });
+    </script>    
+    {!blank}
+</apex:component>

@@ -1,0 +1,220 @@
+<!--
+   Component Name : FSL_NighComm_WOEventInEmail.vfc
+   Description    : This Visualforce component is referred in FSL_Nightly_Communication Visualforce Email template to load respective work orders related to contactId value
+   Created By     : Madhavi P
+   JIRA Story     : CT4-159
+   23-10-2020     : Madhavi P - Created this visualforce component to load the all related work orders for this specific contactId . 
+   -->
+<apex:component controller="FSL_NighComm_WOInEmail_Controller" access="global" language="{!lang}" >
+   <apex:attribute name="ContactId" type="Id"  assignto="{!conId}" description="To Pass the respective Contact Id to load respective Work Orders" />
+   
+   <head>
+      <style >
+         .link_button {  
+         color: white;
+         border: 25px solid #007d7d;
+         padding: 0.5px 0.5px; 
+         text-align: center;
+         text-decoration: none;
+         display: inline-block;
+         background-color: #007d7d;
+
+         } 
+
+      </style>
+      <style >
+         .button  {  
+         color: white;
+         border: 25px solid #007d7d;
+         padding: 0.5px 0.5px; 
+         text-align: center;
+         text-decoration: none;
+         display: inline-block;
+         background-color: #007d7d;
+
+         } 
+
+      </style>
+
+   </head>
+   <apex:repeat value="{!Nightlycommlist}" var="var_NighComm">
+      <table class="table">
+         <!--<tbody> --->  
+
+         <apex:outputPanel rendered="{!IF(var_NighComm.Event__c == 'Equipment Ready For Pick Up',true,false)}">
+            <p><apex:outputText value="{!$Label.FSL_Service_Status} {!$Label.FSL_Equipment_ready_for_pick_up}" escape="false"/></p>
+         </apex:outputPanel>
+         <!--Added by Madhavi P as part of CT4-664 -->
+         <apex:outputPanel rendered="{!IF(var_NighComm.Event__c == 'Service Work Proceeding',true,false)}">
+            <p><apex:outputText value="{!$Label.FSL_Service_Status} {!$Label.FSL_Service_Work_ProceedingAlert}" escape="false"/></p>
+         </apex:outputPanel>
+
+         <apex:outputPanel rendered="{!IF(var_NighComm.Event__c == 'Troubleshooting Started',true,false)}">
+            <p><apex:outputText value="{!$Label.FSL_Service_Status} {!$Label.CommStatus_Message}" escape="false"/></p>
+         </apex:outputPanel>
+
+         <apex:outputPanel rendered="{!IF(var_NighComm.Event__c == 'Authorized Work Started',true,false)}">
+            <p><apex:outputText value="{!$Label.FSL_Service_Status} {!$Label.FSL_Authorized_Work_Started}" escape="false"/></p>
+         </apex:outputPanel>
+
+         <apex:outputPanel rendered="{!IF(var_NighComm.Event__c == 'Service Work Completed',true,false)}">
+            <p><apex:outputText value="{!$Label.FSL_Service_Status} {!$Label.FSL_Service_Work_Completed}" escape="false"/></p>
+         </apex:outputPanel>
+
+         <apex:outputPanel rendered="{!IF(var_NighComm.Event__c == 'Invoice Ready',true,false)}">
+            <p><apex:outputText value=" {!$Label.FSL_Service_Status} {!$Label.FSL_Service_Invoice_Ready}" escape="false"/></p>
+         </apex:outputPanel>
+
+         <apex:outputPanel rendered="{!IF(var_NighComm.Nightly_Communication_Type__c == 'Manual Communication',true,false)}">
+             <!--<p><apex:outputText value=" {!var_NighComm.Custom_Message__c}" escape="false"/></p>--Commented by Divyasri-7/29 for TW-322-->
+             <p><apex:outputText value=" {!HTMLENCODE(var_NighComm.Custom_Message__c)}" escape="false"/></p>
+         </apex:outputPanel>
+
+
+
+        <apex:outputPanel rendered="{!IF(var_NighComm.Event__c == 'Equipment available',true,false)}">
+            <!-- CT4-730 Commented the below code and added new code Start-->
+            <p><!--<apex:outputText value=" {!$Label.FSL_Service_Status} {!$Label.FSL_Equipment_available} {0,date,MM'/'dd'/'yyyy}" escape="false">
+                  <apex:param value="{!var_NighComm.Createddate}" />           
+                  </apex:outputText>-->
+               <apex:outputText value="{!$Label.FSL_Service_Status} {!$Label.FSL_Equipment_available} {!TEXT(Day(var_NighComm.User_date__c))} {!CASE(MONTH(var_NighComm.User_date__c),1,$Label.FSL_January,2,$Label.FSL_February,3,$Label.FSL_March,4,$Label.FSL_April,5,$Label.FSL_May,6,$Label.FSL_June,7,$Label.FSL_July,8,$Label.FSL_August,9,$Label.FSL_September,10,$Label.FSL_October,11,$Label.FSL_November,12,$Label.FSL_December,'-???-') } {!TEXT(YEAR(var_NighComm.User_date__c))} " escape="false"></apex:outputText>
+            </p>
+            <!-- CT4-730 Commented the below code and added new code End-->
+         </apex:outputPanel>
+
+         <!--        <apex:outputPanel layout="none" rendered="{!NOT(ISNULL(var_NighComm.Custom_Message__c))}">                  
+            <p><apex:outputText value="{!var_NighComm.Custom_Message__c}" escape="false"/></p>
+            </apex:outputPanel> -->
+
+         <apex:outputPanel layout="none" rendered="{!AND(NOT(ISNULL(var_NighComm.Service_Order__r.Repair_Location__c)),var_NighComm.Service_Order__r.Repair_Location__c='Mobile')}">
+             <!--Updated by Divyasri-07/29 for TW-322-->
+             <!--<apex:outputText value=" {!$Label.Comm_Site_Repair_Location}: {!var_NighComm.Service_Order__r.Repair_Site_Address__r.Street},{!var_NighComm.Service_Order__r.Repair_Site_Address__r.City},{!var_NighComm.Service_Order__r.Repair_Site_Address__r.State},{!var_NighComm.Service_Order__r.Repair_Site_Address__r.PostalCode}" escape="false"/>--->
+         	<apex:outputText value=" {!$Label.Comm_Site_Repair_Location}: {!HTMLENCODE(var_NighComm.Service_Order__r.Repair_Site_Address__r.Street)},{!HTMLENCODE(var_NighComm.Service_Order__r.Repair_Site_Address__r.City)},{!HTMLENCODE(var_NighComm.Service_Order__r.Repair_Site_Address__r.State)},{!HTMLENCODE(var_NighComm.Service_Order__r.Repair_Site_Address__r.PostalCode)}" escape="false"/>
+         </apex:outputPanel><br></br>
+				<!--updates End-->
+         <apex:outputPanel layout="none" rendered="{!NOT(ISNULL(var_NighComm.Nightly_Service_Teritory__c))}" >
+             <!--<apex:outputText value=" {!$Label.FSL_CSS_Service_Branch}:  {!var_NighComm.Nightly_Service_Teritory__c}" escape="false"/>----Commented by Divyasri-7/29 for TW-322-->
+       		<apex:outputText value=" {!$Label.FSL_CSS_Service_Branch}:  {!HTMLENCODE(var_NighComm.Nightly_Service_Teritory__c)}" escape="false"/>
+       </apex:outputPanel><br></br>
+
+         <apex:outputPanel layout="none" rendered="{!NOT(ISNULL(var_NighComm.Teritory_Branch_Phone__c))}" >
+             <!--<apex:outputText value=" {!$Label.Comm_Branch_Phone}:  {!var_NighComm.Teritory_Branch_Phone__c}" escape="false"/>---Commented by Divyasri-7/29 for TW-322-->
+         	<apex:outputText value=" {!$Label.Comm_Branch_Phone}:  {!HTMLENCODE(var_NighComm.Teritory_Branch_Phone__c)}" escape="false"/>
+         </apex:outputPanel><br></br>
+
+         <apex:outputPanel layout="none" rendered="{!NOT(ISNULL(var_NighComm.Service_Team_Contact__r.Name ))}">
+             		<!--Updated by Divyasri-07/29 for TW-322-->
+             <!--<apex:outputText value="{!$Label.Comm_Service_Team_Contact}: {!var_NighComm.Service_Team_Contact__r.Name}  |  {!var_NighComm.STC_Email_Address__c}" escape="false"/> --><!--| <a href="{!var_NighComm.STC_Email_Address__c}">{!var_NighComm.STC_Email_Address__c}</a>--->
+         	<apex:outputText value="{!$Label.Comm_Service_Team_Contact}: {!HTMLENCODE(var_NighComm.Service_Team_Contact__r.Name)}  |  {!HTMLENCODE(var_NighComm.STC_Email_Address__c)}" escape="false"/> <!--| <a href="{!var_NighComm.STC_Email_Address__c}">{!var_NighComm.STC_Email_Address__c}</a>-->
+         </apex:outputPanel><br></br><br></br><br></br>
+				<!--Updates END-->
+         <apex:outputPanel layout="none" rendered="{!NOT(ISNULL(var_NighComm.Service_Order__r.WorkOrderNumber))}">
+            <apex:outputText value="{!$Label.Comm_Service_Event_Description}:" escape="false"/>
+         </apex:outputPanel><br></br>
+
+         <apex:outputPanel layout="none" rendered="{!NOT(ISNULL(var_NighComm.Service_Order__r.WorkOrderNumber))}">
+             <!--<apex:outputText value="{!$Label.Comm_Work_Order}# {!var_NighComm.Service_Order__r.WorkOrderNumber}" escape="false"/>---Commented by Divyasri-7/29 for TW-322-->
+         	<apex:outputText value="{!$Label.Comm_Work_Order}# {!HTMLENCODE(var_NighComm.Service_Order__r.WorkOrderNumber)}" escape="false"/>
+         </apex:outputPanel><br></br>
+
+         <apex:outputPanel layout="none" rendered="{!NOT(ISNULL(var_NighComm.Unit_Number__c))}">
+             <!--<apex:outputText value="{!$Label.css_unit}# {!var_NighComm.Unit_Number__c}" escape="false"/>---Commented by Divyasri-7/29 for TW-322-->
+             <apex:outputText value="{!$Label.css_unit}# {!HTMLENCODE(var_NighComm.Unit_Number__c)}" escape="false"/>
+         </apex:outputPanel><br></br>
+
+         <apex:outputPanel layout="none" rendered="{!NOT(ISNULL(var_NighComm.Make__c))}">
+            <!--<apex:outputText value="{!$Label.CSS_Make}: {!var_NighComm.Make__c}" escape="false"/>--Commented by Divyasri-7/29 for TW-322-->
+             <apex:outputText value="{!$Label.CSS_Make}: {!HTMLENCODE(var_NighComm.Make__c)}" escape="false"/>
+         </apex:outputPanel><br></br>
+
+         <apex:outputPanel layout="none" rendered="{!NOT(ISNULL(var_NighComm.Model__c))}">
+            <!--<apex:outputText value="{!$Label.CSS_Model}: {!var_NighComm.Model__c}" escape="false"/>--Commented by Divyasri-7/29 for TW-322-->
+            <apex:outputText value="{!$Label.CSS_Model}: {!HTMLENCODE(var_NighComm.Model__c)}" escape="false"/>
+         </apex:outputPanel><br></br>
+
+         <apex:outputPanel layout="none" rendered="{!NOT(ISNULL(var_NighComm.Asset__c))}">
+            <!--<apex:outputText value="{!$Label.css_Product_Serial_Number}# {!var_NighComm.Asset__c}" escape="false"/>--Commented by Divyasri-7/29 for TW-322-->
+             <apex:outputText value="{!$Label.css_Product_Serial_Number}# {!HTMLENCODE(var_NighComm.Asset__c)}" escape="false"/>
+         </apex:outputPanel><br></br>
+
+         <apex:outputPanel layout="none" rendered="{!NOT(ISNULL(var_NighComm.VIN__c))}">
+            <!--<apex:outputText value="{!$Label.CSS_VIN}#  {!var_NighComm.VIN__c}" escape="false"/>--Commented by Divyasri-7/29 for TW-322-->
+            <apex:outputText value="{!$Label.CSS_VIN}#  {!HTMLENCODE(var_NighComm.VIN__c)}" escape="false"/>
+         </apex:outputPanel><br></br>
+
+         <apex:outputPanel layout="none" rendered="{!NOT(ISNULL(var_NighComm.Service_Order__r.Registration__c))}">
+            <!--<apex:outputText value="{!$Label.FSL_Registration_Number}#  {!var_NighComm.Service_Order__r.Registration__c}" escape="false"/>--Commented by Divyasri-7/29 for TW-322-->
+             <apex:outputText value="{!$Label.FSL_Registration_Number}#  {!HTMLENCODE(var_NighComm.Service_Order__r.Registration__c)}" escape="false"/>
+         </apex:outputPanel><br></br><br></br>
+
+         <apex:outputPanel layout="none" rendered="{!NOT(ISNULL(var_NighComm.Service_Order__r.WorkOrderNumber))}">
+            <apex:outputText value="{!$Label.FSL_Questions_or_concerns_for_the_SO}" escape="false"/><br></br><br></br>
+
+            <apex:outputPanel rendered="{!IF(var_NighComm.Event__c == 'Troubleshooting Started',true,false)}">
+               <apex:outputlink styleClass="link_button" value="mailto:{!$Label.FSL_Comm_EmailId}?subject=Re: Cummins Service Update &body= %0d%0a %0d%0a{!$Label.FSL_Service_Status_w_o_Bold} {!$Label.CommStatus_Message} %0d%0a {!$Label.Comm_Site_Repair_Location}: {!var_NighComm.Nightly_Service_Teritory__c }%0d%0a {!$Label.Comm_Service_Team_Contact}: {!var_NighComm.Service_Team_Contact__r.Name } | {!var_NighComm.STC_Email_Address__c} %0d%0a {!$Label.Comm_Work_Order}# {!var_NighComm.Service_Order__r.WorkOrderNumber} %0d%0a {!$Label.css_unit}# {!var_NighComm.Unit_Number__c} %0d%0a {!$Label.CSS_Make}: {!var_NighComm.Make__c}%0d%0a {!$Label.CSS_Model}: {!var_NighComm.Model__c}%0d%0a {!$Label.css_Product_Serial_Number}# {!var_NighComm.Asset__c} %0d%0a {!$Label.CSS_VIN}#  {!var_NighComm.VIN__c} %0d%0a %0d%0a  {!var_NighComm.Case_Thread_ID__c}  ">
+
+                  <button id="upload-button" type="button" style="background-color: #007d7d;color: white;border: 25px solid #007d7d;padding: 0.5px 0.5px;text-align: center;text-decoration: none;display: inline-block;">{!$Label.FSL_Order_Lable} {!var_NighComm.Service_Order__r.WorkOrderNumber} {!$Label.FSl_Reply}</button>
+               </apex:outputlink>
+            </apex:outputPanel>
+
+            <apex:outputPanel rendered="{!IF(var_NighComm.Event__c == 'Authorized Work Started',true,false)}">
+               <apex:outputlink styleClass="link_button" value="mailto:{!$Label.FSL_Comm_EmailId}?subject=Re: Cummins Service Update &body= %0d%0a %0d%0a{!$Label.FSL_Service_Status_w_o_Bold} {!$Label.FSL_Authorized_Work_Started} %0d%0a {!$Label.Comm_Site_Repair_Location}: {!var_NighComm.Nightly_Service_Teritory__c }%0d%0a {!$Label.Comm_Service_Team_Contact}: {!var_NighComm.Service_Team_Contact__r.Name } | {!var_NighComm.STC_Email_Address__c} %0d%0a {!$Label.Comm_Work_Order}# {!var_NighComm.Service_Order__r.WorkOrderNumber} %0d%0a {!$Label.css_unit}# {!var_NighComm.Unit_Number__c} %0d%0a {!$Label.CSS_Make}: {!var_NighComm.Make__c}%0d%0a {!$Label.CSS_Model}: {!var_NighComm.Model__c}%0d%0a {!$Label.css_Product_Serial_Number}# {!var_NighComm.Asset__c} %0d%0a {!$Label.CSS_VIN}#  {!var_NighComm.VIN__c} %0d%0a %0d%0a  {!var_NighComm.Case_Thread_ID__c}  ">
+
+                  <button id="upload-button" type="button" style="background-color: #007d7d;color: white;border: 25px solid #007d7d;padding: 0.5px 0.5px;text-align: center;text-decoration: none;display: inline-block;">{!$Label.FSL_Order_Lable} {!var_NighComm.Service_Order__r.WorkOrderNumber} {!$Label.FSl_Reply}</button>
+               </apex:outputlink>
+            </apex:outputPanel>
+
+            <apex:outputPanel rendered="{!IF(var_NighComm.Event__c == 'Service Work Completed',true,false)}">
+               <apex:outputlink styleClass="link_button" value="mailto:{!$Label.FSL_Comm_EmailId}?subject=Re: Cummins Service Update &body= %0d%0a %0d%0a{!$Label.FSL_Service_Status_w_o_Bold} {!$Label.FSL_Service_Work_Completed} %0d%0a {!$Label.Comm_Site_Repair_Location}: {!var_NighComm.Nightly_Service_Teritory__c }%0d%0a {!$Label.Comm_Service_Team_Contact}: {!var_NighComm.Service_Team_Contact__r.Name } | {!var_NighComm.STC_Email_Address__c} %0d%0a {!$Label.Comm_Work_Order}# {!var_NighComm.Service_Order__r.WorkOrderNumber} %0d%0a {!$Label.css_unit}# {!var_NighComm.Unit_Number__c} %0d%0a {!$Label.CSS_Make}: {!var_NighComm.Make__c}%0d%0a {!$Label.CSS_Model}: {!var_NighComm.Model__c}%0d%0a {!$Label.css_Product_Serial_Number}# {!var_NighComm.Asset__c} %0d%0a {!$Label.CSS_VIN}#  {!var_NighComm.VIN__c} %0d%0a %0d%0a  {!var_NighComm.Case_Thread_ID__c}  ">
+
+                  <button id="upload-button" type="button" style="background-color: #007d7d;color: white;border: 25px solid #007d7d;padding: 0.5px 0.5px;text-align: center;text-decoration: none;display: inline-block;">{!$Label.FSL_Order_Lable} {!var_NighComm.Service_Order__r.WorkOrderNumber} {!$Label.FSl_Reply}</button>
+               </apex:outputlink>
+            </apex:outputPanel>
+
+            <apex:outputPanel rendered="{!IF(var_NighComm.Event__c == 'Invoice Ready',true,false)}">
+               <apex:outputlink styleClass="link_button" value="mailto:{!$Label.FSL_Comm_EmailId}?subject=Re: Cummins Service Update &body= %0d%0a %0d%0a{!$Label.FSL_Service_Status_w_o_Bold} {!$Label.FSL_Service_Invoice_Ready} %0d%0a {!$Label.Comm_Site_Repair_Location}: {!var_NighComm.Nightly_Service_Teritory__c }%0d%0a {!$Label.Comm_Service_Team_Contact}: {!var_NighComm.Service_Team_Contact__r.Name } | {!var_NighComm.STC_Email_Address__c} %0d%0a {!$Label.Comm_Work_Order}# {!var_NighComm.Service_Order__r.WorkOrderNumber} %0d%0a {!$Label.css_unit}# {!var_NighComm.Unit_Number__c} %0d%0a {!$Label.CSS_Make}: {!var_NighComm.Make__c}%0d%0a {!$Label.CSS_Model}: {!var_NighComm.Model__c}%0d%0a {!$Label.css_Product_Serial_Number}# {!var_NighComm.Asset__c} %0d%0a {!$Label.CSS_VIN}#  {!var_NighComm.VIN__c} %0d%0a %0d%0a  {!var_NighComm.Case_Thread_ID__c}  ">
+
+                  <button id="upload-button" type="button" style="background-color: #007d7d;color: white;border: 25px solid #007d7d;padding: 0.5px 0.5px;text-align: center;text-decoration: none;display: inline-block;">{!$Label.FSL_Order_Lable} {!var_NighComm.Service_Order__r.WorkOrderNumber} {!$Label.FSl_Reply}</button>
+               </apex:outputlink>
+            </apex:outputPanel>
+
+            <apex:outputPanel rendered="{!IF(var_NighComm.Event__c == 'Equipment available',true,false)}">
+               <apex:outputlink styleClass="link_button" value="mailto:{!$Label.FSL_Comm_EmailId}?subject=Re: Cummins Service Update &body= %0d%0a %0d%0a {!$Label.FSL_Service_Status_w_o_Bold} {!$Label.FSL_Equipment_available} {!(var_NighComm.User_date__c)}  %0d%0a {!$Label.Comm_Site_Repair_Location}: {!var_NighComm.Nightly_Service_Teritory__c }%0d%0a {!$Label.Comm_Service_Team_Contact}: {!var_NighComm.Service_Team_Contact__r.Name } | {!var_NighComm.STC_Email_Address__c} %0d%0a {!$Label.Comm_Work_Order}# {!var_NighComm.Service_Order__r.WorkOrderNumber} %0d%0a {!$Label.css_unit}# {!var_NighComm.Unit_Number__c} %0d%0a {!$Label.CSS_Make}: {!var_NighComm.Make__c}%0d%0a {!$Label.CSS_Model}: {!var_NighComm.Model__c}%0d%0a {!$Label.css_Product_Serial_Number}# {!var_NighComm.Asset__c} %0d%0a {!$Label.CSS_VIN}#  {!var_NighComm.VIN__c} %0d%0a %0d%0a  {!var_NighComm.Case_Thread_ID__c}  ">
+
+                  <button id="upload-button" type="button" style="background-color: #007d7d;color: white;border: 25px solid #007d7d;padding: 0.5px 0.5px;text-align: center;text-decoration: none;display: inline-block;">{!$Label.FSL_Order_Lable} {!var_NighComm.Service_Order__r.WorkOrderNumber} {!$Label.FSl_Reply}</button>
+
+               </apex:outputlink>
+            </apex:outputPanel>
+
+            <apex:outputPanel rendered="{!IF(var_NighComm.Event__c == 'Service Work Proceeding',true,false)}">
+               <apex:outputlink styleClass="link_button" value="mailto:{!$Label.FSL_Comm_EmailId}?subject=Re: Cummins Service Update &body= %0d%0a %0d%0a{!$Label.FSL_Service_Status_w_o_Bold} {!$Label.FSL_Service_Work_ProceedingAlert} %0d%0a {!$Label.Comm_Site_Repair_Location}: {!var_NighComm.Nightly_Service_Teritory__c }%0d%0a {!$Label.Comm_Service_Team_Contact}: {!var_NighComm.Service_Team_Contact__r.Name } | {!var_NighComm.STC_Email_Address__c} %0d%0a {!$Label.Comm_Work_Order}# {!var_NighComm.Service_Order__r.WorkOrderNumber} %0d%0a {!$Label.css_unit}# {!var_NighComm.Unit_Number__c} %0d%0a {!$Label.CSS_Make}: {!var_NighComm.Make__c}%0d%0a {!$Label.CSS_Model}: {!var_NighComm.Model__c}%0d%0a {!$Label.css_Product_Serial_Number}# {!var_NighComm.Asset__c} %0d%0a {!$Label.CSS_VIN}#  {!var_NighComm.VIN__c} %0d%0a %0d%0a  {!var_NighComm.Case_Thread_ID__c}  ">
+
+                  <button id="upload-button" type="button" style="background-color: #007d7d;color: white;border: 25px solid #007d7d;padding: 0.5px 0.5px;text-align: center;text-decoration: none;display: inline-block;">{!$Label.FSL_Order_Lable} {!var_NighComm.Service_Order__r.WorkOrderNumber} {!$Label.FSl_Reply}</button>
+               </apex:outputlink>
+            </apex:outputPanel>
+            <br></br><br></br>
+            
+            <apex:outputPanel rendered="{!IF(var_NighComm.Event__c == 'Equipment Ready For Pick Up',true,false)}">
+               <apex:outputlink styleClass="link_button" value="mailto:{!$Label.FSL_Comm_EmailId}?subject=Re: Cummins Service Update &body= %0d%0a %0d%0a{!$Label.FSL_Service_Status_w_o_Bold} {!$Label.FSL_CommTrigger_Equipment_ready_for_pickup} %0d%0a {!$Label.Comm_Site_Repair_Location}: {!var_NighComm.Nightly_Service_Teritory__c }%0d%0a {!$Label.Comm_Service_Team_Contact}: {!var_NighComm.Service_Team_Contact__r.Name } | {!var_NighComm.STC_Email_Address__c} %0d%0a {!$Label.Comm_Work_Order}# {!var_NighComm.Service_Order__r.WorkOrderNumber} %0d%0a {!$Label.css_unit}# {!var_NighComm.Unit_Number__c} %0d%0a {!$Label.CSS_Make}: {!var_NighComm.Make__c}%0d%0a {!$Label.CSS_Model}: {!var_NighComm.Model__c}%0d%0a {!$Label.css_Product_Serial_Number}# {!var_NighComm.Asset__c} %0d%0a {!$Label.CSS_VIN}#  {!var_NighComm.VIN__c} %0d%0a %0d%0a  {!var_NighComm.Case_Thread_ID__c}  ">
+                  <button id="upload-button" type="button" style="background-color: #007d7d;color: white;border: 25px solid #007d7d;padding: 0.5px 0.5px;text-align: center;text-decoration: none;display: inline-block;">{!$Label.FSL_Order_Lable} {!var_NighComm.Service_Order__r.WorkOrderNumber} {!$Label.FSl_Reply}</button>
+               </apex:outputlink>
+            </apex:outputPanel>
+            <br></br><br></br>
+            <apex:outputPanel rendered="{!IF(var_NighComm.National_Account__c == true,true,false)}">
+               <br></br><br></br>
+               <b><apex:outputText value="{!$Label.FSL_Guidanz_Message}"/></b> &nbsp;
+               <apex:outputlink style="color:red" value="{!$Label.FSL_Guidanz_Portal_Link}"><b>{!$Label.FSL_Guidanz_Portal}</b></apex:outputlink>
+            </apex:outputPanel>
+
+         </apex:outputPanel> <br></br>
+         <!--</tbody>-->   
+
+      </table>
+
+
+
+
+
+   </apex:repeat>
+
+</apex:component>

@@ -1,0 +1,673 @@
+<apex:page showHeader="true" sidebar="true" controller="disco.Ctl_RelationshipBuilder" applyBodyTag="false" docType="html-5.0">
+<html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<head>
+<title>Relationship Builder</title>
+<apex:includeScript value="{!$Resource.disco__customModalJS}"/>
+<apex:includeScript value="{!URLFOR($Resource.disco__jquery_3_6_0, 'jquery.min.js')}"/>
+<apex:styleSheet value="{!URLFOR($Resource.disco__jquery_ui_1_12_1, 'jquery-ui.min.css')}" />
+<apex:includeScript value="{!URLFOR($Resource.disco__jquery_ui_1_12_1, 'jquery-ui.min.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.disco__jquerymodal, '/jquerymodal/jquery.modal.js')}"/>
+<apex:styleSheet value="{!URLFOR($Resource.disco__SLDS100, 'assets/styles/salesforce-lightning-design-system-vf.css')}" />
+<apex:styleSheet value="{!URLFOR($Resource.disco__jquerymodal, '/jquerymodal/jquery.modal.css')}" />
+<style>
+	/* override position from SLDS style */
+	.slds-notify_container.slds-notify_container-OR {
+		position:static;
+	}
+	.slds .slds-notify--alert-OR {
+		padding:0; /* removed padding so it will be invisible when there are no messages */
+	}
+	.slds-grid-OR {
+		display:block !important;
+		margin-top:20px; /* not an override */
+	}
+
+	.slds-col--padded-OR {
+		display:inline-block !important;
+		width:33%; /* 33.33 (repeating of course) wraps for some reason */
+		vertical-align: top; /* not an actual override */
+		padding-bottom: 40px;  /* not an actual override */
+	}
+	
+	/*  override to allow form element in header */
+	.slds-text-heading--medium.slds-text-heading--medium-OR {
+		display:inline-block;
+	}
+	
+	/*  removing right padding so icon is close */
+	.slds-form-element__label.slds-form-element__label-OR {
+		margin-right:0;
+	}
+	/* Styling for the CRUD/FLS error */
+	.page-error-cont {
+		text-align: center;
+		max-width:90%;
+		margin: 40px auto;
+		padding: 20px;
+		background-color: #353f54;
+		color: #fff;
+		border-radius: 10px;
+	}
+
+	.page-error-cont button {
+		color: #353f54;
+		margin-top: 10px;
+	}
+	.page-error-cont button:hover {
+		background-color: #F4F6F9;
+	}
+	.hidden {
+		display:none;
+	}
+	
+	/* form element in the header */
+	.header-form-element {
+		display:inline-block;
+		margin-left:100px;
+	}
+
+	/* overrides for jquery UI tooltip */
+	.ui-tooltip {
+		padding: 8px;
+		position: absolute;
+		z-index: 9999;
+		max-width: 300px;
+		-webkit-box-shadow: 0 0 5px #aaa;
+		box-shadow: 0 0 5px #aaa;
+		font: 100% / 1.5 "Salesforce Sans", Arial, sans-serif;
+	}
+	.slds .slds-select_container.no-select-arrows:before, 
+	.slds .slds-select_container.no-select-arrows:after {
+		border-left: none;
+		border-right: none;
+	}
+</style>
+<script>
+	var createFieldVFR = '{!JSENCODE($RemoteAction.Ctl_RelationshipBuilder.createNewField)}';
+	var allProfiles =  JSON.parse('{!JSENCODE(allProfilesJSON)}');
+	var allFieldLinkObjects = JSON.parse('{!JSENCODE(allFieldLinkObjectsJSON)}');
+	var createPermissionsVFR = '{!JSENCODE($RemoteAction.Ctl_RelationshipBuilder.createNewPermissions)}';
+	var ns = '{!JSENCODE(namespace)}';
+	var formTemplateObjectPrefix = '{!JSENCODE(formTemplateObjectPrefix)}';
+	var endpointAvailable = '{!JSENCODE(IF(endpointAvailable,"true", "false"))}';
+	var hasCRUDFLS = '{!JSENCODE(IF(hasCRUDFLS,"true", "false"))}';
+	var steps = ['NEWFIELD','GRANTPERMISSIONS','SUCCESS','FINISHED'];
+	var reqFieldErrorHTML = '<div id="error-message" class="slds-form-element__help">This field is required</div>';
+	var newFormField = {};
+	var newDiscoveryField = {};
+	var hasErrors;
+
+	$(document).ready(function() {
+		populateAllFieldLinkObjects();
+		populateAllProfiles();
+		setStep('NEWFIELD');
+
+		$( document ).tooltip({
+			position: {my: "left bottom-5", at: "right top"}
+		});
+
+		// if endpoint isnt available and they have permission to create remote sites present modal
+		if (endpointAvailable === 'false' && hasCRUDFLS === 'true') {
+			$('#remotesiteCreationModal').modal();
+		}
+	});
+
+	/* shows/hides sections based on where user is in process*/
+	function setStep(step) {
+		if (step == 'NEWFIELD') {
+			$('#newFieldSectionJS').show();
+			$('#fieldAccessSectionJS').hide();
+			$('#successSectionJS').hide();
+		}
+		else if (step == 'GRANTPERMISSIONS') {
+			$('#fieldAccessSectionJS').show();
+			$('#newFieldSectionJS').hide();
+			$('#successSectionJS').hide();
+		}
+		else if (step == 'SUCCESS') {
+			$('#newFieldSectionJS').hide();
+			$('#fieldAccessSectionJS').hide();
+			$('#successSectionJS').show();
+		}
+		else if (step == 'FINISHED') {
+			window.close();
+		}
+	}
+
+	/* validates form to create fields  */
+	function createFormIsValid() {
+		var validForm = true;
+
+		if (validateRequiredField($('#label')) === false)
+			validForm = false;
+
+		if (validateRequiredField($('#name')) === false)
+			validForm = false;
+
+		if (validateRequiredField($('#relName')) === false)
+			validForm = false;
+
+		if (validateRequiredField($('#relLabel')) === false)
+			validForm = false;
+		
+		return validForm;
+	}
+
+	/* validates specified field, adds or removes error on field as necessary */
+	function validateRequiredField($field) {
+		if ($field.val() == '') {
+			addErrorToField($field);
+			return false;
+		}
+		else {
+			removeErrorFromField($field);
+			return true;
+		}
+	}
+	/* adds error to the specified field */
+	function addErrorToField($field) {
+		if (!$field.next().hasClass('slds-form-element__help'))
+			$field.after(reqFieldErrorHTML);
+
+		$field.closest('.slds-form-element').addClass('slds-has-error');
+	}
+
+	/* clears error from specified field */
+	function removeErrorFromField($field) {
+		$field.next().remove();
+		$field.closest('.slds-form-element').removeClass('slds-has-error');
+	}
+
+	/* adds error message to page  */
+	function addErrorMessage (errorText) {
+		$('#errorContJS').removeClass('hidden');
+		$('#errorContJS').find('h2').html(errorText);
+	}
+
+	/* clears all error messages from page */
+	function clearErrorMessages() {
+		$('#errorContJS').addClass('hidden');
+		$('#errorContJS').find('h2').html('');
+	}
+
+	/* toggles ajax spinner */
+	function toggleSpinner() {
+		$('.slds-spinner_container').toggle();
+	}
+
+	/* populates select list of field link objects */
+	function populateAllFieldLinkObjects() {
+		for (var i = 0; i < allFieldLinkObjects.length; i++) {
+			$('#relObjectName').append('<option value="'+ allFieldLinkObjects[i] +'">'+ allFieldLinkObjects[i] +'</option>');
+		}   
+	}
+
+	/* populates select list of profiles */
+	function populateAllProfiles() {
+		for (var i = 0; i < allProfiles.length; i++) {
+			$('#permissionSets').append('<option value="'+ allProfiles[i].name +'">'+ allProfiles[i].label +'</option>');
+		}
+	}
+
+	/* creates new form lookup field and discovery lookup field (if selected) */
+	function createFields() {
+		toggleSpinner();
+		hasErrors = false;
+
+		if (createFormIsValid()) {
+			var createDiscoLookup = $('#createDiscoveryLookup').is(':checked');
+
+			saveFormField(!createDiscoLookup);
+
+			if (createDiscoLookup) {
+				saveDiscoveryField(createDiscoLookup,hasErrors);
+			}
+		}
+		// hide spinner so user can address validation errors
+		else {
+			toggleSpinner();
+		}
+	}
+
+	/* creates a form lookup field in SF */
+	function saveFormField(allDone) {
+		newFormField.fullName = ns+'Form__c.' + $('#name').val() + '__c';
+		newFormField.label = $('#label').val();
+		newFormField.type_x = 'Lookup';
+		newFormField.required = $('#required').is(':checked');
+		newFormField.referenceTo = $('#relObjectName').val();
+		newFormField.relationshipLabel = $('#relLabel').val();
+		newFormField.relationshipName = $('#relName').val();
+
+		saveFieldToSF(newFormField,allDone,false);
+	}
+
+	/* creates a discovery lookup field in SF */
+	function saveDiscoveryField(allDone,hasErrors) {
+		newDiscoveryField.fullName = ns+'Discovery__c.' + $('#name').val() + '__c';
+		newDiscoveryField.label = $('#label').val();
+		newDiscoveryField.type_x = 'Lookup';
+		newDiscoveryField.required = $('#required').is(':checked');
+		newDiscoveryField.referenceTo = $('#relObjectName').val();
+		newDiscoveryField.relationshipLabel = $('#relLabel').val() + ' Discoveries';
+		newDiscoveryField.relationshipName = $('#relName').val() + 'Discoveries';
+
+		saveFieldToSF(newDiscoveryField,allDone,hasErrors);
+	}
+
+	/* handles actual API call to create field */
+	function saveFieldToSF(newField,allDone,hasErrors) {
+		Visualforce.remoting.Manager.invokeAction(
+			createFieldVFR,
+			newField,
+			function (result, event) {
+				// if there was an error
+				if (event.type == 'exception' || result != 'success') {
+					// true apex exception handling
+					if (event.message) {
+						addErrorMessage(event.message);
+
+						if (allDone) {
+							toggleSpinner();
+						}
+					}
+					// some errors come through like this instead of actual exceptions (validation errors)
+					else {
+						addErrorMessage(result);
+
+						if (allDone) {
+							toggleSpinner();
+						}
+					}
+				}
+				// if there was no error continue, there werent any previous errors, and this is the last field
+				else { 
+					if (!hasErrors && allDone) {
+						clearErrorMessages();
+						setStep('GRANTPERMISSIONS');
+						toggleSpinner();
+					}
+				}
+			}
+		);
+	}
+
+	/* creates permission for form field and discovery field (optional) */
+	function createPermissions() {
+		toggleSpinner();
+
+		var hasDiscoveryField = newDiscoveryField.hasOwnProperty('fullName');
+		var selectedPermissionSets = $('#permissionSets').val();
+		
+		savePermissionsToSF(newFormField,selectedPermissionSets,!hasDiscoveryField);
+
+		if (hasDiscoveryField) {
+			savePermissionsToSF(newDiscoveryField,selectedPermissionSets,hasDiscoveryField);
+		}
+	}
+
+	/* handles API call to update permissions for fields */
+	function savePermissionsToSF(newField,selectedPermissionSets,allDone) {
+		Visualforce.remoting.Manager.invokeAction(
+			createPermissionsVFR,
+			selectedPermissionSets,
+			newField,
+			function (result, event) {
+				// if there was an error
+				if (event.type == 'exception' || result != 'success') {
+					// true apex exception handling
+					if (event.message) {
+						addErrorMessage(event.message);
+
+						if (allDone) {
+							toggleSpinner();
+						}
+					}
+					// some errors come through like this instead of actual exceptions (validation errors)
+					else {
+						addErrorMessage(result);
+
+						if (allDone) {
+							toggleSpinner();
+						}
+					}
+				}
+				// if there was no error continue
+				else {
+					if (!hasErrors && allDone) {
+						clearErrorMessages();
+						setStep('SUCCESS');
+						toggleSpinner();
+					}
+				}
+			}
+		);
+	}
+
+	// Calls the Metdata API from JavaScript to create the Remote Site Setting to permit Apex callouts
+	function createNewRemoteSite() {
+		var binding = new XMLHttpRequest();
+		var request =
+			'<?xml version="1.0" encoding="utf-8"?>' +
+			'<env:Envelope xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'+
+				'<env:Header>' +
+					'<urn:SessionHeader xmlns:urn="http://soap.sforce.com/2006/04/metadata">' +
+						'<urn:sessionId>{!JSENCODE($Api.Session_ID)}</urn:sessionId>' +
+					'</urn:SessionHeader>' +
+				'</env:Header>' +
+				'<env:Body>' +
+					'<createMetadata xmlns="http://soap.sforce.com/2006/04/metadata">' +
+						'<metadata xsi:type="RemoteSiteSetting">' +
+							'<fullName>youreka_relationshipbuilder</fullName>' +
+							'<description>Remote Site Necessary for Youreka Relationship Builder</description>' +
+							'<disableProtocolSecurity>false</disableProtocolSecurity>' +
+							'<isActive>true</isActive>' +
+							'<url>{!JSENCODE(host)}</url>' +
+						'</metadata>' +
+					'</createMetadata>' +
+				'</env:Body>' +
+			'</env:Envelope>';
+		binding.open('POST', '{!JSENCODE(host)}/services/Soap/m/31.0');
+		binding.setRequestHeader('SOAPAction','""');
+		binding.setRequestHeader('Content-Type', 'text/xml');
+		binding.onreadystatechange = function() {
+			if(this.readyState==4) {
+				var parser = new DOMParser();
+				var doc  = parser.parseFromString(this.response, 'application/xml');
+				var errors = doc.getElementsByTagName('errors');
+				var messageText = '';
+				for(var errorIdx = 0; errorIdx < errors.length; errorIdx++) {
+					messageText+= errors.item(errorIdx).getElementsByTagName('message').item(0).innerHTML + '\n';
+				}
+				handleRemoteSiteCreationResult(messageText);
+			}
+		}
+		binding.send(request);
+	}
+
+	function handleRemoteSiteCreationResult(resultText) {
+		if (resultText == '') {
+			closeModal('remotesiteCreationModal');
+			window.location.reload();
+		}
+		else {
+			console.log(`handleRemoteSiteCreationResult error: ${resultText}`); // eslint-disable-line no-console
+			window.openCustomModal({bodyStringArray:[resultText]});
+		}
+	}
+
+	function closeModal(id) {
+		$('#'+id).data('modal').close();
+	}
+</script>
+</head>
+
+<body>
+	<apex:outputPanel layout="block" styleClass="slds">
+		<div id="custom-modal-container"/>
+		<!-- CRUD/FLS errors (can't be a directive or VF component since it has to load the apex:pagemessages for content) -->
+		<apex:outputPanel layout="none" rendered="{!NOT(hasCRUDFLS)}">
+			<div class="page-error-cont">
+				<div>
+					<apex:messages />
+				</div>
+				<button onclick="setStep('FINISHED');" type="button" class="btn cancelBtn">Cancel</button>
+			</div>
+		</apex:outputPanel>
+
+		<!-- JS errors -->
+		<div class="slds-notify_container slds-notify_container-OR hidden" id="errorContJS">
+			<div class="slds-notify slds-notify--alert slds-theme--error slds-theme--alert-texture" role="alert">
+				<button class="slds-button slds-button--icon-inverse slds-notify__close">
+					<svg aria-hidden="true" class="slds-button__icon">
+						<use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
+					</svg>
+					<span class="slds-assistive-text">Close</span>
+				</button>
+				<span class="slds-assistive-text">Error</span>
+				<h2>
+					
+				</h2>
+			</div>
+		</div>
+		
+		<apex:outputPanel layout="none" rendered="{!AND(hasCRUDFLS,NOT(yourekaDisabled))}">
+			<!-- new field section -->
+			<div id="newFieldSectionJS">
+				<div class="slds-page-header" role="banner">
+					<div class="slds-grid">
+						<div class="slds-col">
+							<div class="slds-media">
+								<div class="slds-media__figure">
+									<svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon--large">
+										<use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/action-sprite/svg/symbols.svg#new_note')}"></use>
+									</svg>
+								</div>
+								<div class="slds-media__body" >
+									<p class="slds-text-heading--label">Relationship Builder</p>
+									<h1 class="slds-text-heading--medium slds-text-heading--medium-OR">New Field Link Relationship</h1>
+									<div class="slds-form-element header-form-element">
+										<div class="slds-form-element__control">
+											<label class="slds-checkbox">
+												<input type="checkbox" name="createDiscoveryLookup" id="createDiscoveryLookup" />
+												<span class="slds-checkbox--faux"></span>
+												<span class="slds-form-element__label slds-form-element__label-OR">Also create a Discovery Lookup</span>
+												<svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon--x-small" title="Also creates a lookup on the Discovery Object. This will allow discovery rules to be created for this object.">
+													<use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/utility-sprite/svg/symbols.svg#info')}"></use>
+												</svg>
+											</label>
+										</div>
+									</div>
+								</div>
+								<div>
+									
+								</div>
+							</div>
+						</div>
+						<div class="slds-col slds-no-flex slds-align-middle">
+							<div class="slds-button-group" role="group">
+								<button type="button" class="slds-button slds-button--brand" onClick="createFields();">Create Field</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="slds-grid slds-grid-OR">
+					<div class="slds-card">
+					<form id="newFieldForm">
+						<div class="slds-card__header">
+							<h2 class="slds-text-heading--small">New Field</h2>
+							<div class="slds-text-body--regular">This new lookup on the Form object will allow field link questions to be created for the selected object in addition to field link questions.</div>
+						</div>
+						
+						<div class="slds-card__body">
+							<div class="slds-col--padded slds-col--padded-OR">
+								<div class="slds-form-element">
+									<abbr class="slds-required" title="required">*</abbr>
+									<label class="slds-form-element__label slds-form-element__label-OR" for="relObjectName">Lookup Object</label>
+									<svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon--x-small" title="Select the object you'd like to create field links for.">
+										<use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/utility-sprite/svg/symbols.svg#info')}"></use>
+									</svg>
+									<div class="slds-form-element__control">
+										<div class="slds-select_container">
+											<select id="relObjectName" class="slds-select">
+												<!-- JS populates options -->
+											</select>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="slds-col--padded slds-col--padded-OR">
+								<div class="slds-form-element">
+									<abbr class="slds-required" title="required">*</abbr>
+									<label class="slds-form-element__label slds-form-element__label-OR" for="label">Field Label</label>
+									<svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon--x-small" title="The field label is what will appear to the user on page layouts.">
+										<use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/utility-sprite/svg/symbols.svg#info')}"></use>
+									</svg>
+									<div class="slds-form-element__control">
+										<input id="label" class="slds-input" type="text"/>
+									</div>
+								</div>
+							</div>
+							
+							<div class="slds-col--padded slds-col--padded-OR">
+								<div class="slds-form-element">
+									<abbr class="slds-required" title="required">*</abbr>
+									<label class="slds-form-element__label slds-form-element__label-OR" for="name">Field Name</label>
+									<svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon--x-small" title="The field name is the API reference and cannot contain spaces (ex. New_Field)">
+										<use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/utility-sprite/svg/symbols.svg#info')}"></use>
+									</svg>
+									<div class="slds-form-element__control">
+										<input id="name" class="slds-input" type="text"/>
+									</div>
+								</div>
+							</div>
+
+							<div class="slds-col--padded slds-col--padded-OR">
+								<div class="slds-form-element">
+									<abbr class="slds-required" title="required">*</abbr>
+									<label class="slds-form-element__label slds-form-element__label-OR" for="relLabel">Relationship Label</label>
+									<svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon--x-small" title="The relationship label is how this relationship will appear on Related Lists.">
+										<use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/utility-sprite/svg/symbols.svg#info')}"></use>
+									</svg>
+									<div class="slds-form-element__control">
+										<input id="relLabel" class="slds-input" type="text"/>
+									</div>
+								</div>
+							</div>
+							
+							<div class="slds-col--padded slds-col--padded-OR">
+								<div class="slds-form-element">
+									<abbr class="slds-required" title="required">*</abbr>
+									<label class="slds-form-element__label slds-form-element__label-OR" for="relName">Relationship Name</label>
+									<svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon--x-small" title="The relationship name is used primarily for system integrations and cannot contain spaces.">
+										<use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/utility-sprite/svg/symbols.svg#info')}"></use>
+									</svg>
+									<div class="slds-form-element__control">
+										<input id="relName" class="slds-input" type="text"/>
+									</div>
+								</div>
+							</div>
+							
+						</div>
+					</form>
+					</div>
+				</div>
+			</div>
+			
+			<!-- grant access section -->
+			<div id="fieldAccessSectionJS">
+				<div class="slds-page-header" role="banner">
+					<div class="slds-grid">
+						<div class="slds-col">
+							<div class="slds-media">
+								<div class="slds-media__figure">
+									<svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon--large">
+										<use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/action-sprite/svg/symbols.svg#new_note')}"></use>
+									</svg>
+								</div>
+								<div class="slds-media__body" id="headingText">
+									<p class="slds-text-heading--label">Relationship Builder</p>
+									<h1 class="slds-text-heading--medium">Grant Field Access</h1>
+								</div>
+							</div>
+						</div>
+						<div class="slds-col slds-no-flex slds-align-middle">
+							<div class="slds-button-group" role="group">
+								<button type="button" class="slds-button slds-button--brand" onClick="createPermissions();">Create Permissions</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			
+				<div class="slds-grid slds-grid-OR">
+					<div class="slds-card__header slds-grid">
+						<h2 class="slds-text-heading--small">Grant Field Read/Write Access To the Following Profiles</h2>
+					</div>
+					<div class="slds-card__body">
+						<div class="slds-col--padded slds-col--padded-OR">
+							<div class="slds-form-element">
+								<label class="slds-form-element__label" for="permissionSets">Profiles (Ctrl+Click to select multiple) Select up to 9. Don't worry! You can come back to add more</label>
+								<div class="slds-form-element__control">
+									<div class="slds-select_container no-select-arrows">
+										<select id="permissionSets" multiple="true" size="auto" class="slds-select">
+											<option value="">None</option>
+											<!-- JS populates options -->
+										</select>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- success section -->
+			<div id="successSectionJS">
+				<div class="slds-page-header" role="banner">
+					<div class="slds-grid">
+						<div class="slds-col">
+							<div class="slds-media">
+								<div class="slds-media__figure">
+									<svg aria-hidden="true" class="slds-icon slds-icon-text-default slds-icon--large">
+										<use xlink:href="{!URLFOR($Resource.SLDS100, 'assets/icons/action-sprite/svg/symbols.svg#new_note')}"></use>
+									</svg>
+								</div>
+								<div class="slds-media__body" id="headingText">
+									<p class="slds-text-heading--label">Relationship Builder</p>
+									<h1 class="slds-text-heading--medium">Field and Permissions Created!</h1>
+								</div>
+							</div>
+						</div>
+						<div class="slds-col slds-no-flex slds-align-middle">
+							<div class="slds-button-group" role="group">
+								<button type="button" class="slds-button slds-button--neutral" 
+											onClick="setStep('GRANTPERMISSIONS');">Create More Permissions</button>
+								<button type="button" class="slds-button slds-button--neutral" onClick="setStep('FINISHED');">Finish</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="slds-grid slds-grid-OR">
+					<div class="slds-card__header">
+						<h2 class="slds-text-heading--small">What Now?</h2>
+						<div class="slds-text-body--regular">Now that you've created new lookup field(s) and granted permissions you'll be able to create field link questions to that object for Form Templates. If you chose to also create a discovery lookup you'll be able to create discoveries for that object as well. If you already have a Form Template open in the editor, simply <strong>save</strong> and <strong>refresh</strong> to see the new options.</div>
+					</div>
+				</div>
+			</div>
+			<div class="slds-spinner_container hidden">
+				<div class="slds-spinner--brand slds-spinner slds-spinner--large" aria-hidden="false" role="alert">
+					<div class="slds-spinner__dot-a"></div>
+					<div class="slds-spinner__dot-b"></div>
+				</div>
+			</div>
+		</apex:outputPanel>
+		
+		<!-- remote site creation modal -->
+		<div id="remotesiteCreationModal" class="slds-hide modal">
+			<div class="modal-header slds-modal__header">
+				<h3 class="modal-title slds-text-heading--small OR-modal-heading">Create Remote Site&nbsp;</h3>
+			</div>
+			<div class="modal-body">
+				<div class="slds-modal__content" >The Relationship Builder requires API access to your Salesforce org in order to create new fields.<br/>
+					Would you like to create a new Remote Site to be created for: <strong>{!host}</strong> in order to use the Relationship Builder?</div>
+			</div>
+			<div class="modal-footer slds-modal__footer">
+				<div class="slds-x-small-buttons--horizontal">
+					<button class="slds-button slds-button--neutral" onClick="window.close();" type="button">
+						Cancel
+					</button>
+					<button class="slds-button slds-button--neutral slds-button--brand" type="button" onClick="createNewRemoteSite()">
+						Yes
+					</button>
+				</div>
+			</div>
+		</div>
+	</apex:outputPanel>
+
+
+</body>
+</html>
+</apex:page>

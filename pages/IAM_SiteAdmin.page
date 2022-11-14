@@ -1,0 +1,1553 @@
+<apex:page showHeader="false" cache="false" standardStylesheets="false"  language="{!$CurrentPage.parameters.lang}" controller="IAM_SiteAdmin_Controller">
+<c:CS_Header ></c:CS_Header>
+<c:IAM_Styles ></c:IAM_Styles>   
+<apex:form >
+   
+    <meta charset="utf-8"/>    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{!$Label.IAM_User_Management}</title>         
+    <apex:stylesheet value="{!URLFOR($Resource.IAM_AdminUX)}"/>
+    <style>
+    @supports (-ms-ime-align:auto){
+    .popUpEdge{
+    margin-left:30% !important;
+    }
+    }
+    @supports (-ms-ime-align:auto) {
+    .edgeView { 
+    margin-left:400px !important; }
+    }
+    </style>
+    <!-- Logic for reading company size ..start -->
+    <apex:outputpanel id="varAssignmentPanel">
+        <Script>
+            var comSize;
+            var comSizeaccId;
+            if(isNaN('{!lstAccounts.size}')==false){
+                comSize=parseInt('{!lstAccounts.size}') ; 
+                comSizeaccId = '{!IF(lstAccounts.size > 0,lstAccounts[0].id, '')}';
+            }
+            
+            function callEditRole(){
+                console.log('callEditRole...start here..  ');
+                console.log('callEditRole...editRoleItemId..  ' + "{!editRoleItemId}");
+                if("{!editRoleItemId}" != null && "{!editRoleItemId}" != '')
+                    editRole("{!editRoleItemId}");
+            }
+        </Script>
+    </apex:outputpanel>
+    <!-- Logic for reading company size ..end -->  
+ 
+<!-- Body Container Begins here -->
+  
+     <div class="container" id="main_content" style="margin-top:80px"> 
+     <div class="secondary_panel" style="display:none;"> 
+
+</div>
+        <h2 id="topHeader" style="border-bottom: 1px solid lightgray; font-weight: 600; padding-bottom: 0.5%;">{!$Label.IAM_Account_Management_Label}</h2>
+     
+   
+        <!--status loader when any action performed on page ---->
+        <c:IAM_statusLoader />
+        <!--#end of status loader-->
+       
+        <!-- for action functions -->
+        <!--Start of apex action function to call Apex class methods from the page --->  
+                 <apex:actionFunction action="{!deleteApplication}" name="deleteUserApplication" reRender="idRemoveApplicationPanel,pageMessagePopup,UserStatusDetails,userTable" onComplete="hideRemoveApplicationPopup();showSuccessDialog();" status="status">
+                    <apex:param name="applicationId" value="" assignTo="{!strconAppid}" /> 
+                    <apex:param name="removeApp_comments" value="" />
+                    <apex:param name="removeApp_Reason" value="" />
+                 </apex:actionFunction>
+                 <!-- This is to reset the password for a active user when clicked on reset pasword icon -->  
+                 <apex:actionFunction action="{!resetUserPassword}" name="callresetPassword" reRender="pageMessagePopup,UserStatusDetails,userTable" oncomplete="hideResetPasswordPopup();showSuccessDialog();uncheckUserAndAllCheckbox();" status="status">
+                    <apex:param name="get_selectedUsers" value="" />
+                 </apex:actionFunction>
+              
+                <!-- This is to unlock the user -->  
+             
+                <apex:actionFunction action="{!unlockUser}" name="callUnlockUser" rerender="pageMessagePopup,UserStatusDetails,userTable" oncomplete="hideUnlockUserPopup();showSuccessDialog();" status="status">
+                    <apex:param name="unlockParam" value="" />
+                </apex:actionFunction>
+                
+                <!-- This AF is used to approve the pending user request from pending approval screen  -->
+                <apex:actionFunction name="approvalRequestCall" action="{!approveRequest}" reRender="varAssignmentPanel,idDeniedCountPanel,pendingApprovalPanel,idApprovalCountPanel,pageMessagePopup" oncomplete="hideApprovePopup();callEditRole();" status="status">
+                    <apex:param name="myParamApprove" value="" />
+                </apex:actionFunction>
+                
+                <!-- This is used to reject  the pending user approval from pending approval screen-->
+                <apex:actionFunction name="RejectApprovalCall" action="{!rejectApprovalRequest}" reRender="idDeniedCountPanel,pendingApprovalPanel,idApprovalCountPanel,pageMessagePopup" oncomplete="hideRejectPopup();showSuccessDialog();" status="status">
+                    <apex:param name="myParamRej" value="" />
+                </apex:actionFunction>
+               
+                <apex:actionFunction action="{!approvalHistory}" name="callApprovalHistory" reRender="popupapproval" oncomplete="displayApprovalHistoryPopup();" status="status">
+                    <apex:param name="get_selectedUsers" value="" />
+                </apex:actionFunction>
+               
+                <!-- action function to load company details --->
+                <apex:actionFunction action="{!getComapanyAndContactInfo}" name="fetchCompanyDetails" reRender="individualAccountType,idUploadUserPanel,accountDetails,userTable,userTableEmpty,UserActiveDetails,UserInactiveDetails,idApprovalCountPanel,idDeniedCountPanel" oncomplete="hideCompanyInfo();hideUserPanelInfo();hideEditAccPanelInfo();" status="status">
+                    <apex:param name="accountId" value="" assignTo="{!strAccountId}" />
+                </apex:actionFunction>
+                
+                <!-- action function to get pending approvals -->
+                <apex:actionFunction action="{!getPendingApprovals}" name="getPendingApprovals" reRender="pendingApprovalPanel,idApprovalCountPanel" status="status">
+                </apex:actionFunction>
+                
+                 <!-- action function to get denied requests -->
+                <apex:actionFunction action="{!getDeniedRequests}" name="getDeniedRequests" reRender="deniedRequestPanel,idDeniedCountPanel"  status="status">
+                </apex:actionFunction>
+                
+                <apex:actionFunction action="{!getEditUserInfo}" name="showUpdatePanel" reRender="editUserPanel,isUserExistPanel" oncomplete="displayEditUserInfo();isSiteAdminUser();" status="status">
+                    <apex:param name="contactId" value="" assignTo="{!strContactId}" />
+                </apex:actionFunction>
+              
+                <!---action funtion for get edit account info---->
+                <apex:actionFunction action="{!getEditAccount}" name="accounteditcall" reRender="editAccountPanel,pageMessagePopup" oncomplete="{!IF((seleAccountForUpdate != null && seleAccountForUpdate.RecordType.Name == $Label.IAM_WWSPS) ,'showSuccessDialog();', 'displayEditAccPanelInfo();')}" status="status">
+                </apex:actionFunction>
+             
+                <!---deactivate_multipleUser---->
+                <apex:actionFunction action="{!deactivateMultipleUser}" name="multiple_user_deactive" reRender="pageMessagePopup,UserStatusDetails,userTable" oncomplete="hideDeactivateUserPopup();showSuccessDialog();uncheckUserAndAllCheckbox();" status="status"> 
+                    <apex:param name="get_selectedUsers" value="" />
+                    <apex:param name="deactivate_reason" value="" />
+                    <apex:param name="deactivate_comments" value="" />
+                </apex:actionFunction>
+              
+                <!---new actionfunction for multiple users----------->
+                <apex:actionFunction action="{!activeteSelectedUsers}" name="callmultipleUseActivate" reRender="pageMessagePopup,UserStatusDetails,userTable" oncomplete="hideUserActivatePopup();showSuccessDialog();uncheckUserAndAllCheckbox();setInactiveRadioButton();" status="status">
+                    <apex:param name="get_selectedUsers" value="" />
+                </apex:actionFunction>
+               
+                <apex:actionFunction name="callActiveInactiveUsers" action="{!getActiveInactiveUsers}" reRender="userTable,userTableEmpty" status="status"> <!-- UserStatusDetails -->
+                  <apex:param name="searchvalis" value="" assignTo="{!isActiveInaciveUsers}"/>
+                </apex:actionFunction>
+               
+               <apex:actionFunction name="user_search" action="{!getUserSearch}" reRender="pageMessagePopup,userTable,UserActiveDetails,UserInactiveDetails" oncomplete="displaySearchRadioButton();" status="status"> <!-- User Search -->
+                <apex:param name="userSearch" value="" assignTo="{!userSearchText}" />
+                </apex:actionFunction>
+                
+                <apex:actionFunction name="getContactByOrder" action="{!getRecordsbySelectedOrder}" reRender="userTable"  status="status"> <!-- User Sort Order -->
+                <apex:param name="orderSearch" value="" assignTo="{!selectedSortField}" />
+                <apex:param name="sortOrder" value="" assignTo="{!selectedSortOrder}" />
+                </apex:actionFunction>
+                
+                
+                <!---actionfunctions for pagination----------->
+                <apex:actionFunction action="{!next}" name="getPageNext" reRender="userTable" status="status" >
+                </apex:actionFunction>
+                 
+                <apex:actionFunction action="{!previous}" name="getPagePrevious" reRender="userTable" status="status" >
+                </apex:actionFunction>
+                
+                 
+                <apex:actionFunction action="{!getPageNumberRecord}" name="getPageNumber" reRender="userTable" status="status" >
+                    <apex:param name="get_pageNumber" value="" />
+                </apex:actionFunction>
+                
+                <apex:actionFunction name="ShowStatus" reRender="rerender" status="status"/>
+                
+               <!--- end of new action function---------->
+               
+        <!-- success message starts here -->       
+        <apex:outputPanel id="pageMessagePopup">
+            <script>
+                function showSuccessDialog(isAddUser){
+                    console.log('showSuccessDialog...start...');
+                    console.log('showSuccessDialog...isAddUser... ' + isAddUser);
+                    var message = "{!pageMessage}";
+                    console.log("custom label ....  "+ message);
+                    if({!isUserNameExist} == false){
+                        if(message == "{!$Label.IAM_Something_Went_Wrong_Error}" || message == "{!$Label.IAM_WWSPS_Account_Edit_Message}" || message == "{!$Label.IAM_Logged_In_user_deactivate_message}"){
+                            console.log('calling...failure message...');
+                            $("div#idMessageModalFailure").modal({backdrop: 'static', keyboard: false});
+                        }else{
+                            console.log('calling...success message...');
+                            $("div#idMessageModal").modal("show");
+                            if(isAddUser == true){
+                                clearAddUserFieldsInfo();
+                            }else if(isAddUser == false){   
+                                hideEditAccPanelInfo();
+                                hideUserPanelInfo();
+                            }   
+                        }   
+                    }
+                    console.log('showSuccessDialog...end...');
+                }
+                
+                function displaySearchRadioButton(){
+                    console.log('displaySearchRadioButton...start..isActiveInaciveUsers. ' + {!isActiveInaciveUsers});
+                    if({!isActiveInaciveUsers} == true){
+                        displayActiveButtons();
+                        hideInactiveButtons();
+                    }else{
+                        displayInactiveButtons();
+                        hideActiveButtons();
+                    }
+                    uncheckUserAndAllCheckbox();
+                }
+                
+            </script>
+             <!-- Success Modal -->
+             <div class="modal fade" id="idMessageModal" role="dialog" style="text-align: center;">
+                <!-- Fixed D-3148 if contact is pending for approval display message in orange color else display in green color -->
+                <div class="modal-dialog" id="fadeContent" style="{!IF(newCon.IAM_Contact_Status__c == $Label.IAM_Status_Pending,'background-color: #FFA500;width:590px;border-radius:5px;position: fixed;top: 9% !important;float: left;left: 50%;top: 30%;transform: translate(-50%, -50%);','background-color: #04844b;width:590px;border-radius:5px;position: fixed;top: 9% !important;float: left;left: 50%;top: 30%;transform: translate(-50%, -50%);')}">
+                    <table> 
+                        <!-- Modal content-->
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="fa fa-check-circle fa-2x" style="color: #FFFFFF;padding-left: 5px;"></div>
+                                </td>
+                                <td>
+                                    <div class="modal-body">
+                                        <div style="font-size:18px;color: #FFFFFF;font-family: Arial, Helvetica, sans-serif;width: 500px;position:relative;">{!pageMessage}</div>
+                                    </div>
+                                </td>
+                                <td style="width:50px;">
+                                    <div type="button" style="color: #FFFFFF;opacity:1;size:20px;cursor: pointer;width: 20px;top: -10px;right: -1px;position:relative;" class="close fa-2x pull-right" data-dismiss="modal">&times;</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Failure Modal -->
+            <div class="modal fade" id="idMessageModalFailure" role="dialog">
+                <div class="modal-dialog" style="background-color: #c23934;width:600px;height: 12%;border-radius:5px;position: fixed;top: 9% !important;float: left;left: 50%;top: 30%;transform: translate(-50%, -50%);">
+                    <table> 
+                        <!-- Modal content-->
+                        <tbody>
+                            <tr>
+                                <td style="height:20%; width:50px;">
+                                    <div class="fa fa-ban fa-2x" style="color: #FFFFFF;padding-top: 50% !important;position:relative;padding-left: 5px;top: -20px;"></div>
+                                </td>
+                                <td>
+                                    <div class="modal-body" style="padding:2px !important;width:500px;height: 10%;">
+                                        <div style="color: #FFFFFF;font-size:20px;font-family: Arial, Helvetica, sans-serif;margin-left:2%;text-align: center;margin-top: 10px !important;width: 500px;position:relative;">{!pageMessage}</div>
+                                    </div>
+                                </td>
+                                <td style="height:20%; width:50px;">
+                                    <div type="button" style="color: #FFFFFF;opacity:1;size:20px;cursor: pointer;width: 20px;height: 10%;top: -15px;right: -1px;position:relative;" class="close fa-2x pull-right" data-dismiss="modal">&times;</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </apex:outputPanel>
+        <!-- success message ends here --> 
+        
+        <!-- unlock user popup start here .....   --->
+         <apex:outputPanel styleClass="update_unlock_popup" style="display:none" id="unlockPopup">
+            <apex:outputPanel styleClass="popupBackground" layout="block" style="" />
+            <apex:outputPanel styleClass="modal-dialog" layout="block">
+                <apex:outputPanel styleClass="customPopup">
+                    <table>
+                       <div class="thead-dark" style="background-color:black; color:white;padding:10px;"> 
+                             <h4 style="margin:0px;">{!$Label.IAM_Password_Unlock}</h4>
+                         </div>
+                        <center>
+                            <p style="border-bottom: 1px solid lightgray;padding: 10px;">{!$Label.IAM_Unlock_Message}</P>
+                            <div class="btn btn-sm btn-default" onclick="confirmUnlockUser();" style="margin:10px; float:left;:0px;background-color:teal!important;color:white !important;">{!$Label.IAM_Submit_Button}</div>
+                            <div class="btn btn-sm btn-default" onclick="hideUnlockUserPopup();" style="margin:10px; float:right;background:#0f4f77!important;color:white !important;">{!$Label.IAM_Cancel}</div>
+                        </center>
+                    </table>
+
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        <!-- unlock user popup end  here .....   --->
+        
+        <!-- password reset popup start here .....   --->
+        <apex:outputPanel styleClass="update_resetpassword_popup" style="display:none" id="resetPwd">
+            <apex:outputPanel styleClass="popupBackground" layout="block" style="" />
+            <apex:outputPanel styleClass="modal-dialog" layout="block">
+                <apex:outputPanel styleClass="customPopup responsivePopup edgeView" style="margin-left: -40px;">
+                    <table>
+                        <div class="thead-dark" style="background-color:black; color:white;padding:10px;"> 
+                                      <h4 style="margin:0px;">{!$Label.IAM_Password_Reset_Label} </h4>
+                        </div>
+                        <center>
+                            <p style="border-bottom: 1px solid lightgray;padding: 10px;">{!$Label.IAM_Reset_Password_Question_Label}.</P>
+                            <div class="btn btn-sm btn-default" onclick="onclickresetPassword();" style="margin:10px; float:left;:0px;background-color:teal!important;color:white !important;">{!$Label.IAM_Submit_Button}</div>
+                            <div class="btn btn-sm btn-default" onclick="hideResetPasswordPopup();" style="margin:10px; float:right;background-color:#0f4f77!important;color:white !important;">{!$Label.IAM_Cancel}</div>
+                        </center>
+                    </table>
+
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        <!-- password reset popup end here .....   --->
+        
+        <!-- User Deactivate popup start here .....   --->
+        <apex:outputPanel styleClass="update_userDeactivate_popup" style="display:none" id="deactivatePopup">
+            <apex:outputPanel styleClass="popupBackground" layout="block" style="" />
+            <apex:outputPanel styleClass="modal-dialog" layout="block">
+                <apex:outputPanel styleClass="customPopup responsiveDeactivatePopup " style="width: 30%;margin-left: 380px; margin-top: -80px;left: unset;">
+                    <table>
+                     <div class="thead-dark" style="background-color:black; color:white;padding:10px;"> 
+                           <h4 style="margin:0px;">{!$Label.IAM_Deactivate_User_Label}</h4> 
+                        </div>
+                        <center>
+                           <table style="width:100%;">
+                             <tr> 
+                                <td>
+                                    <span>
+                                        <span><label style="margin-top: -23px;margin-left: 14px;; text-align: center;font-size: 15px;"> {!$Label.IAM_Deativate_Question_Label}  &nbsp;&nbsp;</label> </span>
+                                     </span>                          
+                                </td> 
+                            </tr>
+                            <tr> <td style="padding-left:13%;padding-top:11px;padding-bottom: 4px;">
+                                    <span >
+                                        <span><label style="font-size:15px;"> {!$Label.IAM_Reason} &nbsp;:&nbsp;</label> </span>
+                                        <span style="font-size:small;">
+                                            <select class="deactivateReason">
+                                                <option value="No Longer at Location">No Longer at Location</option>
+                                                <option value="Requested Removal">Requested Removal</option>
+                                                <option value="Cancellation Comments">Cancellation Comments</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </span>
+                                    </span>                    
+                                </td> 
+                            </tr>
+                            <br/><br/>
+                            <tr> 
+                                <td style="padding-left:14%;padding-top: 10px;padding-bottom: 10px;">
+                                    {!$Label.IAM_Comments_Label}
+                                    <span class="col-sm-1 required" style="padding-left: 3px! important;color:red;padding-right: 10px! important;float: none ! important;">*</span>                               
+                                    </td> </tr><br/>
+                                    <tr> <td style="padding-left: 18%;border-bottom: 1px solid lightgray;padding-bottom: 10px;">
+                                    <textarea maxlength="300" class="contentEditCSS deactivateComments" contentEditable="true" html-data-fnameis="{!$Label.IAM_Comments_Label}" html-placeholder="Enter Comments" 
+                                    onblur="isRejectComments(false, '.deactivateComments', 'isDeactivate')"></textarea>   <br/>                                 
+                                </td>   
+                            </tr>  
+                            <tr> 
+                                <td>
+                                    <label style="color:red;font-style: italic;padding-left: 17px;padding-right: 17px;text-align: justify;"> {!$Label.IAM_DeActivate_User_Message}</label>
+                                    <div class="btn btn-sm btn-default" onclick="isRejectComments(true, '.deactivateComments', 'isDeactivate');" style="margin:10px; float:left;:0px;background-color:teal!important;color:white !important;">{!$Label.IAM_Submit_Button}</div>
+                                    <div class="btn btn-sm btn-default" onclick="hideDeactivateUserPopup();" style="margin:10px; float:right;background:#0f4f77!important;color:white !important;">{!$Label.IAM_Cancel}</div>
+                                </td>
+                            </tr>
+                       </table>
+                </center>
+           </table>
+ </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        <!-- User Deactivate popup end here .....   --->
+        
+        <!-- User Activate popup start here .....   --->
+        <apex:outputPanel styleClass="update_userActivate_popup" style="display:none" id="activatePopup">
+            <apex:outputPanel styleClass="popupBackground" layout="block" />
+            <apex:outputPanel styleClass="modal-dialog" layout="block">
+                <apex:outputPanel styleClass="customPopup responsiveReactivatePopup" style="left: unset;margin-left: 28%;width: 30%;">
+                    <table>
+                     <div class="thead-dark" style="background-color:black; color:white;padding:10px;"> 
+                                      <h4 style="margin:0px;">{!$Label.IAM_Activate_User_Label}</h4> 
+                     </div>
+                        <center>
+                            <p style="border-bottom: 1px solid lightgray;padding: 10px;text-align: center;font-size: 15px;">{!$Label.IAM_Activate_Question_Label}<br/>
+                             <p style="font-style: italic;color: #b28500;padding-left: 17px;padding-right: 17px;text-align: justify;"> {!$Label.IAM_ReActivate_User_Message}</p>
+                            </P>
+                            <div class="btn btn-sm btn-default" onclick="activate_selected_users();" style="margin:10px; float:left;:0px;background-color:teal!important;color:white !important;">{!$Label.IAM_Submit_Button}</div>
+                            <div class="btn btn-sm btn-default" onclick="hideUserActivatePopup();" style="margin:10px; float:right;background:#0f4f77!important;color:white !important;">{!$Label.IAM_Cancel}</div>
+                        </center>
+                    </table>
+
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        
+        <!-- User Activate popup end here .....   --->
+       
+        <!-- Update User popup start here .....   --->
+        <apex:outputPanel styleClass="update_user_popup" style="display:none" id="updatePopup">
+            <apex:outputPanel styleClass="popupBgApp" layout="block" style="" />
+            <apex:outputPanel styleClass="modal-dialog" layout="block">
+                <apex:outputPanel styleClass="customPopup edgeView">
+                    <table>
+                     <div class="thead-dark" style="background-color:black; color:white;padding:10px;"> 
+                              <h4 style="margin:0px;"> {!$Label.IAM_Edit_user} </h4>
+                      
+                     </div>
+                        <center>
+                            <p style="border-bottom: 1px solid lightgray;padding: 10px;">{!$Label.IAM_Update_Question_Label}</P> <!-- rendered="{!isShowUpdateBtn}" -->
+                            
+                            <apex:commandButton id="updateuserbtn" value="{!$Label.IAM_Update_user}" action="{!updateUser}" reRender="isUserExistPanel,pageMessagePopup,UserStatusDetails,userTable" styleClass="btn update_user"  style="margin:10px; float:left;background-color:teal !important;color:white !important;" onComplete="showSuccessDialog(false);hide_update_userPopopup();setInactiveRadioButton();" status="status"/>
+                            <div class="btn btn-default" onclick="hide_update_userPopopup()" style="margin:10px; float:right;background:#0f4f77!important;color:white !important;">{!$Label.IAM_Cancel}</div>
+                        </center>
+                    </table>
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        <!-- Update User popup end here .....   --->
+        
+        <!-- Add User popup start here .....   --->        
+        <apex:outputPanel styleClass="add_user_popup" style="display:none" id="addUserPopup">
+            <apex:outputPanel styleClass="popupBgApp" layout="block" style="" />
+            <apex:outputPanel styleClass="modal-dialog" layout="block">
+                <apex:outputPanel styleClass="customPopup edgeView ">
+                     <table>
+                       <div class="thead-dark" style="background-color:black; color:white;padding:10px;"> 
+                              <h4 style="margin:0px;">{!$Label.IAM_Add_New_User}</h4> 
+                         </div> 
+                        <center>
+                            <p style="border-bottom: 1px solid lightgray;padding: 10px;">{!$Label.IAM_Add_User_Question_Label}</P>
+                             <apex:commandButton id="adduserbtn" value="{!$Label.IAM_Add_User}" action="{!addNewUser}" reRender="isUserExistPanel,pageMessagePopup,UserStatusDetails,userTable" styleClass="btn btn-sm " style="margin:10px; float:left;background-color:teal!important;color:white !important;" onComplete="isUserExist();hide_add_userPopopup();showSuccessDialog(true);" status="status"/>
+                             <div class="btn btn-sm btn-default" id="Cancbtn" onclick="hide_add_userPopopup();"  style="margin:10px; float:right;background:#0f4f77!important;color:white !important;">{!$Label.IAM_Cancel}</div> 
+                        </center>
+                     </table>
+                </apex:outputPanel>
+            </apex:outputPanel>
+        </apex:outputPanel>
+        <!-- Add User popup end here .....   --->        
+
+        <!-- remove application confirm panel satrt here-->
+        <div class="deleterole_user_popup" style="display:none" id="idRemoveApplication">
+            <apex:outputPanel styleClass="popupBackground" id="idRemoveApplicationPanel"  layout="block"/>
+                <div class="modal-dialog" id="rolepop46">
+                   <apex:outputPanel styleClass="customPopup edgeView" layout="block" id="rolepop47" style="margin-left:-7%">
+                          <table>
+               <div class="thead-dark" style="background-color:black; color:white;padding:10px;"> 
+                      <h4 style="margin:0px;">{!$Label.IAM_Deactivate_Application_Label}</h4>                                                              
+                 </div> 
+                 <center>
+                     <table style="width:100%;">
+                             <tr> 
+                                <td>
+                                    <span>
+                                        <span><label style="margin-top: -23px;margin-left: 14px;; text-align: center;font-size: 15px;"> {!$Label.IAM_Remove_Application_Access_Message}  &nbsp;&nbsp;</label> </span>
+                                     </span>                          
+                                </td> 
+                            </tr>
+                            <tr> <td style="padding-left:13%;padding-top:11px;padding-bottom: 4px;">
+                                    <span >
+                                        <span><label style="font-size:15px;"> {!$Label.IAM_Reason} &nbsp;:&nbsp;</label> </span>
+                                        <span style="font-size:small;">
+                                            <select class="removeAppReason">
+                                                <option value="No Longer at Location">No Longer at Location</option>
+                                                <option value="Requested Removal">Requested Removal</option>
+                                                <option value="Cancellation Comments">Cancellation Comments</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </span>
+                                    </span>                    
+                                </td> 
+                            </tr>
+                            <br/><br/>
+                            <tr> 
+                                <td style="padding-left:14%;padding-top: 10px;padding-bottom: 10px;">
+                                    {!$Label.IAM_Comments_Label}
+                                    <span class="col-sm-1 required" style="padding-left: 3px! important;color:red;padding-right: 10px! important;float: none ! important;">*</span>                               
+                                    </td> 
+                            </tr>
+                            <br/>
+                            <tr> 
+                            <td style="padding-left: 18%;border-bottom: 1px solid lightgray;padding-bottom: 10px;">
+                                    <textarea maxlength="300" class="contentEditCSS removeAppComments" contentEditable="true" html-data-fnameis="{!$Label.IAM_Comments_Label}" html-placeholder="Enter Comments" 
+                                    onblur="isRejectComments(false, '.removeAppComments', 'isRemoveApp')"></textarea>  <br/>                                   
+                                </td>   
+                            </tr>  
+                            <tr> 
+                                <td>
+                                   <div class="btn btn-sm btn-default" onclick="isRejectComments(true, '.removeAppComments', 'isRemoveApp');" style="margin:10px; float:left;:0px;background-color:teal!important;color:white !important;">{!$Label.IAM_Submit_Button}</div>
+                                    <div class="btn btn-sm btn-default" onclick="hideRemoveApplicationPopup();" style="margin:10px; float:right;background:#0f4f77!important;color:white !important;">{!$Label.IAM_Cancel}</div>
+                                </td>
+                            </tr>
+                       </table>
+                </center>
+             </table>
+                      </apex:outputPanel>
+                 </div>                                                           
+            </div>
+        <!-- remove application confirm  panel Ends Here-->
+
+        <!-- Approval history panel -->
+          <apex:outputPanel id="popupapproval">
+             <!-- No approvals message -->
+                <div class="approval_history_popup" style="display:none">
+                <apex:outputPanel rendered="{!approvalHisMessage}">
+                    <apex:outputPanel styleClass="popupBackground" layout="block" rendered="{!approvalHisMessage}" />
+                    <div class="modal-dialog">
+                        <apex:outputPanel id="popInnerOutputPnl23"  style="margin-left: -40px;"  styleClass="customPopup responsivePopup edgeView"  layout="block" rendered="{!approvalHisMessage}">
+                        <div class="thead-dark" style="background-color:black; color:white;padding:10px;">
+                            </div>
+                            <center>
+                                <p style="border-bottom: 1px solid lightgray;padding: 10px;">{!$Label.IAM_No_Approvals_Label}</P>
+                   
+                               <div class="btn update_user" onclick="hideApprovalHistoryPopup();" style="margin:5px;background:teal!important;color: white !important;">{!$Label.IAM_Close_Button_Label}</div>
+                            </center>
+                    </apex:outputPanel>                                
+                    </div>
+                  </apex:outputPanel> 
+                <apex:outputPanel rendered="{!approvalHis}">
+                    <apex:outputPanel styleClass="popupBackground"  layout="block" rendered="{!approvalHis}" />
+                    <apex:outputPanel styleClass="modal-dialog" layout="block">
+                    <div class="container-fluid" style="position: relative;left: -60%;">
+                        <apex:outputPanel id="popInnerOutputPnl2" style="left:18% !important; top:30%" styleClass="customPopup" layout="block" rendered="{!approvalHis}">
+                            <table class="table-bordered table-striped table" >
+                                <thead class="thead-dark" style="background-color:black; color:white;padding:10px;">                                
+                                    <tr class="dataRow" id="headerRow" style="background-color: black; color: white">
+                                        <td class="dataCell">{!$Label.IAM_Action}</td>
+                                        <td class="dataCell">{!$Label.IAM_Date_Label}</td>
+                                        <td class="dataCell">{!$Label.IAM_Status}</td>
+                                        <td class="dataCell">{!$Label.IAM_Assaigned_To_Label}</td>
+                                        <td class="dataCell">{!$Label.IAM_Comments_Label}</td>
+                                        <td class="dataCell">{!$Label.IAM_Actual_Approver_Label}</td>
+                                        <td class="dataCell">{!$Label.IAM_Overall_Status_Label}</td>
+                                    </tr>
+                                  
+                              </thead>
+                              <tbody>
+                                   <apex:repeat value="{!aSW.approvals}" var="s">
+                                        <tr class="overAllStatusRow dataRow" id="overAllStatusRow">
+                                            <td colspan="6" class="dataCell whiteHead">
+                                                {!IF(AND(s['listOfSteps'][0].stepstatus != 'Started', s['listOfSteps'][0].ProcessNode.Name != NULL),IF( s['listOfSteps'][0].stepstatus !='Removed','Step : '+s['listOfSteps'][0].ProcessNode.Name + IF(s['listOfSteps'][0].stepstatus=='Pending',' (Pending for first approval) ',''),'Approval Request Recalled'), 'Approval Request Submitted')}
+                                            </td>
+                                            <td class="dataCell {!s['listOfSteps'][0].stepstatus}">
+                                                {!IF(AND(s['listOfSteps'][0].stepstatus != 'Started',s['listOfSteps'][0].stepstatus != 'NoResponse'),IF( s['listOfSteps'][0].stepstatus !='Removed',s['listOfSteps'][0].stepstatus,'Recalled'), '')}
+                                            </td>
+                                        </tr>
+                                        <apex:repeat var="step" value="{!s.listOfSteps}">
+                                            <tr class="dataRow">
+                                                <td class="dataCell">
+                                                </td>
+                                                <td class="dataCell">
+                                                    <apex:outputText value="{0,date,dd/MM/YYYY HH:mm:ss}">
+                                                        <apex:param value="{!step.CreatedDate}" />
+                                                    </apex:outputText>
+                                                </td>
+                                                <td class="dataCell">{!IF(step.Stepstatus!='NoResponse',step.Stepstatus,'')}</td>
+                                                <td class="dataCell">{!step.OriginalActor.Name}</td>
+                                                <td class="dataCell">{!step.comments}</td>
+                                                <td class="dataCell">{!step.Actor.Name}</td>
+                                                <td></td>
+                                            </tr>
+                                        </apex:repeat>
+                                    </apex:repeat>
+                                </tbody>
+                            </table>
+                              <center>
+                                <div class="btn update_user" onclick="hideApprovalHistoryPopup();" style="margin:5px;background:teal!important;color: white !important;">{!$Label.IAM_Close_Button_Label}</div>
+                            </center>
+                        </apex:outputPanel>
+                    </div></apex:outputPanel>
+                </apex:outputPanel>
+                </div>
+            </apex:outputPanel>
+       <!-- end of approval history-->
+ 
+   
+        <!----------approval rejection popup start here ---->
+            <div class="reject_approval_popup" style="display:none" id="idRejectApporvalPopup" >
+                <apex:outputPanel styleClass="popupBackground" layout="block" id="idRejectApporvalPanel"/>
+                <apex:outputPanel styleClass="modal-dialog" layout="block">
+                    <apex:outputPanel styleClass="customPopup" style="left:38% ! important;" layout="block">
+                        <table style="width: 400px;">
+                            <div class="thead-dark" style="background-color:black; color:white;padding:10px;"> 
+                                <h4 style="margin:0px;">{!$Label.IAM_Comments_For_Rejection_Label} </h4>
+                            </div>
+                            <center>
+                                <table style="width:100%;">
+                                    <tr> <td style="padding-left:13%;padding-top:20px;padding-bottom: 10px;">
+                                            <span>
+                                                <span><label style="font-size:14px;"> {!$Label.IAM_Reason}  &nbsp;&nbsp;</label> </span>
+                                                    <span class="rejectReason">
+                                                        {!$Label.IAM_Reject_Reason}
+                                                    </span>
+                                            </span>                          
+                                        </td> 
+                                    </tr>
+                                    <tr> <td style="padding-left:14%;padding-top: 10px;">
+                                    {!$Label.IAM_Comments_Label}
+                                    <span class="col-sm-1 required" style="padding-left: 3px! important;color:red;padding-right: 10px! important;float: none ! important;">*</span>                               
+                                    </td> </tr>
+                                    <tr> <td style="padding-left: 10%;border-bottom: 1px solid lightgray;">
+                                    <apex:inputText value="{!rejectApproveReason}" styleClass="reject_approve_reason" style="margin:15px;width:80%;height:70px;" id="idRejectReason"/>
+                                    </td></tr>  <tr><td>    
+                                    <div class="btn btn-sm btn-default" onclick="confirmRejectApprovalItem();" style="margin:10px; float:left;:0px;background-color:teal!important;color:white !important;">{!$Label.IAM_Submit_Button}</div>
+                                    <div class="btn btn-default" onclick="hideRejectPopup();" style="margin:10px;float:right;background:#0f4f77!important;color:white !important;">{!$Label.IAM_Cancel}</div>
+                                    </td></tr>
+                                </table>
+                            </center>
+                        </table>
+                    </apex:outputPanel>
+                </apex:outputPanel>
+            </div>
+        <!----------approval rejection popup end here ---->
+        
+        <!----------approval request popup start here ---->
+        <div class="request_approval_popup" style="display:none" >
+            <apex:outputPanel styleClass="popupBackground" id="idapprovalRequestPopupPanel"  layout="block"/>
+            <div class="modal-dialog" id="rolepop46">
+                <apex:outputPanel styleClass="customPopup popUpEdge " layout="block"  style="margin-left:-7%">
+                    <table>
+                         <div class="thead-dark" style="background-color:black; color:white;padding:10px;"> 
+                              <h4 style="margin:0px;">{!$Label.IAM_Approve_Request}</h4>                                                              
+                         </div> 
+                         <center>
+                              <p style="border-bottom: 1px solid lightgray;padding: 10px;">{!$Label.IAM_Approve_Request_Confirmation_Message}</p>
+                              <div class="btn btn-sm btn-default" onclick="confirmApproveItem();" style="margin:10px; float:left;:0px;background-color:teal!important;color:white !important;">{!$Label.IAM_Submit_Button}</div>
+                              <div class="btn btn-default" onclick="hideApprovePopup();" style="margin:10px;float:right;background:#0f4f77!important;color:white !important;">{!$Label.IAM_Cancel}</div>
+                        </center>
+                    </table>
+                </apex:outputPanel>
+            </div>                                                           
+      </div>
+    <!----------approval request popup end here ----> 
+  
+    <div class="primary_pannel">
+    <div class="row" id="topSection">
+          
+        <div class="col-md-6" style="margin-top: 15px;">
+            <apex:outputPanel id="containerPanel">
+            <apex:outputPanel styleclass="form-horizontal">
+                <!-- pick list region starts here .. -->
+                <div class="form-group responsiveInput" style="margin-bottom: 6px;">
+                    <label class="col-md-3 control-label" id="responsiveRegionLabel" for="selectbasic">{!$Label.IAM_Region_Label}</label>
+                    <div class="col-md-5">
+                        <apex:selectList id="Region" value="{!regionIs}" size="1" styleClass="form-control">
+                            <apex:selectOptions value="{!Region}" />
+                            <apex:actionSupport event="onchange" action="{!getAccType}" reRender="containerPanel,StatisticsTable,accountDetails" oncomplete="getCompanyDetail();" status="status"/>
+                        </apex:selectList>
+                    </div>
+                </div>
+                <!-- pick list region end here .. -->       
+              
+                <!-- pick list Account Type starts here .. -->
+                <div class="form-group responsiveInput" style="margin-bottom: 6px;">
+                    <label class="col-md-3 control-label" id="responsiveAccLabel" for="acctype">{!$Label.IAM_Account_Type_Label}</label>
+                    <div class="col-md-4" >
+                        <apex:selectList id="accountType" value="{!accountType}" size="1" styleClass="form-control required chosen-select" >
+                            <apex:selectOptions value="{!AccType}" />
+                            <apex:actionSupport event="onchange" action="{!getCompanies}" reRender="editUserPanel,containerPanel,StatisticsTable,accountDetails" oncomplete="getCompanyDetail();" status="status"/>
+                            <!--reRender="companies"-->
+                        </apex:selectList>
+                    </div>
+                </div>
+                <!-- pick list Account Type end here .. -->
+
+                <!-- pick list List of Companies starts here .. -->
+                <div class="form-group responsiveInput">
+                    <label class="col-md-3 control-label" for="company">{!$Label.IAM_ListOfCompanies}</label>
+                    <div class="col-md-9">
+                            <apex:selectList id="accSelectOpt1" value="{!strAccountId}" size="1" styleClass="form-control required chosen-select" onchange="getCompanyDetail();">
+                            <apex:selectOptions value="{!Companies}" />
+                        </apex:selectList>
+                    </div>
+                </div>    
+                <!-- pick list List of Companies end here .. -->
+            </apex:outputPanel>             
+            </apex:outputPanel>
+        </div>
+       
+       <!-- Statistics table starts here  -->
+        <div class="col-md-4" style="float:right; margin-top:20px; margin-bottom: 20px">
+            <apex:outputPanel id="StatisticsTable">
+                <table class="table table-bordered" id="tableWidth" style="border-bottom:1px solid darkgray;float:right;">
+                    <tbody>
+                        <tr style="font-weight: 700; font-size: 14px;background-color:black; color:white;border-color: black;">
+                            <th colspan="3" style="text-align:center;border-color: black;">{!$Label.IAM_Accounts} {!$Label.IAM_Status}</th>
+                        </tr>
+                        <tr style="font-weight: 700; font-size: 14px">
+                            <td style="background-color:lightblue; text-align: center;border-color: black;">{!$Label.IAM_Active}</td>
+                            <td style="background-color:lightblue; text-align: center;border-color: black;">{!$Label.IAM_Inactive_Label}</td>
+                            <td style="background-color:lightblue; text-align: center;border-color: black;">{!$Label.IAM_Pending_Label}</td>
+                        </tr>
+                        <tr>            
+                            <td style="text-align:center;border-color: black;">{!ActiveAccounts}</td>
+                            <td style="text-align:center;border-color: black;">{!InactiveAccounts}</td>
+                            <td  style="text-align:center;border-color: black;">{!PendingAccounts}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </apex:outputPanel>
+        </div>
+        <!-- Statistics table end here  --> 
+</div>
+     <!---message---->
+        <apex:outputPanel id="oplMessage" >
+            <script>
+                jQuery('.succss_msg').hide();
+                function show_successNewUser() {
+                                          
+                      jQuery('.succss_msg').show();
+                      setTimeout(function() {
+                  
+                          jQuery('.succss_msg').hide();
+                      }, 10000);              
+                  }
+                function show_success1() {
+
+                    jQuery('.succss_msg1').show();
+
+                }
+                jQuery('.active_btn').hide();
+                jQuery('.inactive_btn').show();
+            </script>
+         <!---update success message---->
+            
+   </apex:outputPanel>
+       <apex:outputPanel id="isUserExistPanel">
+            <script>
+                console.log("userNameExist .....   " + {!isUserNameExist});
+                function isUserExist(){
+                    console.log("isUserExist ..start...   " + {!isUserNameExist});
+                    if({!isUserNameExist} == true){
+                        $('.idWKGnew').parent().find('.my_reqField').remove();
+                        $('.idWKGnew').addClass('error_border');
+                        $('.'+$('.idWKGnew')[0].dataset['fnameis'].replace(' ','_')+'_error').show();
+                        $('.'+$('.idWKGnew')[0].dataset['fnameis'].replace(' ','_')+'_correct').hide();                                         
+                        $('.idWKGnew').parent().append('<span class="my_reqField" style="color:#cc0000;">{!$Label.IAM_UserName_Present_Error_Label}</span>')
+                    }else{
+                        $('.'+$('.idWKGnew')[0].dataset['fnameis'].replace(' ','_')+'_error').hide();
+                        $('.'+$('.idWKGnew')[0].dataset['fnameis'].replace(' ','_')+'_correct').show();
+                        $('.idWKGnew').removeClass('error_border');                       
+                        $('.idWKGnew').parent().find('.my_reqField').remove();
+                    }  
+                    console.log("isUserExist ..ends...   ");
+                }
+                function isSiteAdminUser(){
+                    console.log( "isSiteAdminUser begin..." + "{!newCon.IAM_Site_Admin__c}");
+                    if("{!newCon.IAM_Site_Admin__c}" == 'true')
+                        $("div#idContSideAdminRole").toggle();
+                    console.log( "isSiteAdminUser end..."); 
+                }
+                
+           </script>
+       </apex:outputPanel>
+   
+        <div class="row" style="margin-left: 2px; margin-top: 20px">
+        <!-- Horizontal Button Arrangement -->
+
+        <!--Table Tabs Start here -->
+        
+            <ul class="nav nav-tabs" style="border-bottom:0px;display: flex;">
+                <li class="active allTabs tabA" >
+                    <a data-toggle="tab" onclick="refreshTable();" href="#companyInfoTab"  class="topborder applybrder"><span style="font-weight: 800">{!$Label.IAM_Company_Information_Label}</span></a>
+                </li>
+                
+                <li class=" allTabs tabC">
+                    <a data-toggle="tab" href="#deniedRequestTab"  onclick="getDeniedRequests();" class="topborder applybrder"> <span style="font-weight: 700"> {!$Label.IAM_Denied_Requests_Label}</span> &nbsp; 
+                        <apex:outputPanel id="idDeniedCountPanel">
+                            <span id="responsiveBadge" class="badge" style="{!IF(deniedRequestCount > 0,'background-color:green;','background-color:red')}">{!deniedRequestCount}</span>
+                        </apex:outputPanel>
+                    </a>
+                </li>
+
+                <li class="allTabs tabB" >
+                    <a data-toggle="tab" href="#pendingApprovalTab" onclick="getPendingApprovals();" class="topborder applybrder" > <span style="font-weight: 700"> {!$Label.IAM_Pending_Approvals_Tab_Label} </span> &nbsp;
+                        <apex:outputPanel id="idApprovalCountPanel">
+                            <span id="responsiveBadge" class="badge" style="{!IF(pendingApprovalsCount > 0,'background-color:green;','background-color:red')}">{!pendingApprovalsCount}</span>
+                        </apex:outputPanel>
+                    </a>
+                </li>
+                
+            </ul>
+        
+        <!--Table Tabs end here -->
+ 
+       <div class="tab-content" id="companyTableSection" style="border:1px lightgray solid; border-top:1px solid lightgray;">
+       <div id="companyInfoTab" class="tab-pane fade in active" >
+  
+            <!-- button panel start here  -->
+            <div id="idDivInnerMain" style="height:50px;border-bottom: 1px inset;">
+                <span style="margin-right:10px;padding-top:10px;" class="tool-tip pull-right" data-toggle="tooltip" data-placement="top" title="{!$Label.IAM_Refresh}">
+                    <button type="button" id="refreshMedia" class = "btn btn-sm btn-primary CMI-btn-teal" value="refreshBtn" style="padding-right:28px;line-height:0 !important  ;height:32px; width:32px; font-size:14px; padding-top:10px !important; border-radius: 4px; color: white; font-weight:400;text-align:center"  onclick="refreshTable();"><div class="CMI-text-icons notranslate" style="color:white !important; font-size: 26px; font-weight: 300; padding:0px !important">R</div></button>
+                </span>
+                
+                <!-- Fixed Defect - D-2870 - added style to adjust style on hiding Add New User and Upload User button if account type is Individual -->
+                <apex:outputPanel styleclass="form-inline" style="margin-top:15px; margin-left: 10px" id="individualAccountType">
+                    <div class="form-group" style="{!IF(objAccount.Type = 'Individual','margin-top: 10px;','')}">   
+                        <div class="input-group">      
+                            <apex:inputText styleclass="form-control input-sm requiredSearch_userfields" id="userSearchText" html-placeholder="Search User"  onfocus="return validateSearch();"  style="width:250px" />
+                        <div class="input-group-addon btn btn-sm CMI-btn-teal" style="color: white; font-weight: 400"  onclick="search_user_results();">{!$Label.IAM_Search} </div>
+                    </div> 
+                    
+                    </div>
+                    
+                    <!-- Fixed Defect - D-2870 - added style to hide Add New User button if account type is Individual -->
+                    <span class="tool-tip" data-toggle="tooltip" data-placement="top" title="{!$Label.IAM_Add_New_User}" >
+                        <div class="btn btn-sm CMI-btn-teal" onclick="{!IF(objUser[0].contact != null && (objUser[0].contact.IAM_Site_Admin_Role__c == $Label.IAM_Manage_User || objUser[0].contact.IAM_Site_Admin_Role__c == $Label.IAM_Manage_Both) ,'displayAddUserInfo();', 'displayAddUserInfo();')}" style="{!IF(objAccount.Type = 'Individual','display:none','margin:10px 3px 10px 10px;margin-left:3px;color:white !important;')}">{!$Label.IAM_Add_New_User}</div>
+                    </span>
+                    <!-- Fixed Defect - D-2870 - added style to hide Upload User button if account type is Individual -->
+                    <span class="tool-tip" data-toggle="tooltip" data-placement="top" title="{!$Label.IAM_Upload_Users_Label}" >
+                        <div Class="btn btn-sm  CMI-btn-teal" onclick="{!IF(objUser[0].contact != null && (objUser[0].contact.IAM_Site_Admin_Role__c == $Label.IAM_Manage_User || objUser[0].contact.IAM_Site_Admin_Role__c == $Label.IAM_Manage_Both) ,'displayUploadUserPopup();', 'displayUploadUserPopup();')}" style="{!IF(objAccount.Type = 'Individual','display:none','color: white !important;')}">{!$Label.IAM_Upload_Users_Label}</div>
+                    </span>
+                
+                <!-- upload button popup panel start here  -->
+                    <apex:outputPanel styleClass="upload_user_popup" style="display:none" id="idUploadUserPanel" >
+                    <apex:outputPanel styleClass="popupBackground" layout="block" style="" />
+                      <div class="modal-dialog">
+                           <apex:outputPanel styleClass="customPopup" style="top:25%;left:30%! important;"  layout="block">
+                                <div class="modal-body" style="padding:1px;">  
+                                    <div class="thead-dark" style="background-color:black; color:white;padding:10px;"> 
+                                        <h4 style="margin:0px;">{!$Label.IAM_Upload_Users_Label}</h4>
+                                    </div>
+                                    <div class="col-sm-12 col-xs-12" style="padding: 0px;">                                 
+                                        <table>
+                                             <apex:outputText rendered="{!openedInsfdc }"> <!-- {!objAccount.id} 001Z000001LLuFxIAL -->
+                                                 <iframe src="/apex/IAM_SiteAdmin_uploadFile?AccountIdis={!objAccount.id}" style="border:0px;border-bottom:1px solid lightgray;width:520px;height:255px;" />
+                                             </apex:outputText>
+                                             
+                                             <apex:outputText rendered="{!!openedInsfdc }">
+                                                 <iframe src="IAM_SiteAdmin_uploadFile?AccountIdis={!objAccount.id}" style="border:0px;border-bottom:1px solid lightgray;width:520px;height:255px;"/>
+                                             </apex:outputText>
+                                             
+                                             <center style="margin:10px;">
+                                                 <!-- <div class="btn btn-default" data-dismiss="modal" style="margin-top:13px;margin-left:15px;border-radius: 5px;background-color:#006666 !important;color:white !important;">{!$Label.IAM_Cancel}</div> <!-- onclick="close_uploadPopup();"  -->
+                                                 <div class="btn update_user" onclick="hideUploadUserPopup();" style="background:teal !important;color:white!important;">{!$Label.IAM_Close_Button_Label}</div>
+                                             </center>
+                                         </table>
+                                    </div>
+                                </div>
+                            </apex:outputPanel>  
+                        </div>
+                    </apex:outputPanel>
+                <!-- button popup panel end here  -->
+                    
+           </apex:outputPanel>  
+          </div>
+          
+        
+        <!-- Account details section starts here..... -->
+            <div class="row" id="accountDetailsSection">
+                <apex:outputPanel id="accountDetails" >
+                        <div class="col-md-12" >
+                            <h4><span style="font-size: 12px; color: gray;cursor:pointer;margin-left:8px;" class="fa fa-chevron-right rotate" onClick="displayCompanyInfo();"></span>
+                            {!objAccount.Name}<label id="j_id0:j_id254:j_id271:0:imgEditUser" onclick="accounteditcall();">
+                            <span class="tool-tip" data-toggle="tooltip" data-placement="top" title="{!$Label.IAM_Edit_Account_Label}"/>
+                            <span class="tool-tip" data-toggle="tooltip" data-placement="top" title="{!$Label.IAM_Edit_Company_label}">
+                                <span class="CMI-text-icons notranslate" style="cursor:pointer;font-size: 30px;padding-left: 0px !important;">K</span>
+                            </span>
+                            </label>
+                            </h4>
+                           <div id="idCompanyInfoSection" style="display:none">
+                                <div class="col-sm-3" id="acoountInfomaindiv"> 
+                                    <span id="acoountInfospan1" style="font-size: 14px; ">{!objAccount.BillingStreet} </span><br/>
+                                    <span id="acoountInfospan1" style="font-size: 14px; ">{!objAccount.BillingCity} </span><br/>
+                                    <span id="acoountInfospan2" style=" font-size: 14px;">{!objAccount.BillingState} - {!objAccount.BillingPostalCode}</span><br/>
+                                    <span id="acoountInfospan3" style="font-size: 14px;">{!$Label.IAM_Phone_Label} : {!objAccount.Phone}</span>    
+                                </div>
+                                
+                                <div id="acoountInfodiv1" class="col-sm-3" >
+                                    <div class="row">
+                                        <div class="col-sm-4" style="text-align: right; font-size: 13px;">{!$Label.IAM_Status} :</div>
+                                        <div class="col-sm-6" style="font-size: 13px;">{!objAccount.CMI_Account_Status__c} </div>
+                                    </div>
+                                
+                                    <div class="row">
+                                        <div class="col-sm-4" style="text-align: right; font-size: 13px;">{!$Label.IAM_Code_Label} :</div>
+                                        <div class="col-sm-6" style="font-size: 13px;">{!objAccount.IAM_Service_Provider_Code__c} </div>
+                                    </div>
+                                
+                                    <div class="row">
+                                        <div class="col-sm-4" style="text-align: right; font-size: 13px;">{!$Label.IAM_ECN_Label} :</div>
+                                        <div class="col-sm-6" style="font-size: 13px;">{!objAccount.IAM_ECN__c}</div>       
+                                    </div> 
+                                </div>
+                            
+                                <div id="acoountInfodiv2" class="col-sm-5" >
+                                    <div class="row">
+                                        <div class="col-sm-3" style="text-align: right; font-size: 13px;">{!$Label.IAM_Time_Zone_Label} : </div>
+                                        <div class="col-sm-9 mediaStyle" style="font-size: 13px;">{!objAccount.CSS_Timezone__c}</div>
+                                    </div>
+                                
+                                    <div class="row">
+                                        <div class="col-sm-3" style="text-align: right; font-size: 13px;">{!$Label.IAM_Local_Label} :</div>
+                                        <div class="col-sm-9 mediaStyle" style="font-size: 13px;">{!objAccount.CSS_Locale__c} </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-sm-3" style="text-align: right; font-size: 13px;">{!$Label.IAM_Language} : </div>
+                                        <div class="col-sm-4 mediaStyle" style="font-size: 13px;">{!objAccount.CSS_Language__c}</div>    
+                                    </div>
+                                </div>
+                           </div>   
+                     </div>
+                </apex:outputPanel> 
+        </div>
+       <!-- Account details section end here..... -->
+    
+    
+        <div>
+        
+        <div id="divAddUserser" class="col-md-12" style="border-top: 1px solid #eee; margin-bottom: 15px;">
+            <!------Edit Account Panel---------->
+            <apex:outputPanel id="editAccountPanel">
+               
+                <div id="idEditAccRowMainDiv" style="display:none">
+                        <div class="navbar-header">
+                           <span class="navbar-brand" style="font-weight: 700;color:#000">{!$Label.IAM_Edit_Account_Label}</Span>
+                           <span class="CMI-text-icons notranslate" style="font-size:30px;padding-top: 5px;display: inline-block;margin: 5px;padding-left: 0px;">K</span>
+                        </div>
+                       
+                        <div id="idEditAccRow2MainDiv" class="col-xs-12 col-md-12 col-lg-12 col-sm-12 form-group form-group-sm row row-spacing" style="margin-bottom: 0px;">
+                            <div  class="col-xs-12 col-md-12 col-lg-6 col-sm-12 form-group">
+                                 <label class="col-sm-3 control-label" style="top:5px;padding-right: 0px;padding-left:0px;text-align:right" for="sm">{!$Label.IAM_Primary_Market_Segment_Label}</label>
+                                 <span class="col-sm-1 required" style="width:2%;  color:#D02323;  padding-left: 5px; top: 2px;">&#42; </span>
+                                 <div class="col-sm-7" style="padding-left: 0px;">
+                                     <apex:inputField styleclass="form-control Account_Required_Fields " id="idPrimaryMaketSegment" html-data-fnameis="{!$Label.IAM_Primary_Market_Segment_Label}" value="{!seleAccountForUpdate.IAM_Primary_Market_Segment__c}"  html-placeholder="Enter Primary Market Segment"  html-disabled="true" />                           
+                                 </div>
+                            </div>  
+                           
+                            <div  class="col-xs-12 col-sm-12 col-md-12 col-lg-6 idContact1NameDiv">
+                               <label class="col-sm-3 control-label" for="sm" style="top:5px;padding-right: 0px;padding-left:0px;text-align:right;">{!$Label.IAM_Account_Name_Label}</label>
+                               <span class="col-sm-1 required" style="width:2%;  color:#D02323;  padding-left: 5px; top: 2px;">&#42; </span>
+                                <div class="col-sm-6" style="padding-left: 0px;">                                                   
+                                    <apex:inputtext styleclass="form-control Account_Required_Fields" id="accfname2" html-data-fnameis="{!$Label.IAM_Account_Name_Label}"  value="{!seleAccountForUpdate.Name}" maxlength="80" html-placeholder="Enter Account Name" onblur="validate_req_fileds(false,this)"/>
+                                </div>
+                            </div>  
+                       </div>
+                         
+                       <div id="idEditAccRow3MainDiv" class="col-xs-12 col-md-12 col-lg-12 col-sm-12 form-group form-group-sm row row-spacing " style="margin-bottom: 0px;">  
+                            <div  class="col-xs-12 col-md-12 col-lg-6 col-sm-12 form-group">
+                                <label class="col-sm-3 control-label" for="sm" style="top:5px;padding-right: 0px;padding-left:0px;text-align:right">  {!$Label.IAM_Billing_Address_Label}</label>
+                                <span class="col-sm-1 required" style="width:2%;  color:#D02323;  padding-left: 5px; top: 2px;">&#42; </span>
+                                <div class="col-sm-7" style="padding-left: 0px;">
+                                    <apex:inputField styleclass="form-control Account_Required_Fields" html-data-fnameis="{!$Label.IAM_Billing_Address_Label}"  html-placeholder="Enter Billing Address" id="accfname3"  value="{!seleAccountForUpdate.BillingStreet}" onblur="validate_req_fileds(false,this)"/>
+                                </div>
+                            </div>
+                       </div>  
+                        
+                        
+                       <div id="idEditAccRow4MainDiv" class="col-xs-12 col-md-12 col-lg-12 col-sm-12 form-group form-group-sm row row-spacing" style="margin-bottom: 0px;" >
+                             <div  class="col-xs-12 col-md-12 col-lg-6 form-group">
+                                 <label class="col-sm-3 control-label" for="sm" style="top:5px;padding-right: 0px;padding-left:0px;text-align:right" >{!$Label.IAM_Billing_City_Label}</label>
+                                 <span class="col-sm-1 required" style="width:2%;color:#D02323;    padding-left: 5px; top: 2px;">&#42; </span>
+                                 <div class="col-sm-5" style="padding-left: 0px;">
+                                     <apex:inputField styleclass="form-control Account_Required_Fields" html-data-fnameis="{!$Label.IAM_Billing_City_Label}"  id="accfname12" html-placeholder="Enter City"   value="{!seleAccountForUpdate.BillingCity}" onblur="validate_req_fileds(false,this)" />
+                                 </div>
+                             </div>
+                             <div class="col-xs-12 col-sm-12 col-md-12 col-lg-6 form-group">
+                                 <label class="col-sm-3 control-label" for="sm" style="top:5px;padding-right: 0px;padding-left:0px;text-align:right" >{!$Label.IAM_Billing_Country_Label}</label>
+                                 <span class="col-sm-1 required" style="width:2%;color:#D02323;    padding-left: 5px; top: 2px;">&#42; </span>
+                                 <div class="col-sm-5" style="padding-left: 0px;">
+                                     <apex:inputField styleclass="form-control Account_Required_Fields" html-data-fnameis="{!$Label.IAM_Billing_Country_Label}"  id="accfname4" html-placeholder="Enter Country"   value="{!seleAccountForUpdate.BillingCountryCode}" onblur="validate_req_fileds(false,this)" />
+                                 </div>
+                             </div>
+                        </div>
+                        
+                        <div id="idEditAccRow5MainDiv" class="col-xs-12 col-md-12 col-lg-12 col-sm-12 form-group form-group-sm row row-spacing" style="margin-bottom: 0px;">
+                             <div id="idContactNameDiv" class="col-xs-12 col-md-12 col-lg-6 form-group">
+                                  <label class="col-sm-3 control-label" for="sm" style="top:5px;padding-right: 0px;padding-left:0px;text-align:right" >{!$Label.IAM_Billing_State_Label}</label>
+                                  <span class="col-sm-1 required" style="width:2%;color:#D02323;    padding-left: 5px; top: 2px;">&#42; </span>
+                                  <div class="col-sm-5" style="padding-left: 0px;">
+                                      <apex:inputField styleclass="form-control Account_Required_Fields" html-data-fnameis="{!$Label.IAM_Billing_State_Label}" id="accfname5" html-placeholder="Enter State"   value="{!seleAccountForUpdate.BillingStatecode}" onblur="validate_req_fileds(false,this)" />
+                                  </div>
+                             </div>
+                             <div id="idContact2NameDiv" class="col-xs-12 col-sm-12 col-md-12 col-lg-6 form-group">
+                                  <label class="col-sm-3 control-label" for="sm" style="top:5px;padding-right: 0px;padding-left:0px;text-align:right" >{!$Label.IAM_Billing_Postal_Code_Label}</label>
+                                  <span class="col-sm-1 required" style="width:2%;color:#D02323;    padding-left: 5px; top: 2px;">&#42; </span>
+                                  <div class="col-sm-3" style="padding-left: 0px;">
+                                      <apex:inputField styleclass="form-control Account_Required_Fields" html-data-fnameis="{!$Label.IAM_Billing_Postal_Code_Label}" id="accfname6" html-placeholder="Enter Postal Code"   value="{!seleAccountForUpdate.BillingPostalCode}" onblur="validate_req_fileds(false,this)" />
+                                  </div>
+                             </div>
+                            
+                        </div>
+                        
+                  </div>
+
+                  <div id="idEditAccButton" style="display:none">
+                        <br/>
+                        <div class="col-xs-12 col-md-12 col-lg-6 form-group">
+                             <label class="col-sm-3 control-label" />                                                  
+                             <div class="col-sm-6" >
+                                 <div class="btn btn-default show_update_userPopopup" onclick="isEditAccReqFieldValidated(true,'.Account_Required_Fields');" style="background-color:#006666 !important;color:white !important;">{!$Label.IAM_Update_Label}</div>
+                                 <div class="btn btn-sm btn-default" onclick="hideEditAccPanelInfo()" style="margin:10px;background:#0f4f77!important;color:white !important;">{!$Label.IAM_Cancel}</div>
+                             </div>
+                         </div>
+                   </div>
+                    <apex:outputPanel styleClass="update_account_popup" style="display:none"  id="EditAccPopup">
+                       <apex:outputPanel styleClass="popupBackground" layout="block"/>
+                         <apex:outputPanel styleClass="modal-dialog" layout="block">
+                            <apex:outputPanel styleClass="customPopup" style="">
+                                <table>
+                                     <div class="thead-dark" style="background-color:black; color: white;padding:10px;">
+                                          <h4 style="margin:0px;">{!$Label.IAM_Account_Update_Label} </h4>
+                                     </div>
+                                       <center>
+                                           <p style="border-bottom: 1px solid lightgray;padding: 10px;">{!$Label.IAM_Account_Update_Question_Label}</p>
+                                           <apex:commandButton id="updateuserbtnAcc" value="{!$Label.IAM_Update_Label}"  action="{!EditAccount}" reRender="pageMessagePopup,UserStatusDetails,userTable" styleClass="btn btn-sm update_user" style="margin:10px;float:left;background:teal!important;color:white !important;" onComplete="showSuccessDialog(false);hide_update_accountPopopup();" status="status"/>
+                                           <div class="btn btn-sm btn-default" onclick="hide_update_accountPopopup()" style="margin:10px; float:right;background:#0f4f77!important;color:white !important;">{!$Label.IAM_Cancel}</div>
+                                       </center>
+                                </table>
+
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+                    </apex:outputPanel>
+            
+               </apex:outputPanel> 
+               <!-- Edit Account edit panel End -->         
+         
+            <!------Edit user Panel---------->
+           <apex:outputPanel id="editUserPanel">
+               <div id="idContRowMainDiv" style="display:none">
+                    <nav>
+                           <!-- Brand and toggle get grouped for better mobile display -->
+                           <div class="navbar-header col-lg-10" style="padding-left:0px;display:none" id="navAdduser">
+                              <a class="navbar-brand" href="#" style="font-weight: 700;color:#000">{!$Label.IAM_Add_New_User}
+                               <span class="CMI-text-icons notranslate">U</span></a>
+                           </div>
+                        </nav>
+                        
+                        
+                        <nav>
+                           <!-- Brand and toggle get grouped for better mobile display -->
+                           <div class="navbar-header" id="navEditUser" style="display:none">
+                              <a class="navbar-brand" href="#" style="font-weight: 700;color:#000">{!$Label.IAM_Edit_user}</a>
+                              <!--<span class="CMI-text-icons" style="font-size: 30px; padding-left: 0px! important;">)</span>-->
+                              <span class="CMI-text-icons notranslate" style="font-size:30px;padding-top: 5px;display: inline-block;margin: 5px;padding-left: 0px;">K</span>
+                           </div>
+                        </nav>
+                        
+                       <div id="idContRow1MainDiv" class="col-xs-12 col-md-12 col-lg-12 col-sm-12 form-group form-group-sm row row-spacing" style="margin-top:20px;margin-bottom: 0px;">
+                            <div  class="col-xs-12 col-md-12 col-lg-6 col-sm-12 form-group form-group-sm spacingMedia">
+                                <label class="col-sm-3 control-label" style="padding-right: 0px;padding-left:0px;top:5px;text-align:right" for="sm">{!$Label.IAM_First_Name}</label><span class="col-sm-1 required" style="width:2%;  color:#D02323;  padding-left: 5px;">&#42; </span>
+                                 <div class="col-sm-6" style="padding-left: 0px;">
+                                     <apex:inputtext id="idContFistName" styleclass="form-control Contact_Required_Fields"  html-data-fnameis="{!$Label.IAM_First_Name}" value="{!newCon.FirstName}" maxlength="40" html-placeholder="Enter First Name" onblur="validate_req_fileds(false,this)" />                           
+                                 </div>
+                            </div>  
+                           
+                            <div  class="col-xs-12 col-sm-12 col-md-12 col-lg-6 idContact1NameDiv">
+                                <label class="col-sm-3 control-label" for="sm" style="top:5px;padding-right: 0px;padding-left:0px;text-align:right">{!$Label.IAM_Last_Name}</label><span class="col-sm-1 required" style="width:2%;  color:#D02323;  padding-left: 5px;">&#42; </span>
+                                <div class="col-sm-6" style="padding-left: 0px;">                                                   
+                                    <apex:inputtext id="idContLastName" styleclass="form-control Contact_Required_Fields" html-data-fnameis="{!$Label.IAM_Last_Name}"  value="{!newCon.LastName}" maxlength="80" html-placeholder="Enter Last Name" onblur="validate_req_fileds(false,this)"/>
+                                    </div>
+                            </div>
+                       </div>
+
+                       <div id="idContRow2MainDiv" class="col-xs-12 col-md-12 col-lg-12 col-sm-12 form-group form-group-sm row row-spacing" style="margin-bottom: 0px;" >
+                           <div class="col-xs-12 col-md-12 col-lg-6 form-group spacingMedia">
+                                <label class="col-sm-3 control-label" for="" style="top:5px;padding-right: 0px;padding-left:0px;text-align:right">{!$Label.IAM_UserName}</label>
+                                <span class="col-sm-1 required" style="width:2%; color:#D02323;   padding-left: 5px;">&#42; </span>
+                                <div class="col-sm-6" style="padding-left: 0px;">
+                                    <apex:inputtext id="idContUserName" styleclass="form-control Contact_Required_Fields idWKGnew" html-data-fnameis="Username" html-placeholder="abc@example.com" value="{!newCon.Username__c}"  onblur="validate_req_fileds(false,this)" />
+                                    </div>
+                            </div>
+                             <div class="col-xs-12 col-sm-12 col-md-12 col-lg-6 form-group">
+                                <label class="col-sm-3 control-label" for="sm" style="top:5px;padding-right: 0px;padding-left:0px;text-align:right">{!$Label.IAM_Email_Label1}</label>
+                                <span class="col-sm-1 required" style="width:2%;  color:#D02323;  padding-left: 5px; top: 2px;">&#42; </span>
+                                <div class="col-sm-6" style="padding-left: 0px;">
+                                    <apex:inputtext id="idContEmail" styleclass="form-control Contact_Required_Fields userEmail" html-data-fnameis="{!$Label.IAM_Email_Label1}"  html-placeholder="abc@example.com"  value="{!newCon.Email}" onblur="validate_req_fileds(false,this)"/>
+                                </div>
+                            </div>
+                       </div>
+                        
+                        
+
+                      <div id="idContRow3MainDiv" class="col-xs-12 col-md-12 col-lg-12 col-sm-12 form-group form-group-sm row row-spacing" style="margin-bottom: 0px;" >
+                         <div class="col-xs-12 col-sm-12 col-md-12 col-lg-6 form-group">
+                            <label class="col-sm-3 control-label" for="sm" style="top:5px;padding-right: 0px;padding-left:0px;text-align:right">{!$Label.IAM_Phone}</label>
+                            <span class="col-sm-1 required" style="width:2%;  color:#D02323;  padding-left: 5px; top: 2px;">&#42; </span>
+                            <div class="col-sm-6" style="padding-left: 0px;">
+                                <apex:inputtext id="idContPhone" styleclass="form-control Contact_Required_Fields" html-data-fnameis="{!$Label.IAM_Phone}"  html-placeholder="Enter Phone Number"  maxlength="40" value="{!newCon.phone}" onblur="validate_req_fileds(false,this)" />
+                            </div>
+                         </div>
+                        
+                         <div id="idContactAccount" class="col-xs-12 col-md-12 col-lg-6 form-group" style="margin-bottom:1%;display:none">
+                            <label class=" col-sm-3 control-label" for="" style="top:5px;padding-right: 0px;padding-left:0px;text-align:right">{!$Label.IAM_Account_Singular_Label}</label>
+                            <span class="col-sm-1 required" style="width:2%; color:#D02323;   padding-left: 5px;">&#42; </span>
+                            <div class="col-sm-6" style="padding-left: 0px;">
+                                <apex:selectList disabled="true" readonly="true" styleClass="accountchange form-control " value="{!newCon.AccountId}" multiselect="false" size="1" >
+                                    <apex:selectOptions value="{!CompaniesAcc}" />
+                                </apex:selectList>
+                            </div>
+                         </div>
+                            
+                      </div>  
+                          
+                     <div id="idContRow4MainDiv" class="col-xs-12 col-md-12 col-lg-12 col-sm-12 form-group form-group-sm row row-spacing" style="margin-bottom: 0px;">
+                        <div class="col-xs-12 col-md-12 col-lg-6 form-group">
+                            <label class="col-sm-3 control-label" for="" style="top:5px;padding-right: 0px;padding-left:0px;text-align:right">{!$Label.IAM_Site_Admin_Label}</label>
+                            <span class="col-sm-1 required" style="width:2%; color:#D02323;   padding-left: 5px;"></span>
+                            <apex:inputField id="idContSiteAdmin" value="{!newCon.IAM_Site_Admin__c}" style="margin-left: 5px;" onclick="displaySiteAdminRole();">
+                            </apex:inputField>
+                        </div>
+                        
+                         
+                         <div class="col-xs-12 col-md-12 col-lg-6 form-group" style="display:none" id="idContSideAdminRole">
+                             <label class="col-sm-3 control-label" for="" style="top:5px;padding-right: 0px;padding-left:0px;text-align:right">{!$Label.IAM_Site_Admin_Role_Label}</label> 
+                               <span class="col-sm-1 required" style="width:2%; color:#D02323;   padding-left: 5px;">&#42; </span>                                                    
+                             <div class="col-sm-6" style="padding-left: 0px;">
+                                 <apex:selectList styleClass="accountchange form-control " value="{!newCon.IAM_Site_Admin_Role__c}" multiselect="false" size="1"  >
+                                 <apex:selectOptions value="{!SiteadminRoles}" />
+                                 </apex:selectList>
+                             </div>
+                         </div>
+                        
+                     </div>
+                           
+                 </div>
+
+                    <div id="idBtnAddEditUser" style="display:none">
+                       
+                        <div  class="col-xs-12 col-md-12 col-lg-6 form-group">
+                            <label class="col-sm-3 control-label" />                                                  
+                            <div class="col-sm-6" >
+                                <div class="btn btn-sm btn-default show_update_userPopopup" id="idAddUserbutton" onclick="isAddUserReqFieldValidated(true,'.Contact_Required_Fields');"  style="display:none;background-color:#006666 !important;color:white !important;">{!$Label.IAM_Add_User}</div>
+                                <div class="btn btn-sm btn-default show_update_userPopopup" id="idEditUserbutton" onclick="isEditUserReqFieldValidated(true,'.Contact_Required_Fields');" style="display:none;background-color:#006666 !important;color:white !important;">{!$Label.IAM_Update_Label}</div>
+                                <div class="btn btn-sm btn-default" onclick="hideUserPanelInfo()" style="margin:10px;background:#0f4f77!important;color:white !important;">{!$Label.IAM_Cancel}</div>
+                                <div style="border-bottom: 1px solid #eee;margin-bottom: 15px;margin-left: -182px;width: 1182px;"> </div>
+                            </div>
+                        </div>
+                   </div>
+                                 
+                  
+             </apex:outputPanel> 
+             <!-- Edit/Add user panel End -->
+        </div>  
+     
+        
+   
+    <div class="row" id="tabletabSection" style="padding-bottom: 10px;padding-right:25px;"> 
+            <!-- Active/inactive radio button start here -->    
+            <apex:outputPanel id="UserStatusDetails" >  
+                <div style="float:left;display: flex;"><span style="margin-top:5px; padding-left:22px;"><b>{!$Label.IAM_User_Status_Label}:</b>
+                   <input type="radio" id="radioActiveButton"  name="userStatus" value="{!$Label.IAM_Active}" checked="true" onchange="getActiveInactiveUsers(this.value)" /> {!$Label.IAM_Active}&nbsp;
+                     <apex:outputPanel id="UserActiveDetails" > <span id="responsiveBadge" class="badge" style="    background-color:green; "> {!isActiveUsersCount} </span> </apex:outputPanel>
+                    <input type="radio" id="radioInactiveButton" name="userStatus" value="{!$Label.IAM_Inactive_Label}" style="margin-left:20px;margin-right:5px;" onchange="return getActiveInactiveUsers(this.value);" />{!$Label.IAM_Inactive_Label}&nbsp;
+                    <apex:outputPanel id="UserInactiveDetails" > <span id="responsiveBadge" class="badge" style="    background-color:red"> {!isInactiveUsersCount} </span> </apex:outputPanel>
+                     </span>
+                </div>
+            </apex:outputPanel>
+            <!-- Active/inactive radio button end here -->  
+            
+            <!-- buttons start here -->
+            <apex:outputPanel id="buttonsbelow" styleClass="responsiveButton" style="float:right;">
+                <div style="float:right;display:contents;" id="contactsButtonSection">
+                    
+                    <div id="idActiveButtons" style="display:none">
+                         <span style="padding-right:5px;" class="tool-tip responsiveBtn" data-toggle="tooltip" data-placement="top" title="{!$Label.IAM_Approval_History_Label}">      
+                               <apex:commandbutton value="{!$Label.IAM_Approval_History_Label}" styleClass="btn btn-sm CMI-btn-gray isApprovalBtn" style="margin-bottom:5px; margin-top:5px;" reRender="mybutton" onclick="getApprovalHistory();"  id="isApprovalBtn"/>
+                         </span>
+                         
+                         <span style="padding-right:5px;" class="tool-tip responsiveBtn" data-toggle="tooltip" data-placement="top" title="{!$Label.IAM_Reset_Password_Button_Label}">
+                              <apex:commandbutton value="{!$Label.IAM_Reset_Password_Button_Label}"  styleClass="btn btn-sm CMI-btn-gray isResetBtn" style="margin-bottom:5px; margin-top:5px;" reRender="mybutton" onclick="return showResetPasswordPopup();"  id="isResetBtn"/>          
+                         </span>  
+                         
+                         <span  style="padding-right:5px;" class="tool-tip responsiveBtn" data-toggle="tooltip" data-placement="top" title="{!$Label.IAM_Deactivate_User_Label}">
+                            <apex:commandButton id="deactivateUserButton" styleClass="btn btn-sm CMI-btn-gray deactivateUserButton" value="{!$Label.IAM_Deactivate_User_Label}" reRender="mybutton" style="margin-bottom:5px; margin-top:5px;" onclick="showDeactivateUserPopup();"/>            
+                         </span> 
+                    </div>   
+                    
+                    <div id="idInactiveButtons" style="display:none">                   
+                    
+                        <span  style="padding-right:5px;" class="tool-tip" data-toggle="tooltip" data-placement="top" title="{!$Label.IAM_Activate_User_Label}">
+                            <apex:commandButton id="activateUserButton" value="{!$Label.IAM_Activate_User_Label}" styleClass="btn btn-sm CMI-btn-gray activateUserButton"  reRender="mybutton" onclick="showUserActivatePopup();"/>         
+                        </span>
+                    </div>  
+                    
+               </div>
+           </apex:outputPanel> 
+           <!-- buttons end here -->
+     </div> 
+   
+        <!-- User table starts here -->   
+        <apex:outputPanel id="userTable" >
+                 <!-- display user table if no data available start here --->
+                 <apex:outputPanel rendered="{!contactEmptyMessage}">
+                       <table  class="table table-bordered table-striped table-hover table-condensed table-responsive" style="" id="exampleee">
+                         <thead class="thead-dark">
+                            <tr style="background-color: black; color: white">
+                                <th style="width:3%; text-align: center">
+                                    <apex:inputCheckbox id="checkboxes-06"  />               
+                                </th>
+                                <th style="width:auto">{!$Label.IAM_Action}</th>
+                                <th style="width:auto">{!$Label.IAM_First_Name}<span class="glyphicon glyphicon-menu-down" style="color:#FFFFFF; float:right"></span>
+                                </th>
+                                <th style="width:auto">{!$Label.IAM_Last_Name_Label}</th>
+                                <th style="width:auto">{!$Label.IAM_Username_label}</th>
+                                <th style="width:auto">{!$Label.IAM_Email_Label1}</th>
+                                <th rowspan="3" style="width:auto">{!$Label.IAM_Application_Label}</th>
+                                <th style="width:auto">{!$Label.IAM_Role}</th>
+                                
+                            </tr>
+                        </thead>
+                        <tbody>
+                          <tr> <td valign="top" colspan="9"> {!$Label.IAM_No_Data_Available_In_Table_Label} </td>  </tr>
+                        </tbody>
+                      </table>
+                 </apex:outputPanel> 
+                 <!-- display user table if no data available end here ---> 
+         
+                 <!-- display user table if data available --->
+                 <apex:outputPanel rendered="{!userContactTable}">
+                    <table  class="table table-bordered table-striped table-hover table-condensed table-responsive" id="example">
+                    <thead class="thead-dark" >
+                        <tr style="background-color: black; color: white">
+                            <th style="width:2%; text-align: center">
+                                <apex:inputCheckbox id="idAllUserCheckbox" onclick="selectAllNew(this)"  />               
+                            </th>
+                            <th style="width:8%"> Action </th>
+                            <th style="width:8%" onclick="getContactBySortOrder('FirstName');">{!$Label.IAM_First_Name} </th>
+                            <th style="width:9%" onclick="getContactBySortOrder('LastName');">{!$Label.IAM_Last_Name_Label}</th>
+                            <th style="width:auto;" onclick="getContactBySortOrder('Username__c');">{!$Label.IAM_Username_label}</th>
+                            <th style="width:auto;" onclick="getContactBySortOrder('Email');">{!$Label.IAM_Email_Label1}</th>
+                            <th rowspan="3" style="width:15%">{!$Label.IAM_Application_Label}</th> 
+                            <th style="width:23%">{!$Label.IAM_Role}</th>
+                            
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #d3d3d3">
+                            <td style="text-align: center;width:2%"></td>
+                            <!--<td></td>-->
+                            <td style="width:8%"></td>            
+                            <td style="width:7%">﻿</td>
+                           <!-- <td style="width:9%"></td>   -->  
+                            <td style="width:auto;"> </td>
+                            <td style="width:auto;"></td>
+                            <td style="width:auto;"></td>
+                            <td style="width:15%">         
+                                <!-- <apex:form styleclass="form-horizontal">-->
+                                    <div class="form-group">
+                                      <label class="col-md-12 control-label" for="selectbasic"></label>
+                                      <div class="col-md-12" style="padding-left: 0px;padding-right: 0px;display:flex;margin-bottom: 5%">
+                                       <apex:selectList value="{!selectedApp}" size="1" styleclass="form-control" >
+                                           <apex:actionSupport event="onchange" reRender="accountDetails,userTable" action="{!getFilterApps}" status="status"/>
+                                          <apex:selectOptions value="{!Applications}" />
+                                             </apex:selectList>﻿
+                                      </div>
+                                    </div>
+                               <!-- </apex:form>            -->
+                            </td>
+                             <td style="width:23%">
+                              <!--  <apex:form styleclass="form-horizontal">-->
+                                    <!-- Select Basic -->
+                                    <div class="form-group">
+                                      <label class="col-md-12 control-label" for="selectbasic"></label>
+                                      <div class="col-md-12" style="padding-left: 0px; padding-right: 0px;display: flex; margin-bottom:3%">
+                                       <apex:selectList value="{!selectedRole}" size="1" styleclass="form-control" disabled="{!OR(!isFilterAppRole,isUserSearchAppRole)}"> 
+                                       <apex:actionSupport event="onchange" reRender="accountDetails,userTable" action="{!getFilterRole}" status="status"/>
+                                           <apex:selectOptions value="{!Roles}" />
+                                                         </apex:selectList>﻿
+                                      </div>
+                                    </div>
+                               <!-- </apex:form>-->
+                            </td>   
+                        </tr>
+                         <apex:repeat value="{!PageRecords}" var="con">
+                        <tr>
+                        
+                           <td  style="width:2%" rowspan="{!con.Contact_Provisionings__r.size + 1}">  
+                               <input type="checkbox" id="idUserCheckboxes" style="margin:0px! important;" class="eachrow_new" value="{!Con.id}" onclick="selected_item_new('{!Con.id}',this)"> </input>
+                                <apex:inputHidden id="inputHdn1" value="{!Con.id}" />                                
+                            </td>
+                            <td style="width:8%;padding-top: 10px;" rowspan="{!con.Contact_Provisionings__r.size + 1}">
+                           <a href="#" class=" {!IF(con.IAM_Internal__c,'clsEditImage_new','clsEditImage')}" Style="{!IF(!isAccountActive,'cursor:default','')};">
+                                   <span class="tool-tip" data-toggle="tooltip" data-placement="top" title="{!$Label.IAM_Edit_user}">
+                                    <apex:outputLabel id="imgEditUser" rendered="{!mapActiveImagesContactid[con.Id]}"  onclick="{!IF(AND(isAccountActive,NOT(con.IAM_Internal__c)),'getEditUserInfo(this);','')}"    >
+                                         <span class="CMI-text-icons" style="font-size: 30px; padding-left: 0px! important;">)</span>                                                      
+                                    </apex:outputLabel> </span>
+                                </a>
+                                 <span Style="{!IF(!isAccountActive,'cursor:default','')};" class="clsLockImage">
+                                    <span class="tool-tip" data-toggle="tooltip" data-placement="top" title="{!$Label.IAM_Assign_AppFeature}">
+                                    <apex:outputLabel id="imgViewPopup" rendered="{!mapActiveImagesContactid[con.Id]}" onclick="{!IF(isAccountActive,'validateaddrole(this);','')}" > 
+                                           <span class="CMI-text-icons" style="font-size: 30px; color:teal;padding-right: 0px; padding-left: 0px;">I</span>
+                                           </apex:outputLabel> </span>
+                                </span>   
+                                    
+                                <a href="#" Style="{!IF(!isAccountActive,'cursor:default','')}" class="clsUnlockuser">
+                                   <span class="tool-tip" data-toggle="tooltip" data-placement="top" title="{!$Label.IAM_Password_Unlock}">
+                                   <apex:outputLabel id="imgViewPopup11"  rendered="{!mapuserlockedContactid[con.Id]}" onclick="{!IF(isAccountActive,'onclickUnlockUser(this);','')}" > 
+                                       <!-- <span class="vfHelpText ">Unlock User</span>-->
+                                       <span class="CMI-text-icons" style="font-size: 24px; color:teal;padding-right: 0px; padding-left: 0px">l</span>
+                                       </apex:outputLabel> </span>
+                                </a> 
+                                
+                            </td>
+                           <!-- <td ></td>  -->
+                            <td style="width:7%" rowspan="{!con.Contact_Provisionings__r.size + 1}">{!con.FirstName}</td>
+                            <td style="width:8%" rowspan="{!con.Contact_Provisionings__r.size + 1}">{!con.LastName}</td>
+                           <!-- <td style="width:auto;" rowspan="{!con.Contact_Provisionings__r.size + 1}">{!con.email}</td> -->
+                            <td style="width:auto;" rowspan="{!con.Contact_Provisionings__r.size + 1}">{!con.Username__c}</td>
+                            <td style="width:auto;" rowspan="{!con.Contact_Provisionings__r.size + 1}">{!con.email}</td>
+                            <td style="{!IF(con.Contact_Provisionings__r.size > 0,'display:none','')};width:auto;">&nbsp;</td> 
+                            <td style="{!IF(con.Contact_Provisionings__r.size > 0,'display:none','')};width:auto;">&nbsp;</td>
+                           </tr>
+                           
+                             <apex:repeat value="{!con.Contact_Provisionings__r}" var="conPro">
+                          <tr>
+                                <td style="width:15%;padding-top: 0px;">                
+                                    {!conPro.IAM_Application_Name__c}
+                                </td> 
+                                    
+                                <td style="width:23%; ">
+                                  
+                                 <div class="row" style="margin-left: 0px;">
+                                 
+                                   <div class="col-md-7 roleMedia" style="padding-top: 12px;padding-left: 0px;padding-right: 0px;word-break: break-all;">
+                                    {!conPro.IAM_Role__c}
+                                  
+                                     </div>
+                                  <div class="roleDisplay" style="float: right;padding-right: 20px;padding-top: 3px;">
+                                    <a href="#" Style="{!IF(!isAccountActive,'cursor:default','')}" class="clsLockImage">
+                                    <span class="tool-tip" data-toggle="tooltip" data-placement="top" title="{!$Label.IAM_Access_Edit_Role}"> 
+                                       <apex:outputLabel id="imgViewPopup2" onclick="editRole('{!conPro.id}');">
+                                       <span class="CMI-text-icons" style="font-size: 28px;">I</span>
+                                       </apex:outputLabel></span>  </a>
+                                        
+                                    <a href="#" Style="{!IF(!isAccountActive,'cursor:default','')}" class="clsLockImage">
+                                      <span class="tool-tip" data-toggle="tooltip" data-placement="top" title="{!$Label.IAM_Remove_Application}"> 
+                                      <apex:outputLabel id="imgViewPopup3"  onclick="deleteApplication('{!conPro.id}');" >
+                                       <span class="CMI-text-icons" style="font-size: 33px;padding-left: 0px;">q</span>
+                                        </apex:outputLabel></span>  </a>
+                                    </div>     
+                                   </div>                           
+                                </td> 
+                           </tr>
+                         </apex:repeat>
+                      </apex:repeat>        
+
+                    </tbody>
+                    
+                    </table>
+                
+                    <!-- Pagination -->
+                    <div style="display:block; text-align:center;">
+                           <label style="float:left">Show &nbsp;
+                        <apex:selectList value="{!pageSize}" multiselect="false" size="1" >
+                                <apex:selectOptions value="{!PaginationSizeOptions}"/>
+                        <apex:actionSupport event="onchange" action="{!refreshPageSize}" reRender="userTable" status="status"/>
+                        </apex:selectList>
+                        entries</label>
+
+                            <nav aria-label="...">
+                              <ul class="pagination" style="margin-left: -138px;">
+                                <li class="page-item">
+                                  <a class="page-link" href="#" id="previousPage" onclick="intiPagination('Previous')"><span style="color: teal;">{!$Label.IAM_Previous_Label}</span>
+                                  </a>
+                                </li>
+                                <apex:repeat value="{!numOfPage}" var="number">
+                                    <li  class="page-item"><a id="pageNumber" class="page-link" href="#" onclick="intiPagination({!number})">{!number}</a></li>
+                                    
+                                </apex:repeat>
+                                <li class="page-item">
+                                  <a class="page-link" href="#" id="nextPage" onclick="intiPagination('Next')"><span style="color: teal;">{!$Label.IAM_Next_Button_Label}</span>
+                                  </a>
+                                </li>
+                              </ul>
+                            </nav>
+                        </div>
+                  </apex:outputPanel>  
+                  <!-- display user table if data available end here --->
+          </apex:outputPanel>
+          <!-- User table ends here --> 
+          <div style="height: 10px"></div>
+        </div>
+    </div>  
+            <!-- Denied table display start here -->
+            <div id="deniedRequestTab" class="tab-pane fade">
+                <apex:outputPanel id="deniedRequestPanel">
+                    <div id="tab3">
+                        <div class="aa" >
+                            <h4><span style="font-weight: bold;padding-left: 20px;">{!$Label.IAM_Denied_Users_Requests_Label} </span> </h4>
+                                <!-- display Denied table if no data available start here -->
+                                <apex:outputPanel rendered="{!isDeniedRequestTableEmpty}">
+                                    <table class=" table-bordered table-striped table table-hover table-condensed table-responsive" id="siteexampleNew">
+                                        <thead class="thead-dark" >
+                                            <tr style="background-color: black; color: white">
+                                                <th >{!$Label.IAM_First_Name}</th>
+                                                <th >{!$Label.IAM_Last_Name_Label}</th>
+                                                <th >{!$Label.IAM_Company_Label}</th>
+                                                <th >{!$Label.IAM_Username_label}</th>
+                                                <th >{!$Label.IAM_Email_Label1}</th>
+                                                <th >{!$Label.IAM_Comments_Label}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr> <td valign="top" colspan="6">{!$Label.IAM_Denied_Request_Data_Not_Available}</td> </tr>
+                                        </tbody>
+                                    </table>
+                              </apex:outputPanel>
+                              <!-- display Denied table if no data available start here -->
+                              
+                                <!-- display Denied table if data available start here -->
+                                <apex:outputPanel rendered="{!!isDeniedRequestTableEmpty}">
+                                    <table class=" table-bordered table-striped table table-hover table-condensed table-responsive" id="exampleNew">
+                                        <thead class="thead-dark">
+                                            <tr style="background-color: black; color: white">
+                                                <th >{!$Label.IAM_First_Name}</th>
+                                                <th >{!$Label.IAM_Last_Name_Label}</th>
+                                                <th >{!$Label.IAM_Company_Label}</th>
+                                                <th >{!$Label.IAM_Username_label}</th>
+                                                <th >{!$Label.IAM_Email_Label1}</th>
+                                                <th >{!$Label.IAM_Comments_Label}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <apex:repeat value="{!reg_lstuser}" var="item">
+                                                <tr class="data_row ">
+                                                    <td class="data_fname" style="width:16%"> {!mapApprovalData [item.processinstance.targetobject.id].firstName}</td>
+                                                    <td class=" data_lname" style="width:16%"> {!mapApprovalData [item.processinstance.targetobject.id].lastName} </td>
+                                                    <td class="" style="width:16%"> {!mapApprovalData [item.processinstance.targetobject.id].companyName} </td>
+                                                    <td class="" style="width:16%"> {!mapApprovalData [item.processinstance.targetobject.id].userName} </td>
+                                                    <td class="" style="width:16%"> {!mapApprovalData [item.processinstance.targetobject.id].email} </td>
+                                                    <td class="" style="width:16%">{!mapApprovalData [item.processinstance.targetobject.id].rejectComments}</td>
+                                                </tr>
+                                            </apex:repeat>
+                                        </tbody>
+                                    </table>
+                                </apex:outputPanel>
+                                <!-- display Denied table if data available start here -->
+                            </div>
+                        <div class="aa" style="margin:0px !important;">
+                            </div>
+                        </div>
+                    </apex:outputPanel>
+                </div> 
+                <!-- Denied table display end here -->
+ 
+               <!-- Pending_Approvals table sstart here -->
+               <div id="pendingApprovalTab" class="tab-pane fade">
+                   <apex:outputPanel id="pendingApprovalPanel">
+                       <div id="tab2" class="">
+                           <div class="aa" style="margin:0px !important;">
+                               <h4><span style="font-weight: bold;padding-left: 20px;">{!$Label.IAM_User_Pending_Approvals_Label} </span> </h4>
+                                <!-- display pending approval table if no data available start here -->
+                                <apex:outputPanel rendered="{!isPendingApprovalTableEmpty}">
+                                    <table class="table table-bordered table-striped table-hover table-condensed table-responsive" style=""  id="siteexampleNew">
+                                        <thead class="thead-dark" >
+                                            <tr style="background-color: black; color: white">
+                                                <th >{!$Label.IAM_First_Name}</th>
+                                                <th >{!$Label.IAM_Last_Name_Label}</th>
+                                                <th >{!$Label.IAM_Company_Label}</th>
+                                                <th >{!$Label.IAM_Username_label}</th>
+                                                <th >{!$Label.IAM_Email_Label1}</th> <!--issue#427 end -->
+                                                <th >{!$Label.IAM_Application_Label}</th>
+                                                <th >{!$Label.IAM_Action}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr> <td valign="top" colspan="7"> {!$Label.IAM_Pending_Approval_Table_Data_Not_Available}  </td> </tr>
+                                        </tbody>
+                                    </table>
+                                </apex:outputPanel>
+                                <!-- display pending approval table if no data available end here--> 
+                                
+                                <!-- display pending approval table if data available start here--> 
+                                <apex:outputPanel rendered="{!!isPendingApprovalTableEmpty}">
+                                    <table class=" table-bordered table-striped table table-hover table-condensed table-responsive "  id="exampleNew">
+                                        <thead class="thead-dark" >
+                                            <tr style="background-color: black; color: white">
+                                            <th >{!$Label.IAM_First_Name}</th>
+                                            <th >{!$Label.IAM_Last_Name_Label}</th>
+                                            <th >{!$Label.IAM_Company_Label}</th>
+                                            <th >{!$Label.IAM_Username_label}</th>
+                                            <th >{!$Label.IAM_Email_Label1}</th> <!--issue#427 end -->
+                                            <th >{!$Label.IAM_Application_Label}</th>
+                                            <th >{!$Label.IAM_Action}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <apex:repeat value="{!lstPendingApproval}" var="item">
+                                                <tr style="border-bottom: 1px solid #d3d3d3">
+                                                    <td class="" style="width:16%">{!mapApprovalData [item.processinstance.targetobjectid].firstName}</td> 
+                                                    <td class="" style="width:16%">{!mapApprovalData [item.processinstance.targetobjectid].lastName}</td>
+                                                    <td class="" style="width:16%">{!mapApprovalData [item.processinstance.targetobjectid].companyName}</td>
+                                                    <td class="" style="width:18%">{!mapApprovalData [item.processinstance.targetobjectid].userName}</td> 
+                                                    <td class="" style="width:18%">{!mapApprovalData [item.processinstance.targetobjectid].email}</td>
+                                                    <td class="" style="width:14%">{!mapApprovalData [item.processinstance.targetobjectid].applicationName}</td>
+                                                    <td style="width:14%">
+                                                    <div class="info-societe" style="text-align:center;display:inline-flex;margin-top:6px">
+                                                        <span type="button" value="{!$Label.IAM_Approve_Label}" class="CMI-text-icons btn-primary btn-sm CMI-btn-teal tool-tip" data-toggle="tooltip" data-placement="top" title="{!$Label.IAM_Approve_Label}" style="cursor:pointer; border-radius: 3px;color: #FFFFFF;font-size:30px;padding-right:8px;" onclick="requestAppproveItem('{!item.id}'); return false;">[</span>
+                                                        <span>&nbsp;</span>
+                                                        <span type="button" value="{!$Label.IAM_Reject_Label}" class="CMI-text-icons btn-sm btn-primary btn-sm CMI-btn-teal tool-tip" data-toggle="tooltip" data-placement="top" title="{!$Label.IAM_Reject_Label}" style="cursor:pointer; color: #FFFFFF;font-size:30px; border-radius: 3px;padding-right:8px;" onclick="rejectApprovalItem('{!item.id}'); return false;">(</span>            
+                                                    </div>
+                                                    </td>
+                                                </tr>
+                                            </apex:repeat>
+                                        </tbody>
+                                    </table>
+                                </apex:outputPanel>
+                                <!-- display pending approval table if data available end here--> 
+                            </div>
+                        </div>
+                    </apex:outputPanel>
+                </div>
+                <!-- Pending_Approvals table sstart here -->
+            </div>
+          </div>
+        </div>
+        </div>
+</apex:form>
+<!-- End -->
+ 
+ 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>    
+<script src="assets/js/script.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script> 
+<script src="https://cdn.datatables.net/1.10.4/js/jquery.dataTables.min.js" > </script>
+<script src="https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js" > </script>
+<script src="https://cdn.datatables.net/1.10.15/js/dataTables.bootstrap.min.js"> </script>
+<apex:includeScript value="{!URLFOR($Resource.IAM_Resources, 'js/iam_siteadmin.js')}"/>
+<link rel="stylesheet" href="{!URLFOR($Resource.IAM_Resources, 'css/iam_siteadmin.css')}"/>
+<script type="text/javascript">
+    window.$Label = window.$Label || {};
+    $Label.missing = '{!$Label.IAM_Missing_Label}';
+    $Label.invalidEmail = '{!$Label.IAM_Invalid_Email_Error_Label}';
+    $Label.invalidEmailDomain = '{!$Label.IAM_Email_Invalid_Domain}';
+    $Label.IAM_Comments = '{!$Label.IAM_Comments_Label}';
+    var j$ = jQuery.noConflict();
+    $('document').ready(function(){
+        setMinBodyHeight();
+        // display UserName and Logout label 
+        $("div#usernameheader").css("display","flex");
+        $("div#logoutheader").css("display","flex");
+        getCompanyDetail();
+        
+    });
+            
+</script>
+ 
+ 
+<apex:outputPanel id="switch_panel">
+    <script>
+        function enable_save_new(enteredval){
+            console.log('enteredval '+enteredval);
+            if (enteredval != '' && enteredval != null && enteredval != undefined) {
+                jQuery('.save_btn_popup_reg').show();
+                jQuery('.save_btn_popup_reg1').hide();
+            } else {
+                jQuery('.save_btn_popup_reg').hide();
+                jQuery('.save_btn_popup_reg1').show();
+            }
+        }
+        function switchto_tab(){
+            if ('{!lstuser.size}' > 0){
+                swithc_tab('tabB');
+            }else {
+                swithc_tab('tabA');
+            }
+        }
+
+        // code for user search start here
+        function search_user_results(){
+            console.log('search_user_results..... ');
+            var searchUser = $('[id$=userSearchText]').val();
+            console.log('searchUser..... '+searchUser);
+            user_search(searchUser);
+        }
+        // code for user search end here
+        jQuery(document).on('keyup', function(event){
+            if(jQuery(event.target).hasClass('reject_approve_reason')){
+                console.log(event.target.value);
+                enable_save_new(event.target.value)
+            }
+        });
+
+    </script>
+</apex:outputPanel>                
+                  
+     
+<div style="margin-top: 40px"></div>                 
+<c:CS_Footer ></c:CS_Footer>
+
+<!--code regarding lightning pop up-->
+
+<apex:includeLightning />
+
+<div id="lightning" />
+
+</apex:page>

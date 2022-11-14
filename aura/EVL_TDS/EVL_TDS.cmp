@@ -1,0 +1,52 @@
+<aura:component controller="EVL_TDSController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,lightning:availableForFlowScreens">
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="faultCodes" type="String"/>
+    <aura:attribute name="DiagnosticErrMsg" type="Boolean" default="false"/>
+    <aura:attribute name="errSolMsg" type="Boolean" default="false"/>
+    <aura:attribute name="roleName" type="string" />  <!-- Added by Priyanka for VGRS2-15: 11/11/2021 -->
+
+    <aura:attribute name="faultID" type="Boolean" default="false"/>
+    <aura:attribute name="isClosed" type="Boolean" default="false" />
+    <aura:handler name="cmpEvent" event="c:EVL_TDSCompEvent" action="{!c.handleComponentEvent}"/>
+    <aura:attribute name="SelectTabId" type="String" default="trouble"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:registerEvent name="cmpEvent1" type="c:EVL_TDSCompEvent"/>
+    <!-- Sruthi - Adding if condition logic to display tabs based on Work Order Status -->
+    <aura:if isTrue="{!! v.isClosed }">
+        <lightning:tabset  onselect="{!c.tabSelected}" variant="scoped" selectedTabId="{!v.SelectTabId}" aura:id="setOfTabs">
+            <lightning:tab label="Fault Code/Symptom Search" id="trouble">
+                <c:EVL_LaunchInsite recordId="{!v.recordId}"/><br/><br/>
+                <c:EVLSearchfaultCodes recordId="{!v.recordId}" />
+                <!--  selectedTabId="solution"
+   <lightning:button label="Navigate to Tab 2" onclick="{!c.onTabClick }"/>-->
+                <!--<c:FSL_LaunchInsite /><br/><br/>
+            <c:FSL_Searchfaultcodes  />-->
+            </lightning:tab>
+            <lightning:tab label="Solution Steps" id="solution" >
+                <aura:if isTrue="{! v.DiagnosticErrMsg }">  <!-- Added by Sriprada for VGRS2-6: 10/19/2021 -->
+                    <div style="text-align:center;color:red;bold"><br/>&nbsp;<b>{!$Label.c.EVL_DiagnosticErrMsg}</b><br/></div>
+                </aura:if>
+                <aura:if isTrue="{! v.errSolMsg }">  
+                        <div style="text-align:center;color:red;bold"><br/>&nbsp;<b>{!$Label.c.EVL_DiagnosticSolErrMsg}</b><br/></div>
+                  
+                </aura:if> <!-- Code ends here : VGRS2-6: 10/19/2021 -->
+				
+                <!--<p>{!v.faultCodes}</p>-->
+                <aura:if isTrue="{! v.faultID }">  
+                    <!--     <c:FSL_FaultCodeOverview recordId="{!v.recordId}" aura:id="solOverview" /> -->
+                    <!-- Passing role name to EVL_DisplaySolution  by Priyanka for VGRS2-15: 11/11/2021 -->
+                    <c:EVL_DisplaySolution recordId="{!v.recordId}" aura:id="displaySolutions" roleName = "{!v.roleName}" /> 
+                </aura:if>
+            </lightning:tab>
+            
+        </lightning:tabset>
+    </aura:if>
+    <!-- Sruthi - Adding if condition logic to display blank Page with a message when Work Order is in Closed Status -->
+    <aura:if isTrue="{! v.isClosed }">
+
+        <div style="text-align:center;color:red;"><br/>&nbsp;<b>{!$Label.c.Evl_T_D_Closed_Message}</b><br/></div>
+
+        
+
+    </aura:if>
+</aura:component>

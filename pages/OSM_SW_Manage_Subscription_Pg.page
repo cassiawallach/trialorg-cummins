@@ -1,0 +1,2325 @@
+<!--*********************************************************************************************************************************************************************************
+History                                                                                                                        
+VERSION  AUTHOR            DATE              DETAIL                                
+1.0 -             
+1.1 -   Ronnie           11/01/2021    Changes added as part of MP-133 to add Subscription Length 
+1.2 -   Ronnie           12/03/2021    Changes added as part of MP-372 to display Subscription Length value only for subscription based products. 
+1.3 -   Swetha           10/07/2022    Added GETTI logic on the page from the batch (GetToolInstance)   
+Subbu update
+1.4 -   Charlynn         20/07/2022    Changes added as part of LL-24 to add Number of Bundles column
+1.5      swetha Updated  19/08/2022
+************************************************************************************************************************************************************************************** -->
+<apex:page applyHtmlTag="false"  docType="html-5.0" sidebar="false" showHeader="false" controller="OSM_SW_Manage_Subscription_Ctrl"
+           standardStylesheets="false" cache="false">
+    
+           
+    <div class="SubscDataDiv" ></div>
+    
+    
+    <script id="Subscription-Cancel-Template" type="text/template">
+     
+        <div class="panel panel-default cc_panel cc_myaccount_subscription_detail">
+            <!--  Added for MAR-1196  -->
+            {{#ifEquals this.SubscData.productType 'Type2'}}
+                {{#if this.SubscData.canRenew}}
+                    {{#if this.SubscData.canRenewForAddOn}}
+                    
+                    {{else}}
+                        <div id="guidanzAddOn" style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+                            <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span>&nbsp;Please renew the Guidanz service base package in order to renew the add-on kits.                        
+                        </div>
+                    {{/if}}
+                 {{/if}}
+             {{/ifEquals}}
+            <!--  End: MAR-1196  -->
+        <!--Start OMG-943-->
+             <div id="Subs_ErrorMsg" style="background-color: #FEEEED;padding: 10px;border: solid 2px red;display:none;">
+                <span class="icon-Warning" style="color:red; font-size:18px; vertical-align: middle;"></span>&nbsp;
+                {{pageLabelMap 'MySubscription_GETTI_Msg'}}
+            </div>
+            <div id="Subs_ToolErrorMsg" style="background-color: #FEEEED;padding: 10px;border: solid 2px red;display:none;">
+                <span class="icon-Warning" style="color:red; font-size:18px; vertical-align: middle;"></span>&nbsp;
+                {{pageLabelMap 'MySubscription_GETTI_Tool_Msg'}}
+            </div><!--End OMG-943-->
+            <!--- Start OMG-1001-->
+            <div id="Subs_RevokeErrorMsg" style="background-color: #FEEEED;padding: 10px;border: solid 2px red;display:none;">
+                <span class="icon-Warning" style="color:red; font-size:18px; vertical-align: middle;"></span>&nbsp;
+                {{pageLabelMap 'MySubscription_Revoke_Fail_Msg'}}
+            </div><!--- End OMG-1001-->
+            <!--- Start OMG-1090-->
+            <div id="Subs_ReIssueErrorMsg" style="background-color: #FEEEED;padding: 10px;border: solid 2px red;display:none;">
+                <span class="icon-Warning" style="color:red; font-size:18px; vertical-align: middle;"></span>&nbsp;
+                {{pageLabelMap 'MySubscription_ReIssue_Fail_Msg'}}
+            </div><!--- End OMG-1090-->
+            <div class="panel-heading cc_heading">
+                <h3 class="panel-title cc_title">{{pageLabelMap 'MyAccount_MySubscriptions_Title'}}</h3>
+            </div>
+            <div class="invoiceContainer cc_invoice_action_container">
+                        <p class="panel-body pull-right cc_action_buttons">
+                            <a href="javascript:void(0);" style="color:teal;"  onclick="goToMyAccount('mySubscriptionsNew')" class="mySubscriptions cc_my_subscriptions">{{pageLabelMap 'ManageSubsc_Back'}}</a>
+                        </p>
+            </div>
+            <div class="panel-body cc_body cc_myaccount_content">
+                <div class="messagingSection-invoice-Error" style="display: none"></div>
+                <div class="messagingSection-invoice-Warning" style="display: none"></div>
+                <div class="messagingSection-invoice-Info" role="alert" style="display: none">
+                    <button type="button" class="close cc_close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&#215;</span></button>
+                </div>
+            </div>
+    
+            
+            
+            <div class="invoiceHeaderContainer row cc_invoice_header_container">
+                <div class="col-sm-6 cc_invoice_header_col" style=" padding-left: 9px;">
+                    <div class="row" style="padding-top:10px">
+                        <div class="col-xs-6">
+                            <div class="pull-left cc_header_value_bill_to_address">{{pageLabelMap 'ManageSubsc_No'}}</div>
+                        </div> 
+                        <div class="col-xs-6">
+                            <div class="pull-left cc_header_value_name">{{this.SubscData.subscName}}</div>
+                        </div>
+                        <div class="col-xs-6">
+                            <div class="pull-left cc_header_value_bill_to_address">{{pageLabelMap 'ManageSubsc_StartDate'}}</div> 
+                        </div> 
+                        <div class="col-xs-6">
+                            <div class="pull-left cc_header_value_name">{{date this.SubscData.startDate}}</div>
+                        </div>
+                            
+                       
+                            {{#ifNotEquals this.SubscData.productType 'Type3'}}
+                                <div class="col-xs-6">
+                                    <div class="pull-left cc_header_value_bill_to_address">{{pageLabelMap 'ManageSubsc_EndDate'}}</div> 
+                                </div> 
+                                <div class="col-xs-6">
+                                    <div class="pull-left cc_header_value_name">{{date this.SubscData.endDate}}</div>
+                                </div>
+                            {{/ifNotEquals}}
+                            
+                             <div class="col-xs-6">
+                            <div class="pull-left cc_header_value_bill_to_address">{{pageLabelMap 'ManageSubsc_ActiveSubscriptionQuantity'}}</div> 
+                        </div> 
+                        <div class="col-xs-6">
+                            <div class="pull-left cc_header_value_name">{{this.SubscData.qty}}</div>
+                        </div>
+                            
+                            
+                       
+                    </div>
+                </div>
+            </div>
+            
+            
+       
+        </div>
+        
+        
+        
+        {{#ifEquals this.SubscData.productType 'Type1'}}
+        <div class="col-xs-12" >
+                {{#if this.SubscData.canRenew}}
+                        <span style="padding-left: 87%;">
+                            <input type="button" class="btn btn-default btn-sm renewClick cc_checkout_btn" data-id="{{this.SubscData.subscSFID}}" value="⟳ {{pageLabelMap 'ManageSubsc_Renew'}}" style="font-weight: bold;background-color:teal;color:white;"> 
+                        </span>                    
+                {{/if}}
+            </div>
+            <div class="invoiceContainer invoiceItemsContainer cc_invoice_items_container">
+                <div class="row">
+                    <div class="col-xs-3" >
+                        <h1 class="title cc_title">{{pageLabelMap 'ManageSubsc_Items'}}</h1>
+                    </div>
+                </div>
+            </div>
+                        
+            <div class="row">
+             <div class="col-xs-12" >
+              <div class="table-responsive">
+               <table id="invoiceTable" class="table table-hover shopping_cart invoiceItems cc_table cc_invoice_items_table" style="width:100%">
+                <tr class="cc_table_header_row" style="color: white;background-color: black;">
+                 <th class="cc_table_header" style="width: 15%;">
+                  <span class="cc_table_header_item_invoice_id">{{pageLabelMap 'ManageSubsc_ProductName'}}</span>
+                 </th>
+                  <th class="cc_table_header" style="width: 5%;"> 
+                  <span class="cc_table_header_status">{{pageLabelMap 'ManageSubsc_OrderedQuantity'}}</span><!--{{pageLabelMap 'ManageSubsc_Quantity'}}-->
+                 </th>
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'Expiration Date'}}</span>
+                 </th>
+                 
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'ManageSubsc_OrderDate'}}</span>
+                 </th>
+                 <!--MP-133 Code Start-->
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'SubscriptionLength'}}</span>
+                 </th>
+                 <!--MP-133 Code End-->
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_item_amount">{{pageLabelMap 'ManageSubsc_OrderNumber'}}</span>
+                 </th>
+                 <th class="cc_table_header" style="width: 13%;">
+                  <span class="cc_table_header_type">{{pageLabelMap 'ManageSubsc_ActivationKey'}}</span>
+                 </th>
+                 <th class="cc_table_header" style="width: 13%;">
+                  <span class="cc_table_header_type">{{pageLabelMap 'ManageSubsc_ToolId'}}</span>
+                 </th>
+                 
+                 <th class="cc_table_header" style="width: 19%;">
+                  <span class="cc_table_header_type">{{pageLabelMap 'ManageSubsc_Actions'}}</span>
+                  
+                 </th>
+                 
+                 
+                </tr>
+                {{#each this.SubscData.subscriptionItemList}}
+                 <tr class="myAccInvoiceRows cc_my_acc_invoice_rows">
+                  
+                      <td class="cc_table_col">
+                            {{this.productName}}<br/>
+                        <span class="cc_col_type">
+                           <p class="cc_included_items">
+                                <a href="javascript:void(0);" class="includedItemsLink"   data-id="{{this.orderItemId}}" ><span class="icon-ViewBound"></span> &nbsp;{{pageLabelMap 'CheckOut_IncludedItems'}}</a>
+                           </p>
+                        </span>
+                     </td>
+                      
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{this.quantity}}</span>
+                      </td>
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{date this.expireDate}}</span>
+                      </td>
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{date this.orderDate}}</span>
+                      </td>           
+                      <!-- MP-133 Code Start-->
+                      <!-- MP-372 Code Start -->
+                      <td class="cc_table_col">
+                       {{#ifEquals this.subscriptionLength '99 Year'}}
+             
+                       {{else}}
+                           <span class="cc_col_type">{{this.subscriptionLength}}</span>   
+                       {{/ifEquals}} 
+                      </td>
+                      <!-- MP-372 Code End -->
+                      <!--MP-133 Code End-->
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{this.orderNumber}}</span>
+                      </td>          
+                      <td>
+                                <div>
+                                    <span>
+                                    {{pageLabelMap 'ManageSubsc_BasicKey'}}
+                                    </span>
+                                    <span>
+                                    <select id="title" class="BasicKeyCls"  data-itemid="{{this.orderItemId}}"  name="title" style="width:100%;margin-top: 3px;"  >
+                                        
+                                        {{#each this.basicKeyLst}}
+                                            {{#if this.isSelected}}
+                                                <option data-sfid="{{this.keyId}}"  value="{{this.keyId}}" selected >{{this.valueStr}}</option>
+                                            {{else}}
+                                                <option  data-sfid="{{this.keyId}}" value="{{this.keyId}}" >{{this.valueStr}}</option>
+                                            {{/if}}
+                                        {{/each}}
+                                    </select>
+                                    </span>
+                                </div>
+                                <div style="margin-top: 8px;">
+                                    <span>{{pageLabelMap 'ManageSubsc_FunctionalKey'}}</span>
+                                    <span>
+                                    <select id="title" class="FunctiionalKeyCls"  data-itemid="{{this.orderItemId}}"  name="title" style="width:100%;margin-top: 3px;"  >
+                                        
+                                        {{#each this.funcationalKeyLst}}
+                                            {{#if this.isSelected}}
+                                                <option data-sfid="{{this.keyId}}"  value="{{this.keyId}}" selected >{{this.valueStr}}</option>
+                                            {{else}}
+                                                <option  data-sfid="{{this.keyId}}" value="{{this.keyId}}" >{{this.valueStr}}</option>
+                                            {{/if}}
+                                        {{/each}}
+                                    </select>
+                                    </span>
+                                </div>
+                          
+                      </td>
+                      
+                      <td class="cc_table_col">
+                                <div class="row">
+                                   <div style="padding-top: 18px;padding-left:15px;">
+                                    <select id="title" class="BasicToolCls"  data-itemid="{{this.orderItemId}}"  name="title" style="width:100%;margin-top: 3px;"  >
+                                        
+                                        {{#each this.baiscToolIdLst}}
+                                            {{#if this.isSelected}}
+                                                <option data-sfid="{{this.sfId}}"  value="{{this.sfId}}" selected >{{this.toolInstanceKey}}</option>
+                                            {{else}}
+                                                <option  data-sfid="{{this.sfId}}" value="{{this.sfId}}" >{{this.toolInstanceKey}}</option>
+                                            {{/if}}
+                                        {{/each}}
+                                    </select>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div style="padding-top: 26px;padding-left:15px;" >
+                                   
+                                    <select id="title" class="FuncToolCls" data-itemid="{{this.orderItemId}}"  name="title" style="width:100%;margin-top: 3px;"  >
+                                        
+                                        {{#each this.funcationalToolIdLst}}
+                                            {{#if this.isSelected}}
+                                                <option data-sfid="{{this.sfId}}"  value="{{this.sfId}}" selected >{{this.toolInstanceKey}}</option>
+                                            {{else}}
+                                                <option  data-sfid="{{this.sfId}}" value="{{this.sfId}}" >{{this.toolInstanceKey}}</option>
+                                            {{/if}}
+                                        {{/each}}
+                                    </select>
+                                   </div>
+                                </div>
+                      </td>
+                      <td class="cc_table_col">
+                
+                        <!-- Jira-941 Code starts here -->
+                        <div class="row"> <span class="cc_col_type">
+                            <div style="padding-left:30px;">
+                            <a href="javascript:void(0);" class="getToolInstanceClick" style="color:teal;" data-id="{{this.Id}}" data-itemid="{{this.orderItemId}}"><span style="font-size: 85%;font-family: 'iconsregular';padding-left: 0.1em;padding-right: 0.1em;color: teal;width: .5em;height: 1.2em; border: 1px solid teal;border-radius: 60%;">&#8634</span>&nbsp {{pageLabelMap 'ManageSubsc_GetToolInstance'}}</a>
+                        </div></span></div>
+
+                        <div class="row">
+                        <!-- Jira-941 Code Ends here -->
+                
+                        <div class="col-xs-12" style="padding-right: 0px;padding-left: 0px;">
+                            <div class="col-xs-12" style="margin-top: 3px;" >
+                                {{#ifNotEquals this.selectedBasicToolIncId '--None--'}}
+                                    {{#if this.actionsEnableForBasic}}
+                                        <div class="col-xs-6">
+                                            {{#if this.canRevokeAndReissue}}
+                                            <!--
+                                                <input style="margin-left: 10px;"  type="button" class="btn btn-default btn-sm revokeAndRessiueClick" data-id="{{this.selectedBasicToolIncId}}"  value="{{pageLabelMap 'Reissue'}}" />
+                                            -->
+                                            <a href="#"  class="CMI-link-icons revokeAndRessiueClick" data-id="{{this.selectedBasicToolIncId}}"  style="color: teal;text-decoration:none;padding:0px;">
+                                                <span  style="font-size: 85%;font-family: 'iconsregular';padding-left: 0.1em;padding-right: 0.1em;color: teal;width: .5em;height: 1.2em; border: 1px solid teal;border-radius: 60%;">&#8634</span>&nbsp{{pageLabelMap 'Reissue'}}</a> 
+                                          {{/if}}
+                                        </div>
+                                        {{#if this.notHideStdRevoke}}
+                                            <div class="col-xs-6">
+                                                {{#if this.canRevoke}}
+                                                <!--
+                                                    <input type="button" class="btn btn-default btn-sm revokeClick" data-id="{{this.selectedBasicToolIncId}}"  value="{{pageLabelMap 'ManageSubsc_Revoke'}}" /> 
+                                                    -->
+                                                    <a href="#" style="color:teal;" class="CMI-link-icons revokeClick" data-id="{{this.selectedBasicToolIncId}}"  ><span class="CMI-text-icons" style="font-size: 100%;color:teal;">⊗</span>{{pageLabelMap 'ManageSubsc_Revoke'}}</a>
+                                               {{/if}}
+                                            </div>
+                                        {{else}}
+                                            <div class="col-xs-6">
+                                                {{#if this.canRevoke}}
+                                                <!--
+                                                    <input type="button" class="btn btn-default btn-sm revokeClick2" data-id="{{this.selectedBasicToolIncId}}"  value="{{pageLabelMap 'ManageSubsc_Revoke'}}" /> 
+                                                    -->
+                                                    <a href="#" style="color:teal;" class="CMI-link-icons revokeClick2" data-id="{{this.selectedBasicToolIncId}}"  ><span class="CMI-text-icons" style="font-size: 100%;color:teal;">⊗</span>{{pageLabelMap 'ManageSubsc_Revoke'}}</a>
+                                                {{/if}}
+                                            </div>
+                                        {{/if}}
+                                    
+                                        
+                                    {{/if}}
+                                {{/ifNotEquals}}
+                                
+                                {{#ifEquals this.selectedBasicToolIncId '--None--'}}
+                                    <div class="col-xs-12" style="margin-top: 22px;" ></div>
+                                {{/ifEquals}}
+                                
+                            </div>
+                            
+                            <div class="col-xs-12" style="margin-top: 26px;" >
+                                {{#ifNotEquals this.selectedFuncToolIncId '--None--'}}
+                                    {{#if this.actionsEnableForFunc}}
+                                        <div class="col-xs-6">
+                                                {{#if this.canRevokeAndReissue}}
+                                                <!--
+                                                    <input style="margin-left: 10px;"  type="button" class="btn btn-default btn-sm revokeAndRessiueClick" data-id="{{this.selectedFuncToolIncId}}"  value="{{pageLabelMap 'Reissue'}}" /> 
+                                                    -->
+                                                 <a href="#"  class="CMI-link-icons revokeAndRessiueClick" data-id="{{this.selectedFuncToolIncId}}"  style="color: teal;text-decoration:none;padding:0px;">
+                                                          <span  style="font-size: 85%;font-family: 'iconsregular';padding-left: 0.1em;padding-right: 0.1em;color: teal;width: .5em;height: 1.2em; border: 1px solid teal;border-radius: 60%;">&#8634</span>&nbsp{{pageLabelMap 'Reissue'}}</a> 
+                                                {{/if}}
+                                        </div>
+                                        {{#if this.notHideStdRevoke}}
+                                            <div class="col-xs-6">
+                                                {{#if this.canRevoke}}
+                                                <!--
+                                                    <input type="button" class="btn btn-default btn-sm revokeClick" data-id="{{this.selectedFuncToolIncId}}"  value="{{pageLabelMap 'ManageSubsc_Revoke'}}" /> 
+                                                    -->
+                                                    <a href="#" style="color:teal;" class="CMI-link-icons revokeClick" data-id="{{this.selectedFuncToolIncId}}"  ><span class="CMI-text-icons" style="font-size: 100%;color:teal;">⊗</span>{{pageLabelMap 'ManageSubsc_Revoke'}}</a>
+                                              
+                                                 {{/if}}
+                                            </div>
+                                        {{else}}
+                                            <div class="col-xs-6">
+                                                {{#if this.canRevoke}}
+                                                <!--
+                                                    <input  type="button" class="btn btn-default btn-sm revokeClick2" data-id="{{this.selectedFuncToolIncId}}"  value="{{pageLabelMap 'ManageSubsc_Revoke'}}" /> 
+                                                    -->
+                                                    <a href="#" style="color:teal;" class="CMI-link-icons revokeClick2" data-id="{{this.selectedFuncToolIncId}}"  ><span class="CMI-text-icons" style="font-size: 100%;color:teal;">⊗</span>{{pageLabelMap 'ManageSubsc_Revoke'}}</a>
+                                                {{/if}}
+                                            </div>
+                                        {{/if}}
+                                    
+                                    
+                                        
+                                    {{/if}}
+                                {{/ifNotEquals}}
+                            </div>
+                            
+                        </div>
+                </div> <!-- 941 -->
+                        
+                       
+                      </td>
+                  
+                  
+    
+                 </tr>
+                {{/each}}
+               </table>
+              </div>
+              <hr style="color:dark-grey">
+             </div>
+            </div>
+            <div class="col-xs-12" >
+                {{#if this.SubscData.canRenew}}
+                    <span style="padding-left: 87%;">
+                        <input type="button" class="btn btn-default btn-sm renewClick cc_checkout_btn" data-id="{{this.SubscData.subscSFID}}" value="⟳ {{pageLabelMap 'ManageSubsc_Renew'}}" style="font-weight: bold;background-color:teal;color:white;"> 
+                    </span>
+                    {{else}}
+                    {{#if this.SubscData.isRenewed}}
+                        <span><i>Renewed until {{date this.SubscData.renewedSubscEndDate}}</i></span>
+                    {{/if}}
+                {{/if}}
+            </div>
+        {{/ifEquals}}
+        
+        {{#ifEquals this.SubscData.productType 'Type2'}}
+            <div class="col-xs-12" >
+                    
+                    {{#if this.SubscData.canRenew}}
+                    {{#if this.SubscData.canRenewForAddOn}}
+                        <span style="padding-left: 87%;">
+                            <input type="button" class="btn btn-default btn-sm renewClick" data-id="{{this.SubscData.subscSFID}}" value="⟳ {{pageLabelMap 'ManageSubsc_Renew'}}" style="background-color:teal;color:white;"> 
+                        </span>
+                    {{/if}}
+                    {{else}}
+                        {{#if this.SubscData.isRenewed}}
+                            <span><i>- Renewed until {{date this.SubscData.renewedSubscEndDate}}</i></span>
+                        {{/if}}
+                   {{/if}}
+            </div>
+            <div class="invoiceContainer invoiceItemsContainer cc_invoice_items_container">
+                <div class="row">
+                    <div class="col-xs-3" >
+                        <h1 class="title cc_title">{{pageLabelMap 'ManageSubsc_Items'}}</h1>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+             <div class="col-xs-12" >             
+              <div class="table-responsive">
+               <table id="invoiceTable" class="table table-hover shopping_cart invoiceItems cc_table cc_invoice_items_table" style="width:100%">
+                <tr class="cc_table_header_row" style="color: white;background-color: black;">
+                 <th class="cc_table_header" style="width: 15%;">
+                  <span class="cc_table_header_item_invoice_id">{{pageLabelMap 'ManageSubsc_ProductName'}}</span>
+                 </th>
+                  <th class="cc_table_header" style="width: 5%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'ManageSubsc_OrderedQuantity'}}</span><!--{{pageLabelMap 'ManageSubsc_Quantity'}}-->
+                 </th>
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'Expiration Date'}}</span>
+                 </th>
+                 
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'ManageSubsc_OrderDate'}}</span>
+                 </th>
+                 <!--MP-133 Code Start-->
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'SubscriptionLength'}}</span>
+                 </th>
+                 <!--MP-133 Code End-->
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_item_amount">{{pageLabelMap 'ManageSubsc_OrderNumber'}}</span>
+                 </th>
+                 <th class="cc_table_header" style="width: 13%;">
+                  <span class="cc_table_header_type">{{pageLabelMap 'ManageSubsc_ActivationKey'}}</span>
+                 </th>
+                 <th class="cc_table_header" style="width: 13%;">
+                  <span class="cc_table_header_type">{{pageLabelMap 'ManageSubsc_ToolId'}}</span>
+                 </th>                
+                 
+                 <th class="cc_table_header" style="width: 19%;">
+                  <span class="cc_table_header_type">{{pageLabelMap 'ManageSubsc_Actions'}}</span>
+                  
+                 </th>
+                 
+                 
+                </tr>
+                {{#each this.SubscData.subscriptionItemList}}
+                 <tr class="myAccInvoiceRows cc_my_acc_invoice_rows">
+                
+                      <td class="cc_table_col">
+                       <span class="cc_col_type"><p class="cc_included_items">
+              {{this.productName}}
+                
+               </p></span>
+                      </td>
+                      
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{this.quantity}}</span>
+                      </td>
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{date this.expireDate}}</span>
+                      </td>
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{date this.orderDate}}</span>
+                      </td>                   
+                      <!-- MP-133 Code Start-->
+                      <!-- MP-372 Code Start -->
+                      <td class="cc_table_col">
+                       {{#ifEquals this.subscriptionLength '99 Year'}}
+             
+                       {{else}}
+                           <span class="cc_col_type">{{this.subscriptionLength}}</span>   
+                       {{/ifEquals}} 
+                      </td>
+                      <!-- MP-372 Code End -->
+                      <!--MP-133 Code End-->
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{this.orderNumber}}</span>
+                      </td>
+                      <td>
+                                <div>
+                                    <span>
+                                    {{pageLabelMap 'ManageSubsc_BasicKey'}}
+                                    </span>
+                                    <span>
+                                    <select id="title" class="BasicKeyCls"  data-itemid="{{this.orderItemId}}"  name="title" style="width:100%;margin-top: 3px;"  >
+                                        
+                                        {{#each this.basicKeyLst}}
+                                            {{#if this.isSelected}}
+                                                <option data-sfid="{{this.keyId}}"  value="{{this.keyId}}" selected >{{this.valueStr}}</option>
+                                            {{else}}
+                                                <option  data-sfid="{{this.keyId}}" value="{{this.keyId}}" >{{this.valueStr}}</option>
+                                            {{/if}}
+                                        {{/each}}
+                                    </select>
+                                    </span>
+                                </div>
+                                <div style="margin-top: 8px;">
+                                    <span>{{pageLabelMap 'ManageSubsc_FunctionalKey'}}</span>
+                                    <span>
+                                    <select id="title" class="FunctiionalKeyCls"  data-itemid="{{this.orderItemId}}"  name="title" style="width:100%;margin-top: 3px;"  >
+                                        
+                                        {{#each this.funcationalKeyLst}}
+                                            {{#if this.isSelected}}
+                                                <option data-sfid="{{this.keyId}}"  value="{{this.keyId}}" selected >{{this.valueStr}}</option>
+                                            {{else}}
+                                                <option  data-sfid="{{this.keyId}}" value="{{this.keyId}}" >{{this.valueStr}}</option>
+                                            {{/if}}
+                                        {{/each}}
+                                    </select>
+                                    </span>
+                                </div>
+                          
+                      </td>
+                      
+                      <td class="cc_table_col">
+                                <div class="row">
+                                    <div style="padding-top: 18px;padding-left:15px;">
+                                    <select id="title" class="BasicToolCls"  data-itemid="{{this.orderItemId}}"  name="title" style="width:100%;margin-top: 3px;"  >
+                                        
+                                        {{#each this.baiscToolIdLst}}
+                                            {{#if this.isSelected}}
+                                                <option data-sfid="{{this.sfId}}"  value="{{this.sfId}}" selected >{{this.toolInstanceKey}}</option>
+                                            {{else}}
+                                                <option  data-sfid="{{this.sfId}}" value="{{this.sfId}}" >{{this.toolInstanceKey}}</option>
+                                            {{/if}}
+                                        {{/each}}
+                                    </select>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    
+                                    <div style="padding-top: 26px;padding-left:15px;" >                                  
+                                    <select id="title"  class="FuncToolCls"  data-itemid="{{this.orderItemId}}"  name="title" style="width:100%;margin-top: 3px;"  >
+                                        
+                                        {{#each this.funcationalToolIdLst}}
+                                            {{#if this.isSelected}}
+                                                <option data-sfid="{{this.sfId}}"  value="{{this.sfId}}" selected >{{this.toolInstanceKey}}</option>
+                                            {{else}}
+                                                <option  data-sfid="{{this.sfId}}" value="{{this.sfId}}" >{{this.toolInstanceKey}}</option>
+                                            {{/if}}
+                                        {{/each}}
+                                    </select>
+                                    </div> 
+                                </div>
+                      </td>
+                    
+                      <td class="cc_table_col" id="canRevokeAndReissueids">
+                        <!-- Jira-941 Code starts here -->
+                        <div class="row"> <span class="cc_col_type">
+                        <div style="padding-left:30px;">
+                            <a href="javascript:void(0);" class="getToolInstanceClick" style="color:teal;" data-id="{{this.Id}}" data-itemid="{{this.orderItemId}}"><span style="font-size: 85%;font-family: 'iconsregular';padding-left: 0.1em;padding-right: 0.1em;color: teal;width: .5em;height: 1.2em; border: 1px solid teal;border-radius: 60%;">&#8634</span>&nbsp {{pageLabelMap 'ManageSubsc_GetToolInstance'}}</a>
+                </span></div></div>
+
+                        <div class="row">
+                        <!-- Jira-941 Code Ends here -->
+                
+                        <div class="col-xs-12" style="padding-right: 0px;padding-left: 0px;">
+                            <div class="col-xs-12" style="margin-top: 3px;" >
+                                {{#ifNotEquals this.selectedBasicToolIncId '--None--'}}
+                                    {{#if this.actionsEnableForBasic}}
+                                        <div class="col-xs-6">
+                                            {{#if this.canRevokeAndReissue}}
+                                            <!--
+                                                <input style="margin-left: 10px;"  type="button" class="btn btn-default btn-sm revokeAndRessiueClick" data-id="{{this.selectedBasicToolIncId}}"  value="{{pageLabelMap 'Reissue'}}" /> 
+                                                -->
+                                                <a href="#"  class="CMI-link-icons revokeAndRessiueClick" data-id="{{this.selectedBasicToolIncId}}"  style="color: teal;text-decoration:none;padding:0px;">
+                                                    <span style="font-size: 85%;font-family: 'iconsregular';padding-left: 0.1em;padding-right: 0.1em;color: teal;width: .5em;height: 1.2em; border: 1px solid teal;border-radius: 60%;">&#8634</span>&nbsp{{pageLabelMap 'Reissue'}}</a>
+                                            {{/if}}
+                                        </div>
+                                        {{#if this.notHideStdRevoke}}
+                                            <div class="col-xs-6">
+                                                {{#if this.canRevoke}}
+                                                <!--
+                                                    <input type="button" class="btn btn-default btn-sm revokeClick" data-id="{{this.selectedBasicToolIncId}}"  value="{{pageLabelMap 'ManageSubsc_Revoke'}}" /> 
+                                                    -->
+                                                    <a href="#" style="color:teal;" class="CMI-link-icons revokeClick" data-id="{{this.selectedBasicToolIncId}}"  ><span class="CMI-text-icons" style="font-size: 100%;color:teal;">⊗</span>{{pageLabelMap 'ManageSubsc_Revoke'}}</a>
+                                               {{/if}}
+                                            </div>
+                                        {{else}}
+                                            <div class="col-xs-6">
+                                                {{#if this.canRevoke}}
+                                                <!--
+                                                    <input type="button" class="btn btn-default btn-sm revokeClick2" data-id="{{this.selectedBasicToolIncId}}"  value="{{pageLabelMap 'ManageSubsc_Revoke'}}" /> 
+                                                    -->
+                                                    <a href="#" class="CMI-link-icons revokeClick2" data-id="{{this.selectedBasicToolIncId}}"  ><span class="CMI-text-icons" style="font-size: 100%;color:teal;">⊗</span>{{pageLabelMap 'ManageSubsc_Revoke'}}</a>
+                                                {{/if}}
+                                            </div>
+                                        {{/if}}
+                                    
+                                        
+                                    {{/if}}
+                                {{/ifNotEquals}}
+                                
+                                {{#ifEquals this.selectedBasicToolIncId '--None--'}}
+                                    <div class="col-xs-12" style="margin-top: 22px;" ></div>
+                                {{/ifEquals}}
+                                
+                            </div>
+                            
+                            <div class="col-xs-12" style="margin-top: 26px;" >
+                                {{#ifNotEquals this.selectedFuncToolIncId '--None--'}}
+                                    {{#if this.actionsEnableForFunc}}
+                                        <div class="col-xs-6">
+                                            {{#if this.canRevokeAndReissue}}
+                                            <!--
+                                                <input style="margin-left: 10px;"  type="button" class="btn btn-default btn-sm revokeAndRessiueClick" data-id="{{this.selectedFuncToolIncId}}"  value="{{pageLabelMap 'Reissue'}}" />
+    -->
+                                                <a href="#"  class="CMI-link-icons revokeAndRessiueClick" data-id="{{this.selectedFuncToolIncId}}"  style="color: teal;text-decoration:none;padding:0px;">
+                                                    <span style="font-size: 85%;font-family: 'iconsregular';padding-left: 0.1em;padding-right: 0.1em;color: teal;width: .5em;height: 1.2em; border: 1px solid teal;border-radius: 60%;">&#8634</span>&nbsp{{pageLabelMap 'Reissue'}}</a>
+                                            {{/if}}
+                                        </div>
+                                        {{#if this.notHideStdRevoke}}
+                                            <div class="col-xs-6">
+                                                {{#if this.canRevoke}}
+                                                <!--
+                                                    <input type="button" class="btn btn-default btn-sm revokeClick" data-id="{{this.selectedFuncToolIncId}}"  value="{{pageLabelMap 'ManageSubsc_Revoke'}}" />
+    -->
+                                                    <a href="#" style="color:teal;" class="CMI-link-icons revokeClick" data-id="{{this.selectedFuncToolIncId}}"  ><span class="CMI-text-icons" style="font-size: 100%;color:teal;">⊗</span>{{pageLabelMap 'ManageSubsc_Revoke'}}</a>                                                    
+                                               {{/if}}
+                                            </div>
+                                        {{else}}
+                                            <div class="col-xs-6">
+                                                {{#if this.canRevoke}}
+                                                <!--
+                                                    <input  type="button" class="btn btn-default btn-sm revokeClick2" data-id="{{this.selectedFuncToolIncId}}"  value="{{pageLabelMap 'ManageSubsc_Revoke'}}" /> 
+                                                    -->
+                                                    <a href="#" style="color: teal;" class="CMI-link-icons revokeClick2" data-id="{{this.selectedFuncToolIncId}}"  ><span class="CMI-text-icons" style="font-size: 100%;color:teal;">⊗</span>{{pageLabelMap 'ManageSubsc_Revoke'}}</a>
+                                                {{/if}}
+                                            </div>
+                                        {{/if}}
+                                    
+                                    
+                                        
+                                    {{/if}}
+                                {{/ifNotEquals}}
+                            </div>
+                            
+                        </div>
+                        </div> <!-- Jira-941 -->                        
+                       
+                      </td>
+                  
+                  
+    
+                 </tr>
+                {{/each}}
+               </table>
+              </div>
+              <hr style="color:dark-grey">
+             </div>
+            </div>
+            <div class="col-xs-12" >
+                {{#if this.SubscData.canRenew}}
+                    {{#if this.SubscData.canRenewForAddOn}}
+                        <span style="padding-left: 87%;">
+                            <input type="button" class="btn btn-default btn-sm renewClick" data-id="{{this.SubscData.subscSFID}}" value="⟳ {{pageLabelMap 'ManageSubsc_Renew'}}" style="background-color:teal;color:white;"> 
+                        </span>
+                    {{/if}}
+                    {{else}}
+                        {{#if this.SubscData.isRenewed}}
+                            <span><i>- Renewed until {{date this.SubscData.renewedSubscEndDate}}</i></span>
+                        {{/if}}
+                   {{/if}}
+            </div>
+        {{/ifEquals}}
+        
+        {{#ifEquals this.SubscData.productType 'Type3'}}
+            <div class="col-xs-12" >
+                {{#if this.SubscData.canRenew}}
+                        <span style="padding-left: 87%;">
+                            <input type="button" class="btn btn-default btn-sm renewClick cc_checkout_btn" data-id="{{this.SubscData.subscSFID}}" value="⟳ {{pageLabelMap 'ManageSubsc_Renew'}}" style="font-weight: bold;background-color:teal;color:white;"> <!---->
+                        </span>
+                    {{else}}
+                        {{#if this.SubscData.isRenewed}}
+                            <span><i>- Renewed until {{date this.SubscData.renewedSubscEndDate}}</i></span>
+                        {{/if}}
+                    {{/if}}
+            </div>
+            <div class="invoiceContainer invoiceItemsContainer cc_invoice_items_container">
+                <div class="row">
+                    <div class="col-xs-3" >
+                        <h1 class="title cc_title">{{pageLabelMap 'ManageSubsc_Items'}}</h1>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+            
+             <div class="col-xs-12" >
+              <div class="table-responsive">
+               <table id="invoiceTable" class="table table-hover shopping_cart invoiceItems cc_table cc_invoice_items_table" style="width:100%">
+                <tr class="cc_table_header_row" style="color: white;background-color: black;">
+                 <th class="cc_table_header" style="width: 15%;">
+                  <span class="cc_table_header_item_invoice_id">{{pageLabelMap 'ManageSubsc_ProductName'}}</span>
+                 </th>
+                 <!-- LL-24 Code Start -->
+                 <th class="cc_table_header" style="width: 10%;"> 
+                    <span class="cc_table_header_status">{{pageLabelMap 'ManageSubsc_NumberOfBundles'}}</span>
+                   </th>
+                 <!-- LL-24 Code End -->
+                  <th class="cc_table_header" style="width: 5%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'ManageSubsc_OrderedQuantity'}}</span><!--{{pageLabelMap 'ManageSubsc_Quantity'}}-->
+                 </th>
+                 
+                 
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'ManageSubsc_OrderDate'}}</span>
+                 </th>
+                 <!--MP-133 Code Start-->
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'SubscriptionLength'}}</span>
+                 </th>
+                 <!--MP-133 Code End-->
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_item_amount">{{pageLabelMap 'ManageSubsc_OrderNumber'}}</span>
+                 </th>
+                 <th class="cc_table_header" style="width: 13%;">
+                  <span class="cc_table_header_type">{{pageLabelMap 'ManageSubsc_ActivationKey'}}</span>
+                 </th>
+                 <th class="cc_table_header" style="width: 13%;">
+                  <span class="cc_table_header_type">{{pageLabelMap 'ManageSubsc_ToolId'}}</span>
+                 </th>
+                 
+                 <th class="cc_table_header" style="width: 19%;">
+                  <span class="cc_table_header_type" style="padding: 17px;">{{pageLabelMap 'ManageSubsc_Actions'}}</span>
+                  
+                 </th>
+                 
+                 
+                </tr>
+                {{#each this.SubscData.subscriptionItemList}}
+                 <tr class="myAccInvoiceRows cc_my_acc_invoice_rows">
+                
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{this.productName}}</span>
+                      </td>
+                      <!-- LL-24 Code Start -->
+                      <td class="cc_table_col">
+                        <span class="cc_col_type">{{this.numberOfBundles}}</span>
+                       </td>
+                      <!-- LL-24 Code End --> 
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{this.quantity}}</span>
+                      </td>
+                        
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{date this.orderDate}}</span>
+                      </td>
+                      <!-- MP-133 Code Start-->
+                      <!-- MP-372 Code Start -->
+                      <td class="cc_table_col">
+                       {{#ifEquals this.subscriptionLength '99 Year'}}
+             
+                       {{else}}
+                           <span class="cc_col_type">{{this.subscriptionLength}}</span>   
+                       {{/ifEquals}} 
+                      </td>
+                      <!-- MP-372 Code End -->
+                      <!--MP-133 Code End-->
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{this.orderNumber}}</span>
+                      </td>                       
+                      <td>
+                                <div>
+                                    <span>
+                                    {{pageLabelMap 'ManageSubsc_BasicKey'}}
+                                    </span>
+                                    <span>
+                                    <select id="title" class="BasicKeyCls"  data-itemid="{{this.orderItemId}}"  name="title" style="width:100%;margin-top: 3px;"  >
+                                        
+                                        {{#each this.basicKeyLst}}
+                                            {{#if this.isSelected}}
+                                                <option data-sfid="{{this.keyId}}"  value="{{this.keyId}}" selected >{{this.valueStr}}</option>
+                                            {{else}}
+                                                <option  data-sfid="{{this.keyId}}" value="{{this.keyId}}" >{{this.valueStr}}</option>
+                                            {{/if}}
+                                        {{/each}}
+                                    </select>
+                                    </span>
+                                </div>
+                                <div style="margin-top: 8px;">
+                                    <span>{{pageLabelMap 'ManageSubsc_FunctionalKey'}}</span>
+                                    <span>
+                                    <select id="title" class="FunctiionalKeyCls"  data-itemid="{{this.orderItemId}}"  name="title" style="width:100%;margin-top: 3px;"  >
+                                        
+                                        {{#each this.funcationalKeyLst}}
+                                            {{#if this.isSelected}}
+                                                <option data-sfid="{{this.keyId}}"  value="{{this.keyId}}" selected >{{this.valueStr}}</option>
+                                            {{else}}
+                                                <option  data-sfid="{{this.keyId}}" value="{{this.keyId}}" >{{this.valueStr}}</option>
+                                            {{/if}}
+                                        {{/each}}
+                                    </select>
+                                    </span>
+                                </div>
+                          
+                      </td>
+                      
+                      <td class="cc_table_col">
+                                <div class="row" >
+                                    <div style="padding-top: 18px;padding-left:15px;">
+                                    <select id="title" class="BasicToolCls" data-itemid="{{this.orderItemId}}"  name="title" style="width:100%;margin-top: 3px;"  >
+                                        
+                                        {{#each this.baiscToolIdLst}}
+                                            {{#if this.isSelected}}
+                                                <option data-sfid="{{this.sfId}}"  value="{{this.sfId}}" selected >{{this.toolInstanceKey}}</option>
+                                            {{else}}
+                                                <option  data-sfid="{{this.sfId}}" value="{{this.sfId}}" >{{this.toolInstanceKey}}</option>
+                                            {{/if}}
+                                        {{/each}}
+                                    </select>
+                                   </div>
+                                </div>
+                                <div class="row">
+                                    
+                                 <div style="padding-top: 26px;padding-left:15px;" >
+                                    <select id="title"  class="FuncToolCls" data-itemid="{{this.orderItemId}}"  name="title" style="width:100%;margin-top: 3px;"  >
+                                        
+                                        {{#each this.funcationalToolIdLst}}
+                                            {{#if this.isSelected}}
+                                                <option data-sfid="{{this.sfId}}"  value="{{this.sfId}}" selected >{{this.toolInstanceKey}}</option>
+                                            {{else}}
+                                                <option  data-sfid="{{this.sfId}}" value="{{this.sfId}}" >{{this.toolInstanceKey}}</option>
+                                            {{/if}}
+                                        {{/each}}
+                                    </select>
+                                  </div>                                    
+                                </div>
+                      </td>
+                
+                
+                      <td class="cc_table_col">
+                
+                        <!-- Jira-941 Code starts here -->
+                        <div class="row"> <span class="cc_col_type">
+                            <div style="padding-left:30px;">
+                            <a href="javascript:void(0);" class="getToolInstanceClick" style="color:teal;" data-id="{{this.Id}}" data-itemid="{{this.orderItemId}}"><span style="font-size: 85%;font-family: 'iconsregular';padding-left: 0.1em;padding-right: 0.1em;color: teal;width: .5em;height: 1.2em; border: 1px solid teal;border-radius: 60%;">&#8634</span>&nbsp {{pageLabelMap 'ManageSubsc_GetToolInstance'}}</a>
+                        </div></span></div>
+
+                        <div class="row">
+                        <!-- Jira-941 Code Ends here -->
+                
+                        <div class="col-xs-12" style="padding-right: 0px;padding-left: 0px;">
+                            <div class="col-xs-12" style="margin-top: 3px;" >
+                                {{#ifNotEquals this.selectedBasicToolIncId '--None--'}}
+                                    {{#if this.actionsEnableForBasic}}
+                                        <div class="col-xs-6">
+                                            {{#if this.canRevokeAndReissue}}
+                                            <!--
+                                                <input style="margin-left: 10px;"  type="button" class="btn btn-default btn-sm revokeAndRessiueClick" data-id="{{this.selectedBasicToolIncId}}"  value="{{pageLabelMap 'Reissue'}}" /> 
+                                                -->
+                                                <a href="#"  class="CMI-link-icons revokeAndRessiueClick" data-id="{{this.selectedBasicToolIncId}}"  style="color: teal;text-decoration:none;padding:0px;">
+                                                    <span style="font-size: 85%;font-family: 'iconsregular';padding-left: 0.1em;padding-right: 0.1em;color: teal;width: .5em;height: 1.2em; border: 1px solid teal;border-radius: 60%;">&#8634</span>&nbsp{{pageLabelMap 'Reissue'}}</a>
+                                            {{/if}}
+                                        </div>
+                                        {{#if this.notHideStdRevoke}}
+                                            <div class="col-xs-6">
+                                                {{#if this.canRevoke}}
+                                                <!--
+                                                    <input type="button" class="btn btn-default btn-sm revokeClick" data-id="{{this.selectedBasicToolIncId}}"  value="{{pageLabelMap 'ManageSubsc_Revoke'}}" /> 
+                                                    -->
+                                                    <a href="#" style="color:teal;" class="CMI-link-icons revokeClick" data-id="{{this.selectedBasicToolIncId}}"  ><span class="CMI-text-icons" style="font-size: 100%;color:teal;">⊗</span>{{pageLabelMap 'ManageSubsc_Revoke'}}</a>
+                                               {{/if}}
+                                            </div>
+                                        {{else}}
+                                            <div class="col-xs-6">
+                                                {{#if this.canRevoke}}
+                                                <!--
+                                                    <input type="button" class="btn btn-default btn-sm revokeClick2" data-id="{{this.selectedBasicToolIncId}}"  value="{{pageLabelMap 'ManageSubsc_Revoke'}}" /> 
+                                                    -->
+                                                    <a href="#"  style="color:teal;" class="CMI-link-icons revokeClick2" data-id="{{this.selectedBasicToolIncId}}"  ><span class="CMI-text-icons" style="font-size: 100%;color:teal;">⊗</span>{{pageLabelMap 'ManageSubsc_Revoke'}}</a>
+                                                {{/if}}
+                                            </div>
+                                        {{/if}}
+                                    
+                                        
+                                    {{/if}}
+                                {{/ifNotEquals}}
+                                
+                                {{#ifEquals this.selectedBasicToolIncId '--None--'}}
+                                    <div class="col-xs-12" style="margin-top: 29px;" ></div>
+                                {{/ifEquals}}
+                                
+                            </div>
+                            
+                            <div class="col-xs-12" style="margin-top: 19px;" >
+                                {{#ifNotEquals this.selectedFuncToolIncId '--None--'}}
+                                    {{#if this.actionsEnableForFunc}}
+                                        <div class="col-xs-6">
+                                            {{#if this.canRevokeAndReissue}}
+                                            <!--
+                                                <input style="margin-left: 10px;"  type="button" class="btn btn-default btn-sm revokeAndRessiueClick" data-id="{{this.selectedFuncToolIncId}}"  value="{{pageLabelMap 'Reissue'}}" /> 
+                                                -->
+                                               <a href="#"  class="CMI-link-icons revokeAndRessiueClick" data-id="{{this.selectedFuncToolIncId}}"  style="color: teal;text-decoration:none;padding:0px;">
+                                                    <span style="font-size: 85%;font-family: 'iconsregular';padding-left: 0.1em;padding-right: 0.1em;color: teal;width: .5em;height: 1.2em; border: 1px solid teal;border-radius: 60%;">&#8634</span>&nbsp{{pageLabelMap 'Reissue'}}</a>
+                                            {{/if}}
+                                        </div>
+                                        {{#if this.notHideStdRevoke}}
+                                            <div class="col-xs-6">
+                                                {{#if this.canRevoke}}
+                                                <!--
+                                                    <input type="button" class="btn btn-default btn-sm revokeClick" data-id="{{this.selectedFuncToolIncId}}"  value="{{pageLabelMap 'ManageSubsc_Revoke'}}" /> 
+                                                    -->
+                                                    <a href="#" style="color:teal;" class="CMI-link-icons revokeClick" data-id="{{this.selectedFuncToolIncId}}"  ><span class="CMI-text-icons" style="font-size: 100%;color:teal;">⊗</span>{{pageLabelMap 'ManageSubsc_Revoke'}}</a>
+                                               {{/if}}
+                                            </div>
+                                        {{else}}
+                                            <div class="col-xs-6">
+                                                {{#if this.canRevoke}}
+                                                <!--
+                                                    <input  type="button" class="btn btn-default btn-sm revokeClick2" data-id="{{this.selectedFuncToolIncId}}"  value="{{pageLabelMap 'ManageSubsc_Revoke'}}" /> 
+                                                    -->
+                                                    <a href="#"  style="color:teal;" class="CMI-link-icons revokeClick2" data-id="{{this.selectedFuncToolIncId}}"  ><span class="CMI-text-icons" style="font-size: 100%;color:teal;">⊗</span>{{pageLabelMap 'ManageSubsc_Revoke'}}</a>
+                                                {{/if}}
+                                            </div>
+                                        {{/if}}
+                                    
+                                    
+                                        
+                                    {{/if}}
+                                {{/ifNotEquals}}
+                            </div>
+                            
+                        </div>
+                </div> <!-- Jira 941 -->
+                       
+                      </td>
+                      
+                  
+                  
+    
+                 </tr>
+                {{/each}}
+               </table>
+              </div>
+              <hr style="color:dark-grey">
+             </div>
+             
+            </div>
+            <div class="col-xs-12" >
+                {{#if this.SubscData.canRenew}}
+                        <span style="padding-left: 87%;">
+                            <input type="button" class="btn btn-default btn-sm renewClick cc_checkout_btn" data-id="{{this.SubscData.subscSFID}}" style="font-weight: bold;background-color:teal;color:white;" value="⟳ {{pageLabelMap 'ManageSubsc_Renew'}}" ></input>
+                        </span>
+                    {{else}}
+                        {{#if this.SubscData.isRenewed}}
+                            <span><i>- Renewed until {{date this.SubscData.renewedSubscEndDate}}</i></span>
+                        {{/if}}
+                    {{/if}}
+            </div>
+        {{/ifEquals}}
+        
+        {{#ifEquals this.SubscData.productType 'Type5'}}
+            <div class="col-xs-12" >
+                {{#if this.SubscData.canRenew}}
+                        <span style="padding-left: 87%;">
+                            <input type="button" class="btn btn-default btn-sm renewClick cc_checkout_btn" data-id="{{this.SubscData.subscSFID}}" style="font-weight: bold;background-color:teal;color:white;" value="⟳ {{pageLabelMap 'ManageSubsc_Renew'}}" ></input>
+                        </span>
+                    {{else}}
+                        {{#if this.SubscData.isRenewed}}
+                            <span><i>- Renewed until {{date this.SubscData.renewedSubscEndDate}}</i></span>
+                        {{/if}}
+                    {{/if}}
+                    
+            </div>
+            <div class="invoiceContainer invoiceItemsContainer cc_invoice_items_container">
+                <div class="row">
+                    <div class="col-xs-3" >
+                        <h1 class="title cc_title">{{pageLabelMap 'ManageSubsc_Items'}}</h1>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+             <div class="col-xs-12" >
+              <div class="table-responsive">
+               <table id="invoiceTable" class="table table-hover shopping_cart invoiceItems cc_table cc_invoice_items_table" style="width:100%">
+                <tr class="cc_table_header_row" style="color: white;background-color: black;">
+                 <th class="cc_table_header" style="width: 15%;">
+                  <span class="cc_table_header_item_invoice_id">{{pageLabelMap 'ManageSubsc_ProductName'}}</span>
+                 </th>
+                  <th class="cc_table_header" style="width: 5%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'ManageSubsc_OrderedQuantity'}}</span><!--{{pageLabelMap 'ManageSubsc_Quantity'}}-->
+                 </th>
+                 
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'Expiration Date'}}</span>
+                 </th>
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'ManageSubsc_OrderDate'}}</span>
+                 </th>
+                 <!--MP-133 Code Start-->
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'SubscriptionLength'}}</span>
+                 </th>
+                 <!--MP-133 Code End-->
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_item_amount">{{pageLabelMap 'ManageSubsc_OrderNumber'}}</span>
+                 </th>
+                 <th class="cc_table_header" style="width: 13%;">
+                  <span class="cc_table_header_type">{{pageLabelMap 'ManageSubsc_ActivationKey'}}</span>
+                 </th>
+                 <th class="cc_table_header" style="width: 13%;">
+                  <span class="cc_table_header_type">{{pageLabelMap 'ManageSubsc_ToolId'}}</span>
+                 </th>
+                 <th class="cc_table_header" style="width: 19%;">
+                  <span class="cc_table_header_type">{{pageLabelMap 'ManageSubsc_Actions'}}</span>
+                 </th>
+                 
+                 
+                </tr>
+                {{#each this.SubscData.subscriptionItemList}}
+                 <tr class="myAccInvoiceRows cc_my_acc_invoice_rows">
+            
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{this.productName}}</span>
+                      </td>
+                      
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{this.quantity}}</span>
+                      </td>
+                        <td class="cc_table_col">
+                       <span class="cc_col_type">{{date this.expireDate}}</span>
+                      </td>
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{date this.orderDate}}</span>
+                      </td>
+                      <!-- MP-133 Code Start-->
+                       <!-- MP-372 Code Start -->
+                      <td class="cc_table_col">
+                       {{#ifEquals this.subscriptionLength '99 Year'}}
+             
+                       {{else}}
+                           <span class="cc_col_type">{{this.subscriptionLength}}</span>   
+                       {{/ifEquals}} 
+                      </td>
+                      <!-- MP-372 Code End -->
+                      <!--MP-133 Code End-->
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{this.orderNumber}}</span>
+                      </td>                   
+                      <td>
+                                <div>
+                                    <span>
+                                            {{pageLabelMap 'ManageSubsc_BasicKey'}}
+                                    </span>
+                                    <span>
+                                    <select id="title" class="BasicKeyCls"  data-itemid="{{this.orderItemId}}"  name="title" style="width:100%;margin-top: 3px;"  >
+                                        
+                                        {{#each this.basicKeyLst}}
+                                            {{#if this.isSelected}}
+                                                <option data-sfid="{{this.keyId}}"  value="{{this.keyId}}" selected >{{this.valueStr}}</option>
+                                            {{else}}
+                                                <option  data-sfid="{{this.keyId}}" value="{{this.keyId}}" >{{this.valueStr}}</option>
+                                            {{/if}}
+                                        {{/each}}
+                                    </select>
+                                    </span>
+                                </div>
+                                <div style="margin-top: 8px;">
+                                    <span>{{pageLabelMap 'ManageSubsc_FunctionalKey'}}</span>
+                                    <span>
+                                    <select id="title" class="FunctiionalKeyCls"  data-itemid="{{this.orderItemId}}"  name="title" style="width:100%;margin-top: 3px;"  >
+                                        
+                                        {{#each this.funcationalKeyLst}}
+                                            {{#if this.isSelected}}
+                                                <option data-sfid="{{this.keyId}}"  value="{{this.keyId}}" selected >{{this.valueStr}}</option>
+                                            {{else}}
+                                                <option  data-sfid="{{this.keyId}}" value="{{this.keyId}}" >{{this.valueStr}}</option>
+                                            {{/if}}
+                                        {{/each}}
+                                    </select>
+                                    </span>
+                                </div>
+                          
+                      </td>
+                      
+                      <td class="cc_table_col">
+                                <div class="row" >
+                                    <div style="padding-top: 18px;padding-left:15px;">
+                                    
+                                    <select id="title" class="BasicToolCls"  data-itemid="{{this.orderItemId}}"  name="title" style="width:100%;margin-top: 3px;"  >
+                                        
+                                        {{#each this.baiscToolIdLst}}
+                                            {{#if this.isSelected}}
+                                                <option data-sfid="{{this.sfId}}"  value="{{this.sfId}}" selected >{{this.toolInstanceKey}}</option>
+                                            {{else}}
+                                                <option  data-sfid="{{this.sfId}}" value="{{this.sfId}}" >{{this.toolInstanceKey}}</option>
+                                            {{/if}}
+                                        {{/each}}
+                                    </select>
+                                   </div>
+                                </div>
+                                <div class="row">
+                                    
+                                     <div style="padding-top: 26px;padding-left:15px;" >
+                                    <select id="title" class="FuncToolCls"  data-itemid="{{this.orderItemId}}"  name="title" style="width:100%;margin-top: 3px;"  >
+                                        
+                                        {{#each this.funcationalToolIdLst}}
+                                            {{#if this.isSelected}}
+                                                <option data-sfid="{{this.sfId}}"  value="{{this.sfId}}" selected >{{this.toolInstanceKey}}</option>
+                                            {{else}}
+                                                <option  data-sfid="{{this.sfId}}" value="{{this.sfId}}" >{{this.toolInstanceKey}}</option>
+                                            {{/if}}
+                                        {{/each}}
+                                    </select>
+                                    </div>
+                                </div>
+                      </td>                
+                
+                      <td class="cc_table_col">
+                
+                        <!-- Jira-941 Code starts here -->
+                        <div class="row"> <span class="cc_col_type">
+                            <div style="padding-left:30px;">
+                            <a href="javascript:void(0);" class="getToolInstanceClick" style="color:teal;" data-id="{{this.Id}}" data-itemid="{{this.orderItemId}}"><span style="font-size: 85%;font-family: 'iconsregular';padding-left: 0.1em;padding-right: 0.1em;color: teal;width: .5em;height: 1.2em; border: 1px solid teal;border-radius: 60%;">&#8634</span>&nbsp {{pageLabelMap 'ManageSubsc_GetToolInstance'}}</a>
+                        </div></span></div>
+
+                        <div class="row">
+                        <!-- Jira-941 Code Ends here -->
+                
+                        <div class="col-xs-12" style="padding-right: 0px;padding-left: 0px;">
+                            <div class="col-xs-12" style="margin-top: 3px" >
+                                {{#ifNotEquals this.selectedBasicToolIncId '--None--'}}
+                                    {{#if this.actionsEnableForBasic}}
+                                        <div class="col-xs-6">
+                                            {{#if this.canRevokeAndReissue}}
+                                            <!--
+                                                <input style="margin-left: 10px;"  type="button" class="btn btn-default btn-sm revokeAndRessiueClick" data-id="{{this.selectedBasicToolIncId}}"  value="{{pageLabelMap 'Reissue'}}" /> 
+                                             -->
+                                                <a href="#"  class="CMI-link-icons revokeAndRessiueClick" data-id="{{this.selectedBasicToolIncId}}"  style="color: teal;text-decoration:none;padding:0px;">
+                                                    <span style="font-size: 85%;font-family: 'iconsregular';padding-left: 0.1em;padding-right: 0.1em;color: teal;width: .5em;height: 1.2em; border: 1px solid teal;border-radius: 60%;">&#8634</span>&nbsp{{pageLabelMap 'Reissue'}}</a>
+                                            {{/if}}
+                                        </div>
+                                        {{#if this.notHideStdRevoke}}
+                                            <div class="col-xs-6">
+                                                {{#if this.canRevoke}}
+                                                <!--
+                                                    <input type="button" class="btn btn-default btn-sm revokeClick" data-id="{{this.selectedBasicToolIncId}}"  value="{{pageLabelMap 'ManageSubsc_Revoke'}}" /> 
+                                                    -->
+                                                    <a href="#" style="color:teal;" class="CMI-link-icons revokeClick" data-id="{{this.selectedBasicToolIncId}}"  ><span class="CMI-text-icons" style="font-size: 100%;color:teal;">⊗</span>{{pageLabelMap 'ManageSubsc_Revoke'}}</a>
+                                               {{/if}}
+                                            </div>
+                                        {{else}}
+                                            <div class="col-xs-6">
+                                                {{#if this.canRevoke}}
+                                                <!--
+                                                    <input type="button" class="btn btn-default btn-sm revokeClick2" data-id="{{this.selectedBasicToolIncId}}"  value="{{pageLabelMap 'ManageSubsc_Revoke'}}" /> 
+                                                    -->
+                                                    
+                                                    <a href="#" style="color:teal;" class="CMI-link-icons revokeClick2" data-id="{{this.selectedBasicToolIncId}}"  ><span class="CMI-text-icons" style="font-size: 100%;color:teal;">⊗</span>{{pageLabelMap 'ManageSubsc_Revoke'}}</a>
+                                                {{/if}}
+                                            </div>
+                                        {{/if}}
+                                    
+                                        
+                                    {{/if}}
+                                {{/ifNotEquals}}
+                                
+                                {{#ifEquals this.selectedBasicToolIncId '--None--'}}
+                                    <div class="col-xs-12" style="margin-top: 29px;" ></div>
+                                {{/ifEquals}}
+                                
+                            </div>
+                		               		                            
+                            <div class="col-xs-12" style="margin-top: 19px;" >
+                                {{#ifNotEquals this.selectedFuncToolIncId '--None--'}}
+                                    {{#if this.actionsEnableForFunc}}
+                                        <div class="col-xs-6">
+                                            {{#if this.canRevokeAndReissue}}
+                                            <!--
+                                                <input style="margin-left: 10px;"  type="button" class="btn btn-default btn-sm revokeAndRessiueClick" data-id="{{this.selectedFuncToolIncId}}"  value="{{pageLabelMap 'Reissue'}}" /> 
+                                                -->
+                                                <a href="#"  class="CMI-link-icons revokeAndRessiueClick" data-id="{{this.selectedFuncToolIncId}}"  style="color: teal;text-decoration:none;padding:0px;">
+                                                    <span style="font-size: 85%;font-family: 'iconsregular';padding-left: 0.1em;padding-right: 0.1em;color: teal;width: .5em;height: 1.2em; border: 1px solid teal;border-radius: 60%;">&#8634</span>&nbsp{{pageLabelMap 'Reissue'}}</a> 
+                                            {{/if}}
+                                        </div>
+                                        {{#if this.notHideStdRevoke}}
+                                            <div class="col-xs-6">
+                                                {{#if this.canRevoke}}
+                                                <!--
+                                                    <input type="button" class="btn btn-default btn-sm revokeClick" data-id="{{this.selectedFuncToolIncId}}"  value="{{pageLabelMap 'ManageSubsc_Revoke'}}" /> 
+                                                    -->
+                                                    <a href="#" style="color:teal;" class="CMI-link-icons revokeClick" data-id="{{this.selectedFuncToolIncId}}"  ><span class="CMI-text-icons" style="font-size: 100%;color:teal;">⊗</span>{{pageLabelMap 'ManageSubsc_Revoke'}}</a>
+                                               {{/if}}
+                                            </div>
+                                        {{else}}
+                                            <div class="col-xs-6">
+                                                {{#if this.canRevoke}}
+                                                <!--
+                                                    <input  type="button" class="btn btn-default btn-sm revokeClick2" data-id="{{this.selectedFuncToolIncId}}"  value="{{pageLabelMap 'ManageSubsc_Revoke'}}" />
+    -->
+                                                    <a href="#" style="color:teal;" class="CMI-link-icons revokeClick2" data-id="{{this.selectedFuncToolIncId}}"  ><span class="CMI-text-icons" style="font-size: 100%;color:teal;">⊗</span>{{pageLabelMap 'ManageSubsc_Revoke'}}</a>                                                   
+                                                {{/if}}
+                                            </div>
+                                        {{/if}}
+                                    
+                                    
+                                        
+                                    {{/if}}
+                                {{/ifNotEquals}}
+                            </div>
+                            
+                        </div>
+                </div> <!-- Jira 941 -->
+                       
+                      </td>
+                  
+                  
+    
+                 </tr>
+                {{/each}}
+               </table>
+              </div>
+              <hr style="color:dark-grey">
+             </div>
+            </div>
+            <div class="col-xs-12" >
+                {{#if this.SubscData.canRenew}}
+                        <span style="padding-left: 87%;">
+                            <input type="button" class="btn btn-default btn-sm renewClick cc_checkout_btn" data-id="{{this.SubscData.subscSFID}}" style="font-weight: bold;background-color:teal;color:white;" value="⟳ {{pageLabelMap 'ManageSubsc_Renew'}}" ></input>
+                        </span>
+                    {{else}}
+                        {{#if this.SubscData.isRenewed}}
+                            <span><i>- Renewed until {{date this.SubscData.renewedSubscEndDate}}</i></span>
+                        {{/if}}
+                    {{/if}}
+                    
+            </div>
+        {{/ifEquals}}
+        
+        {{#ifEquals this.SubscData.productType 'Type4'}}
+            <div class="col-xs-12" >
+                {{#if this.SubscData.canRenew}}
+                        <span style="padding-left: 55%;">
+                            <input type="button" class="btn btn-default btn-sm renewClick cc_checkout_btn" data-id="{{this.SubscData.subscSFID}}" style="font-weight: bold;background-color:teal;color:white;" value="⟳ {{pageLabelMap 'ManageSubsc_Renew'}}" ></input>
+                        </span>
+                    {{else}}
+                        {{#if this.SubscData.isRenewed}}
+                            <span><i>- Renewed until {{date this.SubscData.renewedSubscEndDate}}</i></span>
+                        {{/if}}
+                    {{/if}}
+                    
+            </div>
+            <div class="invoiceContainer invoiceItemsContainer cc_invoice_items_container">
+                <div class="row">
+                    <div class="col-xs-3" >
+                        <h1 class="title cc_title">{{pageLabelMap 'ManageSubsc_Items'}}</h1>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+             <div class="col-xs-12" >
+              <div class="table-responsive">
+               <table id="invoiceTable" class="table table-hover shopping_cart invoiceItems cc_table cc_invoice_items_table" style="width:70%">
+                <tr class="cc_table_header_row" style="color: white;background-color: black;">
+                 <th class="cc_table_header" style="width: 15%;">
+                  <span class="cc_table_header_item_invoice_id">{{pageLabelMap 'ManageSubsc_ProductName'}}</span>
+                 </th>
+                  <th class="cc_table_header" style="width: 5%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'ManageSubsc_OrderedQuantity'}}</span><!--{{pageLabelMap 'ManageSubsc_Quantity'}}-->
+                 </th>
+                 
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'Expiration Date'}}</span>
+                 </th>
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'ManageSubsc_OrderDate'}}</span>
+                 </th>
+                 <!--MP-133 Code Start-->
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_status">{{pageLabelMap 'SubscriptionLength'}}</span>
+                 </th>
+                 <!--MP-133 Code End-->
+                 <th class="cc_table_header" style="width: 10%;">
+                  <span class="cc_table_header_item_amount">{{pageLabelMap 'ManageSubsc_OrderNumber'}}</span>
+                 </th>
+                 
+                 <th class="cc_table_header" style="width: 35%;padding-left: 8%;">
+                  <span class="cc_table_header_type">{{pageLabelMap 'ManageSubsc_Actions'}}</span>
+                  
+                 </th>
+                 
+                </tr>
+                {{#each this.SubscData.subscriptionItemList}}
+                 <tr class="myAccInvoiceRows cc_my_acc_invoice_rows">
+                   
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{this.productName}}</span>
+                         {{#if this.Showincludedlink}}
+                              
+                               <p class="cc_included_items">
+                                           <a href="javascript:void(0);" class="includedItemsLink"   data-id="{{this.orderItemId}}" ><span class="icon-ViewBound"></span> &nbsp;{{pageLabelMap 'CheckOut_IncludedItems'}}</a>
+                               </p>
+                         {{/if}}
+                       </td>
+                      
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{this.quantity}}</span>
+                      </td>
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{date this.expireDate}}</span>
+                      </td>
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{date this.orderDate}}</span>
+                      </td>
+                      <!-- MP-133 Code Start--> 
+                      <!-- MP-372 Code Start -->
+                      <td class="cc_table_col">
+                       {{#ifEquals this.subscriptionLength '99 Year'}}
+             
+                       {{else}}
+                           <span class="cc_col_type">{{this.subscriptionLength}}</span>   
+                       {{/ifEquals}} 
+                      </td>
+                      <!-- MP-372 Code End -->
+                      <!--MP-133 Code End-->
+                      <td class="cc_table_col">
+                       <span class="cc_col_type">{{this.orderNumber}}</span>
+                      </td>
+                      <td class="cc_table_col">
+                        <div class="col-xs-12">
+                            
+                                 <div class="col-xs-6">
+                                    {{#if this.canRevoke}}
+                                        <!--
+                                        <input type="button" class="btn btn-default btn-sm revokeClick2" data-id="{{this.orderItemId}}"  value="{{pageLabelMap 'ManageSubsc_Revoke'}}" /> 
+                                        -->
+                                        <a href="#" style="color:teal;" class="CMI-link-icons revokeClick2" data-id="{{this.orderItemId}}"  ><span class="CMI-text-icons" style="font-size: 100%;color:teal;">⊗</span>{{pageLabelMap 'ManageSubsc_Revoke'}}
+                                   {{/if}}
+                                </div>
+                           
+                        </div>
+                        
+                       
+                      </td>
+                     
+                  
+                  
+    
+                 </tr>
+                {{/each}}
+               </table>
+              </div>
+              <hr style="color:dark-grey">
+             </div>
+            </div>
+            <div class="col-xs-12" >
+                {{#if this.SubscData.canRenew}}
+                        <span style="padding-left: 55%;">
+                            <input type="button" class="btn btn-default btn-sm renewClick cc_checkout_btn" data-id="{{this.SubscData.subscSFID}}" style="font-weight: bold;background-color:teal;color:white;" value="⟳ {{pageLabelMap 'ManageSubsc_Renew'}}" ></input>
+                        </span>
+                    {{else}}
+                        {{#if this.SubscData.isRenewed}}
+                            <span><i>- Renewed until {{date this.SubscData.renewedSubscEndDate}}</i></span>
+                        {{/if}}
+                    {{/if}}
+                    
+            </div>
+        {{/ifEquals}}
+        {{#if this.SubscData.activationKeyErrorMessage}}
+          <div  class="col-xs-12"  id="activationKeyErrorMesid">
+              <div style="background-color: palegoldenrod;padding: 10px;border: solid 2px #ffae42;">
+               <span class="icon-Info" style="color:#ffae42; font-size:13px; background-color:palegoldenrod"></span>
+               &nbsp;  Please note : Due to technical issues marketplace cannot generate your activation key at this time and it will be emailed to you as soon as the issue is resolved. Thank you for your patience.
+          </div>
+          </div>
+        {{/if}}
+        
+        <div id="actionAlreadyDone" class="modal fade cc_modal" role="dialog">
+            <div class="modal-dialog" style="margin-left: 32%;" role="document">
+                <div class="modal-content cc_modal_content" style="width: 51rem;border-radius:1px;border:1px black;">
+                    <br/> <br/>
+                    <div id="alreadyDoneMsg" class="form-group  col-md-12">
+                    </div>    
+                    <div class="modal-footer">
+                        <button type="button" class="closeModal btn btn-default cc_add_coupon" style="background-color: #0f4f77;" data-dismiss="modal" aria-label="Close" >{{pageLabelMap 'ManageSubsc_Close'}}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="revokeConfirmation" class="modal fade cc_modal" role="dialog">
+            <div class="modal-dialog" style="margin-left: 32%;" role="document">
+                <div class="modal-content cc_modal_content" style="width: 51rem;border-radius:1px;border:1px black;">
+                    <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                        <h4 class="modal-title cc_modal_title" id="CartRfqLabel1">Revoke</h4>
+                    </div>
+                    <div class="form-group col-md-12"> {{pageLabelMap 'ManageSubsc_MsgRevoke'}} </div>    
+                    <div class="modal-footer">
+                        <input type="button" class="closeModal btn btn-default cc_add_coupon" id="hideModel1" style="background-color: #0f4f77;"  data-dismiss="modal" value="Close" />
+                        <input type="button" class="btn btn-default CMI-DA-Packages finallyRevoke" id="submitRevoke" style="float:left;" value="{{pageLabelMap 'ManageSubsc_Confirm'}}" />
+                        <!-- button id="submitRevoke" class="btn finallyRevoke"  >{{pageLabelMap 'ManageSubsc_Confirm'}}</button>
+                        <button type="button" class="btn CMI-DA-Packages " data-dismiss="modal" aria-label="Close" >{{pageLabelMap 'ManageSubsc_Close'}}</button -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="revokeConfirmation2" class="modal fade cc_modal" role="dialog">
+            <div class="modal-dialog" style="margin-left: 32%;" role="document">
+                <div class="modal-content cc_modal_content" style="width: 51rem;border-radius:1px;border:1px black;">
+                    <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                        <h4 class="modal-title cc_modal_title" id="CartRfqLabel1">Revoke</h4>
+                    </div>
+                    <div class="form-group col-md-12">{{pageLabelMap 'ManageSubsc_MsgRevoke'}}</div>    
+                    <div class="modal-footer">
+                        <input type="button" class="closeModal btn btn-default cc_add_coupon" id="hideModel1" style="background-color: #0f4f77;"  data-dismiss="modal" value="Close" />
+                        <input type="button" class="btn btn-default CMI-DA-Packages finallyRevoke2" id="submitRevoke" style="float:left;" value="{{pageLabelMap 'ManageSubsc_Confirm'}}" />
+                        <!-- button id="submitRevoke" class="btn finallyRevoke2"  >{{pageLabelMap 'ManageSubsc_Confirm'}}</button>
+                        <button type="button" class="btn CMI-DA-Packages " data-dismiss="modal" aria-label="Close" >{{pageLabelMap 'ManageSubsc_Close'}}</button -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="revokeAndReissueConfirmation" class="modal fade cc_modal" role="dialog">
+            <div class="modal-dialog" style="margin-left: 32%;" role="document">
+                <div class="modal-content cc_modal_content" style="width: 51rem;border-radius:1px;border:1px black;">
+                    <div class="modal-header" style="color: #fff;background-color: black;border-color: black;">
+                        <h4 class="modal-title cc_modal_title" id="CartRfqLabel">Reissue</h4>
+                    </div>
+                    <div class="form-group col-md-12"> {{pageLabelMap 'ManageSubsc_MessageReissue'}} </div>    
+                    <div class="modal-footer">
+                        <input type="button" class="closeModal btn btn-default cc_add_coupon" id="hideModel" style="background-color: #0f4f77;"  data-dismiss="modal" value="Close" />
+                        <input type="button" class="btn btn-default CMI-DA-Packages finalRevokeAndRessiue" id="submitRevoke" style="float:left;" value="{{pageLabelMap 'ManageSubsc_Confirm'}}" />
+                        <!--button id="submitRevoke" class="btn finalRevokeAndRessiue"  >{{pageLabelMap 'ManageSubsc_Confirm'}}</button>
+                        <button type="button" class="btn CMI-DA-Packages " data-dismiss="modal" aria-label="Close" >{{pageLabelMap 'ManageSubsc_Close'}}</button-->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        
+    
+    
+    
+        <div id="included_items" class="modal fade cc_modal cc_cart_included_items_modal" tabindex="-1" role="dialog" aria-hidden="true">
+         <div class="modal-dialog" role="document">
+          <div class="modal-content cc_modal_content">
+           <div class="modal-header" style="color: white;background-color: black;font-weight: bold;" >
+            <!--<button type="button" class="close cc_close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&#215;</span></button>-->
+            
+             {{this.SubscData.includedItem.name}}&#58;&#160;{{pageLabelMap 'CheckOut_IncludedItems'}}
+            
+           </div>
+           <div class="modal-body cc_modal-body">
+            <div class="table-responsive">
+             <table class="cart_figures table cc_table cc_included_items">
+              <thead class="cc_table_header">
+               <th class="cc_name">{{pageLabelMap 'Name'}}</th>
+               <th class="cc_qty">{{pageLabelMap 'ManageSubsc_Qty'}}</th>
+              
+              </thead>
+              <tbody>
+              {{#each this.SubscData.includedItem.lst}}
+               <tr>
+                <td class="cc_name">
+                
+                 <span class="cc_value cc_name">{{this.productname}}</span>
+                </td>
+            <!-- <td class="cc_qty">{{this.productQuantiy}}</td> -->
+                {{#ifGreater this.productQuantiy 998}}
+                    <td class="cc_qty">Unlimited {{#contains this.mockProduct.name 'insite'}}licenses{{else}}users{{/contains}}</td>
+                     {{else}}    
+                          <td class="cc_qty">{{this.productQuantiy}} {{#contains this.mockProduct.name 'insite'}}licenses{{else}}users{{/contains}}</td>
+ 
+                {{/ifGreater}}
+               </tr>
+               
+              {{/each}}
+              </tbody>
+             </table>
+            </div>
+           </div>
+           <div class="modal-footer">
+        <button type="button" class=" cc_close btn btn-default btn-sm cc_checkout_btn" data-dismiss="modal" aria-label="Close">Close</button>
+      </div>
+          </div>
+         </div>
+        </div>
+    
+        
+        
+        
+        
+      
+         
+    </script>
+    
+    <script>
+     
+    function goToMyAccount(view)
+    {
+        
+        window.location.href = '/{!$Label.OSMStoreName}/ccrz__MyAccount?cartId=' + CCRZ.pagevars.currentCartID + '&viewState='+view+getCSRQueryString() ;
+        //window.location.href = '/DefaultStore/ccrz__MyAccount?cartId=' + CCRZ.pagevars.currentCartID + '&viewState='+view+getCSRQueryString() ;
+            if(CCRZ.pagevars.portalUserId !='' && "{!$User.Id}" != CCRZ.pagevars.portalUserId){
+        window.location.href='/apex/ccrz__MyAccount?cartId=' + CCRZ.pagevars.currentCartID + '&viewState='+view+getCSRQueryString() ;
+        }
+        
+    }
+       
+        jQuery(function($){
+       
+        CCRZ.subsc = _.extend(CCRZ.subsc||{});
+                CCRZ.subsc.SubscRemoteActions1 = _.extend({
+                    className : 'OSM_SW_Manage_Subscription_Ctrl',
+                    initSubscriptionData : function(callback){
+                        this.invokeContainerLoadingCtx($('body'),'initSubscriptionData',CCRZ.pagevars.queryParams.subscId,function(resp){
+                                callback(resp);
+                                console.log('resp'+resp);
+                            },
+                            {
+                            buffer : false, // this call will be executed by itself
+                            nmsp : false // defines that this is a call to a subscriber class
+                            }); // end invokeCtx call
+                    }
+                },CCRZ.RemoteInvocation);
+                
+        
+            CCRZ.util.createView({
+                viewName : "testView",
+                className : "OSM_SW_Manage_Subscription_Ctrl",
+                myTemplate : CCRZ.util.template('Subscription-Cancel-Template'),
+                init:function()
+                {
+                
+                    var thisValue = this;
+                    
+                    CCRZ.subsc.SubscRemoteActions1.initSubscriptionData(function(resp)
+                    {
+                    
+                        if(resp && resp.success)
+                        {
+                            console.log('data get');
+                            console.log(CCRZ.pagevars.queryParams.subscId);
+                            console.log(resp);
+                            thisValue.setElement($('.SubscDataDiv'));
+                            $(thisValue.el).html(thisValue.myTemplate({SubscData:resp.data.SubscDate}));
+                            thisValue.data = resp.data.SubscDate;
+                            var model = this.dataSet;
+                            model.licenceToOrderItem = resp.data.licenceToOrderItem;
+                            //console.log('activationKeyErrorMessage'+resp.data.activationKeyErrorMessage);
+                            activationKeyErrorMessage =resp.data.activationKeyErrorMessage;
+                            //console.log('activationKeyErrorMessage'+activationKeyErrorMessage);
+                            if(resp.data.activationKeyErrorMessage){
+                                 $("#activationKeyErrorMesid").show();   
+                            }else{
+                                  $("#activationKeyErrorMesid").hide(); 
+                            }
+                             
+                        }
+                        else{
+                            $("#activationKeyErrorMesid").hide();
+                        }
+                    }); 
+                    
+                },
+                events:
+                {
+                    "change .ToolInstanceKeySelection" : "ToolInstanseKeyEvent",
+                    "change .BasicKeyCls" : "onChangeBasicActivationKey",
+                    "change .BasicToolCls" : "onChangeBasicTool",
+                    "change .FuncToolCls" : "onChangeFuncTool",
+                    "change .FunctiionalKeyCls" : "onChangeFuncActivationKey",
+                    "click .revokeClick" : "revokeFun",
+                    "click .revokeClick2" : "revokeFun2",
+                    "click .revokeAndRessiueClick" : "revokeAndRessiueFun",
+                    "click .renewClick" : "renewFun",
+                    "click .finallyRevoke" : "finallyRevoke",
+                    "click .finallyRevoke2" : "finallyRevoke2",
+                    "click .finalRevokeAndRessiue" : "finalRevokeAndRessiue",
+                    "click .includedItemsLink" : "openIncludedProductModel",
+                    "click .getToolInstanceClick" : "getToolInstance"
+                },
+                onChangeBasicTool:function(event)
+                {
+                
+                    var objLink1 = $(event.target);
+                    var SelectedItem = objLink1.data("itemid");
+                    var sfid;
+                    for(i = 0; i < objLink1[0].children.length; i++)
+                    {
+                        if(objLink1[0].children[i].selected)
+                            sfid = objLink1[0].children[i].value;
+                    }
+                    console.log(sfid);
+                    data = this.data;
+                    
+                    
+                    for(i = 0 ; i< data.subscriptionItemList.length ; i++)
+                    {
+                        if(data.subscriptionItemList[i].orderItemId == SelectedItem)
+                        {
+                            data.subscriptionItemList[i].selectedBasicToolIncId = sfid;
+                            for(select = 0 ; select < data.subscriptionItemList[i].baiscToolIdLst.length ;select++)
+                            {
+                                if(data.subscriptionItemList[i].baiscToolIdLst[select].sfId == sfid)
+                                {
+                                    data.subscriptionItemList[i].baiscToolIdLst[select].isSelected = true;
+                                }
+                                else
+                                {
+                                    data.subscriptionItemList[i].baiscToolIdLst[select].isSelected = false;
+                                }
+                            }
+                        }
+                    }
+                    
+                    this.setElement($('.SubscDataDiv'));
+                    $(this.el).html(this.myTemplate({SubscData:data}));
+                },
+                
+                onChangeFuncTool:function(event)
+                {
+                
+                    var objLink1 = $(event.target);
+                    var SelectedItem = objLink1.data("itemid");
+                    var sfid;
+                    for(i = 0; i < objLink1[0].children.length; i++)
+                    {
+                        if(objLink1[0].children[i].selected)
+                            sfid = objLink1[0].children[i].value;
+                    }
+                    console.log(sfid);
+                    data = this.data;
+                    
+                    
+                    for(i = 0 ; i< data.subscriptionItemList.length ; i++)
+                    {
+                        if(data.subscriptionItemList[i].orderItemId == SelectedItem)
+                        {
+                            data.subscriptionItemList[i].selectedFuncToolIncId = sfid;
+                            for(select = 0 ; select < data.subscriptionItemList[i].funcationalToolIdLst.length ;select++)
+                            {
+                                console.log(data.subscriptionItemList[i].funcationalToolIdLst[select].sfId)
+                                if(data.subscriptionItemList[i].funcationalToolIdLst[select].sfId == sfid)
+                                {
+                                    data.subscriptionItemList[i].funcationalToolIdLst[select].isSelected = true;
+                                }
+                                else
+                                {
+                                    data.subscriptionItemList[i].funcationalToolIdLst[select].isSelected = false;
+                                }
+                            }
+                        }
+                    }
+                    
+                    this.setElement($('.SubscDataDiv'));
+                    $(this.el).html(this.myTemplate({SubscData:data}));
+                },
+                onChangeFuncActivationKey:function(event)
+                {
+                    var objLink1 = $(event.target);
+                    console.log(objLink1.data("itemid"));
+                    var SelectedItem = objLink1.data("itemid");
+                    var sfid;
+                    for(i = 0; i < objLink1[0].children.length; i++)
+                    {
+                        if(objLink1[0].children[i].selected)
+                            sfid = objLink1[0].children[i].value;
+                    }
+                    console.log(sfid);
+                    data = this.data;
+                    
+                    
+                    for(i = 0 ; i< data.subscriptionItemList.length ; i++)
+                    {
+                        if(data.subscriptionItemList[i].orderItemId == SelectedItem)
+                        {
+                            data.subscriptionItemList[i].selectedFuncToolIncId = "--None--";
+                            for(select = 0 ; select < data.subscriptionItemList[i].funcationalKeyLst.length ;select++)
+                            {
+                                if(data.subscriptionItemList[i].funcationalKeyLst[select].keyId == sfid)
+                                {
+                                    data.subscriptionItemList[i].funcationalKeyLst[select].isSelected = true;
+                                }
+                                else
+                                {
+                                    data.subscriptionItemList[i].funcationalKeyLst[select].isSelected = false;
+                                }
+                            }
+                            
+                            data.subscriptionItemList[i].funcationalToolIdLst = [];
+                            var newBasicTool = [];
+                            
+                            for(j = 0 ; j< data.subscriptionItemList[i].linceseFuncInfoLst.length ; j++)
+                            {
+                                if(data.subscriptionItemList[i].linceseFuncInfoLst[j].activationKeyId == sfid)
+                                {
+                                    for(k= 0; k < data.subscriptionItemList[i].linceseFuncInfoLst[j].toolInstanceKey.length ; k++)
+                                    {
+                                        var newObj= new Object();
+                                        newObj.isSelected = false;
+                                        newObj.sfId = data.subscriptionItemList[i].linceseFuncInfoLst[j].toolInstanceKey[k].sfId;
+                                        newObj.toolInstanceKey = data.subscriptionItemList[i].linceseFuncInfoLst[j].toolInstanceKey[k].toolInstanceKey;
+                                        if(newBasicTool.length == 0)
+                                        {
+                                            newObj.isSelected = true;
+                                            data.subscriptionItemList[i].selectedFuncToolIncId = newObj.sfId;
+                                        }
+                                        newBasicTool.push(newObj);
+                                    }
+                                    
+                                }
+                            }
+                            if(newBasicTool.length > 0)
+                            {
+                                data.subscriptionItemList[i].funcationalToolIdLst = newBasicTool;
+                            }
+                            else
+                            {
+                                var newObj= new Object();
+                                newObj.isSelected = true;
+                                newObj.sfId = "--None--";
+                                newObj.toolInstanceKey = "--None--";
+                                data.subscriptionItemList[i].selectedFuncToolIncId = "--None--";
+                                data.subscriptionItemList[i].funcationalToolIdLst.push(newObj);
+                            }
+                            
+                            
+                        }
+                    }
+                    
+                    
+                    
+                    
+                    this.setElement($('.SubscDataDiv'));
+                    $(this.el).html(this.myTemplate({SubscData:data}));
+                },
+                onChangeBasicActivationKey:function(event)
+                {
+                    var objLink1 = $(event.target);
+                    console.log(objLink1.data("itemid"));
+                    var SelectedItem = objLink1.data("itemid");
+                    var sfid;
+                    for(i = 0; i < objLink1[0].children.length; i++)
+                    {
+                        if(objLink1[0].children[i].selected)
+                            sfid = objLink1[0].children[i].value;
+                    }
+                    console.log(sfid);
+                    data = this.data;
+                    
+                    
+                    for(i = 0 ; i< data.subscriptionItemList.length ; i++)
+                    {
+                        if(data.subscriptionItemList[i].orderItemId == SelectedItem)
+                        {
+                            data.subscriptionItemList[i].selectedBasicToolIncId = "--None--";
+                            for(select = 0 ; select < data.subscriptionItemList[i].basicKeyLst.length ;select++)
+                            {
+                                if(data.subscriptionItemList[i].basicKeyLst[select].keyId == sfid)
+                                {
+                                    data.subscriptionItemList[i].basicKeyLst[select].isSelected = true;
+                                }
+                                else
+                                {
+                                    data.subscriptionItemList[i].basicKeyLst[select].isSelected = false;
+                                }
+                            }
+                            
+                            data.subscriptionItemList[i].baiscToolIdLst = [];
+                            var newBasicTool = [];
+                            
+                            for(j = 0 ; j< data.subscriptionItemList[i].linceseBasicInfoLst.length ; j++)
+                            {
+                                if(data.subscriptionItemList[i].linceseBasicInfoLst[j].activationKeyId == sfid)
+                                {
+                                    for(k= 0; k < data.subscriptionItemList[i].linceseBasicInfoLst[j].toolInstanceKey.length ; k++)
+                                    {
+                                        var newObj= new Object();
+                                        newObj.isSelected = false;
+                                        newObj.sfId = data.subscriptionItemList[i].linceseBasicInfoLst[j].toolInstanceKey[k].sfId;
+                                        newObj.toolInstanceKey = data.subscriptionItemList[i].linceseBasicInfoLst[j].toolInstanceKey[k].toolInstanceKey;
+                                        if(newBasicTool.length == 0)
+                                        {
+                                            newObj.isSelected = true;
+                                            data.subscriptionItemList[i].selectedBasicToolIncId = newObj.sfId;
+                                        }
+                                        newBasicTool.push(newObj);
+                                    }
+                                    
+                                }
+                            }
+                            if(newBasicTool.length > 0)
+                            {
+                                data.subscriptionItemList[i].baiscToolIdLst = newBasicTool;
+                            }
+                            else
+                            {
+                                var newObj= new Object();
+                                newObj.isSelected = true;
+                                newObj.sfId = "--None--";
+                                newObj.toolInstanceKey = "--None--";
+                                data.subscriptionItemList[i].selectedBasicToolIncId = "--None--";
+                                data.subscriptionItemList[i].baiscToolIdLst.push(newObj);
+                            }
+                            
+                            
+                        }
+                    }
+                    
+                    
+                    
+                    
+                    this.setElement($('.SubscDataDiv'));
+                    $(this.el).html(this.myTemplate({SubscData:data}));
+                    
+                    
+                    
+                    
+                },
+                openIncludedProductModel:function(event)
+                {
+                    
+                    console.log(this);
+                    var objLink = $(event.target);
+                    var includedItemId = objLink.data("id");
+                    console.log(this);
+                    console.log('item Id: '+includedItemId);
+                    var openModelIncludedProduct = false;
+                    var productName = "";
+                    var lst = [];
+                    
+                    for(var i = 0; i < this.data.subscriptionItemList.length ; i++)
+                    {
+                        if(includedItemId == this.data.subscriptionItemList[i].orderItemId)
+                        {
+                            for(var j = 0 ; j < this.data.subscriptionItemList[i].lstIncludedProduct.length ; j++)
+                            {
+                                lst.push(this.data.subscriptionItemList[i].lstIncludedProduct[j]);
+                                openModelIncludedProduct = true;
+                            }
+                            
+                            
+                            productName = this.data.subscriptionItemList[i].productName;
+                        }
+                    }
+                    
+                    
+                    
+                    if(openModelIncludedProduct)
+                    {
+                        var wrpr = new Object();
+                        wrpr.name = productName;
+                        wrpr.lst = lst;
+                        
+                        this.data.includedItem = wrpr;
+                        
+                        this.setElement($('.SubscDataDiv'));
+                        $(this.el).html(this.myTemplate({SubscData:this.data}));
+                    
+                        $('#included_items').modal('show');
+                    }
+                    console.log(this);
+                    
+                    
+                },
+                revokeFun:function(event)
+                {
+                    console.log(this);
+                    var objLink = $(event.target);
+                    var torevoke = objLink.data("id");
+                    console.log(torevoke);
+                    this.data.torevoke = torevoke;
+                    $('#revokeConfirmation').modal('show');
+                    
+                },
+                revokeFun2:function(event)
+                {
+                    console.log(this);
+                    var objLink = $(event.target);
+                    var torevoke = objLink.data("id");
+                    console.log('sss : '+torevoke);
+                    this.data.torevoke = torevoke;
+                    $('#revokeConfirmation2').modal('show');
+                    
+                },
+                finallyRevoke:function(event)
+                {
+                    console.log(this);
+                    $('#revokeConfirmation').modal('hide');
+                    if(this.data.torevoke != undefined)
+                    {
+                        var myObject = new Object();
+                            myObject.licenseId = this.data.torevoke;
+                            myObject.licenseProduct = true;
+                            if(this.data.productType == "Type4")
+                            {
+                                myObject.licenseProduct = false;
+                            }
+                            
+                            
+                        var myString = JSON.stringify(myObject);
+                        console.log("myString");
+                        console.log(myString);
+                        var remoteCall = _.extend(CCRZ.RemoteInvocation,{className:'OSM_SW_Manage_Subscription_Ctrl'});
+                        
+                        this.invokeContainerLoadingCtx($('.body'),'revokeSubscription', myString, function(resp){
+                                            console.log('revokeSubscription');
+                                            console.log('resp data => ' + resp);
+                                            console.log(resp);
+                                            
+                                            if (resp){ 
+                                                    if(resp.success)
+                                                    {
+                                                        console.log('SUCCESS');
+                                                        console.log(resp);
+                                                        //document.location.reload();
+                                                        windows.location.reload();
+                                                    }
+                                                    else{
+                                                        if(resp.data != undefined && resp.data.alreadyDone)
+                                                        {
+                                                            $('#actionAlreadyDone').modal('show');
+                                                            $("#alreadyDoneMsg").text(resp.data.error);
+                                                        }else{
+                                                                $('#Subs_RevokeErrorMsg').show();
+                                                            }
+                                                     }
+                                                }
+                                                else{
+                                                    $('#Subs_RevokeErrorMsg').show();
+                                                }
+                                                
+                        },{ buffer : false, escape : false , nmsp:false });
+                        
+                    }
+                    
+                    
+                    
+                    
+                    
+                },
+                
+                finallyRevoke2:function(event)
+                {
+                    console.log(this);
+                    $('#revokeConfirmation2').modal('hide');
+                    if(this.data.torevoke != undefined)
+                    {
+                        var myObject = new Object();
+                            myObject.OrderItem = this.data.torevoke;
+                            myObject.subscId = this.data.subscSFID;
+                            myObject.licenseProduct = true;
+                            if(this.data.productType == "Type4")
+                            {
+                                myObject.licenseProduct = false;
+                            }
+                            
+                            
+                        var myString = JSON.stringify(myObject);
+                        console.log("myString");
+                        console.log(myString);
+                        var remoteCall = _.extend(CCRZ.RemoteInvocation,{className:'OSM_SW_Manage_Subscription_Ctrl'});
+                        
+                        remoteCall.invokeContainerLoadingCtx($('body'),'revokeSubscriptionForNonLic', myString, function(resp){
+                                            console.log('revokeSubscription non ');
+                                            console.log('resp data => ' + resp);
+                                            console.log(resp);
+                                            
+                                            if (resp){  
+                                                    if(resp.success)
+                                                    {
+                                                        console.log('SUCCESS');
+                                                        console.log(resp);
+                                                        //document.location.reload();
+                                                        windows.location.reload();
+                                                    }
+                                                    else{
+                                                        if(resp.data != undefined && resp.data.alreadyDone)
+                                                        {
+                                                            $('#actionAlreadyDone').modal('show');
+                                                            $("#alreadyDoneMsg").text(resp.data.error);
+                                                        }
+                                                        
+                                                    }
+                                                }
+                                                
+                        },{ buffer : false, escape : false , nmsp:false });
+                        
+                    }
+
+                },
+                
+                // Jira-941 Code starts here 
+                getToolInstance:function(event)
+                {
+                    console.log(this);
+                    var objLink = $(event.target);
+                    var orderItemId = objLink.data("itemid");
+                    console.log(objLink);
+                    console.log(orderItemId);
+                    var myObject = new Object();
+                    console.log(myObject);
+                    myObject.OrderItem = orderItemId;
+                    this.data.objToGetToolInstance = myObject;
+                  
+                    if(this.data.objToGetToolInstance != undefined)
+                    {
+                        console.log(this.data.objToGetToolInstance);
+                        var myString = JSON.stringify(this.data.objToGetToolInstance);
+                        var remoteCall = _.extend(CCRZ.RemoteInvocation,{className:'OSM_SW_Manage_Subscription_Ctrl'});
+                        
+                        this.invokeContainerLoadingCtx($('body'),'getToolInstance', myString , function(resp){
+                            console.log('getToolInstance');
+                            console.log('resp data => ' + resp);
+                            console.log(resp);
+                            
+                            if (resp){ 
+                                    if(resp.success)
+                                    {
+                                        console.log('SUCCESS');
+                                        console.log(resp);
+                                        //ToolInstanseKeyEvent();
+                                        window.location.reload();
+                                    }
+                                    else{
+                                       if(resp.data.error=='NoActiveToolInstance'){
+                                           $('#Subs_ErrorMsg').hide();
+                                           $('#Subs_ToolErrorMsg').show();
+                                       }else{
+                                            $('#Subs_ErrorMsg').show();
+                                            $('#Subs_ToolErrorMsg').hide();
+                                        }
+                                    }
+                            }else{
+                                if(resp.data.error=='NoActiveToolInstance'){
+                                       $('#Subs_ErrorMsg').hide();
+                                       $('#Subs_ToolErrorMsg').show();
+                                   }else{
+                                        $('#Subs_ErrorMsg').show();
+                                        $('#Subs_ToolErrorMsg').hide();
+                                    }
+                            }
+                        
+                     },{ buffer : false, escape : false , nmsp:false });
+                    }
+                },
+                // Jira-941 Code ends here
+                
+                revokeAndRessiueFun:function(event)
+                {
+                    console.log(this);
+                    var objLink = $(event.target);
+                    var licenseId = objLink.data("id");
+                    var myObject = new Object();
+                        myObject.licenseId = licenseId;
+                        myObject.OrderItem = this.data.licenceToOrderItem[licenseId];
+                        myObject.Order = this.data.orderItemToOrder[myObject.OrderItem];
+                    this.data.objToRevokeAndRessiue = myObject;
+                    $('#revokeAndReissueConfirmation').modal('show');
+                    
+                    
+                      
+                    
+                    //console.log(torevoke);
+                },
+                finalRevokeAndRessiue:function(event)
+                {
+                    $('#revokeAndReissueConfirmation').modal('hide');
+                    if(this.data.objToRevokeAndRessiue != undefined)
+                    {
+                        console.log(this.data.objToRevokeAndRessiue);
+                        var myString = JSON.stringify(this.data.objToRevokeAndRessiue);
+                        var remoteCall = _.extend(CCRZ.RemoteInvocation,{className:'OSM_SW_Manage_Subscription_Ctrl'});
+                                
+                        this.invokeContainerLoadingCtx($('body'),'revokeAndReIssueSubscription', myString, function(resp){
+                            console.log('revokeAndReIssueSubscription');
+                            console.log('resp data => ' + resp);
+                            console.log(resp);
+                            
+                            if (resp){ 
+                                    if(resp.success)
+                                    {
+                                        console.log('SUCCESS');
+                                        console.log(resp);
+                                        document.location.reload();
+                                    }
+                                    else{
+                                        if(resp.data != undefined && resp.data.alreadyDone)
+                                        {
+                                            $('#actionAlreadyDone').modal('show');
+                                            $("#alreadyDoneMsg").text(resp.data.error);
+                                        }else if(resp.data.error=='RevokeFailed'){
+                                           $('#Subs_ReIssueErrorMsg').hide();
+                                           $('#Subs_RevokeErrorMsg').show();
+                                        }else if(resp.data.error=='ReIssueFailed'){
+                                            $('#Subs_ReIssueErrorMsg').show();
+                                            $('#Subs_RevokeErrorMsg').hide();
+                                        }
+                                        
+                                    }
+                            }else{
+                                if(resp.data.error=='RevokeFailed'){
+                                       $('#Subs_ReIssueErrorMsg').hide();
+                                       $('#Subs_RevokeErrorMsg').show();
+                                   }else if(resp.data.error=='ReIssueFailed'){
+                                        $('#Subs_ReIssueErrorMsg').show();
+                                        $('#Subs_RevokeErrorMsg').hide();
+                                    }
+                            }
+                            
+                        },{ buffer : false, escape : false , nmsp:false, timeout :120000});
+                    }
+                },
+                
+                renewFun:function(event)
+                {
+                    var objLink = $(event.target);
+                    var subscId = objLink.data("id");
+                    console.log(subscId);
+                    
+                    
+                    if(subscId != undefined && subscId != "")
+                    {
+                        var myObject = new Object();
+                        myObject.subscId = subscId;
+                        console.log(myObject);
+                        var myString = JSON.stringify(myObject);
+                        var remoteCall = _.extend(CCRZ.RemoteInvocation,{className:'OSM_SW_Manage_Subscription_Ctrl'});
+                                
+                        //remoteCall.invokeContainerLoadingCtx($('.body'),'renewSubscription', myString, function(resp){
+                          this.invokeContainerLoadingCtx($('body'),'renewSubscription', myString, function(resp){
+                            console.log('renew addOn-->'+resp.data.renewAddOn);
+                            console.log('resp data => ' + resp);
+                            console.log(resp.data.displayProductSku);
+                            console.log('subid'+resp.data.subid);
+                            console.log(resp.data.productSku);
+                            if (resp){ 
+                                    if(resp.success)
+                                    {
+                                        console.log('SUCCESS');
+                                        console.log(resp);
+                    //MP-135 & MP-476 - Added -16-11-2021 & 27-12-2021
+                                        if(resp.data.renewAddOn != null && resp.data.renewAddOn !=undefined){
+                                            window.location = "ccrz__Cart?cartId="+resp.data.cartId+getCSRQueryString();
+                                        }else{
+                                            window.location = "ccrz__ProductDetails?viewState=DetailView+cartId="+resp.data.cartId+"&sku="+resp.data.displayProductSku+"&renewProd="+resp.data.displayProductSku+"&subid="+resp.data.subid+getCSRQueryString();
+                                            
+                                        }
+                                    }
+                                    else{
+                                        if(resp.data != undefined && resp.data.alreadyDone)
+                                        {
+                                            $('#actionAlreadyDone').modal('show');
+                                            $("#alreadyDoneMsg").text(resp.data.error);
+                                        }
+                                        
+                                    }
+                                    
+                            }
+                            //window.location = "ccrz__Cart?cartId=e6454e43-05d4-4af8-b2fa-c10e7539e142"+getCSRQueryString();
+                        },{ buffer : false, escape : false , nmsp:false });
+                    }
+                    
+                    
+                    
+                },
+                ToolInstanseKeyEvent:function(event){
+                    
+                    
+                    var objLink1 = $(event.target);
+                    
+                    node = objLink1[0];
+                    console.log(node);
+                    
+                    var SelectedKey = node.dataset.key;
+                    var SelectedItem = node.dataset.itemid;
+                    
+                    console.log(SelectedKey);
+                    console.log(SelectedItem);
+                    
+                    var sfid;
+                    for(i = 0; i < objLink1[0].children.length; i++)
+                    {
+                        console.log(objLink1[0].children[i]);
+                        if(objLink1[0].children[i].selected)
+                            sfid = objLink1[0].children[i].value;
+                    }
+                    
+                    console.log(sfid);
+                    data = this.data;
+                    
+                    
+                    
+                    for(i = 0 ; i< data.subscriptionItemList.length ; i++)
+                    {
+                        console.log('data.subscriptionItemList : ');
+                        console.log(data.subscriptionItemList)
+                        if(data.subscriptionItemList[i].orderItemId == SelectedItem)
+                        {
+                            data.subscriptionItemList[i].selectedToolKeyId = "";
+                            if(data.subscriptionItemList[i].linceseInfoLst != undefined)
+                            {
+                                console.log('data.subscriptionItemList[i].linceseInfoLst : ');
+                                console.log(data.subscriptionItemList[i].linceseInfoLst)
+                                for(j = 0 ; j < data.subscriptionItemList[i].linceseInfoLst.length ; j++)
+                                {
+                                    console.log('data.subscriptionItemList[i].linceseInfoLst[j] : ');
+                                    console.log(data.subscriptionItemList[i].linceseInfoLst[j])
+                                    if(data.subscriptionItemList[i].linceseInfoLst[j].toolInstanceKey != undefined)
+                                    {
+                                        for(k = 0; k < data.subscriptionItemList[i].linceseInfoLst[j].toolInstanceKey.length ; k++)
+                                        {
+                                            
+                                                data.subscriptionItemList[i].actionsEnable = false;
+                                                data.subscriptionItemList[i].linceseInfoLst[j].toolInstanceKey[k].isSelected = false;
+                                                if(data.subscriptionItemList[i].linceseInfoLst[j].toolInstanceKey[k].sfId == "--None--")
+                                                {
+                                                    data.subscriptionItemList[i].linceseInfoLst[j].toolInstanceKey[k].isSelected = true;
+                                                }
+                                            
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if(data.subscriptionItemList[i].linceseInfoLst != undefined)
+                        {
+                            console.log('data.subscriptionItemList[i].linceseInfoLst : ');
+                            console.log(data.subscriptionItemList[i].linceseInfoLst)
+                            for(j = 0 ; j < data.subscriptionItemList[i].linceseInfoLst.length ; j++)
+                            {
+                                console.log('data.subscriptionItemList[i].linceseInfoLst[j] : ');
+                                console.log(data.subscriptionItemList[i].linceseInfoLst[j])
+                                if(data.subscriptionItemList[i].linceseInfoLst[j].toolInstanceKey != undefined)
+                                {
+                                    for(k = 0; k < data.subscriptionItemList[i].linceseInfoLst[j].toolInstanceKey.length ; k++)
+                                    {
+                                        if(data.subscriptionItemList[i].linceseInfoLst[j].toolInstanceKey[k].sfId != "--None--")
+                                        {
+                                            if(data.subscriptionItemList[i].linceseInfoLst[j].toolInstanceKey[k].sfId == sfid)
+                                            {
+                                                data.subscriptionItemList[i].actionsEnable = true;
+                                                data.subscriptionItemList[i].linceseInfoLst[j].toolInstanceKey[k].isSelected = true;
+                                                data.subscriptionItemList[i].selectedToolKeyId = sfid;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                    }
+                    
+                    this.setElement($('.SubscDataDiv'));
+                    $(this.el).html(this.myTemplate({SubscData:data}));
+                }
+                
+                
+                
+                
+            });
+            
+                
+                
+                
+            
+        });
+        
+        Handlebars.registerHelper('dateTime', function(milsec) {
+        if(milsec  != "" && milsec != undefined)
+        {
+            var thisDate = new Date(milsec);
+            var strTime = formatAMPM(thisDate);
+            
+            var thisDate = new Date(milsec);
+                var dateToStr = thisDate.toUTCString().split(' ');
+                datefinal = dateToStr[1] + ' ' + dateToStr[2]+' '+dateToStr[3]+" "+strTime;
+            
+            
+            
+            return datefinal;
+        }
+        else
+            return "";
+    }); 
+    
+    function formatAMPM(date) {
+      var hours = date.getHours();
+      var minutes = date.getMinutes();
+      var ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12; // the hour '0' should be '12'
+      minutes = minutes < 10 ? '0'+minutes : minutes;
+      var strTime = hours + ':' + minutes + ' ' + ampm;
+      return strTime;
+    }
+    
+    /*
+        MAR-857: To display proper date. Update at line #2085,2086.
+    */
+    
+    
+    Handlebars.registerHelper('date', function(milsec) {
+        if(milsec  != "" && milsec != undefined)
+        {        
+            var params = Array.prototype.slice.call(arguments, 1);
+            var thisDate = new Date(milsec);
+            var dateToStr = thisDate.toString().split(' ');
+            var datefinal = dateToStr[2] + ' ' + dateToStr[1]+' '+dateToStr[3];
+            return datefinal;
+        }
+        else
+            return "";
+    }); 
+    
+    
+    </script>
+    
+    </apex:page>

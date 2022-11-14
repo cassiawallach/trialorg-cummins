@@ -1,0 +1,945 @@
+<!--**********************************************************************
+Name:CG_IntakeCustLegacyBMS
+Copyright Â© 2017  Cummins
+======================================================
+======================================================
+Purpose:                                                            
+-------  
+We are using this component when the user has LEgacy BMS ERP.
+======================================================
+======================================================
+History                                                            
+-------                                                            
+VERSION  AUTHOR            DATE                DETAIL                                 
+1.0 - Krishnamoorthi      12/19/2017      INITIAL DEVELOPMENT                    
+***********************************************************************-->
+<apex:component layout="none" id="BMSCustComp" access="global" controller="CG_CL_IntakeCustLegacyBMS" allowDML="true"> 
+     <!-- START ATTRIBUTES -->
+    <apex:attribute name="pgName" description="Page Name" type="String" />
+    <apex:attribute name="mainController" description="Main Controller Type" type="CG_CL_IntakeCustomer" assignTo="{!mainContr}"/>
+    <!-- END ATTRIBUTES -->
+
+    <!--START LEGACY BMS ERP SECTION-->
+    <apex:outputPanel id="bmsCustScreen">
+        <div class="col-sm-3 cmi-tar" style="margin-top:12px;">
+            <apex:outputLabel value="{!$Label.css_Appointment}" />
+        </div>
+        <div class="col-sm-2" style="margin-left:-22px;">
+            <apex:selectRadio value="{!mainContr.AppointmentName}">
+                <apex:selectoption itemValue="Yes" itemLabel="{!$Label.CSS_FAQs_Working_A7}" itemEscaped="false"  ></apex:selectoption>
+                <apex:selectoption itemValue="No" itemLabel="{!$Label.CSS_No}" itemEscaped="false" />
+            </apex:selectRadio>
+        </div> 
+        <div class="clearfix">
+        </div>
+        <div class="col-sm-3 cmi-tar">
+            <apex:outputLabel value="{!$Label.css_Location}" />
+        </div>
+
+        <div class="col-sm-8 col-xs-12" >
+            <apex:selectList value="{!selectedLocation}" size="1" onchange="onChangeLocation()">
+                <apex:selectOptions value="{!LocationsName}"/>
+            </apex:selectList>
+            <apex:actionFunction name="onChangeLocation" action="{!changeLocation}" />
+        </div> 
+        <div class="clearfix"></div> 
+        <div class="col-sm-3 cmi-tar">
+        </div>
+        <div class="col-sm-8 col-xs-12" >
+        </div> 
+        <div class="clearfix"></div> 
+        <div class="row intakerow">
+            <label class="col-sm-3 cmi-tar">{!$Label.CSS_Customer_Company}<span class="cmi_asterisk">*</span></label>
+            <div class="col-sm-8 col-xs-12">
+                <apex:inputField value="{!mainContr.workJob.Customer_Name__c}" styleClass="css_ipfiel_size" id="CustomerName" onkeyup="spyGlassCustomerName()">&nbsp;
+
+                </apex:inputField> 
+                <span class="error">{!$Label.CSS_Enter_Value}</span>
+                <apex:outputLabel rendered="{!mainContr.appointmentValidation}" style="color:red"> {!$Label.CSS_Enter_Value}</apex:outputLabel>
+                <apex:commandLink onclick="return inputFieldlength('{!$Component.CustomerName}');"  rerender="BMSCustomerSearch" immediate="false" oncomplete="activateSort()">
+                    <span id="spyGlassCusName" class="searchheaderteal"/>
+
+                    <apex:actionStatus startText="(fetching additional values...)" id="getCustDetls" />
+                </apex:commandLink>
+
+                <apex:actionFunction name="inputfieldlen" action="{!getBMSCustDetails}" rerender="BMSCustomerSearch" status="getCustDetls" oncomplete="showBMSCustomerModalPopup()">
+                    <apex:param id="custParam" name="custNameParam" value="CustomerParam" />
+                </apex:actionFunction> 
+            </div>
+        </div>
+        <div class="row intakerow">
+            <!--<div class="clearfix"></div> 
+            <div class="col-sm-3 cmi-tar">
+                <apex:outputLabel value="{!$Label.CSS_Location_code}" />
+            </div>
+            <div class="col-sm-8 col-xs-12" >
+
+                <apex:outputText value="{!selectedLocation}"/>
+            </div>--> 
+
+        </div>
+        <div class="row intakerow">
+            <label class="col-sm-3 cmi-tar">{!$Label.CSS_Customer_Code}<span class="cmi_asterisk">*</span></label>
+            <div class="col-sm-8 col-xs-12">
+                <apex:inputField value="{!mainContr.workJob.Customer_Code__c}"  styleClass="css_ipfiel_size" id="CustomerCode" onkeyup="spyGlassCustomerCode()"/>
+                <span class="error">{!$Label.CSS_Enter_Value}</span> 
+                <apex:commandLink onclick="return custCodelength('{!$Component.CustomerCode}');" rerender="BMSCustomerSearch" immediate="false" oncomplete="activateSort()">  
+                    <span  id="spyGlassCusCode" class="searchheaderteal"/> 
+                    <apex:actionStatus startText="(fetching additional values...)" id="getCustDetls2" />
+                </apex:commandLink>
+                <apex:actionFunction name="custCodelen" action="{!getBMSCustDetails}" rerender="BMSCustomerSearch" status="getCustDetls2"  oncomplete="showBMSCustomerModalPopup()"/>
+            </div>             
+        </div>
+
+        <div class="row intakerow">
+            <label class="col-sm-3 cmi-tar">{!$Label.CSS_Phone_Number}<span class="cmi_asterisk">*</span></label>
+            <div class="col-md-8 col-xs-10">
+                <apex:inputField value="{!mainContr.workJob.Phone_Number__c}"  styleClass="css_ipfiel_size" id="phoneNumber"  html-placeholder="(###) ### - ####" html-maxlength="10" onkeydown="phoneNumberFormat(event)"/> &nbsp; 
+                <span class="error">Enter valid 10 digit Phone Number</span> 
+            </div>
+        </div>
+
+        <div class="row intakerow">
+            <label class="col-sm-3 cmi-tar">{!$Label.CSS_First_Name}<span class="cmi_asterisk">*</span></label>
+            <div class="col-md-8 col-xs-12">
+                <apex:inputField value="{!mainContr.workJob.First_Name__c}"  styleClass="css_ipfiel_size" id="FirstName"/> &nbsp;
+                <apex:outputPanel rendered="{!IF(mainContr.workJob.CSS_Bms_ContactBoolean__c==true, true,false)}">
+                  <apex:commandLink action="{!ContactLookup}" status="getContDetls" rerender="BMSContactSearch" immediate="false" oncomplete="showBMSContactModalPopup()" >
+                        <span class="searchheaderteal"/>
+
+                        <apex:actionStatus startText="(fetching Contact details...)" id="getContDetls" /> 
+                    </apex:commandLink>
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!IF(mainContr.workJob.CSS_Bms_ContactBoolean__c == false, true,false)}">
+                    <span class="searchheaderDisabled"/>
+                </apex:outputPanel> 
+                <span class="error">{!$Label.CSS_Enter_Value}</span>
+            </div>
+        </div>
+        <div class="row intakerow">
+
+            <label class="col-sm-3 cmi-tar">{!$Label.CSS_Last_Name}<span class="cmi_asterisk">*</span></label>
+            <div class="col-md-8 col-xs-12">
+                <apex:inputField value="{!mainContr.workJob.BMS_Last_Name__c}"  styleClass="css_ipfiel_size" id="LastName"/> &nbsp;
+                <span class="error">{!$Label.CSS_Enter_Value}</span>  
+            </div>
+        </div>
+
+        <div class="row intakerow">
+            <label class="col-sm-3 cmi-tar">{!$Label.CSS_Customer_Contact_Phone}<span class="cmi_asterisk">*</span></label>
+              
+            <div class="col-md-8 col-xs-12" style="width:13%;">
+                <apex:inputField value="{!mainContr.workJob.Cstmr_Contacts_Phone__c}"  styleClass="css_ipfiel_size" id="custContactPhn" html-placeholder="(###) ### - ####" html-maxlength="10" onkeydown="customerPhoneNumberFormat(event)"/> &nbsp;
+                <span class="error">Enter valid 10 digit Phone Number</span> 
+            </div>
+             <!--<div class="col-sm-6 col-xs-2" style="width:0%;">
+                <a data-target="#PhoneHelp" data-toggle="modal" ><span class="cmi_intake_help" /></a>
+                <apex:commandLink rerender="PhoneHelp" style="text-decoration:underline" /> 
+            </div> -->
+        </div>
+        <div class="row intakerow">
+            <label class="col-sm-3 cmi-tar">{!$Label.css_Email_Address}<span class="cmi_asterisk">*</span></label>
+            <div class="col-md-8 col-xs-12">
+                <apex:inputText value="{!mainContr.EmailAddress}"  maxlength="40" styleClass="css_ipfiel_size" id="txtEmailAddress"/> @ &nbsp;
+                <apex:inputText value="{!mainContr.EmailAddress1}" maxlength="40" styleClass="css_ipfiel_size" id="txtEmailAddress1"/> &nbsp; Email Not Available?&nbsp;
+
+                <apex:inputCheckbox value="{!mainContr.workJob.Email_check_box__c}" onclick="checkEmailAddress()" id="chkEmail"/>
+                <span class="error">Invalid Email Address</span> 
+            </div>  
+        </div>
+        
+        <apex:outputPanel rendered="{!IF(mainContr.workJob.bmsCreateAccount__c==false, true,false)}">
+            <div class="row intakerow">
+                <label class="col-sm-3 cmi-tar">{!$Label.CSS_Address}<span class="cmi_asterisk">*</span></label>
+                <div class="col-md-4 col-xs-10">
+                    <apex:inputField value="{!mainContr.workJob.Address__c}"  styleClass="css_ipfiel_size" id="Address"/> &nbsp;
+                    <span class="error">{!$Label.CSS_Enter_Value}</span> 
+                </div>              
+            </div>
+        </apex:outputPanel>
+        <apex:outputPanel rendered="{!IF(mainContr.workJob.bmsCreateAccount__c==true, true,false)}">
+            <div class="row intakerow">
+                <label class="col-sm-3 cmi-tar">{!$Label.CSS_Address}<span class="cmi_asterisk">*</span></label>
+                <div class="col-md-4 col-xs-10">
+                    <apex:outputText value="{!mainContr.workJob.Address__c}"  styleClass="css_ipfiel_size"/> &nbsp;
+                </div>              
+            </div>
+        </apex:outputPanel>
+        <apex:outputPanel rendered="{!IF(mainContr.workJob.bmsCreateAccount__c==false, true,false)}">
+            <div class="row intakerow">
+                <label class="col-sm-3 cmi-tar">{!$Label.CSS_City}<span class="cmi_asterisk">*</span></label>
+                <div class="col-md-4 col-xs-10">
+                    <apex:inputField value="{!mainContr.workJob.City__c}"  styleClass="css_ipfiel_size" id="City"/> &nbsp;
+                    <span class="error">{!$Label.CSS_Enter_Value}</span> 
+                </div>              
+            </div>
+        </apex:outputPanel>
+        <apex:outputPanel rendered="{!IF(mainContr.workJob.bmsCreateAccount__c==true, true,false)}">
+            <div class="row intakerow">
+                <label class="col-sm-3 cmi-tar">{!$Label.CSS_City}<span class="cmi_asterisk">*</span></label>
+                <div class="col-md-3 col-xs-10">
+                    <apex:outputText value="{!mainContr.workJob.City__c}"  styleClass="css_ipfiel_size"/> &nbsp;
+                </div>              
+            </div>
+        </apex:outputPanel>
+        <apex:outputPanel rendered="{!IF(mainContr.workJob.bmsCreateAccount__c==false, true,false)}">
+            <div class="row intakerow">
+                <label class="col-sm-3 cmi-tar">{!$Label.CSS_Country}<span class="cmi_asterisk">*</span></label>
+                <div class="col-md-3 col-xs-10">
+
+                    <apex:selectList value="{!mainContr.filterCountry}"  size="1" id="Country">
+                        <apex:actionSupport event="onchange" reRender="statePanel"/>
+                        <apex:selectOptions value="{!Country}"></apex:selectOptions>
+                    </apex:selectList>                
+
+                    <span class="error">{!$Label.CSS_Enter_Value}</span> 
+                </div>              
+            </div>
+        </apex:outputPanel>
+        <apex:outputPanel rendered="{!IF(mainContr.workJob.bmsCreateAccount__c==true, true,false)}">
+            <div class="row intakerow">
+                <label class="col-sm-3 cmi-tar">{!$Label.CSS_Country}<span class="cmi_asterisk">*</span></label>
+                <div class="col-md-3 col-xs-10">
+                    <apex:outputText value="{!mainContr.strCntry}"  styleClass="css_ipfiel_size"/> 
+                </div>              
+            </div>
+        </apex:outputPanel>
+        <apex:outputPanel rendered="{!IF(mainContr.workJob.bmsCreateAccount__c==false, true,false)}" >
+            <div class="row intakerow">
+                <label class="col-sm-3 cmi-tar">{!$Label.CSS_State}<span class="cmi_asterisk">*</span></label>
+                <div class="col-md-4 col-xs-10">
+                    <apex:outputPanel id="statePanel">
+
+                        <apex:selectList value="{!mainContr.filterState}" size="1" id="State">
+                            <apex:selectOptions value="{!States}"></apex:selectOptions>
+                        </apex:selectList>
+
+                        <span class="error">{!$Label.CSS_Enter_Value}</span>
+                        &nbsp;
+                    </apex:outputPanel> 
+
+                </div>              
+            </div>
+        </apex:outputPanel>
+        <apex:outputPanel rendered="{!IF(mainContr.workJob.bmsCreateAccount__c==true, true,false)}">
+            <div class="row intakerow">
+                <label class="col-sm-3 cmi-tar">{!$Label.CSS_State}<span class="cmi_asterisk">*</span></label>
+                <div class="col-md-3 col-xs-10">
+                    <apex:outputText value="{!mainContr.strCntryState}"  styleClass="css_ipfiel_size"/> &nbsp;
+                </div>              
+            </div>
+        </apex:outputPanel>
+        <apex:outputPanel rendered="{!IF(mainContr.workJob.bmsCreateAccount__c==false, true,false)}">
+            <div class="row intakerow">
+                <label class="col-sm-3 cmi-tar">{!$Label.CSS_Zipcode}<span class="cmi_asterisk">*</span></label>
+                <div class="col-md-6 col-xs-10">
+                    <apex:inputField value="{!mainContr.workJob.ZipCode__c}"  styleClass="css_ipfiel_size" id="Zipcode" html-maxlength="10"/> &nbsp; [ Enter valid Zipcode ]
+                    <span class="error">{!$Label.CSS_Enter_Value}</span> 
+                </div>              
+            </div>
+        </apex:outputPanel>
+        <apex:outputPanel rendered="{!IF(mainContr.workJob.bmsCreateAccount__c==true, true,false)}">
+            <div class="row intakerow">
+                <label class="col-sm-3 cmi-tar">{!$Label.CSS_Zipcode}<span class="cmi_asterisk">*</span></label>
+                <div class="col-md-3 col-xs-10">
+                    <apex:outputText value="{!mainContr.workJob.ZipCode__c}"  styleClass="css_ipfiel_size"/> &nbsp;
+                </div>              
+            </div>
+        </apex:outputPanel>
+
+        <div class="row intakerow">
+            <label class="col-sm-3 cmi-tar">{!$Label.CSS_Primary_Market_Segment}<span class="cmi_asterisk">*</span></label>
+
+            <div class="col-md-4 col-xs-10">
+
+                <apex:selectList value="{!mainContr.filterApplication}" size="1" id="PrimarySegment">
+                    <apex:selectOptions value="{!Application}"></apex:selectOptions>
+                </apex:selectList>
+
+                &nbsp;
+                <span class="error">{!$Label.CSS_Enter_Value}</span> 
+            </div> 
+        </div>
+
+        <div class="row intakerow" >
+            <label class="col-sm-3 cmi-tar">{!$Label.CSS_Payment_Type_Intake}</label>
+            <div Class="col-sm-1">
+                <apex:outputText value="{!mainContr.workJob.CSS_Charge_Account_Status__c}"  styleClass="css_ipfiel_size"/>
+            </div>
+            
+            
+            <apex:outputPanel rendered="{!IF(mainContr.workJob.CSS_Charge_Account_Status__c == 'CHARGE',true,false)}">
+            <label class="col-sm-2">{!$Label.CSS_Available_Credit_Intake}</label>
+                <div Class="col-sm-1" style="margin-left:-111px;" >
+                <apex:outputText value="{!IF(mainContr.workJob.Available_Credit__c != NULL,mainContr.workJob.Available_Credit__c,'Not Available')}"  styleClass="css_ipfiel_size"/>
+                </div>
+            <label class="col-sm-1">{!$Label.CSS_Amount_Due_Intake}</label>
+            <div Class="col-sm-1" >
+                <apex:outputText value="{!IF(mainContr.workJob.Amount_Due__c != NULL,mainContr.workJob.Amount_Due__c,'Not Available')}"  styleClass="css_ipfiel_size"/>
+
+            </div>
+            <label class="col-sm-1">{!$Label.CSS_Credit_Limit_Intake}</label>
+            <div Class="col-sm-1">
+                <apex:outputText value="{!IF(mainContr.workJob.Credit_Limit__c != NULL,mainContr.workJob.Credit_Limit__c,'Not Available')}"  styleClass="css_ipfiel_size"/> 
+            </div>
+            </apex:outputPanel>
+        </div>
+        <div class="row intakerow">
+            <!--<apex:outputpanel rendered="{IF($Setup.css_header_nav__c.RSWButtonEnable__c==true,true,false)}">-->
+            <div class="col-sm-3 cmi-tar">
+                 <apex:outputpanel rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c,true,false)}">
+                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.Shop_Work_Order__c.Label}" />
+               
+                <span class="cmi_asterisk">*</span>
+                </apex:outputpanel>
+                <apex:outputpanel rendered="{!IF($Setup.css_header_nav__c.RSWButtonEnable__c,false,true)}">
+                <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.Shop_Work_Order__c.Label}" />
+                </apex:outputpanel>
+            </div>
+            <div class="col-sm-1 col-xs-1">
+                <apex:outputText value="{!mainContr.workJob.Shop_Work_Order__c}"  styleClass="css_ipfiel_size"/> &nbsp;
+                <!--    <a href="#" onClick="showqmarkpopup()" id="inhelp"><span class="cmi_intake_help" /></a> -->
+            </div>
+            <div class="col-sm-6 col-xs-2">
+                <a data-target="#showqmarkpopup" data-toggle="modal" ><span class="cmi_intake_help" /></a>
+                <apex:commandLink rerender="showqmarkpopup" style="text-decoration:underline" /> 
+            </div> 
+           <!--</apex:outputpanel>-->
+        </div>
+
+        <div class="clearfix"></div>
+        <div class="col-sm-3 cmi-tar ">
+            <apex:outputlabel value="{!$Label.css_job_created}"/>
+        </div>
+        <div class="col-md-3 col-xs-5 ">
+            <apex:outputField value="{!mainContr.workjob.createdDate}" />&nbsp;
+        </div>
+        <div class="clearfix"></div>
+        <div class="col-sm-3 cmi-tar">
+            <apex:outputLabel value="{!$ObjectType.CSS_Job_Order__c.fields.Date_In__c.Label}" />
+        </div>
+
+        <div class="col-md-3 col-xs-5">
+            <div class="input-group date" style="display:inherit;" id="failureDate" data-provide="datepicker" data-date-format="{!datebyLocaleValue}">
+                <apex:inputField value="{!mainContr.workJob.Date_in_Shop__c}" id="availableShop" styleclass="form-control cmi-cal css_ipfiel_size " showDatePicker="false"/>
+                <span class="input-group-addon" style="display: inline; border: 0px; background: none;">
+                    <span class="calendar" style="margin-top:0px;"></span>
+                </span>
+            </div>
+        </div>
+        
+             <!-- Added Field for GSSC-332 Great Pyramid Of Giza Rajasekhar H --> 
+                  <div class="clearfix"></div>
+                 <div class="row intakerow">
+                     <apex:outputPanel rendered="{!IF(isDealer == true, true, false)}">
+                <div class="col-sm-3 col-xs-12 cmi-tar">
+                    <label >{!$ObjectType.CSS_Job_Order__c.fields.Repair_Location__c.Label}</label>
+                 </div>
+                 <div class="col-sm-9 col-xs-8">
+                    <apex:selectList size="1" value="{!mainContr.workJob.Repair_Location__c}" styleClass="css_ipfiel_size">
+                         <!--<apex:actionSupport event="onchange" action="{!autoAdminSrt}" reRender="none" /> -->
+                         <apex:selectOptions value="{!RepairLocation}" />
+                    </apex:selectList>
+                </div>
+                   </apex:outputPanel>
+                 </div>
+       
+        <div class="clearfix">
+        </div>
+        <div class="row intakerow">
+            <div class="col-md-offset-3 col-md-1 col-xs-10 ">                             
+                <apex:outputPanel rendered="{!IF(mainContr.workJob.bmsCreateAccount__c==true, false,true)}">
+                    <apex:commandLink value="Reset" styleClass="CMI-primary-button" action="{!resetBMSFields}"/> 
+                </apex:outputPanel>
+                <apex:outputPanel rendered="{!IF(mainContr.workJob.bmsCreateAccount__c==true, true,false)}">
+                    <apex:commandLink value="Reset" styleClass="cmi_lighttealbutton" /> 
+                </apex:outputPanel>
+            </div> 
+
+            <div class="col-md-3 col-xs-10 ">
+                <apex:outputPanel rendered="{!IF(mainContr.workJob.bmsCreateAccount__c==true, false,true)}">
+                    <apex:actionStatus id="mySaveStatus1">
+                        <apex:facet name="stop">
+                            <apex:commandLink action="{!createAccount}" status="mySaveStatus1" onClick="validateCustomerForm(this);" value="Create Account" rerender="mySaveStatus1" styleClass="CMI-primary-button"/>
+                        </apex:facet>
+                        <apex:facet name="start">
+                            <apex:commandButton status="mySaveStatus1" value="Create Account" disabled="true" styleClass="cmi_lighttealbutton"/> </apex:facet>
+                    </apex:actionStatus>
+                </apex:outputPanel>
+                <apex:actionFunction name="resetbmsCustPanel1" reRender="bmsCustScreen"/>
+                <apex:outputPanel rendered="{!IF(mainContr.workJob.bmsCreateAccount__c==true, true,false)}">
+                    <apex:commandLink value="Create Account" styleClass="cmi_lighttealbutton">
+                    </apex:commandLink>    
+                </apex:outputPanel> 
+            </div>
+        </div>
+        <!--END LEGACY BMS ERP SECTION-->
+
+        <!-- START POP UP FOR SHOP WORK ORDER --->
+        <apex:outputPanel id="showqmarkpopup">
+
+            <div class="container">  
+                <div class="modal fade" id="showqmarkpopup"  role="dialog">
+                    <div class="modal-dialog">
+                        <div class="modal-content"> 
+                            <div class="modal-header">  
+                                <Button title="Close the popup" class="cross_butten" data-dismiss="modal" />
+                                <h4 class="modal-title" style="color: #FFFFFF;"> {!$Label.css_customer} - {!$Label.css_cummins_service_system} </h4>
+                            </div>
+                            <div class="modal-body">
+                                <!--<form class="form-horizontal" role="form">--->  
+                                <div class="form-group">
+                                    <div class="col-sm-12 col-xs-12">
+                                        <div class="intake_help1 intake_help-popup"></div>
+                                        <div class="col-sm-11 col-xs-12" >
+                                            <b> {!$Label.css_shop_work_order} </b>{!$Label.CSS_intakeshopop}
+                                        </div>
+                                    </div>
+                                </div>
+                                <!--</form>-->
+                                <div class="clearfix"></div>
+                                <hr/>
+
+                                <div class="col-sm-12" align="center" draggable="false" >
+                                    <button type="button"  class="cancelButton" data-dismiss="modal">ok</button>
+
+                                </div> <br/>
+                                <div class="clearfix"></div>
+                                <div class="clearfix"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </apex:outputPanel>
+        
+        <!---------Phone number help text ends----------->
+        <!---- BMS Popup--->
+        <div class="modal fade" id="modalBMSCustomerPopUp"  role="dialog">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content"> 
+                    <!-- Modal Header -->
+                    <div class="modal-header cmi_modal-header">
+                        <apex:commandButton title="Close the popup" html-data-dismiss="modal" action="{!closeBMSCustDetails}" styleClass="cross_butten"/>
+                        <p style="margin-top:8px color:white">
+                            <font color="white">
+                                <b> Customer Lookup/Selection</b>
+                            </font>
+                        </p>
+                    </div>
+                    <!-- Modal Body -->
+                  <apex:outputPanel id="BMSCustomerSearch">
+                    <div class="modal-body"> 
+                        <div class="row" style="max-height:400px;overflow:auto;">
+                            <div class="col-md-12">
+                                <table class="table cmi_customerpopup" id="contentsContainer">                                                                           
+
+                                    <thead>
+                                        <tr>
+                                            <th class="no-sort">Sel</th> 
+                                            <th>Country </th>
+                                            <th>Zipcode </th>
+                                            <th>Customer name </th>
+                                            <th>Customer code</th>
+                                            <th>Address</th>
+                                            <th>City</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <apex:repeat value="{!paginatedCustDetails}" var="cust" rows="999">
+                                            <tr>                                                                                 
+                                                <td>
+                                                    <input type="radio" id="{!cust.CustomerCode}" name="myChk"  onclick="callBMSCust('{!cust.CustomerCode}');"/>                                                                                           
+                                                </td>
+                                                <td>{!cust.Country}</td>
+                                                <td>{!cust.Postalcode1}</td>
+                                                <td>{!cust.CustomerName}</td>
+                                                <td>{!cust.CustomerCode}</td>
+                                                <td>{!cust.LocationAddressline1}</td>
+                                                <td>{!cust.City}</td>
+                                            </tr>        
+                                        </apex:repeat> 
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div> <br/>
+                         <!-- output panel invalidCountryCodeComb is added for the story number 174846-->
+                        <apex:outputPanel id="invalidCountryCodeComb">
+                        <font color="red">
+                        <apex:outputLabel value="{!showPRErrorMessage}" rendered="{!prErrorFlag}" id="countryStateValues"/>
+                        </font>
+                        </apex:outputPanel>
+                        <font color="red">
+                            <apex:outputLabel value="{!errorMessage}" rendered="{!showOutageError}"/> </font>
+                           <apex:actionFunction name="callBMSCust" action="{!selectedBMSCustCode}" reRender="invalidCountryCodeComb" status="callBMSCustStatus"> <!-- Updated rerender from none to invalidCountryCodeComb to dispay the error message for invalid contry and state combination 174846 -->
+                            <apex:param name="BMSCustCode" value="BMSCustCode" assignTo="{!selectedCustCode}">
+                            </apex:param>
+                        </apex:actionFunction>
+                        <div align="center">
+                            <apex:actionStatus startText="requesting..." id="callBMSCustStatus">
+                                <apex:facet name="start">Requesting... <img src="/img/loading.gif"/></apex:facet>
+                                <apex:facet name="stop"><apex:commandButton value="Select" html-data-dismiss="modal" styleclass="CMI-primary-button" action="{!selectedCustDetails}" reRender="BMSCustomerSearch,bmsCustScreen"/></apex:facet>                                                                                
+                            </apex:actionStatus>
+
+                        </div>
+                               
+                    </div>
+                    </apex:outputPanel>
+                </div>
+            </div>
+        </div>
+                
+        <!-- BMS Customer and Customer Code Popup End -->
+        
+        <!-- BMS Contact Lookup Popup -->
+      <div class="modal fade" id="modalBMSContactPopUp"  role="dialog">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <!-- Modal Header -->
+                    <div class="modal-header cmi_modal-header">
+                        <apex:commandButton title="Close the popup" html-data-dismiss="modal" action="{!closeBMSContDetails}" styleClass="cross_butten"/>
+                        <p style="margin-top:8px color:white">
+                            <font color="white">
+                                <b> Customer Contact Lookup/Selection</b>
+                            </font>
+                        </p>
+                    </div>
+                    <!-- Modal Body -->
+                   <apex:outputPanel id="BMSContactSearch">
+                    <div class="modal-body"> 
+                        <div class="row" style="max-height:400px;overflow:auto;">
+                            <div class="col-md-12">
+                                <table class="table cmi_customerpopup" id="contentsContainer">                                                                           
+                                    <thead>
+                                        <tr>
+                                            <th class="no-sort">Sel</th> 
+                                            <th>FirstName </th>
+                                            <th>LastName </th>
+                                            <th>Customer Contact's Phone </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <apex:repeat value="{!CustomerContactDetails.DataArea}" var="cont" rows="999">
+                                            <tr> 
+                                                <td>
+                                                    <input type="radio" id="{!cont.ContactID}" name="myChk"  onclick="callBMSCont('{!cont.ContactID}');"/>                                                                                           
+                                                </td>
+                                                <td>{!cont.FirstName}</td>
+                                                <td>{!cont.LastName}</td>
+                                                <td>{!cont.PhoneAreaCode}-{!cont.PhoneNumber}</td>
+                                            </tr>        
+                                        </apex:repeat> 
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <apex:outputText value="{!bmsContacterrorMessage}" rendered="{!contactshowOutageError}" escape="false"/>
+                         <apex:actionFunction name="callBMSCont" action="{!selectedBMSCustCode}" reRender="none" status="callBMSContactStatus">
+                            <apex:param name="BMSContId" value="BMSContId" assignTo="{!selectedContactID}">
+                            </apex:param>
+                        </apex:actionFunction>
+                        <div align="center">
+                            <apex:actionStatus startText="requesting..." id="callBMSContactStatus">
+                                <apex:facet name="start">Requesting... <img src="/img/loading.gif" /></apex:facet>
+                                <apex:facet name="stop"><apex:commandButton value="Select" html-data-dismiss="modal" styleclass="CMI-primary-button" action="{!selectedContactDetails}" reRender="BMSCustomerSearch,bmsCustScreen"/></apex:facet>                                                                                
+                            </apex:actionStatus>
+                        </div>                           
+                    </div>
+                  </apex:outputPanel>
+                </div>
+            </div>
+        </div>
+        <!--BMS Contact Lookup Popup End -->
+     </apex:outputPanel>  
+
+    <!-- CSS Styles -->
+
+    <style>
+        .error{
+            display: none;
+            margin-left: 10px;
+        }       
+
+        .error_show{
+            color: red;
+            margin-left: 10px;
+        }
+       
+    </style>
+
+    <!-- START SCRIPTS -->
+    
+    <script type="text/javascript">
+        window.onload = function() {
+            spyGlassCustomerName();
+            spyGlassCustomerCode();
+            checkEmailAddressonLoad();
+        }
+    </script>
+    
+    
+    <script>
+
+      // BMS Customer popup script 
+        function showBMSCustomerModalPopup(){
+            $('#modalBMSCustomerPopUp').modal(
+                {backdrop: 'static',
+                 keyboard: false,
+                 show:true
+                });
+            activateSort(); // This function is in page 
+}
+        
+        function showBMSContactModalPopup(){
+            $('#modalBMSContactPopUp').modal(
+                {backdrop: 'static',
+                 keyboard: false,
+                 show:true
+                });
+            activateSort();
+ }
+        
+         
+        /* Date picker on change event */
+        function shopDate(idvalue){
+            alert(idvalue);
+            var myDate = new Date();
+            var day = ('0' + myDate.getDate()).slice(-2);
+            var month = ('0' + (myDate.getMonth()+1)).slice(-2);
+            var year = myDate.getFullYear();
+            var today = month +"/"+day+"/"+year;
+
+            if(idvalue == 'availableShop')
+            {
+                if($(document.getElementById('{!$Component.Intakefrm.availableShop}'))[0].value == '')
+                    $(document.getElementById('{!$Component.Intakefrm.availableShop}'))[0].value = today;
+
+            }else if(idvalue == 'availabledate')
+            {
+                if($(document.getElementById('{!$Component.Intakefrm.availabledate}'))[0].value == '')
+                    $(document.getElementById('{!$Component.Intakefrm.availabledate}'))[0].value = today;             
+            }
+        }
+
+        function phoneNumberFormat(e){
+            var phoneNumber = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.phoneNumber}')); 
+            $(phoneNumber).keypress(function(e){
+                if (this.value.length === 0 && (e.which == 48 || e.which == 49)){
+                    return false;
+                }
+
+                if( e.which == 48 || e.which == 49 || e.which == 50 || e.which == 51 || e.which == 52 || e.which == 53 || e.which == 54 || e.which == 55 || e.which == 56 || e.which == 57 || e.which == 8)
+                {
+                } 
+                else {
+                    return false;
+                }
+
+            }) 
+        }
+
+        function customerPhoneNumberFormat(e){
+            var customerContactPhn = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.custContactPhn}')); 
+            $(customerContactPhn).keypress(function(e){
+                if (this.value.length === 0 && (e.which == 48 || e.which == 49)){
+                    return false;
+                }
+
+                if( e.which == 48 || e.which == 49 || e.which == 50 || e.which == 51 || e.which == 52 || e.which == 53 || e.which == 54 || e.which == 55 || e.which == 56 || e.which == 57 || e.which == 8)
+                {
+                } 
+                else {
+                    return false;
+                }
+
+            })       
+        }
+        function checkEmailAddress(){ 
+
+            if(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.chkEmail}').checked == true){
+                document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.txtEmailAddress1}').disabled=true; 
+                document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.txtEmailAddress}').disabled=true; 
+                document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.txtEmailAddress}').value = 'declined';
+                document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.txtEmailAddress1}').value = 'cummins.com'; 
+            }
+            else{
+                document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.txtEmailAddress1}').disabled=false; 
+                document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.txtEmailAddress}').disabled=false; 
+                document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.txtEmailAddress}').value = '';
+                document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.txtEmailAddress1}').value = ''; 
+            }
+        } 
+
+        function spyGlassCustomerName(){
+            var lengthField = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.CustomerName}'));
+
+            if(lengthField.val().length < 3){
+                $("#spyGlassCusName").removeClass("searchheaderteal").addClass("searchheaderDisabled");
+                return false;
+            }
+            $("#spyGlassCusName").removeClass("searchheaderDisabled").addClass("searchheaderteal");
+            return false; 
+        }
+
+        function spyGlassCustomerCode(){
+            var lengthField = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.CustomerCode}'));
+            if(lengthField.val().length < 3){
+                $("#spyGlassCusCode").removeClass("searchheaderteal").addClass("searchheaderDisabled");
+                return false;
+            }
+            $("#spyGlassCusCode").removeClass("searchheaderDisabled").addClass("searchheaderteal");
+            return false; 
+        }
+
+        function inputFieldlength(field){
+            //alert('RAJESH');
+            var lengthField = document.getElementById(field).value.length;
+            console.log('lenght of the field11111>>>>'+lengthField);
+            if(lengthField < 3){
+                console.log('lenght of the field22222>>>>'+lengthField);
+                return false;
+            }
+            console.log('lenght of the field33333>>>>'+lengthField);
+            inputfieldlen();
+          //  return true;
+        }
+
+        function custCodelength(field){
+            var lengthField = document.getElementById(field).value.length;
+            if(lengthField < 3){
+                return false;
+            }
+            custCodelen();
+            return true;
+        }
+
+        function validateCustomerForm(event){                   
+            var custNameElem = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.CustomerName}'));
+            var custNameValFailed=false;
+            if(custNameElem.val() == null || custNameElem.val() == ''){
+                custNameElem.removeClass("valid").addClass("invalid");
+                $("span", custNameElem.parent()).removeClass("error").addClass("error_show");
+                custNameValFailed = true;
+            }
+            else{
+                custNameElem.removeClass("invalid").addClass("valid");
+                $("span", custNameElem.parent()).removeClass("error_show").addClass("error");
+            }
+            var phoneNumElem = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.phoneNumber}'));
+            var phoneNumValFailed=false;
+            
+            if(phoneNumElem.val().length < 10){
+                phoneNumElem.removeClass("valid").addClass("invalid");
+                $("span", phoneNumElem.parent()).removeClass("error").addClass("error_show");
+                phoneNumValFailed = true;
+            }
+            else{
+                phoneNumElem.removeClass("invalid").addClass("valid");
+                $("span", phoneNumElem.parent()).removeClass("error_show").addClass("error");
+            }
+            //
+            var FirstNameElem = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.FirstName}'));
+            var FirstNameValFailed=false;
+            if(FirstNameElem.val() == null || FirstNameElem.val() == ''){
+                FirstNameElem.removeClass("valid").addClass("invalid");
+                $("span", FirstNameElem.parent()).removeClass("error").addClass("error_show");
+                FirstNameValFailed = true;
+            }
+            else{
+                FirstNameElem.removeClass("invalid").addClass("valid");
+                $("span", FirstNameElem.parent()).removeClass("error_show").addClass("error");
+            }
+            
+            var LastNameElem = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.LastName}'));
+            var LastNameValFailed=false;
+            if(LastNameElem.val() == null || LastNameElem.val() == ''){
+                LastNameElem.removeClass("valid").addClass("invalid");
+                $("span", LastNameElem.parent()).removeClass("error").addClass("error_show");
+                LastNameValFailed = true;
+            }
+            else{
+                LastNameElem.removeClass("invalid").addClass("valid");
+                $("span", LastNameElem.parent()).removeClass("error_show").addClass("error");
+            }
+            
+            var custContactPhnElem = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.custContactPhn}'));
+            var custContactPhnValFailed=false;
+            
+            if(custContactPhnElem.val().length <10){
+                custContactPhnElem.removeClass("valid").addClass("invalid");
+                $("span", custContactPhnElem.parent()).removeClass("error").addClass("error_show");
+                custContactPhnValFailed = true;
+            }
+            else{
+                custContactPhnElem.removeClass("invalid").addClass("valid");
+                $("span", custContactPhnElem.parent()).removeClass("error_show").addClass("error");
+            }
+
+            //email validation starts
+
+            var EmailAddressElem = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.txtEmailAddress}'));
+            var EmailAddressElem1 = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.txtEmailAddress1}'));
+
+            var EmailChkBox = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.chkEmail}'));
+            var EmailChkBoxval = EmailChkBox.val();
+            var emailaddr = EmailAddressElem.val();
+            var emailaddr1 = EmailAddressElem1.val();
+            var EmailAddressElem2;
+            var reg = /^([A-Za-z0-9_\-\.])+\@([A-Za-z0-9_\-\.])+\.([A-Za-z]{2,4})$/;
+            var EmailAdd=false;
+            console.log('1 ' + EmailAdd);
+            
+            if(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.chkEmail}').checked == false) {
+                console.log('Checked = false ' + EmailAdd);
+                
+                if(emailaddr == null || emailaddr == ''  || emailaddr1 == null || emailaddr1 == ''){
+                    EmailAddressElem.removeClass("valid").addClass("invalid");
+                    EmailAddressElem1.removeClass("valid").addClass("invalid");
+                    $("span", EmailAddressElem.parent()).removeClass("error").addClass("error_show");
+                    EmailAdd = true;
+                    console.log('checkbox false and  vlaue null ' + EmailAdd);
+                } else {
+                    EmailAddressElem2 =  emailaddr + '@' + emailaddr1;
+                    if (reg.test(EmailAddressElem2) == false) {
+                        EmailAddressElem.removeClass("valid").addClass("invalid");
+                        EmailAddressElem1.removeClass("valid").addClass("invalid");
+                        $("span", EmailAddressElem.parent()).removeClass("error").addClass("error_show");
+                        EmailAdd = true;
+                        console.log('checkbox false and  vlaue NOT NULL and INVALID EMAIL ' + EmailAdd);
+                    } else {
+
+                        EmailAddressElem.removeClass("invalid").addClass("valid");
+                        EmailAddressElem1.removeClass("invalid").addClass("valid");
+                        $("span", EmailAddressElem.parent()).removeClass("error_show").addClass("error");
+                        console.log('checkbox false and  vlaue NOT NULL and VALID EMAIL ' + EmailAdd);
+                    }
+                }
+            } else {
+                EmailAddressElem.removeClass("invalid").addClass("valid");
+                EmailAddressElem1.removeClass("invalid").addClass("valid");
+                $("span", EmailAddressElem.parent()).removeClass("error_show").addClass("error");
+            }
+            //email validation ends
+            console.log('2 ' + EmailAdd);
+            
+            var AddressElem = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.Address}'));
+            var AddressValFailed=false;
+            if(AddressElem.val() == null || AddressElem.val() == ''){
+                AddressElem.removeClass("valid").addClass("invalid");
+                $("span", AddressElem.parent()).removeClass("error").addClass("error_show");
+                AddressValFailed = true;
+            }
+            else{
+                AddressElem.removeClass("invalid").addClass("valid");
+                $("span", AddressElem.parent()).removeClass("error_show").addClass("error");
+            }
+            
+            var CityElem = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.City}'));
+            var CityValFailed=false;
+            if(CityElem.val() == null || CityElem.val() == ''){
+                CityElem.removeClass("valid").addClass("invalid");
+                $("span", CityElem.parent()).removeClass("error").addClass("error_show");
+                CityValFailed = true;
+            }
+            else{
+                CityElem.removeClass("invalid").addClass("valid");
+                $("span", CityElem.parent()).removeClass("error_show").addClass("error");
+            }
+            
+            var StateElem = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.State}'));
+            var StateValFailed=false;
+            if(StateElem.val() == null || StateElem.val() == ''){
+
+                StateElem.removeClass("valid").addClass("invalid");
+                $("span", StateElem.parent()).removeClass("error").addClass("error_show");
+                StateValFailed = true;
+            }
+            else{
+                StateElem.removeClass("invalid").addClass("valid");
+                $("span", StateElem.parent()).removeClass("error_show").addClass("error");
+            }
+            
+            var ZipcodeElem = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.Zipcode}'));
+            var ZipcodeValFailed=false;
+            if(ZipcodeElem.val() == null || ZipcodeElem.val() == ''){
+                ZipcodeElem.removeClass("valid").addClass("invalid");
+                $("span", ZipcodeElem.parent()).removeClass("error").addClass("error_show");
+                ZipcodeValFailed = true;
+            }
+            else{
+                ZipcodeElem.removeClass("invalid").addClass("valid");
+                $("span", ZipcodeElem.parent()).removeClass("error_show").addClass("error");
+            }
+           
+            var CountryElem = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.Country}'));
+            var CountryValFailed=false;
+
+            if(CountryElem.val() == null || CountryElem.val() == ''){
+                CountryElem.removeClass("valid").addClass("invalid");
+                $("span", CountryElem.parent()).removeClass("error").addClass("error_show");
+                CountryValFailed = true;
+            }
+            else{
+                CountryElem.removeClass("invalid").addClass("valid");
+                $("span", CountryElem.parent()).removeClass("error_show").addClass("error");
+            }
+            
+            var PrimarySegmentElem = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.PrimarySegment}'));
+            var PrimarySegmentValFailed=false;
+            if(PrimarySegmentElem.val() == null || PrimarySegmentElem.val() == ''){
+                PrimarySegmentElem.removeClass("valid").addClass("invalid");
+                $("span", PrimarySegmentElem.parent()).removeClass("error").addClass("error_show");
+                PrimarySegmentValFailed = true;
+            }
+            else{
+                PrimarySegmentElem.removeClass("invalid").addClass("valid");
+                $("span", PrimarySegmentElem.parent()).removeClass("error_show").addClass("error");
+            }
+            
+            console.log('custNameValFailed ' + custNameValFailed);
+            console.log('phoneNumValFailed ' + phoneNumValFailed);
+            console.log('FirstNameValFailed ' + FirstNameValFailed);
+            console.log('LastNameValFailed ' + LastNameValFailed);
+            console.log('custContactPhnValFailed ' + custContactPhnValFailed);
+            console.log('AddressValFailed ' + AddressValFailed);
+            console.log('CityValFailed ' + CityValFailed);
+            console.log('StateValFailed ' + StateValFailed);
+            console.log('ZipcodeValFailed ||  ||  ||  ' + ZipcodeValFailed);
+            console.log('CountryValFailed ' + CountryValFailed);
+            console.log('PrimarySegmentValFailed ' + PrimarySegmentValFailed);
+            console.log('EmailAdd ' + EmailAdd);
+            if(custNameValFailed || phoneNumValFailed || FirstNameValFailed || LastNameValFailed  || custContactPhnValFailed || AddressValFailed || CityValFailed || StateValFailed || ZipcodeValFailed || CountryValFailed || PrimarySegmentValFailed || EmailAdd){
+                // event.preventDefault(); 
+                return false;
+                //event.stopPropagation();
+                console.log('Error');
+                //return null;
+                
+            }else{
+                console.log('Krishna');
+                return true;
+            }
+        }
+        function checkEmailAddressonLoad(){ 
+
+            var EmailAddressElem = $(document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.txtEmailAddress}'));
+            var emailaddr = EmailAddressElem.val();
+
+            if(emailaddr == 'declined'){
+                document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.txtEmailAddress1}').disabled=true; 
+                document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.txtEmailAddress}').disabled=true; 
+                document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.txtEmailAddress}').value = 'declined';
+                document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.txtEmailAddress1}').value = 'cummins.com'; 
+            }
+            else{
+                document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.txtEmailAddress1}').disabled=false; 
+                document.getElementById('{!$Component.Intakefrm.pgToComp.BMSCustComp.txtEmailAddress}').disabled=false; 
+                //document.getElementById('{!$Component.Intakefrm.txtEmailAddress}').value = '';
+                //document.getElementById('{!$Component.Intakefrm.txtEmailAddress1}').value = ''; 
+            }
+        }
+
+    </script>
+    <!-- END SCRIPTS -->
+</apex:component>

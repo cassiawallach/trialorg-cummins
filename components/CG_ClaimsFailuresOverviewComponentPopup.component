@@ -1,0 +1,1801 @@
+<apex:component id="failureov" layout="none" access="global" controller="CG_CL_ClaimsFailuresOverviewCompNew" allowDML="true" >{!SRTFailurenamesOnLoad}<!--do not remove it is used as pg action - Anirudh--->
+    <style>
+
+        #chkCoverageBtnEnabled {
+            display:none;
+        }
+
+        #chkCoverageBtnDisabled{
+            display :inline;
+        }
+
+    </style>
+
+    <style>
+        .cmi_asterisk1{
+            color: #D02323 ;
+        }
+        .showRedBorder{
+            border: 2px solid red !important;
+        } 
+
+        .ui-autocomplete-input { 
+            border: none; 
+            font-size: 14px;
+            width: 172px;
+            height: 24px;
+            margin-bottom: 5px;
+            padding-top: 2px;
+            border: 1px solid #DDD;
+            border-left:2px solid #999;
+            padding-top: 0px !important;
+            z-index: 1511;
+            position: relative;
+        }
+        .ui-menu .ui-menu-item a {
+            font-size: 12px;
+        }
+        .ui-autocomplete {
+            max-height: 200px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: fixed;
+            top: 100%;
+            left: 0;
+            z-index: 1051 !important;
+            float: left;
+            display: none;
+            min-width: 160px;
+            width: 160px;
+
+        }
+        .ui-menu-item > a.ui-corner-all {
+            display: block;
+            padding: 3px 15px;
+            clear: both;
+            font-weight: normal;
+            line-height: 18px;
+            color: #555555;
+            white-space: nowrap;
+            text-decoration: none;
+        }
+        .ui-state-hover, .ui-state-active {
+            color: #ffffff;
+            text-decoration: none;
+            background-color: #0088cc;
+            border-radius: 0px;
+            -webkit-border-radius: 0px;
+            -moz-border-radius: 0px;
+            background-image: none;
+        }
+        .cmi_claimsfail-table td{
+            text-align: center;
+        }
+
+    </style>
+    <script>
+        // function callFailureMeasure(String failmeasure){
+            
+           // console.log('inside callFailureMeasure method-->'+failmeasure);
+            //callFailureMeasureAF(failmeasure);
+       // }
+    
+    </script>
+    <script>
+        function onChangeOfPreFailName(){
+            console.log('insideaftrcomp') //alert('Onblur');
+            var fname= document.getElementById("{!$Component.Fname}").value;
+            console.log('fname'+fname);
+            var lowercase = fname.toLowerCase();
+            if(fname!=null && fname!='' && lowercase != 'unlisted'){
+                $("#ErrMsg").hide();
+                document.getElementById("{!$Component.sysCode}").disabled = true;
+                document.getElementById("{!$Component.compCode}").disabled = true;
+                document.getElementById("{!$Component.CFname}").disabled = true;
+                document.getElementById("{!$Component.ErrMsgVal}").visibility = "hidden"; 
+                if(document.getElementById('chkCoverageBtnEnabled') != null)
+                    document.getElementById('chkCoverageBtnEnabled').style.display = 'inline';
+                if(document.getElementById('chkCoverageBtnDisabled') != null)
+                    document.getElementById('chkCoverageBtnDisabled').style.display = 'none';
+            }
+            if(fname!=null && fname!='' && lowercase == 'unlisted'){
+
+                var sysname = document.getElementById("{!$Component.sysCode}").value;
+                console.log('sysname***'+sysname);
+                if(sysname==null || sysname==''){
+                    document.getElementById("{!$Component.compCode}").value='';
+
+                    document.getElementById("{!$Component.compCode}").disabled = true;
+                    document.getElementById("{!$Component.CFname}").disabled = false;
+
+                }
+                else{
+
+                    document.getElementById("{!$Component.CFname}").disabled = true;
+                }
+                if(document.getElementById('chkCoverageBtnEnabled') != null)
+                    document.getElementById('chkCoverageBtnEnabled').style.display = 'inline';
+                if(document.getElementById('chkCoverageBtnDisabled') != null)
+                    document.getElementById('chkCoverageBtnDisabled').style.display = 'none';
+            }
+            if(fname==null || fname==''){
+                document.getElementById("{!$Component.sysCode}").value = '';
+                document.getElementById("{!$Component.compCode}").value = '';
+                document.getElementById("{!$Component.sysCode}").disabled = true; 
+                document.getElementById("{!$Component.compCode}").disabled = true;
+                document.getElementById('chkCoverageBtnEnabled').style.display = 'none';
+                document.getElementById('chkCoverageBtnDisabled').style.display = 'inline';
+                document.getElementById("{!$Component.CFname}").disabled = true;
+                $("#ErrMsg").hide();
+                document.getElementById("{!$Component.ErrMsgVal}").visibility = "hidden"; 
+            }
+
+        }
+
+        function afterCustFailureCompleteFn(){
+            var Cfname= document.getElementById("{!$Component.CFname}").value;
+            if(Cfname==null || Cfname==''){
+                document.getElementById("{!$Component.sysCode}").value = '';
+                document.getElementById("{!$Component.sysCode}").disabled = false;
+                document.getElementById("{!$Component.compCode}").value = '';
+            }
+            if(Cfname!=null && Cfname!=''){
+                document.getElementById("{!$Component.sysCode}").disabled =true ;
+                document.getElementById("{!$Component.compCode}").disabled =true ;
+
+            }
+        }
+            function qtyPressfc(e,compId){
+        // var technicianTimeVal= document.getElementById(compId.id).value;
+        if((e.which > 47 && e.which <=57) || e.which == 8 || e.which == 46 || e.which == 37 || e.which == 39 || (e.which > 95 && e.which <=105))
+        {
+            //alert(e.which);
+        } 
+        else 
+        {
+            return false;
+        }        
+    }
+
+        function onChangeOfSysCode(){
+            var sysname = document.getElementById("{!$Component.sysCode}").value;
+            if(sysname==null || sysname==''){
+                document.getElementById("{!$Component.compCode}").value='';
+
+                document.getElementById("{!$Component.compCode}").disabled = true;
+                document.getElementById("{!$Component.CFname}").disabled = false;
+
+            }
+            else{
+
+                document.getElementById("{!$Component.CFname}").disabled = true;
+            }
+        }
+    </script>
+    <script>
+        function failurePopupJS(failurePopup,e){
+            e.disabled = true;
+            if(failurePopup == 'true'){
+                $('#showFailurePopuponsave1').modal(
+                    {backdrop: 'static',
+                     keyboard: false,
+                     show:true
+                    });
+            }
+            else{
+            }
+        }   
+        
+        //Adding JS method By Krishna on GSSC-248
+        function qtyPressfc1(e,compId){
+            if(e.which != 9) {
+                //DO NOTHING.
+            } else {
+                return false;
+                
+            }
+        }
+        //Adding JS method By Krishna on GSSC-248
+        
+        function valFailurePoint(e){
+            if((e.which > 47 && e.which <=57) || (e.which > 95 && e.which <=105) || (e.which >=33 && e.which <=40) || e.which == 8 || e.which == 9 || e.which==144 || e.which==12 || e.which==45 || e.which==46)
+            {
+
+            } 
+            else {
+                return false;
+            }
+        }
+
+        function DisableWASaveButton(claimblescompId){
+            claimblescompId.disabled=true;
+            document.getElementById('fname').classList.add("showRedBorder");
+        }
+        function showDeleteConfirmPopup(){
+            $('#showFailurePopuponsave').modal(
+                {backdrop: 'static',
+                 keyboard: false,
+                 show:true
+                });           
+        }
+        function showDeleteConfirmPopupNonMPSN(){
+            //alert('Hello');
+            $('#DeletePopupNew').modal(
+                {backdrop: 'static',
+                 keyboard: false,
+                 show:true
+                });           
+        }
+
+        function showEditPopup(){
+
+            $('#modalAccCodelkupPopUpNew').modal(
+                {backdrop: 'static',
+                 keyboard: false,
+                 show:true
+                });
+
+
+        }
+
+
+        function CompareDates(value1){
+
+            CompareDatesfun1(value1);
+        }
+        function validateMaxVal(coverd){
+            var CoveredVal= coverd.value;
+            if(CoveredVal > 100) {
+                coverd.value=100;   
+            }
+        }
+
+        function hideerror(fname) {
+            if(fname!=null && fname!=''){
+                var lowercase = fname.toLowerCase();
+                var x = document.getElementById("ErrMsg");
+                if(fname!=null && fname!='' && lowercase == 'unlisted'){
+                    $("#ErrMsg").show();
+                    document.getElementById("{!$Component.sysCode}").disabled = false;
+                    document.getElementById("{!$Component.compCode}").disabled = false;
+                    document.getElementById("{!$Component.CFname}").disabled = false;
+                } else {
+                    $("#ErrMsg").hide();
+                    document.getElementById("{!$Component.ErrMsgVal}").visibility = "hidden"; 
+                }
+            }
+            else{
+                $("#ErrMsg").hide();
+                document.getElementById("{!$Component.ErrMsgVal}").visibility = "hidden"; 
+                document.getElementById("{!$Component.sysCode}").disabled = true;
+                document.getElementById("{!$Component.compCode}").disabled = true;
+                document.getElementById("{!$Component.CFname}").disabled = true;
+            }
+        }
+        function switchcovearagebuttons(val){
+            if(val){
+                document.getElementById('chkCoverageBtnEnabled').style.display = 'inline';
+                document.getElementById('chkCoverageBtnDisabled').style.display = 'none'; 
+            }else{
+                document.getElementById('chkCoverageBtnEnabled').style.display = 'none';
+                document.getElementById('chkCoverageBtnDisabled').style.display = 'inline';   
+            }
+
+        }
+
+
+        function preDefinedFailSmartSearch(){    
+            var apexFNList = [];
+
+            <apex:repeat value="{!failureNameList}" var="name">
+                apexFNList.push('{!name}');
+        </apex:repeat> 
+
+
+        $( ".apexFNautocomplete" ).autocomplete({
+            source: apexFNList,
+            select: function( event, ui ) {
+                //alert();
+                // getValues(ui.item.value);
+
+            }
+
+
+        });
+
+            var apexFCList = [];
+            // console.log('faultCodeMap>>>>'+faultCodeMap);
+            <apex:repeat value="{!faultCodeMap}" var="fname">                   
+                apexFCList.push('{!fname}');
+        </apex:repeat>  
+        $( ".FaultCode" ).autocomplete({
+            source: apexFCList,
+            select: function( event, ui ) {
+
+                getFC(ui.item.value);
+
+            }
+        });
+
+            var apexFMList = [];
+            <apex:repeat value="{!FailModes}" var="FMList">
+                apexFMList.push('{!FMList}');
+        </apex:repeat>  
+
+        $( ".xyz" ).autocomplete({
+            source: apexFMList,
+            select: function( event, ui ) {
+
+                getFM(ui.item.value);
+
+            }
+        });
+        }
+
+        function getFC(val){
+            if(val!=null && val!=''){
+                getFaultcode(val);
+            } 
+        }
+        function getFM(val){
+            //alert('inside getFM');
+            if(val!=null && val!=''){
+                getFailmode(val);
+            } 
+        }
+
+
+
+    </script>
+    <script>
+        function oncompleteCallFaultCodeScript(testing){
+
+            alert('faultCodeMap');
+            var apexFCList = [];
+            console.log('faultCodeMap'+testing);
+            <apex:repeat value="{!faultCodeMap}" var="fname">                   
+                apexFCList.push('{!fname}');
+        </apex:repeat>  
+        $( ".FaultCode" ).autocomplete({
+            source: apexFCList,
+            select: function( event, ui ) {
+
+                getFC(ui.item.value);
+
+            }
+        });
+        }
+    </script>
+    <apex:outputpanel id="cusfailJavaScript">
+        <script>
+            var apexCFList = [];
+            <apex:repeat value="{!custFailureNameList}" var="CFList">
+                apexCFList.push('{!CFList}');
+            </apex:repeat>    
+
+            $( ".apexCFNautocomplete" ).autocomplete({
+
+                source: apexCFList,
+                select: function( event, ui ) {
+                    //getCustValues(ui.item.value);
+                }
+            });
+        </script>
+    </apex:outputpanel>
+    <apex:outputpanel id="sysCodeJavaScript">
+        <script>
+            var apexSCList = [];
+            console.log('ggg'+'{!SystemCodes}');
+            <apex:repeat value="{!SystemCodes}" var="name">
+                apexSCList.push('{!name}');
+            </apex:repeat>        
+
+
+            $( ".apexSCautocomplete" ).autocomplete({
+                source: apexSCList,
+
+                select: function( event, ui ) {
+                    //getSC(ui.item.value);
+                    //enableComponentField();
+                    document.getElementById("{!$Component.compCode}").disabled = false;
+
+                }
+
+            });
+        </script>
+    </apex:outputpanel>
+    <apex:outputPanel id="loadComCodeValues">
+        <script>
+            var apexCCList = [];
+            console.log('kkk'+'{!ComponentCodes}');
+            <apex:repeat value="{!ComponentCodes}" var="name">
+                apexCCList.push('{!name}');
+            </apex:repeat>        
+
+            $( ".apexCCautocomplete" ).autocomplete({
+                source: apexCCList,
+                select: function( event, ui ) {
+
+                    //getCC(ui.item.value);
+
+                }
+            });
+        </script>
+    </apex:outputPanel>
+
+    <apex:outputPanel id="javascript">
+
+
+
+        <script type="text/javascript" >
+
+            function disablepartsfields(value){
+                $("input[id$=Wartydt]").prop("disabled",value);
+                $("input[id$=FailureDateID]").prop("disabled",value);
+                $("input[id$=FailureDateIDs]").prop("disabled",value);
+                $("input[id$=FailurePointID]").prop("disabled",value);
+                $("input[id$=failMeasureCSSMiles]").prop("disabled",value);
+                $("input[id$=failMeasureCSSKilometers]").prop("disabled",value);
+                $("input[id$=failMeasurecsshours]").prop("disabled",value);
+                if(value){
+                    document.getElementById('prtWartydtDate').style.pointerEvents = 'none';
+                   document.getElementById('failureDate').style.pointerEvents = 'none'; 
+                }else{
+                    document.getElementById('prtWartydtDate').style.pointerEvents = 'auto';
+                    document.getElementById('failureDate').style.pointerEvents = 'auto';  
+                }
+            }
+
+        </script>
+
+    </apex:outputPanel>    
+
+
+
+    <script>
+        function assignWSDtoActual(e){
+            document.getElementById("{!$Component.Wartydt}").value=e.value;       
+            CompareDates(e.value);
+        }
+
+        function AssignFDval(e) {
+            
+             $('.datepicker').hide();
+             $('.FailureDateID').hide();
+             $('.FailureDateIDs').hide();
+            document.getElementById("{!$Component.FailureDateID}").value = e.value;//Anirudh Changes as java script syntax issue was coming
+            document.getElementById("{!$Component.FailureDateIDs}").value = e.value;
+
+        }
+    </script>
+    <script>
+        function showPopup(e){
+            // alert('hello '+e.value);
+        }
+        function showText(){
+            var text = '{!$Label.CG_Failures_are_available_only_for_Before_In_Service_engines_in_Multi_PSN_Claims}';
+            document.getElementById("DT").innerHTML=text;
+
+        }
+
+        function showMessage(){
+            var msg = '{!$Label.CG_Only_Failures_or_one_Campaign_ATC_is_allowed_on_Multi_PSN_claim}';
+            //alert(msg);
+            document.getElementById("ST").innerHTML=msg;
+        }
+
+      
+        
+        $('.datepicker').datepicker({
+               autoclose: true;
+         });
+
+    </script>
+
+    <!------------------------------------------------------- Script ends --------------------------------------------------------->   
+    <!-----ActionFunctions Start---->
+    <apex:actionFunction name="enableCheckCoverage" reRender="checkCoverageButton"/>
+    <apex:actionFunction name="getFailmode"  action="{!changefailmode}" rerender="javascript"> 
+        <apex:param name="failmode" value="" assignTo="{!selectedFailMode}" />
+    </apex:actionFunction>
+    <apex:actionFunction name="getFaultcode"  action="{!checkFaultCode}" rerender="javascript,invFaultCode"> 
+        <apex:param name="faultcode" value="" assignTo="{!selectedFaultCode}" />
+    </apex:actionFunction>
+    <!-----ActionFunctions End---->
+    <apex:outputPanel rendered="{!IF(addFailureLink,true,false)}">
+        <div id="DT" style="color:red">
+            <apex:outputText id="displayText" style="color:red" />
+        </div>
+    </apex:outputPanel>
+    <apex:outputPanel rendered="{!IF(addCampLink,true,false)}">
+        <div id="ST" style="color:red">
+            <apex:outputText id="displayMessage" style="color:red" />
+        </div>
+    </apex:outputPanel><br/>
+    <div class="col-md-3 col-xs-12"></div> 
+    <fieldset class="cmi_field_set" style="width:100%">
+        <div class="panel-body">  
+            <div class="col-md-15 col-xs-15">
+                <div class="container-fluid">
+                    <div class="form-horizontal" role="form" id="noPopupone"> 
+                        <div class="form-group">
+                            <h4><b>{!$Label.CG_FailuresOverview}</b></h4>
+                        </div>
+
+                    </div>
+
+                    <div style="float:right" id="hideLinkId3">
+                        <apex:outputPanel rendered="{!IF((claimsRec.CSS_Job__c==null && claimsRec.Dealer_Service_Job__c==null )&&$User.isClaimReadOnly__c !=true ,true,false)}"  id="hidepnl">
+                            <!-- {!addFailureLink} -- {!addCampLink} -->
+                            <apex:outputPanel rendered="{!IF(addFailureLink && (claimsRec.Catastrophic__c != true || claimsRec.IsDealerCreatedClaim__c ==  false || CONTAINS($UserRole.Name,'Factory')),true,false)}">
+                                <i class="cmi_add-icon"></i>
+                                <!--<apex:commandLink value="{!$Label.css_Add}" html-data-target="#modalAccCodelkupPopUpNew" html-data-toggle="modal"  onComplete="return false;" ></apex:commandLink>-->
+                                <apex:commandLink style="font-weight:bold;text-decoration:underline;" value="{!$Label.css_Add}" onclick="preDefinedFailSmartSearch();showText();" rerender="hidepnl"  onComplete="hideerror(null);" >
+                                    <!--<apex:actionSupport event="onclick" action="{!noAddlinkPopup}" rerender="noPopupone,addPopup" />-->
+                                </apex:commandLink>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!IF(addCampLink && (claimsRec.Catastrophic__c != true || claimsRec.IsDealerCreatedClaim__c ==  false || CONTAINS($UserRole.Name,'Factory')),true,false)}">
+                                <i class="cmi_add-icon"></i>
+                                <!--<apex:commandLink value="{!$Label.css_Add}" html-data-target="#modalAccCodelkupPopUpNew" html-data-toggle="modal"  onComplete="return false;" ></apex:commandLink>-->
+                                <apex:commandLink style="font-weight:bold;text-decoration:underline;" value="{!$Label.css_Add}" onclick="preDefinedFailSmartSearch();showMessage();" rerender="hidepnl"  onComplete="hideerror(null);">
+                                    <!--<apex:actionSupport event="onclick" action="{!noAddlinkPopup}" rerender="noPopupone,addPopup" />-->
+                                </apex:commandLink>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!IF(addFailureLink || addCampLink,false,true)}">
+                                <apex:outputPanel rendered="{!IF(claimsRec.Catastrophic__c == false || claimsRec.IsDealerCreatedClaim__c ==  false || CONTAINS($UserRole.Name,'Factory'),true,false)}">
+                                    <i class="cmi_add-icon"></i>
+                                    <!--<apex:commandLink value="{!$Label.css_Add}" html-data-target="#modalAccCodelkupPopUpNew" html-data-toggle="modal"  onComplete="return false;" ></apex:commandLink>-->
+                                    <apex:commandLink style="font-weight:bold;text-decoration:underline;" value="{!$Label.css_Add}" action="{!onAddClick}" onClick="preDefinedFailSmartSearch();hideerror(null);" rerender="FaultCode,checkCoveragePanel,AcountCode,PayCode,warrantycompfailurepanel" html-data-target="#modalAccCodelkupPopUpNew" html-data-toggle="modal" html-data-backdrop="static" html-data-keyboard="false"  onComplete="return false;">
+
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+
+                        <!-- Dealer Automated Claim-->
+
+                        <apex:outputPanel rendered="{!IF((claimsRec.CSS_Job__c!=null || claimsRec.Dealer_Service_Job__c!=null) && dealerLocation=true &&$User.isClaimReadOnly__c !=true ,true,false)}"  id="hidepnlauto">
+                            <apex:outputPanel rendered="{!IF(addFailureLink && (claimsRec.Catastrophic__c != true || claimsRec.IsDealerCreatedClaim__c ==  false || CONTAINS($UserRole.Name,'Factory'))&&$User.isClaimReadOnly__c !=true,true,false)}">
+                                <i class="cmi_add-icon"></i>
+                                <apex:commandLink style="font-weight:bold;text-decoration:underline;" value="{!$Label.css_Add}" onclick="preDefinedFailSmartSearch();showText();" rerender="hidepnl"  onComplete="hideerror(null);">
+                                </apex:commandLink>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!IF(addCampLink && (claimsRec.Catastrophic__c != true || claimsRec.IsDealerCreatedClaim__c ==  false || CONTAINS($UserRole.Name,'Factory'))&&$User.isClaimReadOnly__c !=true,true,false)}">
+                                <i class="cmi_add-icon"></i>
+                                <apex:commandLink style="font-weight:bold;text-decoration:underline;" value="{!$Label.css_Add}" onclick="preDefinedFailSmartSearch();showMessage();" rerender="hidepnl"  onComplete="hideerror(null);">
+                                </apex:commandLink>
+                            </apex:outputPanel>
+                            <apex:outputPanel rendered="{!IF(addFailureLink || addCampLink,false,true)}">
+                                <apex:outputPanel rendered="{!IF(claimsRec.Catastrophic__c != true || claimsRec.IsDealerCreatedClaim__c ==  false || CONTAINS($UserRole.Name,'Factory')&&$User.isClaimReadOnly__c !=true,true,false)}">
+                                    <i class="cmi_add-icon"></i>
+                                    <apex:commandLink style="font-weight:bold;text-decoration:underline;" value="{!$Label.css_Add}" action="{!onAddClick}" onClick="preDefinedFailSmartSearch();hideerror(null);" rerender="FaultCode,checkCoveragePanel,AcountCode,PayCode,warrantycompfailurepanel" html-data-target="#modalAccCodelkupPopUpNew" html-data-toggle="modal" html-data-backdrop="static" html-data-keyboard="false"  onComplete="return false;">
+                                    </apex:commandLink>
+                                </apex:outputPanel>
+                            </apex:outputPanel>
+                        </apex:outputPanel>
+
+                        <!-- End ---->
+
+                        <div class="modal fade" id="modalAccCodelkupPopUpNew" role="dialog" html-data-backdrop="static" html-data-keyboard="false">
+                            <div class="modal-dialog" style="margin-top:20px !important;width:750px;"> test
+                                <div class="modal-content"> 
+
+                                    <!-- Modal Header --><apex:outputPanel id="FailuresPopupHeader">
+                                    <div class="modal-header">
+                                        <h4 class="modal-title" style="color: #FFFFFF;">
+                                            <apex:outputText rendered="{!IF(selectedCompId == null || selectedCompId == '', true, false)}"> {!$Label.CSS_Add_Failure_Popup} </apex:outputText>
+                                            <apex:outputText rendered="{!IF(selectedCompId != null && selectedCompId != '', true, false)}"> {!$Label.CSS_Edit_Failure_Popup} </apex:outputText>
+                                        </h4>
+                                    </div></apex:outputPanel>
+
+                                    <!-- Modal Body -->
+                                    <apex:outputPanel id="FailuresOverviewAdd"> 
+                                        <div class="modal-body" id="modalPopupBody">
+                                            <div style="text-align:left;">
+                                                <!--<h4><b>{!$Label.CSS_Failure_Missing_Info}</b></h4>  -->                                   
+                                                <apex:outputText id="ErrMsg" rendered="{!IF((blankField==true),true,false)}">
+                                                    <h4 style="color: red ; display: block;"><b>{!$Label.CSS_Claims_Enter_Value}</b></h4>
+                                                </apex:outputText>
+                                            </div> 
+                                            <!-- <h4 style="padding-left:20px"><b>{!compName}</b></h4>-->
+                                            <apex:outputpanel id="FailureName">
+                                                <div class="col-sm-12 col-xs-12">
+                                                    <div class="col-sm-4 col-xs-12 cmi-tar" >
+                                                        <b>{!$Label.CSS_Predefined_Failure_Name}</b><span class="cmi_asterisk1">*</span>
+                                                    </div>
+                                                    <div class="col-sm-4 col-xs-12"> 
+                                                        <apex:inputText value="{!selectedFName}"  styleclass="{!IF((blankField==true && (selectedFname=='' || selectedFname==null)),'apexFNautocomplete showRedBorder','apexFNautocomplete')}" disabled="{!IF(selectedCompId!= null && selectedCompId!= '', true, false)}" id="Fname" html-placeholder="Search" style="text-align:left;" >
+                                                            <apex:actionSupport event="onblur" action="{!changeFailures}" status="callPartNoStatus" onComplete="onChangeOfPreFailName();" rerender="Nocallcoverage,cusfailJavaScript,sysCodeJavaScript,failureClaims,invFailNameId,AcountCode,CustomFailureName,opPartsWarranty,PayCode,checkCoveragePanel,Calib"/>  <!--karthik G added rerender condition 190587-->
+                                                        </apex:inputText> 
+
+                                                        <apex:actionStatus id="callPartNoStatus"> 
+                                                            <apex:facet name="start">Loading... <img src="/img/loading.gif" /></apex:facet>
+                                                            <apex:facet name="stop"></apex:facet>
+                                                        </apex:actionStatus>
+                                                    </div>
+                                                    <apex:outputPanel id="invFailNameId">
+                                                        <apex:outputPanel rendered="{!IF(invalidFailure==true,true,false)}" >
+                                                            <div>
+                                                                <apex:outputText value="{!$Label.CG_InvalidPredefinedFailure}" style="text-align:right;color: red;" rendered="{!IF(invalidFailure==true,true,false)}"/>   
+                                                            </div>
+                                                        </apex:outputPanel>
+                                                        <div style="{!IF(invalidFailure == false && unlistedFailure == true, 'display:block', 'display:none')}">
+                                                            <div style="text-align:right;color: red;" id="ErrMsg">
+                                                                <apex:outputText id="ErrMsgVal" value="{!$Label.CSS_failure_Unlisted_error_message}"></apex:outputText>
+                                                            </div>
+                                                        </div>
+                                                    </apex:outputPanel>
+
+                                                    <div class="clearfix"></div> 
+                                                </div>
+
+
+                                            </apex:outputpanel>
+                                            <br/><br/>
+
+
+                                            <apex:outputpanel id="CustomFailureName">
+                                                <div class="col-sm-12 col-xs-12">
+                                                    <div class="col-sm-4 col-xs-12 cmi-tar" >
+                                                        <b>{!$Label.CSS_Custom_Failure_Name}</b><span class="cmi_asterisk1">*</span>
+
+                                                    </div>
+                                                    <div class="col-sm-4 col-xs-12">
+                                                       <!-- <apex:inputText id="CFname"  value="{!selectedCustFName}" styleclass="{!IF((selectedCustFName=='' || selectedCustFName==null),'apexCFNautocomplete','apexCFNautocomplete')}" onkeyup="afterCustFailureCompleteFn()"  html-placeholder="Search" style="text-align:left;"></apex:inputText>-->
+                                                        <!--Adding CFname's attribute to "onkeydown="return qtyPressfc1(event,this)"" by Krishna on GSSC-248-->
+                                                        <apex:inputText id="CFname" onkeydown="return qtyPressfc1(event,this)"  value="{!selectedCustFName}" styleclass="{!IF((selectedCustFName=='' || selectedCustFName==null),'apexCFNautocomplete','apexCFNautocomplete')}"  disabled="{!IF(selectedCompId!= null && selectedCompId!= '', true, false)}"  html-placeholder="Search" style="text-align:left;">
+                                                            <apex:actionSupport event="onblur" action="{!changeCustFailures}" status="callPartNoStatus1" onComplete="afterCustFailureCompleteFn()" reRender="Nocallcoverage,failureClaims,sysCodeJavaScript,opPartsWarranty,invFailCustNameId,AcountCode,PayCode,checkCoveragePanel"/>   <!--karthik G added rerender condition 190587-->
+                                                        </apex:inputText> 
+                                                        <apex:actionStatus id="callPartNoStatus1">
+                                                            <apex:facet name="start">Loading... <img src="/img/loading.gif" /></apex:facet>
+                                                            <apex:facet name="stop"></apex:facet>
+                                                        </apex:actionStatus>
+                                                    </div>
+                                                    <apex:outputPanel id="invFailCustNameId">
+                                                        <apex:outputPanel rendered="{!IF(invalidCustFailure==true,true,false)}" >
+                                                            <div>
+                                                                <apex:outputText value="{!$Label.CG_InvalidCustomFailure}" style="text-align:right;color: red;"/>   
+                                                            </div>
+                                                        </apex:outputPanel>
+                                                    </apex:outputPanel>
+                                                    <div class="clearfix"></div> 
+                                                </div>
+                                            </apex:outputpanel>
+                                            <br/><br/>
+                                            <apex:outputpanel id="OR">
+                                                <div class="col-sm-6 col-xs-6">
+                                                    <div class="col-sm-5 col-xs-6 cmi-tar" >
+                                                        <b>{!$Label.CSS_Failure_Popup_OR}</b>
+                                                    </div>
+                                                </div>
+                                                <!--<div class="col-sm-offset-4 col-sm-2">
+                                                    <button type="button" style="width:0px; height:0px;border:0px;"></button>
+                                                </div>-->
+                                            </apex:outputpanel>
+                                            <div class="clearfix"></div> 
+                                            <br/>
+                                            <apex:outputPanel id="failureClaims" >
+                                                <div class="col-sm-6 col-xs-6">
+
+                                                    <div class="col-sm-6 col-xs-6 cmi-tar" style="padding:0px 8px">
+                                                        <b>{!$Label.CG_Systemcode}</b><span class="cmi_asterisk1">*</span>
+                                                    </div>
+
+                                                    <div class="col-sm-6 col-xs-6" style="padding:0px 22px">
+                                                        <apex:inputtext value="{!selectedSysCode}"  disabled="{!IF((selectedCustFName != null && selectedCustFName != '') || (selectedFName != null && selectedFName != '' && !(CONTAINS(LOWER(selectedFName),'unlisted'))),true, false)}" styleclass="{!IF((blankField==true && (selectedSysCode=='' || selectedSysCode==null)),'apexSCautocomplete showRedBorder','apexSCautocomplete')}" id="sysCode"  html-placeholder="Search" style="text-align:left;"><!-- onchange="sysCodeChange(this)"-->
+                                                            <apex:actionSupport event="onblur" action="{!changeSystemcode}" status="callPartNoStatus3" onComplete="onChangeOfSysCode();" reRender="Nocallcoverage,loadComCodeValues,invsysCode,AcountCode,opPartsWarranty,comppcode,PayCode,checkCoveragePanel"/>  <!--karthik G added rerender condition 190587-->
+                                                        </apex:inputtext>
+                                                        <apex:actionStatus id="callPartNoStatus3">
+                                                            <apex:facet name="start">Loading... <img src="/img/loading.gif" /></apex:facet>
+                                                            <apex:facet name="stop"></apex:facet>
+                                                        </apex:actionStatus>
+                                                    </div>                                                 
+                                                    <div class="clearfix"></div> 
+                                                    <apex:outputPanel id="invsysCode">
+                                                        <apex:outputPanel rendered="{!IF(invalidSysCode==true,true,false)}" >
+                                                            <div class="col-sm-offset-6 col-sm-6 col-xs-12">
+                                                                <apex:outputText value="{!$Label.CG_InvalidSysCode}" style="text-align:right;color: red;"/>   
+                                                            </div>
+                                                        </apex:outputPanel>
+                                                    </apex:outputPanel>
+                                                    <div class="clearfix"></div> 
+                                                </div>
+                                                <div class="col-sm-6 col-xs-6">
+
+                                                    <div class="col-sm-6 col-xs-6 cmi-tar">
+                                                        <b>{!$Label.CG_Componentcode}</b><span class="cmi_asterisk1">*</span>
+                                                    </div>
+                                                    <apex:outputPanel id="comppcode">
+                                                        <div class="col-sm-6 col-xs-6" style="margin-left:0px;">
+                                                            <apex:inputtext value="{!selectedCompCode}" disabled="{!IF((selectedCustFName != null && selectedCustFName != '') || (selectedFName != null && selectedFName != '' && !(CONTAINS(LOWER(selectedFName),'unlisted'))),true, false)}"  styleclass="{!IF((blankField==true && (selectedCompCode=='' || selectedCompCode==null)),'apexCCautocomplete showRedBorder','apexCCautocomplete')}"  id="compCode" html-placeholder="Search" style="text-align:left;">
+                                                                <apex:actionSupport event="onblur" action="{!checkCompCode}" status="callPartNoStatus4" rerender="Nocallcoverage,invcompCode,opPartsWarranty,AcountCode,PayCode,checkCoveragePanel" />   <!--karthik G added rerender condition 190587-->
+                                                                </apex:inputText>
+
+                                                            <apex:actionStatus id="callPartNoStatus4">
+                                                                <apex:facet name="start">Loading... <img src="/img/loading.gif" /></apex:facet>
+                                                                <apex:facet name="stop"></apex:facet>
+                                                            </apex:actionStatus>
+                                                        </div> 
+                                                    </apex:outputPanel>
+                                                    <div class="clearfix"></div> 
+                                                    <apex:outputPanel id="invcompCode">
+                                                        <apex:outputPanel rendered="{!IF(invalidCompCode==true,true,false)}" >
+                                                            <div class="col-sm-offset-6 col-sm-6 col-xs-12">
+                                                                <apex:outputText value="{!$Label.CG_InvalidCompCode}" style="text-align:right;color: red;"/>   
+                                                            </div>
+                                                        </apex:outputPanel>
+                                                    </apex:outputPanel>
+                                                    <div class="clearfix"></div> 
+                                                </div>
+                                            </apex:outputPanel>
+                                            <br/><br/>
+                                            <div class="col-sm-12 col-xs-12">
+
+
+                                                <div class="col-sm-3 col-xs-12 cmi-tar">
+                                                    <b>{!$Label.CG_Failmode}</b><span class="cmi_asterisk1">*</span>
+                                                </div>
+
+                                                <div class="col-sm-4 col-xs-12">
+                                                    <!-- <apex:selectList size="1" html-placeholder="Search" style="width:150px;"/>-->
+                                                    <apex:inputText value="{!selectedFailMode}" style="width: 178px;" styleclass="{!IF((blankField==true && (selectedFailMode=='' || selectedFailMode==null)),'xyz showRedBorder','xyz')}"   html-placeholder="Search" onblur="chkFailMode();" /> <!-- style="text-align:left;"-->
+
+                                                    <!--<apex:inputText /> -->
+                                                </div>
+                                                <apex:outputPanel rendered="{!IF((claimsRec.Information_Only_Claim__c ==false && (accountcodeeditonfm ==false && failmodeloadval == '' && failmodeloadval== null) || (accountcodeeditonfm== true && (failmodeloadval == '' || failmodeloadval== null)) ),true,false)}">
+                                                   
+                                                 <apex:actionStatus startText="requesting..." id="callCheckCoverage2">
+                                                            <apex:facet name="start">Fetching Coverage Details...</apex:facet>
+                                                            <apex:facet name="stop"></apex:facet>
+                                                        </apex:actionStatus>
+                                                        </apex:outputPanel>
+                                                <apex:outputPanel id="invFailMode">
+                                                    <apex:outputPanel rendered="{!IF(invalidFailMode==true,true,false)}" >
+                                                        <div>
+                                                            <apex:outputText value="{!$Label.CG_InvalidFailMode}" style="text-align:right;color: red;"/>   
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                </apex:outputPanel>
+                                            </div>
+                                            <apex:actionFunction name="chkFailMode"  action="{!checkFailMode}" rerender="Nocallcoverage,invFailMode,checkCoveragePanel,AcountCode,PayCode,warrantycompfailurepanel,AccCodeAuthorize,opPartsWarranty,SavePnl" status="callCheckCoverage2" > </apex:actionFunction>
+                                                      
+                                            <div class="clearfix"></div> 
+                                            
+                                            <br/>
+                                            <!--<apex:Outputpanel id="FaultCode"> -->
+                                            <div class="col-sm-12 col-xs-12">
+                                                <div class="col-sm-3 col-xs-12 cmi-tar">
+
+                                                    <b>{!$Label.CSS_Fault_Code}</b><!--<div class="cmi_asterisk1">*</div>-->
+                                                </div>
+
+                                                <div class="col-sm-9 col-xs-12" >
+
+                                                    <apex:inputText value="{!selectedFaultCode}" styleClass="{!IF((FCErrorval==true && (selectedFaultCode=='' || selectedFaultCode==null)),'FaultCode showRedBorder','FaultCode')}" 
+                                                                    html-placeholder="Search" style="width: 500px;" onchange="getFC(this.value);">
+                                                        <!--<apex:actionSupport event="onkeyup" action="{!callFaultCodesOnFocus}" rerender="" oncomplete="oncompleteCallFaultCodeScript('{!faultCodeMap}');"/>-->
+                                                    </apex:inputText> 
+                                                </div>  
+                                                <div class="clearfix"></div> 
+                                                <apex:outputPanel id="invFaultCode">
+                                                    <apex:outputPanel rendered="{!IF(invalidFaultCode==true,true,false)}" >
+                                                        <div class="col-sm-offset-3 col-sm-6">
+                                                            <apex:outputText value="{!$Label.CG_InvalidFaultCode}" style="text-align:right;color: red;"/>   
+                                                        </div>
+                                                    </apex:outputPanel>
+                                                </apex:outputPanel>
+                                            </div>
+                                            
+                                            <!-- Story- GSSC-75--> 
+                                            <!---Calibration & Revision Fields on Failure pop up- Start-->
+                                            <apex:outputPanel rendered="{!IF(dealerLocation==true,false,true)}">
+                                            <apex:outputPanel id="Calib">
+                                                <apex:outputpanel rendered="{!IF(Bool,true,false)}">
+                                                    <br/><br/>
+                                                    <div class="col-sm-6 col-xs-6"> 
+                                                        <div class="col-sm-5 col-xs-6 cmi-tar">
+                                                            <apex:outputLabel value="{!$objectType.CSS_PSN__c.Fields.Calibration_Before__c.Label}" />
+                                                        </div>
+                                                        <div class="col-sm-6 col-xs-6">
+                                                            <apex:inputText value="{!psnRec.Calibration_Before__c}"/>
+                                                        </div>
+                                                    </div> 
+                                                    <div class="col-sm-6 col-xs-6 ">
+                                                        <div class="col-sm-5 col-xs-6 cmi-tar">
+                                                            <apex:outputLabel value="{!$objectType.CSS_PSN__c.Fields.Revision_Before__c.Label}" />
+                                                        </div>
+                                                        <div class="col-sm-6 col-xs-6">
+                                                            <apex:inputText value="{!psnRec.Revision_Before__c}"/>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="clearfix"></div>
+
+                                                    <div class="col-sm-6 col-xs-6"> 
+                                                        <div class="col-sm-5 col-xs-6 cmi-tar">
+                                                            <apex:outputLabel value="{!$objectType.CSS_PSN__c.Fields.Calibration_After__c.Label}" />
+                                                        </div>
+                                                        <div class="col-sm-6 col-xs-6">
+                                                            <apex:inputText value="{!psnRec.Calibration_After__c}"/>
+                                                        </div>
+                                                    </div>  
+                                                    <div class="col-sm-6 col-xs-6 ">
+
+                                                        <div class="col-sm-5 col-xs-6 cmi-tar">
+                                                            <apex:outputLabel value="{!$objectType.CSS_PSN__c.Fields.Revision_After__c.Label}" />
+                                                        </div>
+                                                        <div class="col-sm-6 col-xs-6">
+                                                            <apex:inputText value="{!psnRec.Revision_After__c}"/>
+                                                        </div>
+                                                    </div>
+                                                </apex:outputpanel>
+                                            </apex:outputPanel>
+                                            </apex:outputPanel>
+                                           <!-- Story- GSSC-75--> 
+                                            
+                                            <apex:actionFunction name="RenderSavePnl"  rerender="SavePnl" > </apex:actionFunction>
+                                            <div class="clearfix"></div> 
+                                            <div style="text-align:center;">
+
+                                                <apex:outputPanel id="CoverageBtn">
+                                                    <!--apex:outputPanel rendered="{!IF(NOT(isDealer), true, IF(claimsRec.Information_Only_Claim__c, false, true))}"  commented as part of GSSC-308--> 
+                                                      <apex:outputPanel rendered="{!IF(claimsRec.Information_Only_Claim__c, false, true)}"> 
+                                                        <span id="chkCoverageBtnEnabled">
+                                                            <apex:commandButton value="{!$Label.css_Check_Coverage}"  styleClass="saveButton" rendered="{!ShowCoverageCheck}" action="{!checkCoverage}" status="callCheckCoverage" rerender="checkCoveragePanel,AcountCode,PayCode,warrantycompfailurepanel,AccCodeAuthorize,opPartsWarranty,SavePnl" style="margin-top:20px"/> <!--oncomplete="chkCoverage();"-->
+                                                        </span>
+                                                        <br/>
+                                                        <!--apex:outputPanel rendered="{!IF((failureinfochange ==true),true,false)}"-->
+                                                            <apex:outputPanel id="Nocallcoverage">
+                                                         <apex:outputPanel rendered="{!IF((checkCoverageonfm == null || checkCoverageonfm != true ) ,true,false)}">
+                                                        <apex:actionStatus startText="requesting..." id="callCheckCoverage">
+                                                            <apex:facet name="start">Fetching Coverage Details...</apex:facet>
+                                                            <apex:facet name="stop"></apex:facet>
+                                                        </apex:actionStatus>
+                                                        </apex:outputPanel>
+                                                     </apex:outputpanel>
+                                                        <!--/apex:outputPanel-->
+                                                        <span id ="chkCoverageBtnDisabled">
+                                                            <apex:commandButton value="{!$Label.css_Check_Coverage}" styleclass="cmi_lighttealbutton" rendered="{!ShowCoverageCheck}" style="border:0px;font-size:14px;padding:5px 20px;line-height:0px;height:30px;"/>
+                                                        </span>
+                                                    </apex:outputPanel>
+
+                                                </apex:outputPanel>
+                                               
+
+                                                <!--  </apex:outputpanel>-->
+                                            </div>
+
+
+                                            <div style="text-align:center;">
+                                                <apex:outputPanel id="checkCoveragePanel">
+                                                    <apex:outputPanel rendered="{!IF(((accCodeSelected != null && accCodeSelected != '' && contains(accCodeSelected,'70')) || (accCodeReturned != null && accCodeReturned != '' && contains(accCodeReturned,'70'))) && (psnRec.License_Plate_State__c == 'Select One' || psnRec.License_Plate_State__c == '' || psnRec.License_Plate_State__c == null),true,false)}">  <br/>
+                                                        <span style="color:red">For Emissions Warranty,'License Plate State' is a mandatory field on Warranty Overview</span>
+                                                    </apex:outputPanel>
+                                                    <apex:outputText rendered="{!IF((coverageFound=='true'),true,false)}"> <br/>
+                                                        <div>                                               
+                                                            <i class="cmi-icons icon-solidCorrect" ></i> 
+                                                            <b><apex:outputText style="color:black;font-size:100%;align:center" value="{!$Label.css_Coverage_Found}"/></b>
+                                                        </div>
+                                                    </apex:outputText>
+
+                                                    <apex:outputText rendered="{!IF((errornotcovfound==true && (accCodeSelected != '' || accCodeSelected!=null)),true,false)}"> <br/>
+                                                        <div>                                               
+
+                                                            <b><apex:outputText style="color:red;font-size:100%;align:center" value="Coverage Not Found"/></b>
+                                                        </div>
+                                                    </apex:outputText>
+
+                                                    <apex:outputText rendered="{!IF((pleaseselacc!=false && coverageFound=='false' && (accCodeSelected == '' || accCodeSelected==null)),true,false)}"> <br/>  <!-- KarthikG added pleaseselacc not to enable when taboff predefined customfailure systemcode and compcode #190587-->
+                                                        <div>
+                                                            <i class="cmi-icons icon-solidWrong" ></i>                                                                                        
+                                                            <b><apex:outputText style="color:black;font-size:100%;align:center" value="{!$Label.CSS_Select_Account_Code}"/></b>
+                                                        </div>    
+                                                    </apex:outputText>
+                                                </apex:outputPanel>
+                                                <!--added for the story 154935-->
+                                                <apex:OutputPanel id="CombExists">
+                                                    <apex:outputText rendered="{!IF((solCompExistsFlag=='true'),true,false)}"> <br/>
+                                                        <div class="col-sm-12 cmi-tar" style="text-align:center;">
+                                                            <!--<i class="cmi-icons icon-solidWrong" ></i>  -->                                                                                      
+                                                            <b><apex:outputText style="color: red ; display: block;" value="{!$Label.CSS_FailCode_AccCode}"/></b>
+                                                        </div>    
+                                                    </apex:outputText>
+                                                </apex:OutputPanel>
+                                                <apex:outputPanel id="acErrorMsg">
+                                                    <apex:outputText rendered="{!IF((isMultiPSNErrorExist==true),true,false)}"> <br/>
+                                                        <b><apex:outputText style="color:red;align:center" value="{!$Label.CG_Multi_PSN_claim_is_only_allowed_on_New_Engine_Warranty_67}"/></b>
+                                                    </apex:outputText>
+                                                </apex:outputPanel><br/><br/>
+                                            </div>
+
+                                            <apex:outputPanel id="AcountCode">
+                                                <!--apex:outputPanel rendered="{!IF(NOT(isDealer), true, IF(claimsRec.Information_Only_Claim__c, false, true))}" commented as part of GSSC 308-->
+                                                     <apex:outputPanel rendered="{! IF(claimsRec.Information_Only_Claim__c, false, true)}">
+                                                    <div class="col-sm-6 col-xs-6">
+                                                        <div class="col-sm-5 col-xs-6 cmi-tar">
+                                                            <b>{!$Label.CSS_Account_Code}</b><span class="cmi_asterisk1">*</span>
+                                                        </div>
+
+                                                        <div class="col-sm-6 col-xs-6">
+                                                            <apex:outputPanel id="accCodeReadOnly" rendered="{!IF((showDisabledAC == true), true,false)}">
+
+                                                                <select value="{!accCodeSelected}" disabled="true" size="1" style="width:172px;" Class="{!IF((blankField==true && (accCodeSelected=='' || accCodeSelected==null || accCodeSelected=='Select One')),'showRedBorder','')}">
+                                                                    <option value="Select One" >Select One</option>
+                                                                </select>
+                                                            </apex:outputPanel>
+
+                                                            <apex:outputPanel id="accCodeEditable" rendered="{!IF((showDisabledAC == false), true,false)}">
+
+                                                                <apex:selectList value="{!accCodeSelected}" onChange="onaccCodeChanged(this.value);" size="1" style="width:172px;" styleClass="{!IF((blankField==true && (accCodeSelected=='' || accCodeSelected==null || accCodeSelected=='Select One')),'showRedBorder','')}">
+
+                                                                    <apex:selectOptions value="{!accCodes}"></apex:selectOptions>
+                                                                </apex:selectList>
+                                                            </apex:outputPanel>
+                                                            <!--<apex:actionFunction name="onaccCodeChanged" action="{!getPayCodesonAccCodeChange}" rerender="accCodeEditable,PayCode,AccCodeAuthorize,CombExists,FaultCode,checkCoveragePanel,opPartsWarranty,FailuresOverviewAdd">-->
+                                                            <apex:actionFunction name="onaccCodeChanged" action="{!getPayCodesonAccCodeChange}" rerender="accCodeEditable,PayCode,AccCodeAuthorize,CombExists,FaultCode,checkCoveragePanel,opPartsWarranty," oncomplete="disablepartsfields({!disableparts});">
+                                                                <apex:param name="onaccCodeChangedAssign" value="" assignTo="{!accCodeSelected}"/>
+
+                                                                <!--<apex:param name="onaccCodeChangedAssign1" value="" assignTo="{!coverageType}"/>-->
+                                                            </apex:actionFunction>
+
+                                                            <!--<apex:inputText /> -->
+                                                        </div> 
+                                                    </div>
+                                                </apex:outputPanel>
+                                            </apex:outputPanel>
+
+                                            <apex:outputText rendered="{!If(claimsRec.IsDealerCreatedClaim__c == true,false,true)}">
+                                                <div class="col-sm-6 col-xs-6">
+                                                    <div class="col-sm-5 col-xs-6 cmi-tar">
+                                                        <b>{!$Label.CG_Claimtype}</b><span class="cmi_asterisk1">*</span>
+
+                                                    </div>
+
+                                                    <div class="col-sm-6 col-xs-6" style="margin-left:0px;">
+
+                                                        <apex:selectList value="{!claimTypeSelected}" size="1" style="width:172px;" styleClass="{!IF((blankField==true && (claimTypeSelected=='' || claimTypeSelected==null)),'showRedBorder','')}">
+                                                            <apex:selectOptions value="{!claimTypes}"></apex:selectOptions>
+                                                        </apex:selectList>
+                                                        <!--</apex:outputPanel>-->
+                                                    </div> 
+                                                    <div class="clearfix"></div> 
+                                                </div>
+                                            </apex:outputText>
+
+                                            <div class="clearfix"></div>  <br/>
+                                            <apex:outputPanel id="PayCode">
+                                                <!--<apex:outputText rendered="{!If(claimsRec.Account__r.Type == 'Distributor Account' || (claimsRec.Account__r.Type == 'Dealer Account' && CONTAINS($UserRole.Name,'Factory')),true,false)}">-->
+                                                <apex:outputPanel rendered="{! IF(claimsRec.Information_Only_Claim__c, false, true)}">
+                                                <apex:outputText rendered="{!If(DealerTypeFlag!=true || (DealerTypeFlag==true && CONTAINS($UserRole.Name,'Factory')),true,false)}">
+                                                    <!--    apex:OutputText rendered="{!IF(((accCodeSelected != null && accCodeSelected != '' && accCodeSelected != 'Select One') && coverageType != 'POL'), true,false)}" -->
+                                                    <apex:OutputText rendered="{!IF((coverageType != 'POL' && coverageType != 'OTH'), true,false)}"> 
+
+
+                                                        <div class="col-sm-6 col-xs-6" style="margin-bottom:15px;">
+                                                            <div class="col-sm-5 col-xs-6 cmi-tar">
+                                                                <b>{!$Label.CSS_Pay_Code}</b><span class="cmi_asterisk1">*</span>
+                                                            </div>
+
+                                                            <div class="col-sm-6 col-xs-6" >
+                                                                <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c ==true),true,false)}">
+                                                            <apex:outputText value="{!payCodeSelected}" />
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF(($User.isClaimReadOnly__c !=true),true,false)}">
+                                                                <apex:selectList value="{!payCodeSelected}" size="1" style="width:172px;" styleClass="{!IF((blankField==true && (payCodeSelected=='' || payCodeSelected==null)),'showRedBorder','')}">
+                                                                    <apex:selectOptions value="{!lstPCvalues}"></apex:selectOptions></apex:selectList>
+                                                                    </apex:outputPanel>
+                                                            </div> 
+                                                        </div>
+                                                        <div class="clearfix"></div>
+                                                    </apex:OutputText> 
+                                                </apex:outputText>
+                                              </apex:outputPanel>
+                                            </apex:outputPanel>   
+
+                                            <apex:outputpanel id="opPartsWarranty">
+
+                                                <apex:outputpanel rendered="{!IF((accCodeSelected != null && accCodeSelected != '' && (CONTAINS(accCodeSelected,'62') || CONTAINS(accCodeSelected,'35') || CONTAINS(accCodeSelected,'97') || CONTAINS(accCodeSelected,'41') ||  CONTAINS(accCodeSelected,'52'))) || (accCodeWS != null && accCodeWS != '' && (CONTAINS(accCodeWS,'62') || CONTAINS(accCodeWS,'35') || CONTAINS(accCodeWS,'97') || CONTAINS(accCodeWS,'41') || CONTAINS(accCodeWS,'52'))), true, false)}">
+                                                    <div class="col-sm-offset-1 col-sm-11">
+
+                                                        <apex:outputPanel id="customerPossessionError">
+                                                            <apex:outputPanel rendered="{!IF(radioSelect=true,true,false)}">
+                                                                <span style="color:red">{!$Label.CSS_Please_confirm_if_customer_took_possession_of_the_part}</span>
+                                                            </apex:outputPanel>
+                                                            <!--  </apex:outputPanel>-->
+                                                            <div class="clearfix"></div> <br/>
+                                                            <div class="col-sm-8">
+                                                                <apex:outputPanel rendered="{!IF((accCodeSelected != null && accCodeSelected != '' && CONTAINS(accCodeSelected,'52')) || (accCodeWS != null && accCodeWS != '' && CONTAINS(accCodeWS,'52')),false,true)}"><!--added by Sneha #177450-->
+                                                                    <apex:outputLabel value="{!$Label.css_Did_customer}" /><span class="cmi_asterisk1">*</span> 
+                                                                </apex:outputPanel>
+                                                            </div>
+                                                        </apex:outputPanel>
+                                                        <div class="col-sm-4" style="margin-left:-50px;">
+                                                            <apex:outputpanel rendered="{!IF((custSelect=='Yes'),true,false)}">
+                                                                <input  type="radio" value="Possession Yes" name="custPossesion" onclick="callCustPossession('Yes');" checked="checked"/>
+                                                                {!$label.css_Yes} &nbsp; &nbsp;
+                                                                <input type="radio" value="Possession No" name="custPossesion" onclick="callCustPossession('No');" /> 
+                                                                {!$label.css_No}
+                                                            </apex:outputpanel>
+                                                            <apex:outputpanel rendered="{!IF((custSelect=='No'),true,false)}">
+                                                                <input  type="radio" value="Possession Yes" name="custPossesion" onclick="callCustPossession('Yes');" />
+                                                                {!$label.css_Yes} &nbsp; &nbsp;
+                                                                <input type="radio" value="Possession No" name="custPossesion" onclick="callCustPossession('No');" checked="checked"/> 
+                                                                {!$label.css_No}
+                                                            </apex:outputpanel>
+                                                            <apex:outputpanel rendered="{!IF((custSelect==''),true,false)}">
+                                                                <apex:outputpanel rendered="{!IF(CONTAINS(accCodeSelected,'62') || CONTAINS(accCodeSelected,'97') ,true,false)}">
+                                                                    <input type="radio" value="Possession Yes" name="custPossesion" onclick="callCustPossession('Yes');" checked="checked"/>
+                                                                    {!$label.css_Yes} &nbsp; &nbsp;
+                                                                    <input type="radio" value="Possession No" name="custPossesion" onclick="callCustPossession('No');"/> 
+                                                                    {!$label.css_No}
+                                                                </apex:outputpanel>
+                                                                <apex:outputpanel rendered="{!IF(CONTAINS(accCodeSelected,'35') || CONTAINS(accCodeSelected,'41') ,true,false)}">
+                                                                    <input type="radio" value="Possession Yes" name="custPossesion" onclick="callCustPossession('Yes');" />
+                                                                    {!$label.css_Yes} &nbsp; &nbsp;
+                                                                    <input type="radio" value="Possession No" name="custPossesion" onclick="callCustPossession('No');" checked="checked"/> 
+                                                                    {!$label.css_No}
+                                                                </apex:outputpanel>
+                                                            </apex:outputpanel>
+                                                        </div>
+                                                        <!-- </apex:outputPanel>-->
+                                                        <apex:actionFunction name="callCustPossession"  reRender="none">
+                                                            <apex:param name="custPossession" value="custPossession" assignTo="{!custSelect}"></apex:param>
+                                                        </apex:actionFunction>
+                                                        <!----input field for warranty start date--------->
+                                                        <div class="clearfix"></div> <br/>
+                                                        <div class="col-sm-5 cmi-tar">
+                                                            <apex:outputLabel value="{!$Label.CSS_PartWarrantyStartDate}"/><span class="cmi_asterisk1">*</span>
+                                                        </div> 
+
+                                                        <div class="col-sm-7 col-xs-12" style="margin-bottom:4px;">
+                                                            <apex:inputField id="Wartydt" value="{!compont.Part_Warranty_Start_Date__c}" onchange="CompareDates(this.value);" styleclass="{!IF((blankField==true && compont.Part_Warranty_Start_Date__c==null),'showRedBorder','form-control cmi-cal css_ipfiel_size')}" showDatePicker="false"   />
+                                                            <div class="input-group date" style="display:inherit;" id="prtWartydtDate" data-provide="datepicker" data-date-format="{!datebyLocaleValue}" >
+                                                                <span class="input-group-addon" style="display: inline; border: 0px; background:none;">
+                                                                    <apex:input value="{!warrStDtHidden}" onchange="assignWSDtoActual(this);"   style="display:none"  />
+                                                                    <span class="cmi_calendar-icon" style="left: 140px; top: -20px;" id="cmiWartydtspid"></span>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+
+
+
+                                                        <div class="col-sm-7 col-xs-12" style="margin-left:180px">
+                                                            <apex:outputPanel id="checkPartsWarrDt">
+                                                                <apex:outputPanel rendered="{!checkPartsWarrStartDt}">
+                                                                    <b> <span style="color:red">{!$Label.Parts_Warranty_Start_Date_less_than_Current_Date}</span> </b>
+                                                                </apex:outputPanel>
+                                                            </apex:outputPanel>
+                                                        </div>
+                                                        <apex:actionFunction name="CompareDatesfun1" action="{!CompareDates}" reRender="checkPartsWarrDt,checkCoverageButton,opPartsWarranty">
+                                                            <apex:param name="WarrantyDate" value="" assignTo="{!warrantyDate}"></apex:param>
+                                                        </apex:actionFunction>
+
+
+
+                                                        <div class="clearfix"></div>
+                                                        <div class="col-sm-5 cmi-tar" style="word-wrap: break-word;">
+                                                            <apex:outputLabel value="{!$Label.CSS_Failure_date}"/><span class="cmi_asterisk1">*</span>
+                                                        </div>
+                                                        <apex:outputpanel rendered="{!IF(compont.Failure_Date__c==null,true,false)}">
+                                                            <div class="col-sm-7 col-xs-12" style="margin-bottom:4px;">
+                                                                <div class="input-group date" style="display:inherit;" id="failureDate1" data-provide="datepicker" data-date-format="{!datebyLocaleValue}">
+                                                                    <apex:inputField value="{!compont.Failure_Date__c}" onchange="CompareDatesfun(this.value,'{!compont.Part_Warranty_Start_Date__c}'),enableCheckCoverage();" styleclass="{!IF((blankField==true && compont.Failure_Date__c==null),'showRedBorder','form-control cmi-cal css_ipfiel_size')}" showDatePicker="false"  id="FailureDateIDs" /> &nbsp;
+                                                                    <span class="input-group-addon" style="display: inline; border: 0px; background:none;">
+                                                                        <apex:input value="{!FailureDateHidden}" onchange="AssignFDval(this.value),CompareDatesfun(this.value,'{!compont.Part_Warranty_Start_Date__c}'),enableCheckCoverage();"  style="display:none"/>
+                                                                        <span class="cmi_calendar-icon" style="margin:0px -7px"></span>
+                                                                    </span>                                                    
+                                                                </div> 
+                                                            </div>
+                                                        </apex:outputpanel>
+                                                        <apex:outputpanel rendered="{!IF(compont.Failure_Date__c!=null  ,true,false)}"  >
+                                                            <div class="col-sm-7 col-xs-12" style="margin-bottom:4px;">
+                                                                <div class="input-group date" style="display:inherit;" id="failureDate" data-provide="datepicker" data-date-format="{!datebyLocaleValue}" >
+                                                                    <apex:inputField value="{!compont.Failure_Date__c}" onchange="CompareDatesfun(this.value,'{!compont.Part_Warranty_Start_Date__c}'),enableCheckCoverage();" styleclass="{!IF((blankField==true && compont.Failure_Date__c==null),'showRedBorder','form-control cmi-cal css_ipfiel_size')}" showDatePicker="false" id="FailureDateID" /> &nbsp;
+                                                                    <span class="input-group-addon" style="display: inline; border: 0px; background:none;">
+                                                                        <apex:input value="{!FailureDateHidden}" onchange="AssignFDval(this),CompareDatesfun(this.value,'{!compont.Part_Warranty_Start_Date__c}'),enableCheckCoverage();"  style="display:none"/>
+                                                                        <span class="cmi_calendar-icon" style="margin:0px -7px"></span>
+                                                                    </span>                                                    
+                                                                </div> 
+                                                            </div>
+                                                        </apex:outputpanel>
+
+                                                        <b><apex:outputText value="{!$Label.CSS_Failure_Date_cannot_be_greater_than_today}" rendered="{!higherdateErrFlag}" style="color: red ; display: block;"/></b>
+                                                        <b><apex:outputText value="{!$Label.Css_Failure_Date_cannot_be_earlier_than_Part_Warranty_Start_Date}" rendered="{!dateErrFlag}" style="color: red ; display: block;"/></b>
+
+
+                                                        <div class="clearfix"></div>
+                                                        <div class="col-sm-5 cmi-tar">
+                                                            <apex:outputLabel value="{!$Label.CSS_Failure_Pointc}"/><span class="cmi_asterisk1">*</span>                                                                                 
+                                                        </div>
+                                                        <div class="col-sm-7 col-xs-12">
+                                                            <apex:inputField value="{!compont.Failure_Point__c}" id="FailurePointID"  html-maxlength="8" onkeydown="return valFailurePoint(event);" onkeyup="enableCheckCoverage();" styleclass="{!IF((blankField==true && (compont.Failure_Point__c==null)),'showRedBorder','form-control cmi-cal css_ipfiel_size')}"/>      
+                                                        </div>  
+
+                                                        <!-- Added Condition to display error message based on coverage type(CAP) -- GAP 148103 Rajasekhar H -->
+                                                        <apex:outputPanel rendered="{!errormsgfailpoint}">
+                                                            <apex:outputText style="color: red ; display: block;" value="{!$Label.CSS_Failure_Begin_Point}"></apex:outputText>
+                                                        </apex:outputPanel>
+                                                        <!-- END -->
+
+                                                        <div class="clearfix"></div>
+                                                        <div class="col-sm-5 cmi-tar" style="margin-top:10px;">
+                                                            <apex:outputLabel value="Failure Measure"/><span class="cmi_asterisk1">*</span>
+                                                        </div>
+                                                        <div class="col-sm-7 col-xs-12" style="margin-top:10px;">
+                                                            <apex:outputpanel rendered="{!IF((failureMeasure=='Miles'),true,false)}" id="failureMeasureMilesid" >
+                                                                <input  type="radio" value="Miles" name="failMeasure" onclick="callFailureMeasure('Miles');" checked="checked" id="failMeasureCSSMiles"/>
+                                                                {!$Label.CSS_Miles} &nbsp; &nbsp;
+                                                                <input type="radio" value="Kilometers" name="failMeasure" onclick="callFailureMeasure('Kilometers');"  id="failMeasureCSSKilometers" /> 
+                                                                {!$Label.CSS_Kilometers} &nbsp; &nbsp;
+                                                                <input type="radio" value="Hours" name="failMeasure" onclick="callFailureMeasure('Hours');"   id="failMeasurecsshours"/> 
+                                                                {!$Label.css_hours}
+                                                            </apex:outputpanel>
+                                                            <apex:outputpanel rendered="{!IF((failureMeasure=='Kilometers'),true,false)}" id="failureMeasureKilometersid">
+                                                                <input  type="radio" value="Miles" name="failMeasure" onclick="callFailureMeasure('Miles');" id="failMeasureCSSMiles"/>
+                                                                {!$Label.CSS_Miles} &nbsp; &nbsp;
+                                                                <input type="radio" value="Kilometers" name="failMeasure" onclick="callFailureMeasure('Kilometers');" checked="checked"  id="failMeasureCSSKilometers"/> 
+                                                                {!$Label.CSS_Kilometers} &nbsp; &nbsp;
+                                                                <input type="radio" value="Hours" name="failMeasure" onclick="callFailureMeasure('Hours');"  id="failMeasurecsshours" /> 
+                                                                {!$Label.css_hours}
+                                                            </apex:outputpanel>
+                                                            <apex:outputpanel rendered="{!IF((failureMeasure=='Hours'),true,false)}" id="failureMeasureHoursid">
+                                                                <input  type="radio" value="Miles" name="failMeasure" onclick="callFailureMeasure('Miles');"  id="failMeasureCSSMiles" />
+                                                                {!$Label.CSS_Miles} &nbsp; &nbsp;
+                                                                <input type="radio" value="Kilometers" name="failMeasure" onclick="callFailureMeasure('Kilometers');"  id="failMeasureCSSKilometers"/> 
+                                                                {!$Label.CSS_Kilometers} &nbsp; &nbsp;
+                                                                <input type="radio" value="Hours" name="failMeasure" onclick="callFailureMeasure('Hours');" checked="checked" id="failMeasurecsshours" /> 
+                                                                {!$Label.css_hours}
+                                                            </apex:outputpanel>
+                                                            <!--FM : {!failureMeasure}-->
+                                                            <apex:outputpanel rendered="{!IF((failureMeasure==''),true,false)}" id="failureMesid">
+                                                                <input  type="radio" value="Miles" name="failMeasure" onclick="callFailureMeasure('Miles');" checked="checked" id="failMeasureCSSMiles"/>
+                                                                {!$Label.CSS_Miles} &nbsp; &nbsp;
+                                                                <input type="radio" value="Kilometers" name="failMeasure" onclick="callFailureMeasure('Kilometers');"  id="failMeasureCSSKilometers"/> 
+                                                                {!$Label.CSS_Kilometers} &nbsp; &nbsp;
+                                                                <input type="radio" value="Hours" name="failMeasure" onclick="callFailureMeasure('Hours');" id="failMeasurecsshours" /> 
+                                                                {!$Label.css_hours}
+                                                            </apex:outputpanel>
+                                                        </div>
+
+                                                        <!--apex:actionFunction name="callFailureMeasureAF" reRender="none">
+                                                            <apex:param name="failPointMeasure" value="" assignTo="{!failureMeasure}"></apex:param>
+                                                        </apex:actionFunction-->
+                                                         <apex:actionFunction name="enableCheckCoverage" reRender="checkCoverageButton"/>
+                                                         <apex:actionFunction name="callFailureMeasure" reRender="none">
+                                                            <apex:param name="failPointMeasure" value="" assignTo="{!failureMeasure}"></apex:param>
+                                                        </apex:actionFunction>
+
+                                                        <apex:actionFunction name="CompareDatesfun" action="{!CompareDates}" reRender="checkPartsWarrDt,FDD,FD,FailDate,FailDate1,opPartsWarranty">
+                                                            <apex:param name="FailureDate" value="" assignTo="{!failureDate}"></apex:param>
+                                                            <apex:param name="WarrantyDate" value="" assignTo="{!warrantyDate}"></apex:param>
+                                                        </apex:actionFunction>
+
+
+                                                        <apex:actionFunction name="onchangePartWarranty" action="{!CompareDates}" reRender="opPartsWarranty,checkPartsWarrDt">
+                                                            <apex:param name="WarrantyDate" value="" assignTo="{!warrantyDate}"></apex:param>
+                                                            <apex:param name="FailureDate" value="" assignTo="{!failureDate}"></apex:param>
+                                                            <apex:param name="FailureDate1" value="" assignTo="{!failureDate1}"></apex:param>
+                                                        </apex:actionFunction>
+
+                                                        <div class="clearfix"></div> 
+                                                        <div style="text-align:center;">
+                                                            <apex:outputpanel id="checkCoverageButton">
+
+                                                                <apex:outputpanel rendered="{!IF(compont.Failure_Point__c!=null && selectedFName!=null && (compont.Failure_Date__c != null || psnRec.Failure_Date__c != null) && compont.Part_Warranty_Start_Date__c != null,true,false)}">
+                                                                    <apex:commandLink value="{!$Label.CSS_Check_Parts_Coverage}" styleClass="saveButton" action="{!checkPartCoverage}" status="callCheckCoverage1" rerender="checkCoveragePanel,warrantycompfailurepanel,checkCoveragePanel1,SavePnl" style="margin:20px"></apex:commandLink><!--warrantycompfailurepanel-->
+                                                                    <br/>
+                                                                    <apex:actionStatus startText="requesting..." id="callCheckCoverage1">
+                                                                        <apex:facet name="start">Fetching Coverage Details...</apex:facet>
+                                                                        <apex:facet name="stop"></apex:facet>
+                                                                    </apex:actionStatus>
+                                                                </apex:outputpanel>
+                                                                <apex:outputpanel rendered="{!IF(compont.Failure_Point__c==null || selectedFName==null || (compont.Failure_Date__c == null && psnRec.Failure_Date__c == null) || compont.Part_Warranty_Start_Date__c == null,true,false)}">
+                                                                    <apex:commandLink value="{!$Label.CSS_Check_Parts_Coverage}" styleclass="cmi_lighttealbutton" style="margin:20px"/>
+                                                                </apex:outputpanel>
+
+                                                            </apex:outputpanel> 
+                                                        </div> 
+
+                                                    </div>
+
+
+                                                </apex:outputpanel>
+
+                                                <!---Added by Abhishek Check coverage-->
+                                                <div style="text-align:center;">
+                                                    <apex:outputPanel id="checkCoveragePanel1">
+                                                        <apex:outputPanel rendered="{!IF((partCoverageFound!='' && partCoverageFound=='true'),true,false)}">
+                                                            <div style="margin-left:70px">                                               
+                                                                <i class="cmi-icons icon-solidCorrect" ></i> 
+                                                                <b><apex:outputText style="color:black;font-size:100%;align:center" value="{!$Label.css_Coverage_Found}"/></b>
+                                                            </div>
+                                                        </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF((partCoverageFound!='' && partCoverageFound=='false'),true,false)}">
+                                                            <div style="margin-left:70px">
+                                                                <i class="cmi-icons icon-solidWrong" ></i>                                                                                        
+                                                                <b><apex:outputText style="color:black;font-size:100%;align:center" value="{!$Label.css_No_Coverage_Found}"/></b>
+                                                            </div>    
+                                                        </apex:outputPanel>
+                                                    </apex:outputPanel>
+                                                </div>
+                                                <!--End by Abhishek check coverage-->
+                                            </apex:outputpanel>
+                                            <!-- End by Abhishek -->
+                                            <!---End------------------------------------>
+
+                                            <apex:outputpanel id="AccCodeAuthorize">
+                                                <!--Added coverageType=='OTH' in below if condition for getting AuthorizationNumber and ApprovalCode as per Simpsons story #128755, By RAJESH 30th May 2018-->       
+                                                <apex:outputpanel rendered="{!IF((coverageType=='POL' || coverageType=='OTH'),true,false)}">
+                                                    
+                                                    <hr size="10px" color="gray"/>
+                                                    <div style="text-align:center;">
+                                                        <h4><b>{!$Label.CSS_AuthNeedForAccCode}</b></h4>                                     
+                                                    </div>
+                                                    <div class="clearfix"></div> <br/>
+                                                    <!--<div class="col-sm-6 col-xs-6">-->
+                                                    <div class="col-sm-6 col-xs-6">
+
+
+                                                        <div class="col-sm-5 col-xs-6 cmi-tar">
+                                                            <b>{!$ObjectType.CSS_Solution_Component__c.fields.Authorization_Number__c.Label}</b><!--span class="cmi_asterisk1">*</span-->
+                                                        </div>
+
+
+                                                        <div class="col-sm-6 col-xs-6">
+                                                            <apex:inputText value="{!AuthorizationNumber}" maxlength="30" style="width:172px;padding:0px"/>   
+
+                                                        </div> 
+                                                    </div>
+                                                    <div class="col-sm-6 col-xs-6">
+                                                        <!--<div class="clearfix"></div>  <br/> -->
+                                                        <div class="col-sm-4 col-xs-6 cmi-tar">
+                                                            <b>{!$ObjectType.CSS_Solution_Component__c.fields.Approval_Code__c.Label}</b><span class="cmi_asterisk1">*</span>
+                                                        </div>
+                                                        <!--Added code for displaying the error message as per simpsons document #145403 by -RAJESH 29th May 2018 -->
+                                                        <div class="col-sm-6 col-xs-6" >
+                                                            <!--<apex:inputText value="{!ApprovalCode}" maxlength="30" style="width:172px;padding:0px" styleclass="{!IF((blankField==true && (ApprovalCode=='' || ApprovalCode==null)),'showRedBorder','form-control cmi-cal css_ipfiel_size')}" onchange="onChangeofappCode(this.value);"/>-->
+                                                            <apex:outputPanel id="ErrMsg1">
+                                                                <apex:inputText value="{!ApprovalCode}" maxlength="30" style="width:172px;padding:0px" styleclass="{!IF((blankField==true && (ApprovalCode=='' || ApprovalCode==null)),'showRedBorder','form-control cmi-cal css_ipfiel_size')}" onchange="onChangeofappCode(this.value);" />  
+                                                                <apex:outputPanel rendered="{!invalidAppCode}"> 
+                                                                    <h6 style="color: red ; display: block;"><b>{!$Label.css_Approval_Code_is_invalid}</b></h6>
+                                                                </apex:outputPanel>
+                                                            </apex:outputPanel>                                                            
+                                                        </div> 
+                                                        <!--End -->
+                                                    </div>
+                                                    <div class="clearfix"></div> <br/>
+                                                    <apex:outputPanel rendered="{!If(isDealer,false,true)}"> <!--rendered="{!If($Setup.css_header_nav__c.RSWButtonEnable__c == true,false,true)}" -->
+                                                        <!-- <apex:outputpanel rendered="{!IF((coverageType=='POL' || coverageType=='OTH'),false,true)}"> -->
+                                                        <div class="col-sm-6 col-xs-6">
+
+
+                                                            <div class="col-sm-5 col-xs-6 cmi-tar" >
+                                                                <b>{!$ObjectType.CSS_Solution_Component__c.fields.Pay_Code__c.Label}</b><span class="cmi_asterisk1">*</span>
+
+                                                            </div>
+                                                            <div class="col-sm-6 col-xs-6" >
+
+                                                                <apex:selectList value="{!payCodeSelected}" size="1" style="width:160px;padding:0px" styleclass="{!IF((blankField==true && (payCodeSelected=='' || payCodeSelected==null)),'showRedBorder','form-control cmi-cal css_ipfiel_size')}">
+                                                                    <apex:selectOptions value="{!lstPCvalues}"></apex:selectOptions></apex:selectList>
+                                                            </div> 
+
+                                                        </div> 
+                                                        <!-- </apex:outputPanel> --> 
+                                                    </apex:outputPanel>
+                                                    <!--karthik GSSC-57 started-->
+                                                    <apex:outputPanel rendered="{!IF((coverageType=='POL'),true,false)}" >
+                                                       <apex:outputPanel rendered="{!IF((DealerTypeFlag!=true || CONTAINS($UserRole.Name,'Factory')),true,false)}">
+                                                        <div class="clearfix"></div> <br/>
+                                                        <div class="col-sm-6 col-xs-6">
+                                                            <div class="col-sm-5 col-xs-6 cmi-tar">
+                                                                <b>{!$ObjectType.CSS_Solution_Component__c.fields.Covered_Parts__c.Label}</b>
+                                                            </div>
+                                                            <div class="col-sm-6 col-xs-6">
+                                                                <apex:inputText value="{!Coveredpartspercentage}" maxlength="3"  onkeydown="return qtyPressfc(event,this)" style="width:172px;padding:0px" onkeyup="validateMaxVal(this);"/>   
+                                                            
+                                                            </div> 
+                                                        </div>
+                                                        <div class="col-sm-6 col-xs-6">
+                                                            <div class="col-sm-4 col-xs-6 cmi-tar">
+                                                                <b>{!$ObjectType.CSS_Solution_Component__c.fields.Covered_Labor__c.Label}</b>
+                                                            </div>
+                                                            <div class="col-sm-6 col-xs-6">
+                                                                <apex:inputText value="{!CoverageLaborpercentage}" maxlength="3" onkeydown="return qtyPressfc(event,this)" style="width:172px;padding:0px" onkeyup="validateMaxVal(this);" />  
+                                                            </div> 
+                                                        </div>
+                                                         </apex:outputPanel>
+                                                        <apex:outputPanel rendered="{!IF((DealerTypeFlag==true && !CONTAINS($UserRole.Name,'Factory')),true,false)}">
+                                                            <div class="col-sm-6 col-xs-6">
+                                                                <div class="col-sm-5 col-xs-6 cmi-tar">
+                                                                    <b>{!$ObjectType.CSS_Solution_Component__c.fields.Covered_Parts__c.Label}</b>
+                                                                </div>
+                                                                <div class="col-sm-6 col-xs-6">
+                                                                    <apex:inputText disabled="true" value="{!Coveredpartspercentage}" maxlength="3" style="width:172px;padding:0px"  />   
+
+                                                                </div> 
+                                                            </div>
+                                                            <div class="col-sm-6 col-xs-6">
+                                                                <div class="col-sm-4 col-xs-6 cmi-tar">
+                                                                    <b>{!$ObjectType.CSS_Solution_Component__c.fields.Covered_Labor__c.Label}</b>
+                                                                </div>
+                                                                <div class="col-sm-6 col-xs-6">
+                                                                    <apex:inputText disabled="true" value="{!CoverageLaborpercentage}" maxlength="3" style="width:172px;padding:0px"   />  
+                                                                </div> 
+                                                            </div>
+                                                        </apex:outputPanel>
+                                                    </apex:outputPanel>
+                                                    <div class="clearfix"></div><br/>
+
+                                                </apex:outputpanel>
+                                            </apex:outputpanel>
+                                            <!-- Added "onChangeofappCode" code for getting updated value from Approval code as per Simpsons  document $128755 by -RAJESH 29th MAy 2018-->
+                                            <apex:actionFunction name="onChangeofappCode" action="{!onChangeofAppCode}" rerender="ErrMsg1">
+                                            </apex:actionFunction>
+                                            <!--End -->        
+                                        </div>
+                                        <!--GSSC-298 - START -->
+                                        <div class="modal-footer" style="border-top:0px;">
+                                            <div class="col-sm-offset-1 col-sm-5"> 
+                                                <b>{!$Label.CG_Over_The_Counter}</b>
+                                                <br/>
+                                            </div>
+                                            <div align="left">
+                                                <apex:inputCheckbox value="{!compont.Over_The_Counter__c}"/>  
+                                            </div>
+                                        </div>
+                                        <!--GSSC-298 - END -->
+
+                                        <!-- Modal Footer -->
+                                        <apex:Outputpanel id="SavePnl">
+                                            <div class="modal-footer" style="border-top:0px;">
+                                                <!--Added below for Inside Out Sprint #183076 -- Rajasekhar H -->
+
+                                                <apex:outputLabel id="error" style="text-align:left; color: red ; display: block;" value="{!$Label.CSS_WarrantyWebserviceFailureMessage}"  rendered="{!IF(warrantyDetError== true, true, false)}" />   
+                                                <div class="col-sm-offset-1 col-sm-5"> 
+                                                    <apex:commandButton value="{!$Label.css_save_btn}"  styleClass="saveButton" rerender="checkCoveragePanel,checkCoveragePanel1,ErrMsg,FC1,CombExists,FailuresOverviewAdd,FailuresPopupHeader,ErrMsg1,customerPossessionError,accodeerrmsg,cusfailJavaScript,sysCodeJavaScript,loadComCodeValues" status="saveAccountCode" action="{!popUpSave}" onComplete="preDefinedFailSmartSearch();switchcovearagebuttons({!isMultiPSNErrorExist});" onClick="failurePopupJS('{!showFailurePopup}',this);" > <!-- onClick="onChangeofappCode(this.value);" onComplete="afterCompleteFunction() return false;"-->
+                                                    </apex:commandButton>
+
+                                                    <br/>
+                                                    <apex:actionStatus startText="requesting..." id="saveAccountCode">
+                                                        <apex:facet name="start">Saving...</apex:facet>
+                                                        <apex:facet name="stop"></apex:facet>
+                                                    </apex:actionStatus>
+                                                </div>
+                                                <div class="col-sm-offset-1 col-sm-2">
+                                                    <!--<apex:commandLink value="{!$Label.css_Cancel}" styleClass="cancelButton" html-data-dismiss="modal"> -->
+                                                    <apex:commandButton value="{!$Label.css_Cancel}" styleClass="cancelButton" action="{!cancelPopup}" rerender="FailuresOverviewAdd,FailuresPopupHeader" oncomplete="loadJavscriptAgain();" html-data-dismiss="modal" > 
+
+                                                    </apex:commandButton>
+                                                    <!-- </apex:commandLink> -->
+                                                </div>
+                                            </div>
+                                        </apex:Outputpanel>
+                                    </apex:outputPanel>
+                                </div>
+                            </div>  
+                        </div>
+                    </div>
+                    <apex:outputpanel id="failOverviewData"> 
+                        <div class="">
+
+                            <div class="form-horizontal" role="form"> 
+                                <div class="form-group form-group1">
+                                    <div class="col-md-15">
+                                        <table class="mytable table table-striped table-bordered cmi_claimsfail-table" style="width:100%; " >
+                                            <thead>
+                                                <tr>
+
+
+                                                    <th class="tblhead" style="text-align:center;"><b>{!$Label.CG_Failcode_Symp}</b></th>
+                                                    <th class="tblhead" style="text-align:center;"><b>{!$Label.CG_FailureName}</b></th>
+                                                    <th class="tblhead" style="text-align:center;"><b>{!$Label.CG_Systemcode}</b></th>
+                                                    <th class="tblhead" style="text-align:center;"><b>{!$Label.CG_Componentcode}</b></th>
+                                                    <th class="tblhead" style="text-align:center;"><b>{!$Label.CG_Failmode}</b></th>
+                                                    <th class="tblhead" style="text-align:center;"><b>{!$Label.CSS_Account_Code}</b></th>
+
+                                                    <!--<apex:outputText rendered="{!If(claimsRec.Account__r.Type == 'Distributor Account' || (claimsRec.Account__r.Type == 'Dealer Account' && CONTAINS($UserRole.Name,'Factory')),true,false)}" >-->
+                                                    <apex:outputText rendered="{!If(DealerTypeFlag!=true || (DealerTypeFlag==true && CONTAINS($UserRole.Name,'Factory')),true,false)}" >
+                                                        <th class="tblhead" style="text-align:center;"><b>{!$Label.CSS_PayCode}</b></th>
+                                                    </apex:outputText>
+
+
+                                                    <!--Story 161403 Rupesh-->
+                                                    <apex:outputText rendered="{!If(claimsRec.IsDealerCreatedClaim__c == true,false,true)}">
+                                                        <th class="tblhead" style="text-align:center;">
+
+                                                            <b><span style="color: red">*</span>&nbsp;{!$Label.CG_Claimtype}</b>
+                                                        </th>
+                                                    </apex:outputText>
+
+
+
+
+                                                    <th class="tblhead" style="text-align:center;"><b>{!$Label.CSS_Delete_Edit}</b></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+
+                                                <apex:repeat value="{!listfailClaimspWrapper}" var="failRec" id="claimsFailure">
+                                                    <tr>
+
+
+                                                        <td>
+                                                            <b><apex:outputText value="{!failRec.faultSympCode}" style="color:#008080"/></b><br/>
+                                                            <apex:outputPanel rendered="{!IF(failRec.relsympStringList != null,true,false)}"><b>{!$Label.CSS_Related}</b><br/></apex:outputPanel>
+                                                            <apex:outputText value="{!failRec.relsympStringList}" />
+                                                        </td>
+                                                        <td>
+                                                            <apex:outputText value="{!failRec.failureName}" />   
+                                                        </td>
+                                                        <!--Added below condition for getting code with Des as per defect #158390 and #158388,-By RAJESH on 13th Aug 2018-->            
+                                                        <td>
+                                                            <apex:outputPanel rendered="{!IF(failRec.systemCodeDes==null,true,false)}">
+                                                                <apex:outputText value="{!failRec.systemCode}" /> 
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(failRec.systemCodeDes!=null,true,false)}">
+                                                                <apex:outputText value="{!failRec.systemCodeDes}" /> 
+                                                            </apex:outputPanel>
+                                                        </td>                                                        
+                                                        <td>
+                                                            <apex:outputPanel rendered="{!IF(failRec.compCodeDes==null,true,false)}">
+                                                                <apex:outputText value="{!failRec.compCode}" />
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(failRec.compCodeDes!=null,true,false)}">
+                                                                <apex:outputText value="{!failRec.compCodeDes}" /> 
+                                                            </apex:outputPanel>                                                            
+                                                        </td>
+                                                        <td>
+                                                            <apex:outputPanel rendered="{!IF(failRec.FailModeDes==null,true,false)}">                                                                
+                                                                <apex:outputText value="{!failRec.FailMode}" /> 
+                                                            </apex:outputPanel>
+                                                            <apex:outputPanel rendered="{!IF(failRec.FailModeDes!=null,true,false)}">
+                                                                <apex:outputText value="{!failRec.FailModeDes}" /> 
+                                                            </apex:outputPanel>
+                                                        </td>
+                                                        <!--End-->                
+                                                        <td>
+                                                            <apex:outputText value="{!failRec.accountCode}" />
+                                                        </td>
+                                                        <!-- <apex:outputText rendered="{!If(claimsRec.Account__r.Type == 'Distributor Account',true,false)}" >-->
+                                                        <apex:outputText rendered="{!If(DealerTypeFlag!=true,true,false)}" >
+                                                            <td>
+
+                                                                <apex:outputPanel rendered="{!IF(failRec.accountCode !=null,true,false)}">
+                                                                    <apex:outputPanel rendered="{!IF(claimsRec.Information_Only_Claim__c == true,true,false)}">
+                                                                        <select>
+
+                                                                            <option value="Paycode" size="1" width="20">A</option>
+                                                                        </select> 
+                                                                    </apex:outputPanel>
+
+                                                                    <apex:outputPanel rendered="{!IF(claimsRec.Information_Only_Claim__c == true,false,true)}">
+
+                                                                        <apex:selectList value="{!failRec.payCode}" size="1">
+                                                                            <apex:selectOptions value="{!failRec.PayCodes}"/>
+                                                                        </apex:selectList>
+                                                                    </apex:outputPanel>
+                                                                </apex:outputPanel>
+
+
+
+                                                            </td>
+                                                            <!--Rupesh added..161403--></apex:outputText>
+                                                        <!--<apex:outputText rendered="{!If(claimsRec.Account__r.Type == 'Dealer Account' && CONTAINS($UserRole.Name,'Factory'),true,false)}" >-->
+                                                        <apex:outputText rendered="{!If(DealerTypeFlag==true && CONTAINS($UserRole.Name,'Factory'),true,false)}" >
+                                                            <td>
+
+                                                                <apex:outputPanel rendered="{!IF(failRec.accountCode !=null,true,false)}">
+                                                                    <apex:outputPanel rendered="{!IF(claimsRec.Information_Only_Claim__c == true,true,false)}">
+                                                                        <select>
+
+                                                                            <option value="Paycode" size="1" width="20">A</option>
+                                                                        </select> 
+                                                                    </apex:outputPanel>
+
+                                                                    <apex:outputPanel rendered="{!IF(claimsRec.Information_Only_Claim__c == true,false,true)}">
+
+                                                                        <apex:outputText value="{!failRec.payCode}" >
+
+                                                                        </apex:outputText>
+                                                                    </apex:outputPanel>
+                                                                </apex:outputPanel>
+
+
+
+                                                            </td>
+                                                            <!--Sneha added..187051--></apex:outputText>
+                                                        <apex:outputText rendered="{!If(claimsRec.IsDealerCreatedClaim__c == true,false,true)}"> <!--Rupesh added..161403-->
+                                                            <td>
+
+                                                                <apex:outputPanel rendered="{!if(failRec.claimType!=null && failRec.claimType!=null && 
+                                                                                            failRec.claimType !='Select One' && failRec.claimType !='', true,false)}">
+                                                                    <apex:outputText value="{!failRec.claimType}" />
+                                                                </apex:outputPanel>
+                                                                <!--I just updated condition below like " failRec.claimType!=null " to " failRec.claimType==null " as per defect #153695 ,-By RAJESH 17th July 2018-->                           
+                                                                <apex:outputPanel rendered="{!if(failRec.claimType==null && (failRec.claimType=='Select One'
+                                                                                            || failRec.claimType==''|| failRec.claimType==null), true,false)}">
+                                                                    <apex:selectList size="1" style="width:120px;" value="{!failRec.claimType}" styleClass="{!if(noclvalueborder=true && (failRec.claimType=='Select One'|| 
+                                                                                                                                                            failRec.claimType==' '|| failRec.claimType==null) ,'showRedBorder','')}"> 
+                                                                        <apex:selectOptions value="{!claimTypes}"></apex:selectOptions>
+                                                                    </apex:selectList>    
+                                                                </apex:outputPanel>
+                                                                <apex:outputPanel rendered="{!if(failRec.claimType==null ,true,false)}">
+                                                                    <apex:outputText value="{!failRec.claimType}" />    
+                                                                </apex:outputPanel>
+
+                                                            </td>
+                                                        </apex:outputText>
+
+                                                        <!--Rupesh added..161403-->
+                                                        <!-- Delete/Edit start -->
+                                                        <td>
+                                                            <apex:outputPanel rendered="{!IF((failRec.JobId == null || failRec.JobId == ''),true,false)}">
+
+                                                                <apex:outputPanel rendered="{!IF((failRec.faultSympCode==null && isMultiPSNEnabled==true && claimsRec.Catastrophic__c != false && claimsRec.IsDealerCreatedClaim__c ==  true && CONTAINS($UserRole.Name,'Factory'))&&$User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                    <div class="col-sm-3" > 
+                                                                        <div data-target="#DeletePopNew" data-toggle="modal" class="pull-right" style="margin-right: -62px; font-weight:bold ;">
+
+                                                                            <i class="cmi_delete-icon"></i>
+
+                                                                            <apex:commandlink value="{!$Label.CSS_Delete}"  onClick="showDeleteConfirmPopup();" rerender="PopupNew"  style="font-weight:bold;text-decoration:underline;">
+                                                                                <apex:param name="solIdParam1" value="{!failRec.CompIds}" assignTo="{!deleteCompId}"/> 
+                                                                            </apex:commandlink>
+
+
+                                                                        </div>    
+                                                                    </div>
+                                                                </apex:outputPanel>
+                                                                <!--Non Multi Psn -->
+
+                                                               
+                                                                <apex:outputPanel rendered="{!IF((failRec.faultSympCode==null && isMultiPSNEnabled==false) && (claimsRec.Catastrophic__c != true || claimsRec.IsDealerCreatedClaim__c ==  false || CONTAINS($UserRole.Name,'Factory'))&&$User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                    <div class="col-sm-3" > 
+
+                                                                        <div data-target="#DeletePopNew" data-toggle="modal" class="pull-right" style="margin-right: -62px; font-weight:bold ;">
+
+                                                                            <i class="cmi_delete-icon"></i>
+
+                                                                            <apex:commandlink value="{!$Label.CSS_Delete}"   onClick="showDeleteConfirmPopupNonMPSN();" rerender="PopupNew"  style="font-weight:bold;text-decoration:underline;">
+                                                                                <apex:param name="solIdParam1" value="{!failRec.CompIds}" assignTo="{!deleteCompId}"/> 
+                                                                            </apex:commandlink>
+
+
+                                                                        </div>    
+                                                                    </div>
+                                                                </apex:outputPanel>
+                                                                <!--End-->
+
+                                                                <!--<apex:outputPanel rendered="{!IF(claimsRec.CSS_Job__c != null && claimsRec.Account__r.Type == 'Distributor Account',false,true)}">-->
+                                                                <div class="col-sm-8 col-xs-12 cmi-tar" style="display:table;margin-right:20px;">
+                                                                    <!-- <apex:outputPanel rendered="{!IF((claimsRec.CSS_Job__c==null),true,false)}">-->
+                                                                    <apex:outputPanel rendered="{!IF(failRec.faultSympCode==null && (claimsRec.Catastrophic__c != true || claimsRec.IsDealerCreatedClaim__c ==  false || CONTAINS($UserRole.Name,'Factory'))&&$User.isClaimReadOnly__c !=true ,true,false)}">
+                                                                        <div data-target="pPopUp" data-toggle="modal"  class="pull-up" style="margin-top: 10px; font-weight:bold ;">
+                                                                            <i class="pencil-tealIcon"></i>
+                                                                            <!--<apex:actionRegion >-->
+
+                                                                            <apex:commandLink value="{!$Label.css_Edit}"  action="{!loadPopup}" rerender="FailuresOverviewAdd,FailuresPopupHeader,javascript,Calib" style="font-weight:bold;  text-decoration:underline;" onComplete="preDefinedFailSmartSearch();onChangeOfPreFailName();showEditPopup();disablepartsfields({!disableparts});"> 
+                                                                                <apex:param name="solIdParam" value="{!failRec.CompIds}" assignTo="{!selectedCompId}"/> 
+                                                                                <!--<apex:param name="solIdParam1" value="{!failRec.CompIds}" assignTo="{!deleteCompId}"/>-->
+                                                                            </apex:commandLink>
+
+                                                                            <!--<apex:actionRegion>-->
+                                                                        </div>
+                                                                    </apex:outputPanel>
+                                                                </div> <!--</apex:outputPanel>-->
+                                                            </apex:outputPanel>
+                                                            <!--Dealer User -->
+
+
+                                                            <!--<apex:outputPanel rendered="{!IF( (claimsRec.CSS_Job__c != null || claimsRec.Dealer_Service_Job__c != null) && claimsRec.Account__r.Type == 'Dealer Account',true,false)}"> --> 
+                                                            <apex:outputPanel rendered="{!IF( (claimsRec.CSS_Job__c != null || claimsRec.Dealer_Service_Job__c != null) && DealerTypeFlag==true &&$User.isClaimReadOnly__c !=true,true,false)}">  
+
+                                                                <apex:outputPanel rendered="{!IF(failRec.faultSympCode != null && (claimsRec.Catastrophic__c != true || CONTAINS($UserRole.Name,'Factory')),true,false)}">
+
+                                                                    <div class="col-sm-3" > 
+
+                                                                        <div data-target="#DeletePopNew" data-toggle="modal" class="pull-right" style="margin-right: -62px; font-weight:bold ;">
+
+                                                                            <i class="cmi_delete-icon"></i>
+
+                                                                            <apex:commandlink value="{!$Label.CSS_Delete}"  onComplete="showDeleteConfirmPopupNonMPSN();" rerender="PopupNew"  style="font-weight:bold;text-decoration:underline;">
+                                                                                <apex:param name="solIdParam1" value="{!failRec.CompIds}" assignTo="{!deleteCompId}"/> 
+                                                                            </apex:commandlink>
+                                                                        </div>   
+                                                                    </div>
+
+                                                                </apex:outputPanel>
+
+                                                                <div class="col-sm-8 col-xs-12 cmi-tar" style="display:table;margin-right:20px;">
+                                                                    <!-- <apex:outputPanel rendered="{!IF((claimsRec.CSS_Job__c==null),true,false)}">-->
+
+                                                                    <apex:outputPanel rendered="{!IF(failRec.faultSympCode != null && (claimsRec.Catastrophic__c != true || CONTAINS($UserRole.Name,'Factory')),true,false)}">
+                                                                        <div data-target="pPopUp" data-toggle="modal"  class="pull-up" style="margin-top: 10px; font-weight:bold ;">
+                                                                            <i class="pencil-tealIcon"></i>
+                                                                            <!--<apex:actionRegion >-->
+
+                                                                            <apex:commandLink value="{!$Label.css_Edit}"  action="{!loadPopup}" rerender="FailuresOverviewAdd,FailuresPopupHeader,javascript,Calib" style="font-weight:bold;  text-decoration:underline;" onComplete="preDefinedFailSmartSearch();onChangeOfPreFailName();showEditPopup();disablepartsfields({!disableparts});"> 
+                                                                                <apex:param name="solIdParam3" value="{!failRec.CompIds}" assignTo="{!selectedCompId}"/>
+                                                                            </apex:commandLink>
+
+                                                                            <!-- </apex:actionRegion>-->
+                                                                        </div>
+                                                                    </apex:outputPanel>
+                                                                </div>
+                                                            </apex:outputPanel>
+
+                                                            <!--End----->
+
+                                                            <!-- <apex:outputPanel rendered="{!IF(claimsRec.CSS_Job__c  != null && claimsRec.Account__r.Type == 'Distributor Account',true,false)}"> <!-- karthik gorantla made rsw == false -- > 
+<!--Modified the below contion as per defect #177259 -By RAJESH 28th Jan 2019-->
+                                                            <!--apex:outputPanel rendered="{!IF((failRec.faultSympCode != null),true,false)}"-->
+
+                                                            <apex:outputPanel rendered="{!IF(claimsRec.CSS_Job__c  != null && DealerTypeFlag!=true,true,false)}">
+                                                                <apex:outputPanel rendered="{!IF((failRec.faultSympCode != null)  && (claimsRec.Catastrophic__c != true || CONTAINS($UserRole.Name,'Factory')),true,false)}">
+
+                                                                    <div class="col-sm-3" > 
+
+
+                                                                        <div data-target="#DeletePopNew" data-toggle="modal" class="pull-right" style="margin-right: -62px; font-weight:bold ;">
+
+                                                                            <i class="cmi_delete-icon"></i>
+
+                                                                            <apex:commandlink value="{!$Label.CSS_Delete}"  onComplete="showDeleteConfirmPopupNonMPSN();" rerender="PopupNew"  style="font-weight:bold;text-decoration:underline;">
+                                                                                <apex:param name="solIdParam1" value="{!failRec.CompIds}" assignTo="{!deleteCompId}"/> 
+                                                                            </apex:commandlink>
+
+                                                                        </div> 
+                                                                    </div>
+                                                                </apex:outputPanel>
+                                                            </apex:outputPanel>
+
+                                                            <!--End----->
+                                                        </td>
+                                                    </tr>
+                                                </apex:repeat>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </apex:outputpanel>
+
+                    <!--Start Model Popup code For Deletion the Failures -->
+                    <!-- Start - The below popup for deletion of Failure when MultiPSN not enabled-->
+                    <apex:outputPanel id="DeletePopupNonMPSN">
+                        <div class="modal fade" id="DeletePopupNew"  role="dialog" data-backdrop="static" html-keyboard="false"> 
+                            <div class="modal-dialog vertical-align-center"> 
+                                <div class="modal-content">      
+                                    <div class="modal-header"> 
+                                        <h4 class="modal-title" style="color: #FFFFFF;"> {!$Label.CSS_Cummins_Guidanz}</h4>
+                                    </div> 
+                                    <div class="modal-body" style="height:180px">
+                                        <div class="col-sm-12 col-xs-12">
+                                            <div> <b> Deletion of Failure will result in:</b></div>                                           
+                                            <div style="margin:10px 0px;"> <b>Deletion of associated Parts, Travel, SRTs and Other Claimables.</b></div>
+                                            <div><b>Do you want to continue?</b>  </div> 
+                                            <hr style="margin:20px -28px;"/>
+
+                                            <div class="col-sm-5"> 
+                                                <apex:commandButton value="{!$Label.css_Yes}" action="{!deleteSolRecordWOPSN}" styleClass="saveButton" reRender="DeletePopupNonMPSN"/>
+                                            </div>
+                                            <div class="col-sm-5">
+                                                <apex:actionRegion >
+                                                    <apex:commandButton value="{!$Label.CSS_No}" action="{!closeDeletePopup}" html-data-dismiss="modal" styleClass="cancelButton" reRender="DeletePopupNonMPSN" ></apex:commandButton>
+                                                </apex:actionRegion>
+
+                                            </div> 
+                                            <div class="clearfix"/>
+                                        </div>   
+                                    </div>
+                                </div>     
+                            </div>    
+                        </div>
+                    </apex:outputPanel> <!-- End - The above popup for deletion of Failure when MultiPSN not enabled-->
+
+                    <!-- Start - The below popup for changing of Account Code of Failure -->
+                    <apex:outputPanel id="DeletePopup1"> 
+                        <div class="modal fade" id ="showFailurePopuponsave12" role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content">      
+                                    <div class="modal-header">
+                                        <h4 class="modal-title" style="color: #FFFFFF;"> Failures and Campaigns - {!$Label.css_cummins_service_system}</h4>
+                                    </div> 
+                                    <div class="modal-body">
+                                        <form class="form-horizontal" role="form">
+                                            <div class="form-group">  
+                                                <div class="clearfix"></div>
+                                                <div class="col-sm-12 col-xs-12">
+                                                    <b> <font size="3px" weight="bold">Deletion of Failure / Campaign / ATC or Change of Account Code will 
+                                                        result in deletion of data on Multi PSN Details chevron. Do you wish to continue?</font> </b>
+                                                </div>
+                                            </div></form>
+
+
+                                        <div class="col-sm-5 col-xs-4 cmi-tar"> 
+                                            <apex:commandButton value="{!$Label.css_Yes}" action="{!deletePSNRecord}" styleClass="saveButton" reRender="DeletePopup1,FailuresOverviewAdd,FailuresPopupHeader"/>
+                                        </div>
+                                        <center>
+                                            <div >
+                                                <apex:actionRegion >
+                                                    <apex:commandButton value="{!$Label.CSS_No}" action="{!closeDeletePopup}" html-data-dismiss="modal" styleClass="cancelButton" reRender="DeletePopup1,FailuresOverviewAdd,FailuresPopupHeader" ></apex:commandButton>
+                                                </apex:actionRegion>
+
+                                            </div>  </center>
+                                    </div>   
+                                </div>
+                            </div>
+                        </div>     
+                    </apex:outputPanel> <!-- End - The above popup for changing of Account Code of Failure -->
+
+                    <!-- Start - The below popup for deletion of Failure when MultiPSN is enabled-->
+                    <apex:outputPanel id="DeletePopup">
+                        <div class="modal fade" id ="showFailurePopuponsave" role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content">      
+                                    <div class="modal-header">
+                                        <h4 class="modal-title" style="color: #FFFFFF;"> {!$Label.CSS_Cummins_Guidanz}</h4>
+                                    </div> 
+                                    <div class="modal-body" style="height:190px">
+                                        <div class="col-sm-12 col-xs-12">
+                                            <div><b> Deletion of Failure will result in: </b></div>
+                                            <div style="margin:10px 0px;"><b> Deletion of Multi â€“ PSN details and associated Parts, Travel, SRTs and Other Claimables </b></div>
+                                            <div><b> Do you want to continue? </b></div>
+                                            <hr style="margin:20px -28px;"/>
+
+                                            <div class="col-sm-4" style="display: inline-block; text-align: right; width: 40%">
+                                                <apex:commandButton value="{!$Label.css_Yes}" action="{!deleteSolRecord}" styleClass="saveButton" reRender="DeletePopup"/>
+                                            </div>
+                                            <div class="col-sm-2">
+
+                                            </div>
+                                            <div class="col-sm-6" style="display: inline-block; text-align: center; width: 50%">
+                                                <apex:actionRegion >
+                                                    <apex:commandButton value="{!$Label.CSS_No}" action="{!closeDeletePopup}" html-data-dismiss="modal" styleClass="cancelButton" reRender="DeletePopup" ></apex:commandButton>
+                                                </apex:actionRegion>
+                                            </div> 
+                                            <div class="clearfix"/>
+                                        </div>   
+                                    </div>
+                                </div>
+                            </div>
+                        </div>     
+                    </apex:outputPanel>
+                    <!-- End - The above popup for deletion of Failure when MultiPSN is enabled-->
+
+                    <!--<apex:outputText rendered="{!If(claimsRec.Account__r.Type == 'Distributor Account',true,false)}">-->
+                    <apex:outputText rendered="{!If(DealerTypeFlag!=true,true,false)}">
+                        <apex:outputPanel id="bottomButtons">
+                            <div class="row" align="center">
+                                <div class="col-sm-offset-3 col-sm-3 col-xs-12" style="margin-bottom: 10px;">
+
+                                    <apex:outputPanel rendered="{!IF((claimsRec.Catastrophic__c != true || claimsRec.IsDealerCreatedClaim__c ==  false || CONTAINS($UserRole.Name,'Factory')),true,false)}">
+                                        <apex:commandButton value="{!$Label.css_save_btn}" action="{!saveClaimFailOvervwData}" styleClass="saveButton" status="statusIdfo" reRender="failOverviewData,bottomButtons" />
+                                    </apex:outputPanel>
+                                    <apex:outputPanel rendered="{!IF((claimsRec.Catastrophic__c == true && claimsRec.IsDealerCreatedClaim__c ==  true && !CONTAINS($UserRole.Name,'Factory')),true,false)}">
+                                        <apex:commandButton value="{!$Label.css_save_btn}" action="{!saveClaimFailOvervwData}" styleClass="cmi_lighttealbutton" status="statusIdfo" />
+                                    </apex:outputPanel>
+                                    <apex:actionStatus startText="requesting..." id="statusIdfo">
+                                        <apex:facet name="start">Saving... <img src="/img/loading.gif" /></apex:facet>
+                                        <apex:facet name="stop"></apex:facet>
+                                    </apex:actionStatus>
+                                </div>
+                                <div class="col-sm-3 col-xs-12" style="margin-bottom: 10px;">
+                                    <apex:commandButton value="{!$Label.css_Reset}" action="{!resetAllData}" styleClass="cancelButton" reRender="failOverviewData,bottomButtons" status="resetIdfo" />
+                                    <apex:actionStatus startText="requesting..." id="resetIdfo">
+                                        <apex:facet name="start">Reseting... <img src="/img/loading.gif" /></apex:facet>
+                                        <apex:facet name="stop"></apex:facet>
+                                    </apex:actionStatus>
+                                </div>
+                            </div>
+                        </apex:outputPanel>                    
+                    </apex:outputText>
+
+                </div>
+            </div>
+        </div>
+    </fieldset>
+    <script>
+    </script>
+</apex:component>

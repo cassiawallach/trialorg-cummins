@@ -1,0 +1,193 @@
+<apex:page showHeader="false" sidebar="false" controller="IAM_SiteAdmin_uploadFile_ctrl" standardStylesheets="false" lightningStylesheets="true" pageStyle="">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <apex:stylesheet value="{!URLFOR($Resource.CMI_IAM)}" />
+    <apex:stylesheet value="{!URLFOR($Resource.CS_UX)}"/>
+    
+<style>     
+@font-face {
+    font-family: 'ProximaNovaRegular';
+    src:url('{!URLFOR($Resource.CS_UX, '/CS_UX/fonts/ProximaNova-Reg-webfont.woff') }');
+    }
+
+@font-face {
+    font-family:'icons';   
+    src:url('{!URLFOR($Resource.CS_UX, '/CS_UX/Icons/icons-webfont.ttf')}');     
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family:'icons';   
+    src:url('{!URLFOR($Resource.CS_UX, '/CS_UX/Icons/icons-webfont.woff2')}');     
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family:'icons';   
+    src:url('{!URLFOR($Resource.CS_UX, '/CS_UX/Icons/icons.eot?#iefix')}');     
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family:'icons';
+    src:url('{!URLFOR($Resource.CS_UX, '/CS_UX/Icons/icons-webfont.woff')}');
+}
+
+#forHover:hover{
+    border-bottom-color:teal;
+    text-decoration-line: underline;
+}
+    
+a:-webkit-any-link{
+    text-decoration:none;
+}
+    
+.fileDiv {
+    border-top: 1px solid lightgray;
+    margin-top: 10px;
+    padding-top: 10px;
+    padding-left: 22px;
+    margin-left: -10px;
+    margin-right: -10px;    
+}
+</style>  
+
+    <apex:form id="uploadFileForm" style="margin: 10px;">
+        <!--<c:IAM_statusLoader /> -->
+        <!-- page error/success messages -->
+        <apex:pageMessages escape="false" /> 
+        <!-- Uncommented by Karthik Reddy for displaying message if upload invalid file type -->
+        <div id="uploadMsgDiv" style="padding:10px 10px 10px 10px;width:auto;height:auto;border:2px solid green;color:#333333;background-color:#E8FCBC;text-align:left;font-family:proxima   nova,sans-serif;font-size:14px;display:none;"><span class="CMI-text-icons" style="color:green;padding-left: 0px;">{!if(failedUpload > 0, '2','=')}</span>
+            <!-- Fixed D-3148 if contact is pending for approval display message in orange color else display in green color failure display in red-->
+            <span style="{!IF(SuccessUpload > 0,IF(isPendingApproval,'font-family: proxima nova,sans-serif;font-size: 14px;color: orange;','font-family: proxima nova,sans-serif;font-size: 14px;color: green;'),'font-family: proxima nova,sans-serif;font-size: 14px;')}">
+                {!$Label.IAM_Upload_User_Success_Msg}: {!SuccessUpload}
+            </span><br/>
+            <span style="{!IF(failedUpload > 0,'font-family: proxima nova,sans-serif;font-size: 14px;padding-left: 25px;color: red;','font-family: proxima nova,sans-serif;font-size: 14px;padding-left: 25px;')}">
+                {!$Label.IAM_Upload_user_failure_Msg}: {!failedUpload}
+            </span><br/>
+            <span style="font-family: proxima nova,sans-serif;font-size: 14px;padding-left: 25px;">
+                {!$Label.IAM_Upload_User_Download_Msg}
+            </span>
+        </div><br/>
+ 
+        <div style="margin-bottom: 4px;">
+            <a href="#" id="forHover" onclick="download_template()" style="text-decoration: none; margin-left:8px;">
+                <span class="CMI-text-icons">P</span>
+                <span  id="forHover" style="font-family: proxima nova,sans-serif;font-size: 14px;color: red;">
+                    {!$Label.IAM_Upload_User_Template_Msg} (ImportUsersTemplate.csv)
+                </span>
+            </a>
+        </div>
+        <ul style="font-family: proxima nova,sans-serif;font-size: 14px; text-align: justify;">
+            <li>
+                <b>{!$Label.IAM_Upload_User_Column_Label}</b> - {!$Label.IAM_Upload_User_Mandatory_Label}.
+            </li>
+            <li>
+                <b>{!$Label.IAM_Upload_User_Application_Label}</b> - {!$Label.IAM_Upload_User_App_Column_Label} 
+            </li>
+            <li>
+                {!$Label.IAM_Upload_User_Role_Names_Label}
+            </li>
+            <li>
+                {!$Label.IAM_Upload_User_Processed_Message}
+            </li>
+            <li>
+                {!$Label.IAM_Use_Choose_File_Button}
+            </li>
+        </ul>
+        <a href="#" onclick="window.open('IAM_Upload_Data_Instruction', '_blank', 'fullscreen=yes'); return false;">
+            <span  id="forHover" style="font-family: proxima nova,sans-serif;font-size: 14px;color: red;margin-left: 22px;">
+                {!$Label.IAM_Upload_User_Instruction_Label}
+            </span>
+        </a>
+        <div class="fileDiv">
+            <!-- input file to upload the csv file --->
+            <apex:inputFile Styleclass="btn" style="font-family: proxima nova,sans-serif;font-size: 14px;"
+                            value="{!fileForimport}" accept=".csv" onchange="uploadUser();"/>     
+        </div>
+<script>                
+        function download_template(){
+            console.log('hi this is download_template ......');
+            var csvString = "First Name,Last Name,Username (email format),Email,Phone,SITE ADMIN(TRUE;FALSE),SITE ADMIN Role(Manage User;Manage Subscription;Manage Both),{!AppsHeader}";
+            var blob = new Blob([csvString]);
+            if(window.navigator.msSaveOrOpenBlob){
+                console.log("csvString in blob"+csvString);
+                window.navigator.msSaveBlob(blob, "ImportUsersTemplate.csv");
+            }else{ 
+                var hiddenElement = document.createElement('a');
+                hiddenElement.href = 'data:text/csv;charset=utf-8,' + encodeURI(csvString);
+                hiddenElement.target = '_self'; // 
+                hiddenElement.download = 'ImportUsersTemplate.csv'; 
+                document.body.appendChild(hiddenElement);
+                hiddenElement.click(); 
+            }
+        }
+        
+        function general_Instruction(){
+            console.log('====to open pdf file====');
+            var data = 'This is my pdf data';
+            var newBlob = new Blob([data], {type: "application/pdf"})
+
+            // IE doesn't allow using a blob object directly as link href
+            // instead it is necessary to use msSaveOrOpenBlob
+            const data1 = window.URL.createObjectURL(newBlob);
+            var link = document.createElement('a');
+            link.href = data1;
+            link.download="file.pdf";
+            link.click();
+            setTimeout(function(){
+            // For Firefox it is necessary to delay revoking the ObjectURL
+            window.URL.revokeObjectURL(data1);}, 100);
+        }
+  
+</script>
+  
+   <apex:outputPanel rendered="{!DataDownload}">
+     <!-- this script is used to download the sucess file after the import is done -->
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+     <script>
+        var j$ = jQuery.noConflict();
+        function download_exceturedFile(){
+            j$("div#uploadMsgDiv").show();
+            console.log('hi this is download_exceturedFile ......1111111');
+            var csvString = "{!data}"
+            console.log('#### csvString1 - ',csvString);
+            csvString = csvString.replace('Reason','Reason\n');
+            console.log('#### csvString2 - ',csvString);
+            var blob = new Blob([csvString]);
+            
+            if (window.navigator.msSaveOrOpenBlob){
+                window.navigator.msSaveBlob(blob, "ImportUsersTemplate.csv");
+            }else{  
+                var hiddenElement = document.createElement('a');
+                /*hiddenElement.href = 'data:text/csv;charset=utf-8,' + encodeURI(csvString);*/
+                /* Fix - D-3140, D-3141 */
+                hiddenElement.href = window.URL.createObjectURL(blob, {type: "text/plain"});
+                hiddenElement.target = '_self'; // 
+                hiddenElement.download = 'ImportUsersTemplate.csv'; 
+                document.body.appendChild(hiddenElement);
+                hiddenElement.click(); 
+            }
+             setTimeout( ()=>{j$("div#uploadMsgDiv").hide()},5000);
+        }
+        download_exceturedFile();
+      </script>
+   </apex:outputPanel>
+   
+    <apex:actionFunction name="uploadUser1" action="{!start_import}" status="status"/>
+    </apex:form>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+  <script>
+        var j$ = jQuery.noConflict();
+        //this function display upload message after upload file
+        var isExecuteFile;
+        function uploadUser(){
+            console.log('inside upload file ');
+            j$("div#uploadMsgDiv").hide();
+            uploadUser1();
+        }
+  </script>
+ </apex:page>

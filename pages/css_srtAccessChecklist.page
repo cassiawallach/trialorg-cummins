@@ -1,0 +1,275 @@
+<apex:page controller="CSS_SRTAccessCheckListCL" showHeader="false" standardStylesheets="false" id="pgsrt" action="{!getErrorDetails}">
+    <c:CSS_Standard_IntakeStyles /> 
+    <c:css_ExtraStyles />
+    <c:CSS_Standard_UI />
+    <script>
+        function QuantityCheck(){ 
+
+
+            var listSize = {!lstDisplaySRT.size};
+            for (i = 0; i < listSize; i++) {
+
+                if(document.getElementById('pgsrt:Srtfrm:srtbody:'+i+':qua').checked == true){
+
+                    if(document.getElementById('pgsrt:Srtfrm:srtbody:'+i+':SRTqua').value==''){
+                        document.getElementById('pgsrt:Srtfrm:srtbody:'+i+':SRTqua').value = 1;}
+
+                }
+                else{
+                    document.getElementById('pgsrt:Srtfrm:srtbody:'+i+':SRTqua').value= ''; 
+
+                }
+
+
+            }
+
+        }
+        function onKeyup_TxtFieldcom(e)
+        {
+            
+            var keynum;
+            if(window.event) // IE
+            {
+                keynum = e.keyCode;
+            }
+
+            if(keynum == 13) 
+            { 
+               
+                calDiagLen();
+                return false; 
+            } 
+        }
+
+        function calDiagLen(){
+           // alert('HI checklist');
+            srchDiagCode();                
+            console.log('true');
+            return true;
+        }
+
+
+        function checkDup(srtId,selchk){
+            if(selchk.checked){
+                checkSRTDup(srtId,true);
+            }
+            else{
+                checkSRTDup(srtId,false);
+            }
+
+        }
+
+    </script>
+    <script>
+        function closeSRTWindow() {
+            window.top.close();
+            var pageName = '{!pgName}';
+            // if(pageName == 'JobPlan'){ Commented this line to fix Access SRT – refresh issue on diagnosis and Repair pages 11/10/2017
+            if(pageName != null && pageName != '' && pageName == 'JobPlan'){
+                window.opener.location.reload();
+            }
+        }
+        function DisableAccessSaveButton(accessSaveButton)
+        {  
+            accessSaveButton.disabled=true;
+        }
+        function DisableAccessSaveButton2(accessSaveButton2)
+        {  
+            accessSaveButton2.disabled=true;
+        }
+
+
+    </script>
+    <style>
+
+        thead, tbody, tr, td, th {display: block; }  
+
+        tr:after {
+            content: '';  
+            display: block; 
+            clear: both;    
+        }   
+
+
+        tbody td, thead th {
+            width: 25%;
+            float: left;  
+        }    
+
+        header{
+            width: 100%;
+            position: fixed; 
+            top: 0;
+            height: 60px !important;
+            z-index:100;
+        }
+        .header1{
+            width: 100%;
+            position: fixed; 
+            top: 41px;
+            height: 60px !important;
+            z-index:100;
+            background-color:#fff;
+        }
+        .content {
+            position:relative;
+            min-height: 100%;
+            padding:37px 0 5px 0; /* Header height and footer height */
+            margin:0 auto 0 auto; /* Center content */
+
+        }
+        .topright {
+            z-index:100;
+            position: absolute;
+            top: 2px;
+            right: 16px;
+            font-size: 14px;
+
+
+        }
+
+    </style>
+
+    <apex:form id="Srtfrm"> 
+        <header>
+            <div style="height:40px;background-color:#000;color:#fff;text-align:center;font-size:20px;">
+                Triage &amp; Diagnosis - Cummins Guidanz
+            </div>
+        </header> 
+
+        <br/>{!!jobStatus}{!IF(sHandleMsg=='Invalid Request',True,False)}{!IF((sHandleMsg=='WEB'||sHandleMsg=='TEMP'),True,False)}
+
+
+        <apex:outputText rendered="{!(!jobStatus && !serviceFailed)}">
+            <br/><br/>
+
+            <div align ="center" class="header1">
+                <apex:commandButton value="Save" action="{!saveNClose}" onClick="DisableAccessSaveButton(this)" onComplete="closeSRTWindow()" styleClass="saveButton" />&nbsp;&nbsp;
+                <apex:commandButton value="Cancel" onclick="window.top.close()" styleClass="cancelButton" />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <div class="clearfix"></div>
+
+                <apex:outputText rendered="{!IF(pgName!='RepairRj',true,false)}">
+                    <div  class="topright">
+                        <b>{!$Label.CSS_Search}</b> &nbsp;&nbsp;<apex:inputText id="srchDiagText" value="{!searchAcesscheklistvalue}" onkeypress="return onKeyup_TxtFieldcom(event);"/>&nbsp;
+                        <apex:commandButton id="bt13" onclick="calDiagLen();return false;" value="GO" styleClass="saveButton" />&nbsp;
+                       <!-- <apex:actionStatus id="callPartNoStatus"> 
+                            <apex:facet name="start"> <img src="/img/loading.gif" /></apex:facet>
+                            <apex:facet name="stop"></apex:facet>
+                        </apex:actionStatus>-->
+                    </div>
+                </apex:outputText>
+            </div>
+
+        </apex:outputText>
+
+
+        <br/><br/> <br/><br/>
+        <!--added as per story 287-->
+
+        <apex:actionFunction name="srchDiagCode" action="{!searchAccChklistSRTCodeAndDescription}" status="callPartNoStatus" reRender="searchedSRTData1,Nofoundsearch" ></apex:actionFunction>
+        <apex:outputPanel id="Nofoundsearch">
+            <apex:outputPanel rendered="{!IF(NoRecordsfound==true,true,false)}">
+                <h5 style="color:red">
+                    <b>{!$Label.CSS_Global_Search} </b>
+                </h5>
+            </apex:outputPanel> 
+        </apex:outputPanel>
+        <!--Added as part of story GSSC-82-->
+        <apex:outputText rendered="{!serviceFailed}">
+            <h5 style="color:red">
+                <b>{!$Label.CSS_SRTServiceFailedError} </b>
+            </h5>
+        </apex:outputText>
+
+        <!--Added as part of story GSSC-82-->
+        <apex:outputPanel id="dupSRTErr">
+            <apex:outputPanel rendered="{!IF(dupSRTFound==true,true,false)}">
+                <!--div align ="center" class="content" style="margin-top:10px;"-->
+                <div class="content">
+                    <i class="cmi-catastrophicWarning-icon" style="height:30px"></i><span>  <b style="color:red;margin:0px 0px 20px;height:30px;">{!$Label.CG_DuplicateSRTError} </b></span>
+                </div>
+            </apex:outputPanel> 
+        </apex:outputPanel> 
+        
+        <apex:outputPanel id="searchedSRTData1">
+            <div class="content" style="margin-top:0px;">
+                <apex:outputPanel rendered="{!IF(sHandleMsg=='Invalid Request',True,False)}">
+                    <apex:outputText value="No SRT are availble from the SRT Service." />
+                </apex:outputPanel> 
+                
+                <!--<apex:param name="srtRecCode" value="" assignTo="{!srtRecId}"/>
+<apex:param name="srtRecSel" value="" assignTo="{!srtRecSelected}"/>
+</apex:actionFunction>-->
+                <apex:actionFunction name="checkSRTDup" action="{!checkDuplicateSRTs}" rerender="dupSRTErr,inpchkdupSRTErr"/>
+                <apex:outputPanel rendered="{!IF(((sHandleMsg=='WEB'||sHandleMsg=='TEMP') && !serviceFailed),True,False)}" id="srtLst">
+                    <div>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th> Choose</th>
+                                    <th>{!$Label.css_SRT_Code}</th>
+                                    <th>{!$Label.css_Quantity}</th>
+                                    <th>{!$Label.css_SRT_Description}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <apex:repeat var="QA" value="{!lstDisplaySRT}" id="srtbody">
+
+                                    <tr id="srtTD">
+
+                                        <apex:outputtext id="accchk"  rendered="{!!jobStatus}">
+
+                                            <td >
+                                                <apex:inputCheckbox value="{!QA.SRT_AccessiblityCheck__c}" onclick="checkSRTDup();QuantityCheck();" id="qua" /><!--checkSRTDup();-->
+
+                                                <apex:outputPanel id="inpchkdupSRTErr">
+                                                    <apex:outputPanel rendered="{!IF(QA.IsDuplicateSRT__c==true,true,false)}" >
+                                                        <i class="cmi-catastrophicWarning-icon" style="height:23px;float:none;vertical-allign:center"></i>
+                                                    </apex:outputPanel>
+                                                </apex:outputPanel>
+                                            </td>
+                                        </apex:outputtext>
+                                        <apex:outputtext rendered="{!jobStatus}">
+                                            <td>
+                                                <apex:outputField value="{!QA.SRT_AccessiblityCheck__c}"/>
+                                            </td>
+                                        </apex:outputtext>
+
+                                        <td>
+                                            <b> <apex:outputField value="{!QA.SRT_Details__c}" /> </b>  
+                                        </td>
+                                        <apex:outputtext rendered="{!!jobStatus}">
+                                            <td>
+                                                <b> <apex:inputText value="{!QA.SRT_Quantity__c}" maxlength="3" id="SRTqua" style="width: 40px"/> </b>  
+                                            </td>
+                                        </apex:outputtext>
+                                        <apex:outputtext rendered="{!jobStatus}">
+                                            <td>
+                                                <b> <apex:outputField value="{!QA.SRT_Quantity__c}"  style="width: 40px"/> </b> 
+                                            </td>
+                                        </apex:outputtext>
+                                        <td>
+                                            <apex:outputField value="{!QA.SRT_Title__c}" />
+                                        </td>
+                                    </tr>
+                                </apex:repeat>
+                            </tbody>
+                        </table>
+                        <br/>
+                        <hr style="margin:0px;"/>
+                        <apex:outputPanel rendered="{!!jobStatus}">
+                            <div align ="center" style="background-color:#fff;margin:10px 0px;">
+
+                                <apex:commandButton value="Save" action="{!saveNClose}" onClick="DisableAccessSaveButton2(this)" id="DiagAccessButton2" onComplete="closeSRTWindow()" styleClass="saveButton"/>&nbsp;&nbsp;
+                                <apex:commandButton value="Cancel" onclick="window.top.close()" styleClass="cancelButton" />
+
+                            </div>
+                        </apex:outputPanel>
+                    </div>
+                </apex:outputPanel>
+            </div>
+
+        </apex:outputPanel>
+    </apex:form>   
+</apex:page>

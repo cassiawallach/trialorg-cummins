@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <alerts>
+        <fullName>CMI_Alert_PC_Errors</fullName>
+        <ccEmails>nu615@cummins.com</ccEmails>
+        <description>CMI_Alert_PC_Errors</description>
+        <protected>false</protected>
+        <recipients>
+            <recipient>vamsi.jandhyala@cummins.com</recipient>
+            <type>user</type>
+        </recipients>
+        <senderAddress>noreply.identity@cummins.com</senderAddress>
+        <senderType>OrgWideEmailAddress</senderType>
+        <template>IAM_Templates/Email_for_PC_Errors</template>
+    </alerts>
+    <rules>
+        <fullName>CMI_Error_Mails</fullName>
+        <actions>
+            <name>CMI_Alert_PC_Errors</name>
+            <type>Alert</type>
+        </actions>
+        <active>true</active>
+        <criteriaItems>
+            <field>CSS_Integration_Error__c.Name</field>
+            <operation>notEqual</operation>
+        </criteriaItems>
+        <criteriaItems>
+            <field>CSS_Integration_Error__c.CreatedDate</field>
+            <operation>notEqual</operation>
+        </criteriaItems>
+        <criteriaItems>
+            <field>CSS_Integration_Error__c.Source__c</field>
+            <operation>equals</operation>
+            <value>IDENTITY</value>
+        </criteriaItems>
+        <description>Rule to trigger mails to group of users for whom error belongs to</description>
+        <triggerType>onCreateOnly</triggerType>
+    </rules>
+</Workflow>
